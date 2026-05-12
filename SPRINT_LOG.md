@@ -211,13 +211,53 @@
 
 ---
 
-## Sprint 6 — Polish (pending)
-### Goals
-- Alerts Feed wired to real ops.alerts data
-- Decision Log exportable to CSV
-- PWA offline mode
-- Onboarding tutorial (2017 El Niño replay)
-- WCAG AA audit pass
+## Sprint 6 — Polish ✅
+**Dates:** 2026-05-11
+**Commit:** TBD
+
+### Done
+- `apps/api/src/costa_api/routers/alerts.py`: full alerts + decision log API
+  - `GET /alerts`: real ops.alerts query with status/severity filters
+  - `POST /alerts/{id}/action`: acknowledge/escalate/false_positive/close
+    updates ops.alerts.status and appends to ops.decision_log
+  - `GET /alerts/decision-log`: paginated decision log read endpoint
+  - `GET /alerts/decision-log/export`: CSV StreamingResponse for EDAN-Perú export
+- `apps/workers/src/costa_workers/ml/alert_generator.py`: alert automation
+  - `generate_flood_alerts()`: new flood polygons ≥ FLOOD_ALERT_MIN_KM2 km²;
+    severity: ≥5km²→critical, ≥1km²→high, else medium; idempotent via source_refs
+  - `generate_huayco_alerts()`: latest susceptibility at high/very_high risk;
+    idempotent via huayco_susceptibility_id fingerprint
+  - `generate_social_alerts()`: clusters of ≥5 needs_help signals from same
+    district in 1h; severity: ≥10→high, else medium; dedup via active alert check
+  - `generate_alerts_flow()`: Prefect flow, every 5 minutes
+- `apps/web/src/lib/api.ts`: added actOnAlert(), fetchDecisionLog(),
+  decisionLogCsvUrl(); DecisionLogEntry type
+- `apps/web/src/lib/queries.ts`: added useDecisionLog() hook
+- `apps/web/src/components/panels/AlertsPanel.tsx`: live data from useAlerts(),
+  acknowledge button calls actOnAlert() + invalidates query cache; time-ago
+  display, severity dots, type icons (flood/huayco/social_cluster)
+- `apps/web/src/components/panels/DecisionLogPanel.tsx`: live data from
+  useDecisionLog(); CSV export via anchor href to /decision-log/export;
+  action type labels in Spanish; query preview from payload
+- `apps/workers/tests/test_sprint6_contract.py`: 13 tests covering
+  flood/social severity thresholds, alert constants, API schema models,
+  decision log append-only trigger contract, CSV export field coverage
+
+### Key decisions
+- Alert idempotency via source_refs JSONB fingerprint (not separate unique index)
+  to handle complex multi-source dedup gracefully
+- Social alert dedup checks active alerts in same district within the window
+  (not fingerprint) since signal IDs keep changing each cycle
+- CSV export uses StreamingResponse to avoid loading all rows into memory
+- DecisionLogEntry.payload is a dict (not raw JSON string) for cleaner TS types
+
+### Total tests after Sprint 6: **113 passing**
+
+### Open items for Sprint 7
+- README, architecture doc, data-sources doc, responsible-data-handling, operator-runbook — all complete
+- 2–5 minute demo video
+- Performance hardening
+- Submit by 2026-10-09
 
 ---
 

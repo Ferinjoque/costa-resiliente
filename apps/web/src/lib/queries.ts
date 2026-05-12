@@ -21,6 +21,7 @@ import {
   fetchHuayco,
   fetchInfrastructure,
   fetchAlerts,
+  fetchDecisionLog,
   type DistrictCollection,
   type DistrictListItem,
   type ImergCollection,
@@ -28,6 +29,7 @@ import {
   type HuaycoCollection,
   type InfraCollection,
   type Alert,
+  type DecisionLogEntry,
 } from "./api";
 
 const MIN = 1000 * 60;
@@ -109,6 +111,19 @@ export function useAlerts(
     queryKey: ["alerts", status],
     queryFn: () => fetchAlerts(status),
     staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+    ...opts,
+  });
+}
+
+export function useDecisionLog(
+  limit = 100,
+  opts?: Partial<UseQueryOptions<DecisionLogEntry[]>>
+): UseQueryResult<DecisionLogEntry[]> {
+  return useQuery({
+    queryKey: ["decision-log", limit],
+    queryFn: () => fetchDecisionLog(limit),
+    staleTime: 15 * 1000,
     refetchInterval: 30 * 1000,
     ...opts,
   });
