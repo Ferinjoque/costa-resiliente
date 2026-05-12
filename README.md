@@ -161,8 +161,8 @@ cd apps/web && npm run dev
 cd apps/workers && prefect server start &
 prefect deploy --all
 
-# Tests
-pytest apps/api/tests apps/workers/tests -v
+# Tests (113 passing as of Sprint 6)
+pytest -x -q
 ```
 
 ### Pre-commit hooks
@@ -171,6 +171,19 @@ pytest apps/api/tests apps/workers/tests -v
 pip install pre-commit
 pre-commit install
 ```
+
+## Sprint Status
+
+| Sprint | Focus | Status | Tests |
+|--------|-------|--------|-------|
+| 0 | Scaffolding — schema, docker-compose, stubs | ✅ | — |
+| 1 | Foundation ingestion — Sentinel-1, IMERG, geodata | ✅ | 39 |
+| 2 | Dashboard skeleton — MapView, TanStack Query | ✅ | 39 |
+| 3 | Flood segmentation — U-Net, Sen1Floods11 | ✅ | 39 |
+| 4 | Huayco + ANA/SENAMHI + social ingestion | ✅ | 85 |
+| 5 | LLM triage + Operator Copilot RAG | ✅ | 100 |
+| 6 | Alerts feed, alert generator, decision log CSV | ✅ | 113 |
+| 7 | Submission prep | 🔄 | — |
 
 ---
 
