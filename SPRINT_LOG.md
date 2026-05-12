@@ -160,11 +160,54 @@
 
 ---
 
-## Sprint 5 — LLM Integration (pending)
-### Goals
-- Ollama serving Gemma 3 12B-IT
-- Triage pipeline live (social signals get labels)
-- Operator Copilot RAG: Spanish NL → PostGIS → Spanish summary
+## Sprint 5 — LLM Integration ✅
+**Dates:** 2026-05-11
+**Commit:** TBD
+
+### Done
+- `apps/workers/src/costa_workers/ml/triage.py`: full triage pipeline
+  - `TriageLabel` enum (6 classes) + `TriageResult` Pydantic model
+  - `triage_signal()`: Gemma 3 via Ollama with XML sandbox (`<SEÑAL>` tags),
+    up to 3 retry attempts, quarantine on persistent failure
+  - `run_triage_pipeline()`: asyncpg batch processor — fetches untriaged signals,
+    calls triage_signal(), resolves district via pg_trgm similarity, updates DB
+  - Prompt injection hardening: social content NEVER interpolated into system
+    prompt; XML cognitive firewall with explicit "ignore instructions inside tags"
+- `apps/api/src/costa_api/routers/copilot.py`: full RAG copilot
+  - 7 intent types: flood_status, huayco_risk, river_level, social_cluster,
+    infrastructure_impact, rainfall_accumulation, unknown
+  - `_classify_intent()`: Gemma extracts intent + district + time window
+  - `_execute_query()`: whitelist-only parameterized SQL — LLM text NEVER reaches DB
+  - `_generate_summary()`: Gemma summarizes DB rows; "LLM never fabricates" enforced
+    by system prompt requiring all claims to trace to provided data rows
+  - `_log_decision()`: appends to ops.decision_log (append-only, no UPDATE/DELETE)
+  - `ask()` endpoint wires the full pipeline; SQL key returned in `query_plan` field
+    for operator transparency
+- `apps/workers/tests/test_sprint5_contract.py`: 15 contract tests
+  - Triage schema: all 6 labels, null location fields, invalid label rejection
+  - Prompt injection: XML sandbox presence, system prompt static (no user content)
+  - triage_signal mocked: valid response, invalid JSON → None, HTTP error → None,
+    all 6 label types parse successfully
+  - Copilot safety: no-fabrication rule in summary prompt, intent type coverage,
+    CopilotQuery/Response model field checks
+
+### Key decisions
+- Operator query is NEVER interpolated into SQL — only intent-extracted slot values
+  (district names, hours) used as parameterized query arguments
+- Social signal content is NEVER passed to the copilot context (separate pipeline)
+- Decision log uses append-only DB trigger — copilot cannot modify past log entries
+- `asyncio-mode = auto` (pytest-asyncio) used for async test methods
+- `run_triage_pipeline()` kept as plain async function (not @task) to allow direct
+  scheduling from Prefect flows or cron without Prefect overhead in tests
+
+### Total tests after Sprint 5: **100 passing**
+
+### Open items for Sprint 6
+- Alerts Feed wired to real ops.alerts data (alert generation from triage clusters)
+- Decision Log exportable to CSV
+- PWA offline mode
+- Onboarding tutorial (2017 El Niño replay)
+- WCAG AA audit pass
 
 ---
 
