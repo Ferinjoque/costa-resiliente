@@ -1,0 +1,24 @@
+# Copy this file to docker-compose.override.yml for local dev overrides.
+# docker-compose.override.yml is gitignored.
+
+version: "3.9"
+
+services:
+  # Mount source for hot-reload during development
+  api:
+    build:
+      target: development
+    volumes:
+      - ./apps/api/src:/app/src:ro
+    command: uvicorn costa_api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  prefect-worker:
+    volumes:
+      - ./apps/workers/src:/app/src:ro
+
+  web:
+    build:
+      target: development
+    volumes:
+      - ./apps/web/src:/app/src:ro
+    command: npm run dev

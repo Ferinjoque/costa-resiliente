@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MapLibre GL */
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+:root {
+  --color-surface-base: #0f172a;
+  --color-surface-raised: #1e293b;
+  --color-surface-panel: #334155;
+
+  --color-severity-critical: #ef4444;
+  --color-severity-high: #f97316;
+  --color-severity-medium: #eab308;
+  --color-severity-low: #22c55e;
+
+  --sidebar-width: 280px;
+  --alerts-panel-width: 360px;
+}
+
+/* Operational dark mode — no white flash */
+html,
+body {
+  background-color: var(--color-surface-base);
+  color: white;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Map container fills remaining space */
+.map-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Severity dot indicator */
+.severity-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.severity-dot[data-severity="critical"] { background-color: var(--color-severity-critical); }
+.severity-dot[data-severity="high"]     { background-color: var(--color-severity-high); }
+.severity-dot[data-severity="medium"]   { background-color: var(--color-severity-medium); }
+.severity-dot[data-severity="low"]      { background-color: var(--color-severity-low); }
+
+/* Scrollbar styling for dark panels */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--color-surface-raised); }
+::-webkit-scrollbar-thumb { background: var(--color-surface-panel); border-radius: 2px; }
