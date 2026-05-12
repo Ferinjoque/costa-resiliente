@@ -1,42 +1,91 @@
 "use client";
 
-import { Bell, CheckCircle, AlertTriangle } from "lucide-react";
+import { Bell, CheckCircle, AlertTriangle, TrendingUp, Users } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
+import { useAlerts } from "@/lib/queries";
+import { actOnAlert } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import type { Alert } from "@/lib/api";
 
-const MOCK_ALERTS = [
-  {
-    id: 1,
-    type: "flood",
-    severity: "critical" as const,
-    title: "Desborde detectado en Rímac km 38",
-    district: "Lurigancho",
-    time: "hace 12 min",
-    status: "active",
-  },
-  {
-    id: 2,
-    type: "huayco",
-    severity: "high" as const,
-    title: "Huayco activo en Quebrada Pedregal",
-    district: "Chosica",
-    time: "hace 34 min",
-    status: "active",
-  },
-  {
-    id: 3,
-    type: "social",
-    severity: "medium" as const,
-    title: "15 señales: piden ayuda en Comas",
-    district: "Comas",
-    time: "hace 1h",
-    status: "acknowledged",
-  },
-];
+const OPERATOR_ID = "operator-1";
+
+const TYPE_ICON: Record<string, React.FC<{ size: number; className?: string }>> = {
+  flood: AlertTriangle,
+  huayco: TrendingUp,
+  social_cluster: Users,
+};
+
+const SEVERITY_DOT: Record<string, string> = {
+  critical: "bg-red-500",
+  high: "bg-orange-400",
+  medium: "bg-yellow-400",
+  low: "bg-blue-400",
+};
+
+function timeAgo(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return "ahora";
+  if (mins < 60) return `hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `hace ${hrs}h`;
+  return `hace ${Math.floor(hrs / 24)}d`;
+}
+
+function AlertRow({ alert }: { alert: Alert }) {
+  const qc = useQueryClient();
+  const Icon = TYPE_ICON[alert.type] ?? Bell;
+
+  async function handleAck() {
+    try {
+      await actOnAlert(alert.id, "acknowledge", OPERATOR_ID);
+      qc.invalidateQueries({ queryKey: ["alerts"] });
+    } catch {
+      // best-effort
+    }
+  }
+
+  return (
+    <li className="px-4 py-3 hover:bg-surface-panel transition-colors">
+      <div className="flex items-start gap-2">
+        <span
+          className={clsx("mt-1 h-2 w-2 rounded-full shrink-0", SEVERITY_DOT[alert.severity] ?? "bg-slate-400")}
+          aria-label={`Severidad: ${alert.severity}`}
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-white truncate">{alert.title}</p>
+          <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
+            <Icon size={11} />
+            <span className="capitalize">{alert.type.replace("_", " ")}</span>
+            <span>·</span>
+            <span>{timeAgo(alert.created_at)}</span>
+          </p>
+        </div>
+        {alert.status === "active" ? (
+          <button
+            onClick={handleAck}
+            className="shrink-0 text-slate-400 hover:text-green-400 transition-colors"
+            aria-label="Reconocer alerta"
+            title="Reconocer"
+          >
+            <CheckCircle size={15} />
+          </button>
+        ) : (
+          <span className="text-xs text-slate-600 shrink-0 capitalize">{alert.status}</span>
+        )}
+      </div>
+    </li>
+  );
+}
 
 export function AlertsPanel() {
   const { activePanel } = useUIStore();
+  const { data: alerts = [], isLoading, isError } = useAlerts();
+
   if (activePanel !== "alerts") return null;
+
+  const activeCount = alerts.filter((a) => a.status === "active").length;
 
   return (
     <aside
@@ -46,43 +95,32 @@ export function AlertsPanel() {
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
         <Bell size={15} className="text-costa-500" />
         <h2 className="text-sm font-semibold text-white">Alertas</h2>
-        <span className="ml-auto bg-severity-critical text-white text-xs px-1.5 py-0.5 rounded-full">
-          {MOCK_ALERTS.filter((a) => a.status === "active").length}
-        </span>
+        {activeCount > 0 && (
+          <span className="ml-auto bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+            {activeCount}
+          </span>
+        )}
       </div>
 
       <ul className="flex-1 overflow-y-auto divide-y divide-slate-700/50">
-        {MOCK_ALERTS.map((alert) => (
-          <li key={alert.id} className="px-4 py-3 hover:bg-surface-panel transition-colors">
-            <div className="flex items-start gap-2">
-              <span
-                className="severity-dot mt-1"
-                data-severity={alert.severity}
-                aria-label={`Severidad: ${alert.severity}`}
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white truncate">{alert.title}</p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {alert.district} · {alert.time}
-                </p>
-              </div>
-              {alert.status === "active" ? (
-                <button
-                  className="shrink-0 text-slate-400 hover:text-green-400 transition-colors"
-                  aria-label="Reconocer alerta"
-                >
-                  <CheckCircle size={15} />
-                </button>
-              ) : (
-                <AlertTriangle size={14} className="shrink-0 text-slate-600" />
-              )}
-            </div>
+        {isLoading && (
+          <li className="px-4 py-8 text-xs text-slate-500 text-center">Cargando alertas…</li>
+        )}
+        {isError && (
+          <li className="px-4 py-8 text-xs text-red-400 text-center">Error al cargar alertas</li>
+        )}
+        {!isLoading && !isError && alerts.length === 0 && (
+          <li className="px-4 py-8 text-xs text-slate-500 text-center">
+            No hay alertas activas
           </li>
+        )}
+        {alerts.map((alert) => (
+          <AlertRow key={alert.id} alert={alert} />
         ))}
       </ul>
 
       <div className="px-4 py-2 border-t border-slate-700 text-xs text-slate-500 text-center">
-        Datos de ejemplo — Sprint 4 activa feeds reales
+        Actualización cada 30 s
       </div>
     </aside>
   );

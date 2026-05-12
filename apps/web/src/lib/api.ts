@@ -169,3 +169,38 @@ export function fetchAlerts(status?: string): Promise<Alert[]> {
   const q = status ? `?status=${encodeURIComponent(status)}` : "";
   return get<Alert[]>(`/api/v1/alerts${q}`);
 }
+
+export async function actOnAlert(
+  alertId: number,
+  action: "acknowledge" | "escalate" | "false_positive" | "close",
+  operatorId: string,
+  note?: string,
+): Promise<{ alert_id: number; new_status: string }> {
+  const res = await fetch(`${BASE}/api/v1/alerts/${alertId}/action`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ operator_id: operatorId, action, note }),
+  });
+  if (!res.ok) throw new Error(`actOnAlert → ${res.status}`);
+  return res.json();
+}
+
+// ─── Decision log ─────────────────────────────────────────────────────────────
+
+export interface DecisionLogEntry {
+  id: number;
+  logged_at: string;
+  operator_id: string;
+  action_type: string;
+  alert_id: number | null;
+  payload: Record<string, unknown>;
+  session_id: string | null;
+}
+
+export function fetchDecisionLog(limit = 100): Promise<DecisionLogEntry[]> {
+  return get<DecisionLogEntry[]>(`/api/v1/alerts/decision-log?limit=${limit}`);
+}
+
+export function decisionLogCsvUrl(): string {
+  return `${BASE}/api/v1/alerts/decision-log/export`;
+}
