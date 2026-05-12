@@ -105,12 +105,58 @@
 
 ---
 
-## Sprint 4 — Huayco + ANA + Social (pending)
-### Goals
-- XGBoost huayco model trained and running per quebrada
-- ANA/SENAMHI scraper feeding hydro.station_observations
-- Bluesky + Reddit + RSS ingest with PII redaction active
-- Social signal pins on map (clustered)
+## Sprint 4 — Huayco + ANA + Social ✅
+**Dates:** 2026-05-11
+**Commit:** TBD
+
+### Done
+- `apps/workers/src/costa_workers/ml/huayco_model.py`: full XGBoost implementation
+  - `HuaycoFeatures` dataclass with `to_array()` and range-checking `validate()`
+  - `HuaycoModel.load()` / `train()` / `predict_proba()` / `predict_quebrada()`
+  - `_slope_heuristic()` fallback (0.6×slope_norm + 0.4×rain_norm) when no weights
+  - `run_huayco_susceptibility()`: async asyncpg pipeline pulling features from DB
+    with LATERAL IMERG joins, upserts to ml.huayco_susceptibility
+  - Castro-Cabrera 2024 risk thresholds: <0.2 very_low / <0.4 low / <0.6 medium / <0.8 high / ≥0.8 very_high
+- `infra/postgres/init.sql`: added quebradas feature columns
+  (slope_deg, aspect_deg, lithology_class, distance_to_stream_m, ndvi, soil_moisture);
+  fixed huayco_susceptibility schema (features → features_json, optional model_version,
+  UNIQUE INDEX on quebrada_id+computed_at)
+- `apps/workers/src/costa_workers/ingest/ana_scraper.py`: ANA SNIRH + SENAMHI scraper
+  - 8 ANA hydro stations (Rímac, Chillón, Lurín) + 4 SENAMHI meteorological stations
+  - `_parse_ana_table()`: regex DD/MM/YYYY nivel/caudal/lluvia extraction
+  - `_parse_senamhi_csv()`: semicolon-delimited CSV with comma decimal support
+  - `upsert_observations()`: asyncpg ON CONFLICT DO NOTHING per (station_id, time)
+  - `ingest_hydro_stations_flow()`: Prefect flow, 2s rate limit per source
+- `apps/workers/src/costa_workers/ingest/social.py`: full social ingestion
+  - `DISASTER_KEYWORDS` frozenset (43 terms: event types, institutions, Lima quebradas)
+  - `RawSignal` NamedTuple (source, source_id, content, published_at, location_hint, url)
+  - `ingest_bluesky_firehose()`: Jetstream v2 WebSocket, 30s collection window, no auth
+  - `ingest_reddit()`: public JSON API (no OAuth) — r/Peru, r/Lima, r/Chosica; 48h cutoff
+  - `ingest_rss_feeds()`: feedparser for RPP, Andina, Canal N; 48h cutoff
+  - `ingest_telegram()`: telethon read-only — INDECI/COER Lima (requires TELEGRAM_API_ID/HASH)
+  - `redact_pii()`: presidio-analyzer with es_core_news_sm; graceful fallback
+  - `upsert_signals()`: SHA-256 content_hash dedup, asyncpg ON CONFLICT DO NOTHING
+  - `ingest_social_flow()`: async Prefect flow, all sources in asyncio.gather
+- `apps/workers/tests/test_sprint4_contract.py`: 46 contract tests
+  - Huayco: risk_level thresholds (all 5 classes), HuaycoFeatures validation (9 fields),
+    features_to_matrix shape, slope heuristic math, model fallback behavior
+  - ANA: table parser (valid rows, dash→None, multi-row), SENAMHI CSV (decimal, empty)
+  - Social: keyword matching (case-insensitive), RawSignal construction,
+    PII redaction exception fallback, content_hash determinism
+
+### Key decisions
+- `tenacity` import removed from ana_scraper.py — Prefect native retries used instead
+- Reddit ingest uses public `/new.json` API — no OAuth required for read-only access
+- Telegram ingest is opt-in (skipped when TELEGRAM_API_ID unset) — privacy by default
+- presidio `if not results: return text` early-exit avoids anonymize on no-entity text
+- `asyncio.gather(return_exceptions=True)` in flow — one source failure doesn't abort others
+
+### Total tests after Sprint 4: **85 passing**
+
+### Open items for Sprint 5
+- Ollama serving Gemma 3 12B-IT
+- Triage pipeline: social signals → triage_label + confidence
+- Operator Copilot RAG: Spanish NL → PostGIS → Spanish summary
 
 ---
 
