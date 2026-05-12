@@ -24,7 +24,7 @@ async def triage_flow() -> dict:
     return await run_triage_pipeline(
         db_dsn=os.getenv("DATABASE_URL", "postgresql://costa:costa@postgres:5432/costa_resiliente"),
         ollama_host=os.getenv("OLLAMA_HOST", "http://ollama:11434"),
-        model=os.getenv("OLLAMA_PRIMARY_MODEL", "gemma3:12b-instruct-q4_K_M"),
+        model=os.getenv("OLLAMA_PRIMARY_MODEL", "gemma4:e4b"),
     )
 
 
