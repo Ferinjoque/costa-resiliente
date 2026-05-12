@@ -25,9 +25,6 @@
 - Triage XML sandboxing coded from day 0 (prompt injection hardening)
 - MapLibre dark fallback prevents crash pre-PMTiles
 
-### Open items for Sprint 1
-- None blocking — proceed to Sprint 1
-
 ---
 
 ## Sprint 1 — Foundation Ingestion ✅
@@ -45,56 +42,66 @@
 ### Key decisions
 - `h5py` added for IMERG HDF5 parsing in memory (no disk write)
 - GADM ADM3 download cached to `data/fixtures/` on first run
-- Watersheds fixture committed as `data/fixtures/lima_watersheds.geojson` (approximate bboxes until HydroBASINS sourced)
+- Watersheds fixture committed as `data/fixtures/lima_watersheds.geojson`
 - Overpass rate limit: 1.5s sleep between queries
-
-### Open items for Sprint 2
-- Run `scripts/load_lima_geodata.py` against live docker postgres to verify counts
-- Generate Lima PMTiles basemap from OSM extract via Planetiler
-- Stand up Next.js dev server and render district boundaries on MapLibre
 
 ---
 
 ## Sprint 2 — Dashboard Skeleton ✅
 **Dates:** 2026-05-11
+**Commit:** `eb6e3fb`
+
+### Done
+- `apps/web/src/lib/api.ts`: Typed fetch client for all API endpoints; shapes verified against actual FastAPI routes
+- `apps/web/src/lib/queries.ts`: TanStack Query hooks with tuned stale times (districts 1h, IMERG 2min, alerts 30s)
+- `apps/web/src/lib/providers.tsx`: QueryClient provider wired into `layout.tsx`
+- `MapView.tsx`: Full rewrite — district boundaries, IMERG per-watershed colour ramp (acc field from time window), flood polygons, huayco circles, infrastructure points — all live from API; layer visibility reactive to Zustand store
+- `ScenarioPanel.tsx`: District dropdown from real `/api/v1/districts`, layer toggle checkboxes, time window selector
+- `store/ui.ts`: `districtId: number|null` → `districtUbigeo: string|null` (INEI UBIGEO key)
+- `pyproject.toml`: `--import-mode=importlib` — fixes `ModuleNotFoundError: tests.*` across all test modules
+- `apps/api/tests/test_districts_contract.py`: 6 contract tests; all pass
+- `conftest.py`: root conftest adds src paths + mocks heavy deps for test venv
+
+### Key decisions
+- Districts use `ubigeo` (INEI 6-digit code) as primary key everywhere
+- IMERG colour ramp rebuilt on each time-window change via `setPaintProperty`
+- `.gitignore` lib/ entry scoped to `.venv/lib/` — was blocking `apps/web/src/lib/`
+
+---
+
+## Sprint 3 — Flood Segmentation ✅
+**Dates:** 2026-05-11
 **Commit:** TBD
 
 ### Done
-- `apps/web/src/lib/api.ts`: Typed fetch client for all API endpoints (districts, imerg, flood, huayco, infrastructure, alerts) — shapes verified against actual FastAPI routes
-- `apps/web/src/lib/queries.ts`: TanStack Query hooks with tuned stale times (districts 1h, IMERG 2min, alerts 30s)
-- `apps/web/src/lib/providers.tsx`: QueryClient provider wired into `layout.tsx`
-- `MapView.tsx`: Full rewrite — district boundaries (fill + outline + label), IMERG per-watershed colour ramp (acc field selected from time window), flood polygons, huayco susceptibility circles, infrastructure points — all with MapLibre GeoJSON sources, live data via TanStack Query
-- Layer visibility fully reactive to Zustand `activeLayers` — all 5 layer groups toggle without map reload
-- `ScenarioPanel.tsx`: District dropdown populated from real `/api/v1/districts`, layer toggle checkboxes, time window selector wired to IMERG refetch
-- `store/ui.ts`: `districtId: number|null` → `districtUbigeo: string|null` (matches INEI UBIGEO key from API)
-- `pyproject.toml`: Added `--import-mode=importlib` — fixes `ModuleNotFoundError: No module named 'tests.*'` across all test modules
-- `apps/api/tests/test_districts_contract.py`: 6 contract tests (FeatureCollection shape, required properties, UBIGEO format, geometry presence, empty DB, health)
-- `apps/web`: `npm install` — dependencies installed, 0 TypeScript errors
+- `apps/workers/src/costa_workers/ml/flood_segmentation.py`: full implementation
+  - `preprocess_scene()`: linear → dB clip → Sen1Floods11 normalization (VV µ=-14.41 σ=5.24, VH µ=-20.68 σ=5.43)
+  - `FloodSegmentationModel`: PyTorch U-Net (4-level encoder-decoder + skip connections + BN), overlapping 512px patch inference (64px overlap), HuggingFace hub weight download with graceful dev fallback
+  - `vectorize_mask()`: rasterio.features.shapes → pyproj reproject to WGS84 → shoelace area → MIN_FLOOD_PIXELS=9 noise filter
+  - `sar_to_flood_polygons()`: full pipeline returning PostGIS-ready dicts
+- `apps/workers/src/costa_workers/ingest/flood_pipeline.py`: Prefect flow
+  - `list_unprocessed_scenes()`: asyncpg pgstac.items × ml.flood_polygons anti-join
+  - `load_scene_from_minio()`: boto3 VV/VH GeoTIFF → rasterio MemoryFile → arrays + CRS
+  - `run_flood_inference()`: loads model, runs pipeline per scene
+  - `store_flood_polygons()`: asyncpg upsert; sentinel row (geom=NULL) for no-flood scenes prevents re-processing
+  - `flood_segmentation_flow()`: async Prefect flow capped at MAX_SCENES_PER_RUN=5
+- `apps/workers/tests/test_flood_segmentation_contract.py`: 16 contract tests (preprocessing math, shoelace, noise removal, full pipeline)
+- `scripts/generate_pmtiles.sh` + `scripts/generate_pmtiles.ps1`: Planetiler Docker scripts — OSM Peru extract → Lima bbox clip (zoom 6–14) → PMTiles → MinIO upload
+- `data/pmtiles/.gitkeep`, `weights/.gitkeep`: placeholders committed
 
 ### Key decisions
-- Districts use `ubigeo` (INEI 6-digit code) as primary key everywhere — not a synthetic integer
-- IMERG MapLibre color expression rebuilt on each time-window change via `setPaintProperty`
-- IMERG colour ramp cast `as unknown as ExpressionSpecification` — MapLibre's spread-into-expression type is too narrow for TS to infer correctly
-- No PMTiles generated yet — dark fallback style continues until Planetiler script ready (Sprint 3)
+- Patch inference (512×512, 64px overlap) bounds VRAM — safe on 8GB GPU
+- Graceful weight fallback: HuggingFace failure → random weights for dev, logs WARNING
+- Sentinel no-flood row prevents repeated scene reprocessing
+- scipy.ndimage for connected-component labeling (avoids torch dependency for morphology)
+- PMTiles generation is a one-time manual step (`scripts/generate_pmtiles.sh --upload`)
 
-### Open items for Sprint 3
-- Run `scripts/load_lima_geodata.py` against live docker postgres to verify 43 districts load
-- Generate Lima PMTiles basemap from OSM extract via Planetiler
-- Begin SAR flood segmentation (Sen1Floods11 weights)
+### Total tests after Sprint 3: **39 passing**
 
----
-
-## Sprint 3 — Flood Segmentation (pending)
-### Goals
-- Sen1Floods11 weights loaded and inference running
-- Test scene over Lima → polygons in PostGIS → rendered on dashboard
-
----
-
-## Sprint 3 — Flood Segmentation (pending)
-### Goals
-- Sen1Floods11 weights loaded and inference running
-- Test scene over Lima → polygons in PostGIS → rendered on dashboard
+### Open items for Sprint 4
+- XGBoost huayco model (Castro-Cabrera et al. 2024)
+- ANA/SENAMHI scraper → hydro.station_observations
+- Bluesky + Reddit + RSS + Telegram social ingest (PII redaction)
 
 ---
 
