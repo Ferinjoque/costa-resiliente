@@ -3,7 +3,7 @@ import { create } from "zustand";
 type PanelId = "map" | "alerts" | "ask" | "log";
 
 interface Scenario {
-  districtId: number | null;
+  districtUbigeo: string | null;
   districtName: string | null;
   watershedId: number | null;
   timeWindowHours: number;
@@ -28,7 +28,7 @@ export const useUIStore = create<UIState>((set) => ({
   setActivePanel: (panel) => set({ activePanel: panel }),
 
   scenario: {
-    districtId: null,
+    districtUbigeo: null,
     districtName: null,
     watershedId: null,
     timeWindowHours: 24,

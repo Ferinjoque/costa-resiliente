@@ -40,3 +40,4 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["apps/api/tests", "apps/workers/tests"]
+addopts = "--import-mode=importlib"

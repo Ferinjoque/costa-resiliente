@@ -55,11 +55,39 @@
 
 ---
 
-## Sprint 2 — Dashboard Skeleton (pending)
+## Sprint 2 — Dashboard Skeleton ✅
+**Dates:** 2026-05-11
+**Commit:** TBD
+
+### Done
+- `apps/web/src/lib/api.ts`: Typed fetch client for all API endpoints (districts, imerg, flood, huayco, infrastructure, alerts) — shapes verified against actual FastAPI routes
+- `apps/web/src/lib/queries.ts`: TanStack Query hooks with tuned stale times (districts 1h, IMERG 2min, alerts 30s)
+- `apps/web/src/lib/providers.tsx`: QueryClient provider wired into `layout.tsx`
+- `MapView.tsx`: Full rewrite — district boundaries (fill + outline + label), IMERG per-watershed colour ramp (acc field selected from time window), flood polygons, huayco susceptibility circles, infrastructure points — all with MapLibre GeoJSON sources, live data via TanStack Query
+- Layer visibility fully reactive to Zustand `activeLayers` — all 5 layer groups toggle without map reload
+- `ScenarioPanel.tsx`: District dropdown populated from real `/api/v1/districts`, layer toggle checkboxes, time window selector wired to IMERG refetch
+- `store/ui.ts`: `districtId: number|null` → `districtUbigeo: string|null` (matches INEI UBIGEO key from API)
+- `pyproject.toml`: Added `--import-mode=importlib` — fixes `ModuleNotFoundError: No module named 'tests.*'` across all test modules
+- `apps/api/tests/test_districts_contract.py`: 6 contract tests (FeatureCollection shape, required properties, UBIGEO format, geometry presence, empty DB, health)
+- `apps/web`: `npm install` — dependencies installed, 0 TypeScript errors
+
+### Key decisions
+- Districts use `ubigeo` (INEI 6-digit code) as primary key everywhere — not a synthetic integer
+- IMERG MapLibre color expression rebuilt on each time-window change via `setPaintProperty`
+- IMERG colour ramp cast `as unknown as ExpressionSpecification` — MapLibre's spread-into-expression type is too narrow for TS to infer correctly
+- No PMTiles generated yet — dark fallback style continues until Planetiler script ready (Sprint 3)
+
+### Open items for Sprint 3
+- Run `scripts/load_lima_geodata.py` against live docker postgres to verify 43 districts load
+- Generate Lima PMTiles basemap from OSM extract via Planetiler
+- Begin SAR flood segmentation (Sen1Floods11 weights)
+
+---
+
+## Sprint 3 — Flood Segmentation (pending)
 ### Goals
-- Stand up Next.js + MapLibre + PMTiles basemap of Lima
-- Wire FastAPI to frontend — render district boundaries + IMERG heatmap
-- Implement Scenario Panel district dropdown from real API data
+- Sen1Floods11 weights loaded and inference running
+- Test scene over Lima → polygons in PostGIS → rendered on dashboard
 
 ---
 

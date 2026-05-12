@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Target } from "lucide-react";
+import { ChevronDown, ChevronUp, Target, Loader2 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
+import { useDistrictList } from "@/lib/queries";
 import { clsx } from "clsx";
 
 const TIME_WINDOWS = [1, 3, 6, 12, 24, 48, 72] as const;
@@ -9,6 +10,8 @@ const TIME_WINDOWS = [1, 3, 6, 12, 24, 48, 72] as const;
 export function ScenarioPanel() {
   const { scenario, setScenario, isScenarioPanelOpen, toggleScenarioPanel } =
     useUIStore();
+
+  const { data: districts, isLoading } = useDistrictList();
 
   return (
     <aside
@@ -36,22 +39,33 @@ export function ScenarioPanel() {
         <div className="px-4 pb-4 space-y-3 border-t border-slate-700 pt-3">
           {/* District selector */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1" htmlFor="district-select">
+            <label
+              className="block text-xs text-slate-400 mb-1"
+              htmlFor="district-select"
+            >
               Distrito / Cuenca
+              {isLoading && (
+                <Loader2 size={10} className="inline ml-1 animate-spin" />
+              )}
             </label>
             <select
               id="district-select"
               className="w-full bg-surface-panel border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-costa-500"
-              value={scenario.districtId ?? ""}
-              onChange={(e) =>
-                setScenario({
-                  districtId: e.target.value ? Number(e.target.value) : null,
-                  districtName: e.target.options[e.target.selectedIndex].text,
-                })
-              }
+              value={scenario.districtUbigeo ?? ""}
+              onChange={(e) => {
+                const ubigeo = e.target.value || null;
+                const name = ubigeo
+                  ? e.target.options[e.target.selectedIndex].text
+                  : null;
+                setScenario({ districtUbigeo: ubigeo, districtName: name });
+              }}
             >
               <option value="">Lima Metropolitana (todos)</option>
-              {/* TODO Sprint 2: populate from /api/v1/districts */}
+              {districts?.map((d) => (
+                <option key={d.ubigeo} value={d.ubigeo}>
+                  {d.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -78,8 +92,11 @@ export function ScenarioPanel() {
             </div>
           </div>
 
+          {/* Layer toggles */}
+          <LayerToggles />
+
           {/* Active scenario summary */}
-          {scenario.districtId && (
+          {scenario.districtUbigeo && (
             <div className="bg-costa-900/30 border border-costa-700/50 rounded-lg px-3 py-2">
               <p className="text-xs text-costa-300">
                 {scenario.districtName} · últimas {scenario.timeWindowHours}h
@@ -89,5 +106,39 @@ export function ScenarioPanel() {
         </div>
       )}
     </aside>
+  );
+}
+
+function LayerToggles() {
+  const { activeLayers, toggleLayer } = useUIStore();
+
+  const layers: { id: string; label: string }[] = [
+    { id: "districts", label: "Distritos" },
+    { id: "imerg", label: "Lluvia IMERG" },
+    { id: "flood", label: "Inundación SAR" },
+    { id: "huayco", label: "Huayco" },
+    { id: "infrastructure", label: "Infraestructura" },
+  ];
+
+  return (
+    <div>
+      <p className="text-xs text-slate-400 mb-1">Capas</p>
+      <div className="space-y-1">
+        {layers.map(({ id, label }) => (
+          <label
+            key={id}
+            className="flex items-center gap-2 cursor-pointer select-none"
+          >
+            <input
+              type="checkbox"
+              className="accent-costa-500 w-3 h-3"
+              checked={activeLayers.has(id)}
+              onChange={() => toggleLayer(id)}
+            />
+            <span className="text-xs text-slate-300">{label}</span>
+          </label>
+        ))}
+      </div>
+    </div>
   );
 }
