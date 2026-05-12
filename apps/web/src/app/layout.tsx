@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Providers } from "@/lib/providers";
 
 export const metadata: Metadata = {
   title: "Costa Resiliente — Lima Metropolitana",
@@ -26,7 +27,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="dark">
-      <body className="bg-surface-base text-white antialiased">{children}</body>
+      <body className="bg-surface-base text-white antialiased">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
