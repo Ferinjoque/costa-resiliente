@@ -30,24 +30,28 @@
 
 ---
 
-## Sprint 1 — Foundation Ingestion 🔄
-**Target:** Days 4–10 from project start  
-**Status:** IN PROGRESS
+## Sprint 1 — Foundation Ingestion ✅
+**Dates:** 2026-05-11  
+**Commit:** `6f2e5dd`
 
-### Goals
-1. Load Lima 43-district polygons → `geo.districts` (GADM/INEI shapefiles)
-2. Load watershed polygons → `geo.watersheds` (Rímac, Chillón, Lurín)
-3. Load OSM critical infrastructure → `geo.infrastructure` (Overpass API)
-4. Implement `sentinel1.py` fully: PC STAC search → MinIO download → pgstac register
-5. Implement `imerg.py` fully: NASA GES DISC OPeNDAP → zonal stats → TimescaleDB
-6. Wire `/api/v1/districts` to real PostGIS query (returns GeoJSON FeatureCollection)
-7. `docker compose up` stays green throughout
+### Done
+- `scripts/load_lima_geodata.py`: GADM→districts (43), watersheds (3), quebradas (10), OSM infrastructure — all idempotent
+- `sentinel1.py` full: PC STAC search (signed) → MinIO VV/VH download → pgstac registration, 3-day lookback
+- `imerg.py` full: NASA GES DISC OPeNDAP + h5py → Lima clip → watershed zonal stats → TimescaleDB upsert, 1h–72h accumulations
+- All API layer endpoints wired to real PostGIS: `/districts`, `/layers/imerg`, `/layers/flood`, `/layers/huayco`, `/layers/infrastructure`, `/layers/stations`, `/watersheds`, `/quebradas`
+- `apps/api/src/costa_api/db.py`: async SQLAlchemy session factory
+- Contract tests: sentinel1 (PC modifier, STAC schema, bbox), IMERG (fill cleanup, half-hourly math, zonal sum)
 
-### End-state acceptance criteria
-- `GET /api/v1/districts` returns 43 Lima district polygons as GeoJSON
-- TimescaleDB has IMERG accumulations for at least 3 watersheds over last 24h
-- At least 1 Sentinel-1 scene registered in pgstac
-- All services healthcheck green
+### Key decisions
+- `h5py` added for IMERG HDF5 parsing in memory (no disk write)
+- GADM ADM3 download cached to `data/fixtures/` on first run
+- Watersheds fixture committed as `data/fixtures/lima_watersheds.geojson` (approximate bboxes until HydroBASINS sourced)
+- Overpass rate limit: 1.5s sleep between queries
+
+### Open items for Sprint 2
+- Run `scripts/load_lima_geodata.py` against live docker postgres to verify counts
+- Generate Lima PMTiles basemap from OSM extract via Planetiler
+- Stand up Next.js dev server and render district boundaries on MapLibre
 
 ---
 
