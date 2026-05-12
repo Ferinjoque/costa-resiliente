@@ -1,12 +1,14 @@
-"""Spanish social signal triage via Gemma 3 12B-IT (Ollama).
+"""Spanish social signal triage via Gemma 4 (Ollama).
 
 Methodology:
   Classify signals into: needs_help | infrastructure_damage | road_blocked |
   weather_observation | false_alarm | irrelevant
 
-  Model: gemma3:12b-instruct-q4_K_M served locally via Ollama.
+  Primary model: gemma4:e4b (Gemma 4 E4B, Google, 2025).
+  Fallback: qwen3:14b (Alibaba Qwen3, strong Spanish capability).
+  Model override via TRIAGE_MODEL env var.
   Selection informed by Grandury et al. (ACL 2025) "La Leaderboard",
-  arXiv:2507.00999 — best Spanish-language capability at quantized 12B size.
+  arXiv:2507.00999 — Spanish-language capability benchmarks.
 
 Prompt injection hardening:
   Social content is wrapped in <SEÑAL>...</SEÑAL> XML tags before being sent
@@ -34,7 +36,7 @@ from pydantic import BaseModel, ValidationError
 logger = logging.getLogger(__name__)
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-TRIAGE_MODEL = os.getenv("TRIAGE_MODEL", "gemma3:12b-instruct-q4_K_M")
+TRIAGE_MODEL = os.getenv("TRIAGE_MODEL", os.getenv("OLLAMA_PRIMARY_MODEL", "gemma4:e4b"))
 DB_DSN = os.getenv("DATABASE_URL", "postgresql://costa:costa@localhost:5432/costa_resiliente")
 
 BATCH_SIZE = 20  # signals per triage run
