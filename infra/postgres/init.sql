@@ -50,7 +50,14 @@ CREATE TABLE IF NOT EXISTS geo.quebradas (
     watershed_id    INTEGER REFERENCES geo.watersheds(id),
     geom            GEOMETRY(MULTILINESTRING, 4326),
     priority        INTEGER DEFAULT 5,  -- 1-10; top-10 get r.avaflow simulations
-    threshold_24h_mm DOUBLE PRECISION   -- IMERG 24h threshold to trigger avaflow
+    threshold_24h_mm DOUBLE PRECISION,  -- IMERG 24h threshold to trigger avaflow
+    -- XGBoost feature columns (static terrain — filled at geodata load time)
+    slope_deg       DOUBLE PRECISION,
+    aspect_deg      DOUBLE PRECISION,
+    lithology_class INTEGER,            -- 0-5 per INGEMMET 1:100k map
+    distance_to_stream_m DOUBLE PRECISION,
+    ndvi            DOUBLE PRECISION,   -- updated periodically from Sentinel-2
+    soil_moisture   DOUBLE PRECISION    -- updated from SMAP L3
 );
 CREATE INDEX IF NOT EXISTS quebradas_geom_idx ON geo.quebradas USING GIST (geom);
 
@@ -140,9 +147,11 @@ CREATE TABLE IF NOT EXISTS ml.huayco_susceptibility (
     probability     DOUBLE PRECISION CHECK (probability BETWEEN 0 AND 1),
     risk_level      TEXT CHECK (risk_level IN ('very_low','low','medium','high','very_high')),
     trigger_rain_24h_mm DOUBLE PRECISION,
-    model_version   TEXT NOT NULL,
-    features        JSONB  -- input feature snapshot for audit
+    model_version   TEXT,
+    features_json   JSONB  -- input feature snapshot for audit/reproducibility
 );
+CREATE UNIQUE INDEX IF NOT EXISTS huayco_quebrada_time_uniq
+    ON ml.huayco_susceptibility (quebrada_id, computed_at);
 CREATE INDEX IF NOT EXISTS huayco_quebrada_time_idx
     ON ml.huayco_susceptibility (quebrada_id, computed_at DESC);
 

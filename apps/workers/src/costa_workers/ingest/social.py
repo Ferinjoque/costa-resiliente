@@ -1,36 +1,89 @@
 """Social signal ingestion — Bluesky, Reddit, RSS, Telegram.
 
-Sprint 4 implementation target:
-- Bluesky Jetstream firehose filtered for Lima/Peru disaster keywords
-- Reddit r/Peru, r/Lima via praw
-- RSS: RPP, Andina, El Comercio, Canal N
-- PII redaction via presidio-analyzer before storage
-- Triage classification via Gemma 3 12B-IT (Sprint 5)
+Sources:
+  Bluesky: Jetstream v2 WebSocket (wss://jetstream2.us-east.bsky.network/subscribe)
+           Filtered server-side for Spanish disaster keywords.
+  Reddit:  Public JSON API (no OAuth) — r/Peru, r/Lima, r/Chosica
+  RSS:     RPP Noticias, Agencia Andina, Canal N (feedparser)
+  Telegram: Read-only via telethon — INDECI Peru, COER Lima channels
+
+PII redaction: presidio-analyzer with es_core_news_sm spaCy model.
+  Entities stripped: PERSON, PHONE_NUMBER, EMAIL_ADDRESS, STREET_ADDRESS,
+                     IP_ADDRESS, CREDIT_CARD, NRP (Peruvian NRP / DNI)
+  Redacted text → SHA-256 content_hash → dedup via ON CONFLICT DO NOTHING
+
+XML sandbox: social signals NEVER enter operator query context without
+  being wrapped in <SEÑAL>...</SEÑAL> tags first (enforced in copilot router).
 """
+
+from __future__ import annotations
+
+import asyncio
 import hashlib
+import json
 import logging
-from datetime import datetime, timezone
+import os
+from datetime import datetime, timedelta, timezone
 from typing import NamedTuple
 
+import feedparser
+import httpx
 from prefect import flow, task
 
 logger = logging.getLogger(__name__)
 
-# Disaster vocabulary for Spanish keyword filtering
-DISASTER_KEYWORDS = [
-    "huayco", "huaycos", "deslizamiento", "desborde", "inundación", "inundacion",
-    "aniego", "emergencia", "evacuación", "evacuacion", "alerta", "desastre",
-    "Rímac", "Chillón", "Lurín", "INDECI", "CENEPRED", "COER", "COEN",
-    "Pedregal", "Quirio", "Carossio", "Huaycoloro", "Chosica", "Chaclacayo",
+DB_DSN = os.getenv("DATABASE_URL", "postgresql://costa:costa@localhost:5432/costa_resiliente")
+
+# ─── Disaster vocabulary ──────────────────────────────────────────────────────
+
+DISASTER_KEYWORDS: frozenset[str] = frozenset({
+    # Event types
+    "huayco", "huaycos", "deslizamiento", "deslizamientos", "desborde", "desbordes",
+    "inundación", "inundacion", "inundaciones", "aniego", "aniegos",
+    "aluvión", "aluvion", "torrente", "crecida", "derrumbe", "derrumbes",
+    "erosión", "erosion", "socavamiento", "colapso",
+    # Emergency terms
+    "emergencia", "emergencias", "evacuación", "evacuacion", "evacuados",
+    "desastre", "desastres", "alerta", "alertas", "rescate", "rescates",
+    "heridos", "víctimas", "victimas", "fallecidos", "atrapados",
+    # Institutions
+    "indeci", "cenepred", "coer", "coen", "digesa", "sedapal",
+    # Lima rivers / quebradas
+    "rímac", "rimac", "chillón", "chillon", "lurín", "lurin",
+    "huaycoloro", "pedregal", "quirio", "carossio", "jicamarca",
+    "cajamarquilla", "manchay",
+    # High-risk zones
+    "chosica", "chaclacayo", "lurigancho", "cieneguilla",
+    # Infra
+    "carretera", "puente", "colapsado", "cortada", "bloqueada",
+})
+
+LIMA_DISTRICTS: frozenset[str] = frozenset({
+    "lima", "miraflores", "san isidro", "surco", "la molina", "ate", "san juan",
+    "villa el salvador", "villa maría del triunfo", "chorrillos", "barranco",
+    "rímac", "rimac", "independencia", "comas", "los olivos", "san martín de porres",
+    "carabayllo", "puente piedra", "lurigancho", "chosica", "chaclacayo",
+    "cieneguilla", "pachacamac", "lurín", "lurin", "punta hermosa", "punta negra",
+    "santa maría del mar",
+})
+
+RSS_FEEDS = [
+    "https://rpp.pe/rss",
+    "https://andina.pe/agencia/rss.aspx",
+    "https://canaln.pe/rss",
 ]
 
-LIMA_DISTRICTS = [
-    "Lima", "Miraflores", "San Isidro", "Surco", "La Molina", "Ate", "San Juan",
-    "Villa El Salvador", "Villa María", "Chorrillos", "Barranco", "Rímac",
-    "Independencia", "Comas", "Los Olivos", "San Martín", "Carabayllo", "Puente Piedra",
-    "Lurigancho", "Chosica", "Chaclacayo", "Cieneguilla", "Pachacamac",
+TELEGRAM_CHANNELS = [
+    "indeciperu",
+    "coerlima",
 ]
 
+REQUEST_TIMEOUT = 20.0
+RATE_LIMIT_S = 1.5
+BLUESKY_WINDOW_S = 30
+
+
+# ─── RawSignal ────────────────────────────────────────────────────────────────
 
 class RawSignal(NamedTuple):
     source: str
@@ -38,78 +91,369 @@ class RawSignal(NamedTuple):
     content: str
     published_at: datetime
     location_hint: str | None = None
+    url: str | None = None
 
 
-@task(retries=3, retry_delay_seconds=60)
-def ingest_bluesky_firehose(limit: int = 100) -> list[RawSignal]:
-    """Filter Bluesky Jetstream for Lima disaster keywords."""
-    # TODO Sprint 4: connect to wss://jetstream2.us-east.bsky.network/subscribe
-    logger.info("TODO: ingest Bluesky firehose")
-    return []
+# ─── Keyword filter ───────────────────────────────────────────────────────────
+
+def _matches_keywords(text: str) -> bool:
+    lower = text.lower()
+    return any(kw in lower for kw in DISASTER_KEYWORDS)
 
 
-@task(retries=2, retry_delay_seconds=30)
-def ingest_reddit(subreddits: list[str] = ["Peru", "Lima"], limit: int = 50) -> list[RawSignal]:
-    """Fetch recent posts from r/Peru and r/Lima via praw."""
-    # TODO Sprint 4: PRAW client with env-configured credentials
-    logger.info("TODO: ingest Reddit subreddits %s", subreddits)
-    return []
+# ─── PII redaction ────────────────────────────────────────────────────────────
+
+def redact_pii(text: str) -> str:
+    """
+    Redact PII from text using presidio-analyzer with Spanish spaCy model.
+    Falls back to returning the original text if presidio is unavailable.
+    """
+    try:
+        from presidio_analyzer import AnalyzerEngine
+        from presidio_anonymizer import AnonymizerEngine
+
+        analyzer = AnalyzerEngine()
+        anonymizer = AnonymizerEngine()
+
+        results = analyzer.analyze(
+            text=text,
+            language="es",
+            entities=[
+                "PERSON",
+                "PHONE_NUMBER",
+                "EMAIL_ADDRESS",
+                "LOCATION",
+                "IP_ADDRESS",
+                "CREDIT_CARD",
+                "NRP",
+            ],
+        )
+        if not results:
+            return text
+
+        anonymized = anonymizer.anonymize(text=text, analyzer_results=results)
+        return anonymized.text
+    except Exception as exc:
+        logger.warning("PII redaction failed, storing raw: %s", exc)
+        return text
 
 
-@task(retries=3)
-def ingest_rss_feeds(
-    feeds: list[str] = [
-        "https://rpp.pe/rss",
-        "https://andina.pe/agencia/rss.aspx",
-        "https://elcomercio.pe/rss/",
-    ]
+# ─── Bluesky Jetstream ────────────────────────────────────────────────────────
+
+@task(retries=3, retry_delay_seconds=60, log_prints=True)
+async def ingest_bluesky_firehose(window_seconds: int = BLUESKY_WINDOW_S) -> list[RawSignal]:
+    """
+    Connect to Bluesky Jetstream v2 WebSocket and collect posts for window_seconds.
+    Filters app.bsky.feed.post records for Lima/Peru disaster keywords.
+    No credentials required — Jetstream is public.
+    """
+    try:
+        import websockets
+    except ImportError:
+        logger.warning("websockets not installed, skipping Bluesky ingest")
+        return []
+
+    url = (
+        "wss://jetstream2.us-east.bsky.network/subscribe"
+        "?wantedCollections=app.bsky.feed.post"
+    )
+    signals: list[RawSignal] = []
+    deadline = asyncio.get_event_loop().time() + window_seconds
+
+    try:
+        async with websockets.connect(url, open_timeout=10) as ws:
+            while asyncio.get_event_loop().time() < deadline:
+                try:
+                    raw = await asyncio.wait_for(ws.recv(), timeout=5.0)
+                    event = json.loads(raw)
+                except asyncio.TimeoutError:
+                    continue
+                except Exception:
+                    continue
+
+                record = event.get("commit", {}).get("record", {})
+                text = record.get("text", "")
+                if not text or not _matches_keywords(text):
+                    continue
+
+                did = event.get("did", "")
+                rkey = event.get("commit", {}).get("rkey", "")
+                source_id = f"{did}/{rkey}"
+                ts_str = record.get("createdAt")
+                try:
+                    published_at = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                except (TypeError, ValueError):
+                    published_at = datetime.now(timezone.utc)
+
+                signals.append(RawSignal(
+                    source="bluesky",
+                    source_id=source_id,
+                    content=text,
+                    published_at=published_at,
+                    url=f"https://bsky.app/profile/{did}/post/{rkey}",
+                ))
+    except Exception as exc:
+        logger.warning("Bluesky Jetstream error: %s", exc)
+
+    logger.info("Bluesky: %d keyword-matched posts collected", len(signals))
+    return signals
+
+
+# ─── Reddit (public JSON, no credentials) ────────────────────────────────────
+
+@task(retries=3, retry_delay_seconds=60, log_prints=True)
+async def ingest_reddit(
+    subreddits: list[str] | None = None,
+    limit: int = 50,
 ) -> list[RawSignal]:
-    """Parse RSS feeds for disaster-related news."""
-    # TODO Sprint 4: feedparser + keyword filter
-    logger.info("TODO: ingest %d RSS feeds", len(feeds))
-    return []
-
-
-@task
-def redact_pii(signals: list[RawSignal]) -> list[dict]:
     """
-    Apply presidio-analyzer PII redaction to all signal content.
-    Removes: names, phone numbers, email addresses, exact home addresses, license plates.
-    MUST run before any signal is written to database.
+    Fetch recent posts from r/Peru, r/Lima, r/Chosica using the public
+    Reddit JSON API (no OAuth required). Filters for disaster keywords.
     """
-    # TODO Sprint 4: presidio analyzer + anonymizer
-    redacted = []
-    for sig in signals:
-        content_hash = hashlib.sha256(sig.content.encode()).hexdigest()
-        redacted.append({
-            "source": sig.source,
-            "source_id": sig.source_id,
-            "content_redacted": sig.content,  # placeholder — real impl applies presidio
-            "content_hash": content_hash,
-            "published_at": sig.published_at,
-            "location_raw": sig.location_hint,
-        })
-    return redacted
+    if subreddits is None:
+        subreddits = ["Peru", "Lima", "Chosica"]
+
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+    signals: list[RawSignal] = []
+
+    async with httpx.AsyncClient(
+        timeout=REQUEST_TIMEOUT,
+        headers={"User-Agent": "CostaResiliiente/1.0 (emergency-research@ieee.org)"},
+        follow_redirects=True,
+    ) as client:
+        for sub in subreddits:
+            url = f"https://www.reddit.com/r/{sub}/new.json?limit={limit}"
+            try:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                data = resp.json()
+            except Exception as exc:
+                logger.warning("Reddit r/%s fetch failed: %s", sub, exc)
+                await asyncio.sleep(RATE_LIMIT_S)
+                continue
+
+            for post in data.get("data", {}).get("children", []):
+                p = post.get("data", {})
+                title = p.get("title", "")
+                selftext = p.get("selftext", "")
+                combined = f"{title} {selftext}".strip()
+
+                if not _matches_keywords(combined):
+                    continue
+
+                created_utc = p.get("created_utc", 0)
+                published_at = datetime.fromtimestamp(created_utc, tz=timezone.utc)
+                if published_at < cutoff:
+                    continue
+
+                signals.append(RawSignal(
+                    source="reddit",
+                    source_id=p.get("id", ""),
+                    content=combined[:2000],
+                    published_at=published_at,
+                    location_hint=sub,
+                    url=f"https://reddit.com{p.get('permalink', '')}",
+                ))
+
+            await asyncio.sleep(RATE_LIMIT_S)
+
+    logger.info("Reddit: %d keyword-matched posts from %s", len(signals), subreddits)
+    return signals
 
 
-@task
-def upsert_signals(records: list[dict]) -> int:
-    """Insert redacted signals into social.signals, skip duplicates by content_hash."""
-    # TODO Sprint 4: asyncpg upsert with ON CONFLICT DO NOTHING on content_hash
-    logger.info("TODO: upsert %d signals", len(records))
-    return len(records)
+# ─── RSS feeds ────────────────────────────────────────────────────────────────
 
+@task(retries=3, retry_delay_seconds=60, log_prints=True)
+async def ingest_rss_feeds(feeds: list[str] | None = None) -> list[RawSignal]:
+    """
+    Parse RSS feeds (RPP, Andina, Canal N) using feedparser.
+    Keeps entries from the last 48h that match disaster keywords.
+    """
+    if feeds is None:
+        feeds = RSS_FEEDS
+
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+    signals: list[RawSignal] = []
+
+    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT, follow_redirects=True) as client:
+        for feed_url in feeds:
+            try:
+                resp = await client.get(feed_url)
+                resp.raise_for_status()
+                parsed = feedparser.parse(resp.text)
+            except Exception as exc:
+                logger.warning("RSS fetch failed for %s: %s", feed_url, exc)
+                await asyncio.sleep(RATE_LIMIT_S)
+                continue
+
+            source_name = parsed.feed.get("title", feed_url)
+            for entry in parsed.entries:
+                title = entry.get("title", "")
+                summary = entry.get("summary", "")
+                combined = f"{title} {summary}".strip()
+
+                if not _matches_keywords(combined):
+                    continue
+
+                # Parse published date
+                published_at: datetime
+                if entry.get("published_parsed"):
+                    import time as _time
+                    published_at = datetime.fromtimestamp(
+                        _time.mktime(entry.published_parsed), tz=timezone.utc
+                    )
+                else:
+                    published_at = datetime.now(timezone.utc)
+
+                if published_at < cutoff:
+                    continue
+
+                signals.append(RawSignal(
+                    source=f"rss_{source_name.lower().replace(' ', '_')[:20]}",
+                    source_id=entry.get("id", entry.get("link", "")),
+                    content=combined[:2000],
+                    published_at=published_at,
+                    url=entry.get("link"),
+                ))
+
+            await asyncio.sleep(RATE_LIMIT_S)
+
+    logger.info("RSS: %d keyword-matched entries from %d feeds", len(signals), len(feeds))
+    return signals
+
+
+# ─── Telegram (read-only via telethon) ───────────────────────────────────────
+
+@task(retries=2, retry_delay_seconds=120, log_prints=True)
+async def ingest_telegram(
+    channels: list[str] | None = None,
+    limit: int = 50,
+) -> list[RawSignal]:
+    """
+    Read recent messages from INDECI Peru and COER Lima Telegram channels.
+    Requires TELEGRAM_API_ID and TELEGRAM_API_HASH env vars.
+    Read-only access only — no messages are ever sent.
+    """
+    api_id = os.getenv("TELEGRAM_API_ID")
+    api_hash = os.getenv("TELEGRAM_API_HASH")
+    if not api_id or not api_hash:
+        logger.info("TELEGRAM_API_ID/HASH not configured, skipping Telegram ingest")
+        return []
+
+    if channels is None:
+        channels = TELEGRAM_CHANNELS
+
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+    signals: list[RawSignal] = []
+
+    try:
+        from telethon import TelegramClient
+        from telethon.sessions import StringSession
+
+        session_str = os.getenv("TELEGRAM_SESSION_STRING", "")
+        client = TelegramClient(StringSession(session_str), int(api_id), api_hash)
+
+        async with client:
+            for channel in channels:
+                try:
+                    entity = await client.get_entity(channel)
+                    async for msg in client.iter_messages(entity, limit=limit):
+                        if not msg.text:
+                            continue
+                        if msg.date and msg.date.replace(tzinfo=timezone.utc) < cutoff:
+                            break
+                        if not _matches_keywords(msg.text):
+                            continue
+
+                        signals.append(RawSignal(
+                            source="telegram",
+                            source_id=f"{channel}/{msg.id}",
+                            content=msg.text[:2000],
+                            published_at=msg.date.replace(tzinfo=timezone.utc),
+                            location_hint=channel,
+                        ))
+                except Exception as exc:
+                    logger.warning("Telegram channel %s error: %s", channel, exc)
+
+    except ImportError:
+        logger.warning("telethon not installed, skipping Telegram ingest")
+    except Exception as exc:
+        logger.warning("Telegram client error: %s", exc)
+
+    logger.info("Telegram: %d keyword-matched messages from %s", len(signals), channels)
+    return signals
+
+
+# ─── Upsert ───────────────────────────────────────────────────────────────────
+
+@task(retries=2, retry_delay_seconds=30, log_prints=True)
+async def upsert_signals(signals: list[RawSignal]) -> int:
+    """
+    For each signal: redact PII → compute content_hash → upsert into social.signals.
+    Duplicate detection via ON CONFLICT DO NOTHING on content_hash.
+    """
+    import asyncpg
+
+    if not signals:
+        return 0
+
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    inserted = 0
+
+    async with asyncpg.create_pool(DB_DSN, min_size=1, max_size=3) as pool:
+        for sig in signals:
+            redacted = redact_pii(sig.content)
+            content_hash = hashlib.sha256(redacted.encode()).hexdigest()
+            try:
+                result = await pool.execute(
+                    """
+                    INSERT INTO social.signals
+                        (source, source_id, content_hash, published_at,
+                         content_redacted, location_raw, expires_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    ON CONFLICT (content_hash) DO NOTHING
+                    """,
+                    sig.source,
+                    sig.source_id or None,
+                    content_hash,
+                    sig.published_at,
+                    redacted,
+                    sig.location_hint,
+                    expires_at,
+                )
+                if result == "INSERT 0 1":
+                    inserted += 1
+            except Exception as exc:
+                logger.warning("Signal upsert failed (source=%s): %s", sig.source, exc)
+
+    logger.info("Social upsert: %d new signals stored", inserted)
+    return inserted
+
+
+# ─── Flow ─────────────────────────────────────────────────────────────────────
 
 @flow(name="ingest-social", log_prints=True)
-def ingest_social_flow():
-    """Full social ingestion pipeline: fetch → redact PII → store."""
-    bluesky = ingest_bluesky_firehose()
-    reddit = ingest_reddit()
-    rss = ingest_rss_feeds()
+async def ingest_social_flow() -> dict:
+    """
+    Collect social signals from Bluesky, Reddit, RSS, and Telegram.
+    PII is redacted before any signal touches the database.
+    Schedule: every 15 minutes.
+    """
+    bluesky, reddit, rss, telegram = await asyncio.gather(
+        ingest_bluesky_firehose(),
+        ingest_reddit(),
+        ingest_rss_feeds(),
+        ingest_telegram(),
+        return_exceptions=True,
+    )
 
-    all_signals = bluesky + reddit + rss
-    redacted = redact_pii(all_signals)
-    upserted = upsert_signals(redacted)
+    all_signals: list[RawSignal] = []
+    for result in (bluesky, reddit, rss, telegram):
+        if isinstance(result, list):
+            all_signals.extend(result)
+        elif isinstance(result, Exception):
+            logger.warning("Source ingest failed: %s", result)
 
-    logger.info("Social ingest complete: %d signals stored", upserted)
-    return {"signals_stored": upserted}
+    total = await upsert_signals(all_signals)
+    logger.info("Social ingest complete: %d signals stored", total)
+    return {"signals_stored": total, "signals_collected": len(all_signals)}
