@@ -1,0 +1,304 @@
+IEEE Response QuestTM Challenge
+Official Rules
+Updated: 13 April 2026
+1.
+
+Challenge: IEEE Response Quest Challenge 2026 (the “Challenge”) is a global competition in which IEEE
+members collaborate across disciplines—including data science, GIS, emergency management, software
+engineering, and related fields—to develop solutions that enable near‑real‑time situational awareness for
+emergency managers and disaster responders during natural disasters. It seeks to integrate disparate data sources,
+such as satellite imagery, radar, GIS, weather, census maps, road conditions, power outages, earthquake data,
+and social media, into a unified, actionable interface. The scope is intentionally multidisciplinary, intersecting
+disaster response, community resilience, public safety, and technology. Teams are encouraged to work in
+cross‑disciplinary groups to strengthen the technical and operational relevance of their solutions. The Challenge
+consists of three phases: (1) Registration, (2) Concept Submission, and (3) Product Submission. Entries will be
+evaluated according to the criteria described herein.
+
+2.
+
+Sponsor: The Institute of Electrical and Electronics Engineers, Incorporated, 445 Hoes Lane, Piscataway, New
+Jersey, USA, 08854 (“IEEE”) shall be the Challenge sponsor (the “Sponsor”).
+
+3.
+
+How to Enter: To enter the Challenge, an entrant (the “Entrant”) must complete the required registration and
+submission forms provided on the Challenge website (the “Entry”). All Entries must be submitted through the
+official online platform designated by IEEE. No other form of entry will be accepted.
+Each Entrant may submit only one (1) Entry. Submission of multiple Entries by the same individual will result
+in disqualification.
+If submitting on behalf of a team, the Entrant must be a member of that team and will serve as the official Entrant
+for all Challenge purposes. Only one Entrant is allowed per team. The Entrant must have obtained all rights,
+permissions, and consents necessary to submit an Entry in accordance with these Rules. Sponsor reserves the right
+to disqualify any Entry that contains inappropriate content, violates these Rules, or is inconsistent with the spirit
+or theme of the Challenge.
+By submitting an Entry, Entrant represents and warrants that the Entry does not contain any material that (a)
+violates or infringes upon the rights of any third party, including but not limited to patents, copyrights, trademarks,
+rights of privacy or publicity, or any other intellectual property rights; or (b) violates any federal, state or local
+laws or ordinances. Entrant further represents and warrants that the Entrant has secured the requisite consent from
+any third party necessary to grant to Sponsor the right and license to use the Entry and any material submitted in
+connection with the Challenge as described herein. Sponsor reserves the right in its sole and unfettered discretion
+to disqualify any Entry that it determines contains obscene, offensive or inappropriate content, that does not
+comply with these Rules, or that is not consistent with the spirit r theme of the Challenge.
+
+4.
+
+Agreement to Rules: By submitting an Entry, Entrant acknowledges, accepts, and agrees to comply with these
+Challenge rules (the “Rules”). In Sponsor’s sole discretion, Sponsor may disqualify Entrant for noncompliance
+with any Challenge Rules or requirements. Sponsor reserves the right to modify or impose additional requirements
+for the Challenge. All decisions made by the Sponsor concerning the Challenge including, but not limited to, the
+cancellation of the Challenge, shall be final and binding.
+
+5.
+
+Eligibility: Each Entrant must be an active IEEE member. Other team members do not need to be IEEE members.
+The Challenge is open to Entrants who are legal residents of the United States of America, and other countries
+where permitted by local law, who are at least the age of eighteen (18), or the age of majority in their respective
+country or jurisdiction of permanent residence, whichever is older, as of the time of entry. Residents of a country
+or jurisdiction which is located on, restricted by, or sanctioned by the U.S. Treasury Department’s Office of
+Foreign Assets Control Sanctions Program list are excluded from eligibility and participation in the Challenge.
+The Challenge is subject to all applicable federal, state, territorial, provincial, and local laws, and void where
+prohibited.
+
+1
+
+The following individuals are not eligible to participate in the Challenge:
+a.
+b.
+c.
+d.
+e.
+
+Any director or officer of Sponsor;
+Any employee of Sponsor, its agents or affiliates;
+Any member of a Sponsor committee associated with the Challenge;
+Any judge of the Challenge; and
+Any individual in the immediate families of (a) through (d) above, including spouses, parents, siblings,
+and children, regardless of where they live.
+
+An Entrant may be disqualified if Entrant behaves in any manner that Sponsor, in its sole discretions, determines
+to be immoral, unethical, or otherwise harmful to the Challenge and/or Sponsor’s reputation. Sponsor reserves the
+right to verify the eligibility of Challenge participants and/or potential winners based on these or any other criteria
+as determined by the Sponsor in Sponsor’s sole discretion.
+6.
+
+Entry Period: The Challenge Registration opens at 5:00 PM ET on 13 April 2026 and closes at 11:59 PM ET
+on 29 May 2026. IEEE's server is the official clock for the Challenge. Entries received before or after the Entry
+Period are void.
+
+7.
+
+Submission Requirements: To submit an Entry, each Entrant must complete all required submission steps for
+each phase of the Challenge as outlined herein.
+Phase 1 (Registration): Each Entrant must submit a completed registration form through the official Challenge
+platform. Registrations will be reviewed for eligibility and completeness, and approved Entrants will be permitted
+to advance to Phase 2. Only the Entrant is required to accept these Rules during registration; additional team
+members, if any, will be required to confirm their participation and acceptance of these Rules if the team is
+advanced to Phase 2.
+Phase 2 (Concept Submission): Each Entrant must submit a written description of their proposed solution using
+the online form provided. Entrants may select any natural disaster scenario (e.g., hurricanes, wildfires, floods,
+earthquakes, or other events) that meaningfully supports the goals of the Challenge. The concept must describe
+the disaster scenario the Entrant intends to address and the Entrant’s high‑level approach to using, integrating,
+and presenting data to support emergency managers and disaster responders. Phase 2 Entries will be evaluated
+according to the Challenge rubric, including the Entrant’s articulation of timeliness and real‑time responsiveness,
+the comprehensiveness and appropriateness of the data they intend to use, the quality of their planned integration
+and responsible data‑handling approach, the clarity and operational readiness of the proposed interface, and the
+degree of scenario fit, insightfulness, innovation, and technical or data creativity demonstrated in the concept.
+Only those Entries selected by the selection Committee (defined below) will advance to Phase 3.
+All team members listed by the Entrant in the Phase 2 submission form must individually accept these Challenge
+Rules within the deadline set by IEEE. All listed team members must complete the acceptance process. If any
+listed team member does not complete the process, the entire team submission will be disqualified.
+Phase 3 (Product Submission): Each Entrant must submit a working demonstration of their concept, including
+a two‑to‑five‑minute video showing a real person using or interacting with the product in a manner that enables
+judges to understand how the interface functions in practice. The video must clearly demonstrate the core
+functionality of the product. Phase 3 Entries must demonstrate the Entrant’s ability to implement their proposed
+approach in a manner consistent with the Challenge rubric, including the product’s timeliness and real‑time
+responsiveness, its use of relevant and appropriate data, the quality and reliability of its data integration and
+synthesis, the usability and operational readiness of the interface for emergency responders, and the degree to
+which the final product aligns with the chosen scenario and exhibits insightfulness, innovation, and technical or
+data creativity. Optional supporting materials may be included at the Entrant’s discretion.
+A select group of finalists may be invited to present their solution remotely, and participation in such a presentation
+shall be required if requested by the Committee. Any remote presentation will be used to assist the judges in their
+2
+
+evaluation of the Entry and may inform the Committee’s final scoring and deliberations.
+All Entries must comply with the technical, content, and format requirements specified by the Sponsor. Entries
+that fail to meet any submission requirement, are incomplete, or are submitted after the applicable deadline may
+be disqualified at the Sponsor’s sole discretion.
+8.
+
+Challenge Prize: The Challenge will award prizes from a total prize pool of USD $100,000 (each, a “Prize”).
+Prizes will be distributed across four primary award categories: First Place (USD $30,000), Second Place (USD
+$20,000), Third Place (USD $15,000), and a Judge’s Choice Award (USD $10,000). The Judge’s Choice Award
+will be selected qualitatively by the Committee and granted to the team that demonstrates excellence in a manner
+not fully captured by the scoring rubric. In addition to these awards, the Committee may, in its sole discretion,
+grant one or more Honorary Mention cash prizes, up to a combined total of USD $25,000, in recognition of
+Entries that exhibit exceptional performance on one or more evaluation criteria, address challenging use cases,
+or demonstrate notable innovation. The awarding of any Prize is contingent upon the team’s full compliance
+with these Rules, including the timely completion of all required documentation. Prizes may consist of monetary
+awards, recognition, or other forms of acknowledgment as determined by the Sponsor in its sole discretion.
+For winning teams, each team member will receive an equal portion of the applicable prize funds.
+
+9.
+
+Judging Criteria: A selection committee (the “Committee”) composed of qualified judges with expertise in
+disaster response, data science, GIS, emergency management, software engineering, and related fields will
+evaluate all Entries. Entries in both Phase 2 (Concept Submission) and Phase 3 (Product Submission) will be
+assessed according to five rubric categories: (1) Timeliness, Real‑Time Responsiveness & Technical Reliability;
+(2) Comprehensiveness, Use of Available Data & Novel Data Discovery; (3) Integration, Synthesis Quality &
+Responsible Data Handling; (4) Usability, Clarity & Operational Readiness for Emergency Responders; and (5)
+Scenario Fit, Insightfulness, Innovation & Technical/Data Creativity. These criteria reflect the core goals of the
+Challenge and will be applied consistently across both phases, with expectations increasing as Entrants progress
+from concept to working prototype. The Committee will employ a standardized scoring system to ensure fairness
+and objectivity, and will evaluate each Entry based on its technical soundness, operational relevance, data quality,
+user‑centered design, and overall merit as defined by the rubric. The Committee will select the winning teams
+based on the highest overall evaluation in accordance with these criteria.
+
+10. Selection of Winning Entrant: The Committee will review all eligible Entries and determine, in its sole
+discretion, which Entries best meet the standards as defined by the Challenge rubric. The Committee may, but is
+not required to, conduct additional review, request clarification from Entrants, or engage in deliberation to ensure
+that the selected Winner(s) reflect the intent and objectives of the Challenge. Following completion of the judging
+process, the Committee will select the Winners based on the highest overall evaluation in accordance with the
+judging criteria described herein. The number of Winners, the distribution of any Prizes, and any distinctions
+among Winners shall be determined solely by the Sponsor based on the Committee’s evaluations. All decisions
+of the Sponsor are final and binding.
+11. Notification of Winners:Winning a Prize is contingent upon fulfilling all requirements set forth herein. Except
+where legally prohibited, each potential winner will be required to complete and return, within fourteen (14) days
+of being notified, a Declaration of Eligibility, Liability & Publicity Release (“Declaration”) in order to claim the
+Prize. If a potential Winner does not acknowledge acceptance of a Prize within fourteen (14) business days after
+being notified that the Entrant is a potential winner, or if a potential winner does not return the required forms
+within the designated timeframe, or is otherwise found to be ineligible or not in full compliance with these Rules,
+another potential winner may be chosen using the same procedure specified above. The Sponsor is not responsible
+for any change of any Entrant’s email address and/or mailing address, nor is the Sponsor responsible for any lost
+or damaged mail, or for any mail intended for Entrant that may be returned as undeliverable. A Winner may waive
+the right to receive a Prize.
+ALL POTENTIAL WINNERS ARE SUBJECT TO VERIFICATION BY SPONSOR, WHOSE DECISIONS
+ARE FINAL AND BINDING IN ALL MATTERS RELATED TO THE CHALLENGE. AN ENTRANT IS NOT
+3
+
+A WINNER OF ANY PRIZE UNLESS AND UNTIL ENTRANT’S ELIGIBILITY HAS BEEN VERIFIED AND
+ENTRANT HAS BEEN NOTIFIED THAT VERIFICATION IS COMPLETE.
+12. Administration of Prize(s): Except where prohibited by law, all federal, state, provincial, or other tax liabilities
+are the responsibility of the Winner. Sponsor will not be responsible for any tax deductions which may be necessary,
+provided that Sponsor reserves the right to withhold taxes as required by law. Winner will be responsible for
+paying all costs and expenses related to the Prize that are not specifically mentioned, including, but not limited
+to, taxes, withholdings, and any other expenses that might reasonably be incurred by the Winner in receiving or
+using the Prize.
+IF TAXES ARE APPLICABLE TO THE PRIZE(S), IT IS THE RESPONSIBILITY OF THE WINNER TO REMIT
+TO THE APPROPRIATE AUTHORITIES. PAYMENTS TO WINNERS ARE SUBJECT TO THE EXPRESS
+REQUIREMENT THAT THE WINNER SUBMIT TO SPONSOR ALL DOCUMENTATION REQUESTED
+BY SPONSOR TO PERMIT COMPLIANCE WITH ALL APPLICABLE STATE, FEDERAL, LOCAL AND
+FOREIGN (INCLUDING PROVINCIAL) TAX REPORTING AND WITHHOLDING REQUIREMENTS.
+If a Winner fails to provide required documentation, the Prize may be forfeited and Sponsor may, in its sole
+discretion, select an alternate Winner. Any details of Prizes not specified herein shall be determined solely by
+Sponsor.
+13. Intellectual Property: By submitting an Entry, Entrant represents and warrants that Entrant owns, or otherwise
+has secured in writing all rights, licenses, and permissions to use and license, all concepts, works, inventions,
+information, designs, programs, software, or other materials (collectively, “Material”) submitted by Entrant to
+Sponsor in connection with the Challenge. Entrant MAY NOT submit an Entry or any other Material for which
+Entrant does not have all such rights, licenses, and permissions.
+Entrant hereby grants to Sponsor and its affiliates a non-exclusive, perpetual, irrevocable, worldwide, and royaltyfree license to make, have made, use, sell, offer for sale, import, export, license, exploit, promote, reproduce, make
+available, disseminate, publicly display, publicly perform, create derivative works of, and otherwise exercise all
+intellectual property and other rights in and to any Material that the Entrant submits to Sponsor in connection
+with the Challenge. Entrant agrees to do or perform, or cause to be done and performed, all such further acts and
+things, and execute and deliver all such other agreements, certificates, instruments, and documents as Sponsor
+may reasonably request in order to carry out the intent and accomplish the purposes of the foregoing license.
+14. Representations and Warranties: By submitting an Entry, Entrant represents and warrants that its Entry does
+not and shall not comprise, contain, or describe: (a) statements or other content that is false, deceptive, misleading,
+scandalous, indecent, obscene, unlawful, defamatory, libelous, fraudulent, tortious, threatening, harassing, hateful,
+degrading, intimidating, or racially or ethnically offensive; (b) content that could be considered a criminal offense,
+could give rise to criminal or civil liability, or could violate any law; (c) any advertising, promotion or other
+solicitation, or any third party brand name or trademark; or (d) any virus, worm, Trojan horse, or other harmful
+code or component.
+15. Publicity: Except where prohibited, Entrant consents (and agrees to sign any additional documents required by
+Sponsor to formalize, effect, or perfect such consent) to the use of any Entrant’s name, likeness, biographical
+information, and voice in advertising, publicity, trade, and other marketing and promotional materials (including
+video, audio, and print through all means of distribution) in connection with the Challenge worldwide without
+compensation, notice, or approval, and disclaims any ownership rights to the content of such materials.
+16. Damage; No Responsibility: ANY ATTEMPT BY AN ENTRANT OR ANY OTHER INDIVIDUAL TO
+DELIBERATELY DAMAGE ANY WEBSITE ASSOCIATED WITH THE CHALLENGE OR UNDERMINE
+THE LEGITIMATE OPERATION OF THE CHALLENGE MAY BE A VIOLATION OF CRIMINAL AND
+CIVIL LAW AND, SHOULD SUCH AN ATTEMPT BE MADE, SPONSOR RESERVES THE RIGHT
+TO PROSECUTE AND SEEK DAMAGES FROM ANY SUCH PERSON TO THE FULLEST EXTENT
+PERMITTED BY LAW.
+4
+
+Sponsor shall not have any obligation, liability or responsibility with regard to (a) any Entry that contains incorrect
+or inaccurate information or does not comply with these Rules; (b) any Entry or notification that is lost, late,
+incomplete, illegible, unintelligible, damaged or otherwise not received by the intended recipient, in whole or in
+part, due to computer, technical or other error of any kind; (c) telephone, electronic, hardware, software, network,
+Internet or computer malfunctions, failures or difficulties of any kind; (d) any condition caused by events beyond
+the control of Sponsor that may cause the Challenge to be disrupted or delayed; (e) any printing or typographical
+errors in these Rules or any other materials associated with the Challenge; or (f) any damages or losses of any kind
+caused by any Prize or resulting from participation in the Challenge, accessing, uploading or downloading data
+in connection with the Challenge, or acceptance, possession or use of any Prize. Sponsor, in its sole discretion,
+reserves the right to disqualify any Entrant tampering with or abusing the entry process or the operation of the
+Challenge or otherwise violating these Rules. Sponsor, in its sole discretion, further reserves the right to cancel,
+terminate, suspend or modify the Challenge if the Challenge cannot be completed as planned because of infection
+by computer virus, bugs, tampering, unauthorized intervention or technical failures of any sort and to select a
+Winner from among eligible Entries unaffected by such event, if any.
+17. Indemnity: EACH ENTRANT (A) ACCEPTS THE TERMS AND CONDITIONS SET FORTH IN THESE
+RULES; (B) AGREES TO BE BOUND BY THE DECISIONS OF SPONSOR; (C) WARRANTS THAT THE
+ENTRANT IS ELIGIBLE TO PARTICIPATE IN THE CHALLENGE; AND (D) AGREES TO RELEASE,
+INDEMNIFY, AND HOLD HARMLESS THE SPONSOR AND ITS AGENTS, EMPLOYEES, AFFILIATES,
+SUBSIDIARIES, REPRESENTATIVES AND ALL RELATED (THE “INDEMINIFIED PARTIES”) FROM
+AND AGAINST ANY AND ALL CLAIMS, LOSSES, LIABILITY, AND DAMAGES OF ANY KIND
+(INCLUDING REASONABLE ATTORNEYS’ FEES AND EXPENSES) ASSERTED AGAINST ANY
+INDEMNIFIED PARTY, INCURRED OR SUSTAINED IN CONNECTION WITH OR ARISING OUT OF
+ENTRANT’S PARTICIPATION IN THE CHALLENGE, SPONSOR’S USE OF ENTRANT’S MATERIAL, OR
+ENTRANT’S BREACH OF ANY AGREEMENT OR WARRANTY ASSOCIATED WITH THE CHALLENGE,
+INCLUDING THESE RULES.
+18. Limitation of Liability; Release: BY PARTICIPATING IN THE CHALLENGE, ENTRANT AGREES THAT
+SPONSOR, ITS AFFILIATES, REPRESENTATIVES, AND CONTRACTORS AND THEIR RESPECTIVE
+OFFICERS, DIRECTORS, EMPLOYEES, REPRESENTATIVES, AND AGENTS (THE “RELEASED
+PARTIES”) WILL HAVE NO LIABILITY WHATSOEVER FOR, AND SHALL BE HELD HARMLESS BY
+ENTRANT AGAINST, ANY LIABILITY FOR ANY INJURIES, LOSSES OR DAMAGES OF ANY KIND
+TO PERSONS, INCLUDING PERSONAL INJURY OR DEATH, OR PROPERTY RESULTING IN WHOLE
+OR IN PART, DIRECTLY OR INDIRECTLY, FROM ENTRANT’S PARTICIPATION IN THE CHALLENGE
+OR IN ANY CHALLENGE-RELATED ACTIVITY, OR ANY CLAIMS BASED ON PUBLICITY RIGHTS,
+DEFAMATION OR INVASION OF PRIVACY. THE RELEASED PARTIES ARE NOT RESPONSIBLE IF
+THE CHALLENGE CANNOT BE ADMINISTERED OR CONDUCTED OR ANY PRIZE CANNOT BE
+AWARDED DUE TO CANCELLATIONS, DELAYS, OR INTERRUPTIONS RESULTING OR ARISING
+FROM ACTS OF GOD, WAR, OR TERRORISM, CIVIL UNREST, STRIKES, SUPPLY SHORTAGES,
+NATURAL DISASTERS, WEATHER, EPIDEMICS, COMPLIANCE WITH ANY LAW OR ORDER OF A
+GOVERNMENTAL AUTHORITY, OR ANY OTHER SIMILAR ACT, EVENT, OR OCCURRENCE BEYOND
+THE REASONABLE CONTROL OF THE SPONSOR.
+EVERYTHING REGARDING THE CHALLENGE, INCLUDING ANY WEBSITE ASSOCIATED WITH
+THE CHALLENGE AND ALL PRIZES, ARE PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+SOME JURISDICTIONS MAY NOT ALLOW THE LIMITATIONS OR EXCLUSIONS OF LIABILITY FOR
+INCIDENTAL OR CONSEQUENTIAL DAMAGES OR EXCLUSION OF IMPLIED WARRANTIES, SO
+SOME OF THE LIMITATIONS OR EXCLUSIONS DESCRIBED HEREIN MAY NOT APPLY.
+19. Disputes: Entrant agrees that: (a) any and all disputes, claims, and causes of action arising out of or in
+connection with the Challenge or any Prize shall be resolved individually, without resorting to any form of class
+5
+
+action, pursuant to arbitration conducted under the Commercial Arbitration Rules of the American Arbitration
+Association then in effect and currently available at https://adr.org/sites/default/files/commercial%20rules.pdf;
+(b) any and all claims, judgments and awards shall be limited to actual out-of-pocket costs incurred, including
+costs associated with entering the Challenge, but in no event attorneys' fees; and (c) under no circumstances will
+any Entrant be permitted to obtain awards for, and Entrant hereby waives all rights to claim, punitive, incidental,
+and consequential damages, and any other damages, other than for actual out-of-pocket expenses, and any and all
+rights to have damages multiplied or otherwise increased.
+All issues and questions concerning the construction, validity, interpretation and enforceability of these Rules,
+or the rights and obligations of Entrant and Sponsor in connection with the Challenge, shall be governed by, and
+construed in accordance with, the laws of the State of New York, without giving effect to any choice of law or
+conflict of law, rules or provisions that would cause the application of the laws of any jurisdiction other than the
+State of New York.
+20. Privacy: Entrant acknowledges and agrees that the Sponsor may collect, store, share, and otherwise use personally
+identifiable information provided by Entrant during and after the Challenge Entry process and the Challenge,
+including, but not limited to, name, mailing address, phone number, and email address. The Sponsor will use this
+information in accordance with IEEE’s Privacy Policy, which can be found at https://privacy.ieee.org/policies,
+including for administering the Challenge and verifying each Entrant’s identity, postal address, and telephone
+number in the event an entry qualifies for a Prize. Entrant’s information may also be transferred to countries
+outside the country of the Entrant’s residence, including the United States. Such other countries may not have
+privacy laws and regulations similar to those of the country of the Entrant’s residence. If an Entrant does not
+provide the mandatory data required at Entry submission, the Sponsor reserves the right to disqualify the Entrant
+from participating in the Challenge.
+21. Severability: If any term or provision of these Rules is found under the law to be invalid or unenforceable, then
+such specific term or provision shall be of no force and effect and shall be severed, and the remainder of these
+Rules shall continue in full force and effect.
+
+6
+
+

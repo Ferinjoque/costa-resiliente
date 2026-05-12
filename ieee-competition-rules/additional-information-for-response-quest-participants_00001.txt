@@ -1,0 +1,98 @@
+Additional Information for Response Quest Participants
+
+To help teams navigate the complexity of this challenge, six core sub-problems were identified during
+planning discussions:
+
+e Access — locating and retrieving relevant disaster-related data
+e Storage — managing and organizing data for timely use
+e Integration — aligning and combining data from multiple sources and formats
+
+e User Interface — An intuitive interface that allows users a simple way to visualize large amounts
+of information in one space
+
+e Decision-making — enabling users to interpret data and take informed action for the protection
+of the public and safety of the disaster responders
+
+e Modeling — using data to simulate or predict disaster scenarios and outcomes
+
+These sub-problems offer a framework for submission design and evaluation. While teams may choose
+to focus on specific areas, integrated solutions that address multiple components are strongly
+encouraged.
+
+Participants will be tasked with developing tools or systems that consolidate and visualize
+disaster-related data to support emergency response decision-making, specifically protection of the
+public and the safety of responders during disaster operations. Solutions may focus on specific disaster
+types (e.g., hurricanes, wildfires, floods) and must demonstrate how data integration leads to
+actionable insights. Real-time or near-real-time data processing and display are central to the
+challenge’s intent, with emphasis on usability for emergency responders.
+
+Potential deliverables:
+
+- Single user interface that is accessible with standard internet browsers (i.e. Google Chrome,
+Microsoft Edge, Apple Safari, and Mozilla Firefox)
+o Should scale to desktop, tablet, and phone
+© Supports user ability to visualize and make decisions on currently changing data
+- Interface must not require significant training for users (Must be Intuitive)
+- Must be able to display data for a region selected by the user that could include a
+community, region/state, country or some combination of those
+- Must be able to display critical infrastructure and its relationship to the disaster (Hospital,
+nursing homes, power plants, power substations, cell towers, radio towers, roads, train
+tracks, ...) [All elements are not required. Item placement can be automated or placed by
+user]
+
+IEEE
+~
+
+Must be able to display current weather conditions and precipitation
+o Include any information relevant to disaster responders such as heat warnings, cold
+warnings, fog, wind warnings, ice warnings, thunderstorm warnings, ....
+Must display data in near-real-time. Consider hosting costs and operating costs when
+designing this system. Looking for the most current data at the minimum cost.
+
+Optional Disaster Targets:
+
+Hurricanes/Typhoons/Cyclones (Track, current location, direction of travel, speed, intensity,
+storm surge)
+
+Wildfires (Track, current location, direction of travel, speed, intensity)
+
+Tornadoes (Track, current location, direction of travel, speed, intensity)
+
+Floods (Water height vs established flood levels, rate of rise/fall of water, expected crest and
+time, areas that can expect damage)
+
+Earthquakes (Location, Intensity, known faults in the area, area the earthquake shaking was
+felt, time since shaking started, duration of shaking, aftershocks data)
+
+Tsunamis (Areas that are expected to be impacted, wave height expected, expected time of
+arrival)
+
+Optional Information to Consider
+
+Calculate the number of people being impacted by the event and where they are located.
+Number of required shelters and the locations for sheltering those impacted
+Recommend areas that should be evacuated.
+
+© The best evacuation routes to minimize impact to the public
+
+o Estimate when evacuations should begin
+Based on available data - what areas need immediate attention from Emergency
+Responders?
+Based on available data, what future evacuations / Emergency Responder activity may be
+required over time? Is the event escalating, steady, or de-escalating?
+Identify areas that:
+
+o Donot have power
+
+o Donot have cell service
+
+o Donot have Radio/TV service
+
+o Donot have access by roads
+Identify areas/individuals that are trapped and needing help
+Identify how the current and/or predicted weather (precipitation, relative humidity,
+temperature, wind, ...) is impacting the disaster... good or bad. How will it impact
+emergency operations going forward?
+
+IEEE
+

@@ -34,7 +34,7 @@ export function AskPanel() {
 
   return (
     <aside
-      className="absolute top-4 right-4 bottom-4 w-80 bg-surface-raised border border-slate-700 rounded-xl shadow-xl z-20 flex flex-col"
+      className="absolute top-4 right-4 bottom-4 w-[calc(100vw-4.5rem-2rem)] sm:w-80 max-w-sm bg-surface-raised border border-slate-700 rounded-xl shadow-xl z-20 flex flex-col"
       aria-label="Panel de consulta"
     >
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
@@ -65,8 +65,9 @@ export function AskPanel() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Consulta en español…"
+            aria-label="Consulta en español"
             disabled={loading}
-            className="flex-1 bg-surface-panel border border-slate-600 text-white text-sm rounded-lg px-3 py-2 placeholder:text-slate-500 focus:outline-none focus:border-costa-500 disabled:opacity-50"
+            className="flex-1 bg-surface-panel border border-slate-600 text-white text-sm rounded-lg px-3 py-2 placeholder:text-slate-500 focus:outline-none focus:border-costa-500 focus-visible:ring-2 focus-visible:ring-costa-500 disabled:opacity-50"
           />
           <button
             type="submit"

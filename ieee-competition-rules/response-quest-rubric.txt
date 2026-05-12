@@ -1,0 +1,198 @@
+IEEE Response Quest Evaluation Rubric
+All submissions will be evaluated using the five criteria below. Each criterion is scored on a 1–5 scale, where 5
+represents exceptional performance. All Categories are weighted equally. These criteria apply to both the
+Concept Phase and the Product Phase, with definitions appropriate to each stage.
+Category
+
+Exceeding (5)
+
+Strong (4)
+
+Adequate (3)
+
+Limited (2)
+
+Minimal (1)
+
+Timeliness,
+Real-Time
+Responsiveness &
+Technical Reliability
+
+The solution
+demonstrates near
+real-time performance
+with minimal latency
+and a reliable,
+well-structured
+technical foundation.
+
+Timely updates
+with minor
+delays; solid
+technical
+implementation
+.
+
+Periodic
+updates; basic
+but functional
+technical
+execution.
+
+Slow or inconsistent
+updates; fragile or
+unclear technical
+foundation.
+
+No meaningful
+real-time
+capability or
+nonfunctional
+execution.
+
+Comprehensiveness,
+Use of Available
+Data & Novel Data
+Discovery
+
+Integrates multiple
+relevant data sources,
+clearly explains
+limitations, and
+meaningfully
+incorporates new or
+underutilized data.
+
+Uses several
+relevant data
+sources with
+some
+exploration of
+novel data.
+
+Uses one or
+two
+meaningful
+sources with
+limited
+novelty.
+
+Minimal integration;
+no exploration of
+new or
+unconventional
+data.
+
+Little or no
+relevant data; no
+awareness of
+data gaps.
+
+Integration,
+Synthesis Quality &
+Responsible Data
+Handling
+
+Combines data
+seamlessly into
+coherent insights with
+strong ethical
+safeguards and
+transparent data
+handling.
+
+Good
+integration and
+generally
+responsible data
+practices.
+
+Basic
+integration
+with limited
+articulation of
+ethical
+considerations.
+
+Weak integration;
+unclear or
+insufficient
+data-handling
+safeguards.
+
+No meaningful
+integration or
+responsible data
+practices.
+
+Usability, Clarity &
+Operational
+Readiness for
+Emergency
+Responders
+
+Intuitive, easy to learn,
+aligned with responder
+workflows;
+well-documented and
+safe for operational
+use.
+
+Generally easy
+to use with
+minor
+documentation
+or clarity gaps.
+
+Usable but
+requires
+training;
+documentation
+incomplete.
+
+Confusing or
+cluttered; technical
+or ethical
+ambiguities.
+
+Poor usability;
+unclear or unsafe
+for responders.
+
+Scenario Fit,
+Insightfulness,
+Innovation &
+Technical/Data
+Creativity
+
+Strong alignment to
+the chosen scenario;
+provides high-value
+insights and
+demonstrates
+innovative technical
+and data approaches.
+
+Good alignment
+with useful
+insights and
+some innovative
+elements.
+
+Scenario
+defined with
+basic insights
+and limited
+innovation.
+
+Weak alignment;
+shallow insights;
+minimal creativity.
+
+Scenario missing
+or mismatched;
+little insight or
+innovation.
+
+

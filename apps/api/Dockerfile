@@ -11,10 +11,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV GDAL_CONFIG=/usr/bin/gdal-config
 
-COPY pyproject.toml .
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
+COPY pyproject.toml .
 COPY src/ src/
+RUN pip install --no-cache-dir .
 
 # ── Development target (hot-reload via docker-compose.override.yml) ──────────
 FROM base AS development

@@ -1,11 +1,14 @@
-"""Social signal ingestion — Bluesky, Reddit, RSS, Telegram.
+"""Social signal ingestion — Bluesky and RSS.
 
-Sources:
+Active sources:
   Bluesky: Jetstream v2 WebSocket (wss://jetstream2.us-east.bsky.network/subscribe)
-           Filtered server-side for Spanish disaster keywords.
-  Reddit:  Public JSON API (no OAuth) — r/Peru, r/Lima, r/Chosica
-  RSS:     RPP Noticias, Agencia Andina, Canal N (feedparser)
-  Telegram: Read-only via telethon — INDECI Peru, COER Lima channels
+           Public firehose, no credentials required.
+  RSS:     RPP, Andina, Canal N, El Comercio, La República, Peru21,
+           Defensoría del Pueblo Peru (feedparser, no auth)
+
+Disabled sources (kept for future use):
+  Reddit:  Removed — developer API policy changes made stable access unreliable.
+  Telegram: Removed — session authentication errors in CI/CD environments.
 
 PII redaction: presidio-analyzer with es_core_news_sm spaCy model.
   Entities stripped: PERSON, PHONE_NUMBER, EMAIL_ADDRESS, STREET_ADDRESS,
@@ -71,11 +74,9 @@ RSS_FEEDS = [
     "https://rpp.pe/rss",
     "https://andina.pe/agencia/rss.aspx",
     "https://canaln.pe/rss",
-]
-
-TELEGRAM_CHANNELS = [
-    "indeciperu",
-    "coerlima",
+    "https://elcomercio.pe/rss/",
+    "https://larepublica.pe/rss/",
+    "https://peru21.pe/rss/",
 ]
 
 REQUEST_TIMEOUT = 20.0
@@ -435,20 +436,18 @@ async def upsert_signals(signals: list[RawSignal]) -> int:
 @flow(name="ingest-social", log_prints=True)
 async def ingest_social_flow() -> dict:
     """
-    Collect social signals from Bluesky, Reddit, RSS, and Telegram.
+    Collect social signals from Bluesky and RSS feeds.
     PII is redacted before any signal touches the database.
     Schedule: every 15 minutes.
     """
-    bluesky, reddit, rss, telegram = await asyncio.gather(
+    bluesky, rss = await asyncio.gather(
         ingest_bluesky_firehose(),
-        ingest_reddit(),
         ingest_rss_feeds(),
-        ingest_telegram(),
         return_exceptions=True,
     )
 
     all_signals: list[RawSignal] = []
-    for result in (bluesky, reddit, rss, telegram):
+    for result in (bluesky, rss):
         if isinstance(result, list):
             all_signals.extend(result)
         elif isinstance(result, Exception):

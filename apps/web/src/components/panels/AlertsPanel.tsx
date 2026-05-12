@@ -1,16 +1,17 @@
 "use client";
 
-import { Bell, CheckCircle, AlertTriangle, TrendingUp, Users } from "lucide-react";
+import { Bell, CheckCircle, AlertTriangle, TrendingUp, Users, type LucideIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import { useAlerts } from "@/lib/queries";
 import { actOnAlert } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Alert } from "@/lib/api";
+import { timeAgo } from "@/lib/utils";
 
 const OPERATOR_ID = "operator-1";
 
-const TYPE_ICON: Record<string, React.FC<{ size: number; className?: string }>> = {
+const TYPE_ICON: Record<string, LucideIcon> = {
   flood: AlertTriangle,
   huayco: TrendingUp,
   social_cluster: Users,
@@ -23,15 +24,6 @@ const SEVERITY_DOT: Record<string, string> = {
   low: "bg-blue-400",
 };
 
-function timeAgo(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diffMs / 60_000);
-  if (mins < 1) return "ahora";
-  if (mins < 60) return `hace ${mins} min`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `hace ${hrs}h`;
-  return `hace ${Math.floor(hrs / 24)}d`;
-}
 
 function AlertRow({ alert }: { alert: Alert }) {
   const qc = useQueryClient();
@@ -55,7 +47,7 @@ function AlertRow({ alert }: { alert: Alert }) {
         />
         <div className="flex-1 min-w-0">
           <p className="text-sm text-white truncate">{alert.title}</p>
-          <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
+          <p className="text-xs text-slate-300 mt-0.5 flex items-center gap-1.5">
             <Icon size={11} />
             <span className="capitalize">{alert.type.replace("_", " ")}</span>
             <span>·</span>
@@ -72,7 +64,7 @@ function AlertRow({ alert }: { alert: Alert }) {
             <CheckCircle size={15} />
           </button>
         ) : (
-          <span className="text-xs text-slate-600 shrink-0 capitalize">{alert.status}</span>
+          <span className="text-xs text-slate-400 shrink-0 capitalize">{alert.status}</span>
         )}
       </div>
     </li>
@@ -81,7 +73,7 @@ function AlertRow({ alert }: { alert: Alert }) {
 
 export function AlertsPanel() {
   const { activePanel } = useUIStore();
-  const { data: alerts = [], isLoading, isError } = useAlerts();
+  const { data: alerts = [], isLoading, isError, dataUpdatedAt } = useAlerts();
 
   if (activePanel !== "alerts") return null;
 
@@ -89,7 +81,7 @@ export function AlertsPanel() {
 
   return (
     <aside
-      className="absolute top-4 right-4 bottom-4 w-80 bg-surface-raised border border-slate-700 rounded-xl shadow-xl z-20 flex flex-col"
+      className="absolute top-4 right-4 bottom-4 w-[calc(100vw-4.5rem-2rem)] sm:w-80 max-w-sm bg-surface-raised border border-slate-700 rounded-xl shadow-xl z-20 flex flex-col"
       aria-label="Feed de alertas"
     >
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
@@ -120,7 +112,7 @@ export function AlertsPanel() {
       </ul>
 
       <div className="px-4 py-2 border-t border-slate-700 text-xs text-slate-500 text-center">
-        Actualización cada 30 s
+        {dataUpdatedAt ? `Actualizado ${timeAgo(new Date(dataUpdatedAt).toISOString())}` : "Actualización cada 30 s"}
       </div>
     </aside>
   );
