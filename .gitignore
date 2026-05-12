@@ -81,6 +81,9 @@ secrets/
 # Geospatial data (rasters, large files)
 data/raw/
 data/processed/
+# PMTiles and OSM extracts (generated, large)
+data/pmtiles/*.pmtiles
+data/pmtiles/*.osm.pbf
 *.tif
 *.tiff
 *.geotiff
