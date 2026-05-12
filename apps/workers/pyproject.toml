@@ -19,6 +19,7 @@ dependencies = [
     "stackstac>=0.5",
 
     # Geospatial processing
+    "h5py>=3.11",
     "rasterio>=1.3",
     "rioxarray>=0.15",
     "xarray>=2024.1",
