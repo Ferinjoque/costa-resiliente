@@ -1,0 +1,39 @@
+{
+  "title": "Costa Resiliente STAC Catalog",
+  "description": "Geospatial data catalog for Lima Metropolitana flood/huayco awareness. Includes Sentinel-1 GRD scenes, IMERG rasters, and derived flood polygons.",
+  "id": "costa-resiliente",
+  "stac_version": "1.0.0",
+  "type": "Catalog",
+  "collections": [
+    {
+      "id": "sentinel-1-grd-lima",
+      "title": "Sentinel-1 GRD — Lima Metropolitana",
+      "description": "Sentinel-1 C-band SAR GRD scenes clipped to Lima AOI, sourced from Microsoft Planetary Computer.",
+      "license": "proprietary",
+      "extent": {
+        "spatial": { "bbox": [[-77.2, -12.5, -76.7, -11.7]] },
+        "temporal": { "interval": [["2014-04-01T00:00:00Z", null]] }
+      }
+    },
+    {
+      "id": "imerg-early-lima",
+      "title": "NASA IMERG Early Run — Lima Watersheds",
+      "description": "Half-hourly IMERG precipitation rasters and watershed accumulation summaries.",
+      "license": "proprietary",
+      "extent": {
+        "spatial": { "bbox": [[-77.2, -12.5, -76.7, -11.7]] },
+        "temporal": { "interval": [["2000-06-01T00:00:00Z", null]] }
+      }
+    },
+    {
+      "id": "flood-polygons",
+      "title": "SAR-derived Flood Polygons",
+      "description": "ML flood segmentation output polygons per Sentinel-1 acquisition.",
+      "license": "CC-BY-4.0",
+      "extent": {
+        "spatial": { "bbox": [[-77.2, -12.5, -76.7, -11.7]] },
+        "temporal": { "interval": [["2024-01-01T00:00:00Z", null]] }
+      }
+    }
+  ]
+}

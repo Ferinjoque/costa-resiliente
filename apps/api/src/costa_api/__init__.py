@@ -1,0 +1,1 @@
+"""Costa Resiliente — FastAPI backend."""

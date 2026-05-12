@@ -1,0 +1,241 @@
+version: "3.9"
+
+# ─── Networks ─────────────────────────────────────────────────────────────────
+networks:
+  costa-net:
+    driver: bridge
+
+# ─── Volumes ──────────────────────────────────────────────────────────────────
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+  prefect-data:
+  ollama-models:
+
+# ─── Services ─────────────────────────────────────────────────────────────────
+services:
+
+  # ── PostgreSQL + PostGIS + TimescaleDB ────────────────────────────────────
+  postgres:
+    image: timescale/timescaledb-ha:pg16-latest
+    container_name: costa-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-costa_resiliente}
+      POSTGRES_USER: ${POSTGRES_USER:-costa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_production}
+    volumes:
+      - postgres-data:/home/postgres/pgdata/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./infra/postgres/pgstac.sql:/docker-entrypoint-initdb.d/02-pgstac.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - costa-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-costa} -d ${POSTGRES_DB:-costa_resiliente}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: costa-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - costa-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ── MinIO ──────────────────────────────────────────────────────────────────
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: costa-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-change_me_in_production}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Console UI
+    networks:
+      - costa-net
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # MinIO bucket bootstrap (runs once, then exits)
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T13-58-23Z
+    container_name: costa-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-change_me_in_production};
+        mc mb --ignore-existing local/rasters;
+        mc mb --ignore-existing local/models;
+        mc mb --ignore-existing local/pmtiles;
+        mc policy set download local/pmtiles;
+        exit 0;
+      "
+    networks:
+      - costa-net
+
+  # ── FastAPI (backend API) ──────────────────────────────────────────────────
+  api:
+    build:
+      context: apps/api
+      dockerfile: Dockerfile
+    container_name: costa-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      STAC_API_URL: http://stac-api:8080
+      OLLAMA_HOST: http://ollama:11434
+    ports:
+      - "8000:8000"
+    networks:
+      - costa-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── STAC API (stac-fastapi with pgstac backend) ────────────────────────────
+  stac-api:
+    image: ghcr.io/stac-utils/stac-fastapi-pgstac:latest
+    container_name: costa-stac
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST_READER: postgres
+      POSTGRES_HOST_WRITER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DBNAME: ${POSTGRES_DB:-costa_resiliente}
+      POSTGRES_USER: ${POSTGRES_USER:-costa}
+      POSTGRES_PASS: ${POSTGRES_PASSWORD:-change_me_in_production}
+    ports:
+      - "8080:8080"
+    networks:
+      - costa-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Prefect Server ─────────────────────────────────────────────────────────
+  prefect-server:
+    image: prefecthq/prefect:2-latest
+    container_name: costa-prefect-server
+    restart: unless-stopped
+    command: prefect server start --host 0.0.0.0
+    environment:
+      PREFECT_API_DATABASE_CONNECTION_URL: >-
+        postgresql+asyncpg://${POSTGRES_USER:-costa}:${POSTGRES_PASSWORD:-change_me_in_production}@postgres:5432/${POSTGRES_DB:-costa_resiliente}
+    ports:
+      - "4200:4200"
+    networks:
+      - costa-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4200/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Prefect Worker (ingest + ML flows) ────────────────────────────────────
+  prefect-worker:
+    build:
+      context: apps/workers
+      dockerfile: Dockerfile
+    container_name: costa-prefect-worker
+    restart: unless-stopped
+    command: prefect worker start --pool costa-pool
+    env_file: .env
+    environment:
+      PREFECT_API_URL: http://prefect-server:4200/api
+      POSTGRES_HOST: postgres
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+    networks:
+      - costa-net
+    depends_on:
+      prefect-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  # ── Ollama (local LLM serving) ─────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: costa-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - costa-net
+    # Uncomment for GPU:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Next.js Frontend ───────────────────────────────────────────────────────
+  web:
+    build:
+      context: apps/web
+      dockerfile: Dockerfile
+    container_name: costa-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_STAC_URL: http://localhost:8080
+      NEXT_PUBLIC_MINIO_URL: http://localhost:9000
+    ports:
+      - "3000:3000"
+    networks:
+      - costa-net
+    depends_on:
+      api:
+        condition: service_healthy

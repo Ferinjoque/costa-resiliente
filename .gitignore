@@ -1,0 +1,114 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv/
+venv/
+ENV/
+env/
+.env
+*.env
+env.bak/
+venv.bak/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+
+# Node / Next.js
+node_modules/
+.next/
+.nuxt/
+dist/
+.cache/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Docker
+.docker/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Secrets
+.env
+*.pem
+*.key
+*.p12
+secrets/
+
+# Geospatial data (rasters, large files)
+data/raw/
+data/processed/
+*.tif
+*.tiff
+*.geotiff
+*.nc
+*.h5
+*.hdf5
+*.zarr/
+
+# Model weights > 50MB
+*.gguf
+*.pt
+*.pth
+*.bin
+*.safetensors
+models/
+
+# Prefect
+.prefect/
+
+# MinIO / object storage local data
+minio-data/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Build artifacts
+*.whl
+*.tar.gz
