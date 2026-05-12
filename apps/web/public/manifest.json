@@ -1,22 +1,17 @@
-{
+﻿{
   "name": "Costa Resiliente",
-  "short_name": "Costa Resiliente",
-  "description": "Plataforma de conciencia situacional en tiempo real — Lima Metropolitana",
+  "short_name": "CostaRes",
+  "description": "Plataforma de conciencia situacional para inundaciones y huaycos — Lima Metropolitana",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "orientation": "any",
   "icons": [
     {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }

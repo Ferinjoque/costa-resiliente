@@ -7,8 +7,12 @@ class Settings(BaseSettings):
     # App
     app_env: str = "development"
     app_secret_key: str = "dev-secret-change-me"
-    app_cors_origins: list[str] = ["http://localhost:3000"]
+    app_cors_origins: str = "http://localhost:3000"
     log_level: str = "INFO"
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [o.strip() for o in self.app_cors_origins.split(",") if o.strip()]
 
     # Database
     postgres_host: str = "localhost"
@@ -37,8 +41,8 @@ class Settings(BaseSettings):
 
     # Ollama
     ollama_host: str = "http://localhost:11434"
-    ollama_primary_model: str = "gemma3:12b-instruct-q4_K_M"
-    ollama_fallback_model: str = "qwen3:30b-a3b-instruct-2507"
+    ollama_primary_model: str = "gemma4:e4b"
+    ollama_fallback_model: str = "qwen3:14b"
 
     # Lima AOI
     lima_bbox_west: float = -77.2

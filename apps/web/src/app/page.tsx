@@ -7,6 +7,7 @@ import { ScenarioPanel } from "@/components/panels/ScenarioPanel";
 import { AlertsPanel } from "@/components/panels/AlertsPanel";
 import { AskPanel } from "@/components/panels/AskPanel";
 import { DecisionLogPanel } from "@/components/panels/DecisionLogPanel";
+import { DataFreshnessBar } from "@/components/ui/DataFreshnessBar";
 
 // MapView must be client-only (MapLibre GL uses window APIs)
 const MapView = dynamic(() => import("@/components/map/MapView"), {
@@ -25,17 +26,26 @@ export default function Home() {
       <LeftRail />
 
       {/* Main content area */}
-      <main className="flex flex-1 overflow-hidden relative">
-        {/* Map — always visible, fills space */}
-        <Suspense>
-          <MapView />
-        </Suspense>
+      <main className="relative flex-1 overflow-hidden">
+        {/* Map layer — sits at z-0, fills main */}
+        <div className="absolute inset-0 z-0">
+          <Suspense
+            fallback={
+              <div className="flex h-full w-full items-center justify-center bg-surface-base">
+                <span className="text-slate-500 text-sm">Cargando mapa…</span>
+              </div>
+            }
+          >
+            <MapView />
+          </Suspense>
+        </div>
 
-        {/* Floating panels rendered on top of map */}
+        {/* UI layer — panels and controls always above the map */}
         <ScenarioPanel />
         <AlertsPanel />
         <AskPanel />
         <DecisionLogPanel />
+        <DataFreshnessBar />
       </main>
     </div>
   );

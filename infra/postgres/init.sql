@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS postgis_topology;
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;  -- trigram search for social signals
 CREATE EXTENSION IF NOT EXISTS unaccent; -- accent-insensitive Spanish search
-CREATE EXTENSION IF NOT EXISTS pg_cron;  -- scheduled retention cleanup jobs
+-- pg_cron not available in timescaledb-ha image; retention handled by Prefect flow
 
 -- ─── Schemas ──────────────────────────────────────────────────────────────────
 CREATE SCHEMA IF NOT EXISTS geo;       -- spatial reference data
@@ -220,13 +220,8 @@ CREATE TRIGGER decision_log_no_update
     BEFORE UPDATE OR DELETE ON ops.decision_log
     FOR EACH ROW EXECUTE FUNCTION ops.prevent_decision_log_mutation();
 
--- ─── Retention: pg_cron scheduled cleanups ────────────────────────────────────
--- Runs daily at 02:00 Lima time (UTC-5 → 07:00 UTC)
-SELECT cron.schedule(
-    'purge-social-signals',
-    '0 7 * * *',
-    $$DELETE FROM social.signals WHERE expires_at < NOW()$$
-);
+-- ─── Retention ────────────────────────────────────────────────────────────────
+-- Signal expiry is handled by the Prefect retention flow (social.signals.expires_at)
 
 -- ─── Spatial Reference Helpers ────────────────────────────────────────────────
 -- Lima Metropolitana bounding box as a helper function

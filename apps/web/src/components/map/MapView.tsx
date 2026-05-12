@@ -74,22 +74,9 @@ export default function MapView() {
 
     ensurePMTilesProtocol();
 
-    const minioBase = process.env.NEXT_PUBLIC_MINIO_URL ?? "http://localhost:9000";
-
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: {
-        version: 8,
-        glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-        sources: {},
-        layers: [
-          {
-            id: "background",
-            type: "background",
-            paint: { "background-color": "#0f172a" },
-          },
-        ],
-      },
+      style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
       center: LIMA_CENTER,
       zoom: LIMA_ZOOM,
       maxBounds: [[-78.5, -13.5], [-74.5, -10.5]],
@@ -108,31 +95,6 @@ export default function MapView() {
     );
     m.addControl(new maplibregl.ScaleControl(), "bottom-left");
 
-    // Attempt to load PMTiles basemap (graceful — fails silently if not generated yet)
-    m.on("load", () => {
-      try {
-        m.addSource("basemap", {
-          type: "vector",
-          url: `pmtiles://${minioBase}/pmtiles/lima-basemap.pmtiles`,
-        });
-        m.addLayer({
-          id: "basemap-roads",
-          type: "line",
-          source: "basemap",
-          "source-layer": "roads",
-          paint: { "line-color": "#334155", "line-width": 1 },
-        });
-        m.addLayer({
-          id: "basemap-buildings",
-          type: "fill",
-          source: "basemap",
-          "source-layer": "buildings",
-          paint: { "fill-color": "#1e293b", "fill-opacity": 0.6 },
-        });
-      } catch {
-        // PMTiles not yet generated — dark background fallback is fine
-      }
-    });
 
     return () => {
       m.remove();

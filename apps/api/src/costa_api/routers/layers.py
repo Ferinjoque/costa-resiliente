@@ -1,4 +1,5 @@
 """Map layer data endpoints — IMERG, SAR flood, huayco, infrastructure, stations."""
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query
@@ -8,6 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from costa_api.db import get_db
 
 router = APIRouter(prefix="/layers", tags=["layers"])
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 @router.get("/imerg/latest")
@@ -58,6 +63,8 @@ async def imerg_latest(
     rows = result.mappings().all()
     return {
         "type": "FeatureCollection",
+        "source": "NASA IMERG Early Run v07 (GPM)",
+        "retrieved_at": _now_iso(),
         "features": [
             {
                 "type": "Feature",
@@ -100,6 +107,8 @@ async def flood_latest(
     rows = result.mappings().all()
     return {
         "type": "FeatureCollection",
+        "source": "ESA Sentinel-1 SAR (flood-seg-v0.1)",
+        "retrieved_at": _now_iso(),
         "features": [
             {
                 "type": "Feature",
@@ -140,6 +149,8 @@ async def huayco_susceptibility(db: AsyncSession = Depends(get_db)) -> dict[str,
     rows = result.mappings().all()
     return {
         "type": "FeatureCollection",
+        "source": "XGBoost huayco model v0.1 + IMERG trigger",
+        "retrieved_at": _now_iso(),
         "features": [
             {
                 "type": "Feature",
@@ -194,6 +205,8 @@ async def infrastructure(
     rows = result.mappings().all()
     return {
         "type": "FeatureCollection",
+        "source": "OpenStreetMap (Overpass API)",
+        "retrieved_at": _now_iso(),
         "features": [
             {
                 "type": "Feature",
@@ -246,6 +259,8 @@ async def stations(
     rows = result.mappings().all()
     return {
         "type": "FeatureCollection",
+        "source": "ANA / SENAMHI river monitoring network",
+        "retrieved_at": _now_iso(),
         "features": [
             {
                 "type": "Feature",
@@ -284,6 +299,8 @@ async def watersheds(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     rows = result.mappings().all()
     return {
         "type": "FeatureCollection",
+        "source": "ANA cuencas hidrograficas Lima",
+        "retrieved_at": _now_iso(),
         "features": [
             {
                 "type": "Feature",
@@ -315,6 +332,8 @@ async def quebradas(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     rows = result.mappings().all()
     return {
         "type": "FeatureCollection",
+        "source": "INGEMMET + ANA quebradas prioritarias Lima",
+        "retrieved_at": _now_iso(),
         "features": [
             {
                 "type": "Feature",

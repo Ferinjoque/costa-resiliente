@@ -18,7 +18,7 @@ export function LeftRail() {
 
   return (
     <nav
-      className="flex flex-col items-center bg-surface-raised border-r border-slate-700 w-14 py-4 gap-1 z-10"
+      className="relative flex flex-col items-center bg-surface-raised border-r border-slate-700 w-14 py-3 sm:py-4 gap-1 z-10"
       aria-label="Navegación principal"
     >
       {/* Logo */}
@@ -33,8 +33,8 @@ export function LeftRail() {
           aria-label={label}
           aria-pressed={activePanel === id}
           className={clsx(
-            "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
-            "hover:bg-surface-panel focus-visible:outline-2 focus-visible:outline-costa-500",
+            "w-10 h-10 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-colors",
+            "hover:bg-surface-panel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-costa-500",
             activePanel === id
               ? "bg-costa-700 text-white"
               : "text-slate-400 hover:text-white"

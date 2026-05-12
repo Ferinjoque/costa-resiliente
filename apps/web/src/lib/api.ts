@@ -81,6 +81,8 @@ export interface ImergFeature {
 
 export interface ImergCollection {
   type: "FeatureCollection";
+  source?: string;
+  retrieved_at?: string;
   features: ImergFeature[];
 }
 
@@ -93,6 +95,8 @@ export function fetchImerg(hours = 24): Promise<ImergCollection> {
 
 export interface FloodCollection {
   type: "FeatureCollection";
+  source?: string;
+  retrieved_at?: string;
   features: GeoJSON.Feature[];
 }
 
@@ -120,6 +124,8 @@ export interface HuaycoFeature {
 
 export interface HuaycoCollection {
   type: "FeatureCollection";
+  source?: string;
+  retrieved_at?: string;
   features: HuaycoFeature[];
 }
 
@@ -145,6 +151,8 @@ export interface InfraFeature {
 
 export interface InfraCollection {
   type: "FeatureCollection";
+  source?: string;
+  retrieved_at?: string;
   features: InfraFeature[];
 }
 

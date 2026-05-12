@@ -14,13 +14,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV GDAL_CONFIG=/usr/bin/gdal-config
 
-# Install spaCy Spanish model
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Install spaCy Spanish model (separate layer — rarely changes)
 RUN pip install --no-cache-dir spacy && \
     python -m spacy download es_core_news_sm
 
 COPY pyproject.toml .
-RUN pip install --no-cache-dir -e .
-
 COPY src/ src/
+RUN pip install --no-cache-dir .
 
 CMD ["python", "-m", "costa_workers.flows.schedules"]

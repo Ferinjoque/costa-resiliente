@@ -15,7 +15,7 @@ export function ScenarioPanel() {
 
   return (
     <aside
-      className="absolute top-4 left-4 w-72 bg-surface-raised border border-slate-700 rounded-xl shadow-xl z-20"
+      className="absolute top-4 left-4 w-[calc(100vw-4.5rem-2rem)] sm:w-72 max-w-xs bg-surface-raised border border-slate-700 rounded-xl shadow-xl z-20"
       aria-label="Panel de escenario"
     >
       {/* Header */}
@@ -23,6 +23,8 @@ export function ScenarioPanel() {
         onClick={toggleScenarioPanel}
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-panel rounded-t-xl transition-colors"
         aria-expanded={isScenarioPanelOpen}
+        aria-controls="scenario-body"
+        aria-label="Mostrar/ocultar panel de escenario"
       >
         <div className="flex items-center gap-2 text-sm font-semibold text-white">
           <Target size={15} className="text-costa-500" />
@@ -36,7 +38,7 @@ export function ScenarioPanel() {
       </button>
 
       {isScenarioPanelOpen && (
-        <div className="px-4 pb-4 space-y-3 border-t border-slate-700 pt-3">
+        <div id="scenario-body" className="px-4 pb-4 space-y-3 border-t border-slate-700 pt-3">
           {/* District selector */}
           <div>
             <label
@@ -50,7 +52,7 @@ export function ScenarioPanel() {
             </label>
             <select
               id="district-select"
-              className="w-full bg-surface-panel border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-costa-500"
+              className="w-full bg-surface-panel border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-costa-500 focus-visible:ring-2 focus-visible:ring-costa-500"
               value={scenario.districtUbigeo ?? ""}
               onChange={(e) => {
                 const ubigeo = e.target.value || null;
@@ -70,27 +72,26 @@ export function ScenarioPanel() {
           </div>
 
           {/* Time window */}
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">
-              Ventana de tiempo
-            </label>
+          <fieldset>
+            <legend className="text-xs text-slate-300 mb-1">Ventana de tiempo</legend>
             <div className="flex gap-1 flex-wrap">
               {TIME_WINDOWS.map((h) => (
                 <button
                   key={h}
                   onClick={() => setScenario({ timeWindowHours: h })}
+                  aria-pressed={scenario.timeWindowHours === h}
                   className={clsx(
-                    "px-2 py-1 text-xs rounded-md transition-colors",
+                    "px-2 py-1 text-xs rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-costa-500 focus-visible:outline-offset-1",
                     scenario.timeWindowHours === h
                       ? "bg-costa-700 text-white"
-                      : "bg-surface-panel text-slate-400 hover:text-white"
+                      : "bg-surface-panel text-slate-200 hover:text-white"
                   )}
                 >
                   {h}h
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {/* Layer toggles */}
           <LayerToggles />
@@ -121,8 +122,8 @@ function LayerToggles() {
   ];
 
   return (
-    <div>
-      <p className="text-xs text-slate-400 mb-1">Capas</p>
+    <fieldset>
+      <legend className="text-xs text-slate-300 mb-1">Capas</legend>
       <div className="space-y-1">
         {layers.map(({ id, label }) => (
           <label
@@ -131,7 +132,7 @@ function LayerToggles() {
           >
             <input
               type="checkbox"
-              className="accent-costa-500 w-3 h-3"
+              className="accent-costa-500 w-3 h-3 focus-visible:ring-2 focus-visible:ring-costa-500"
               checked={activeLayers.has(id)}
               onChange={() => toggleLayer(id)}
             />
@@ -139,6 +140,6 @@ function LayerToggles() {
           </label>
         ))}
       </div>
-    </div>
+    </fieldset>
   );
 }

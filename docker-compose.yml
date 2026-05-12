@@ -1,5 +1,3 @@
-version: "3.9"
-
 # ─── Networks ─────────────────────────────────────────────────────────────────
 networks:
   costa-net:
@@ -18,7 +16,7 @@ services:
 
   # ── PostgreSQL + PostGIS + TimescaleDB ────────────────────────────────────
   postgres:
-    image: timescale/timescaledb-ha:pg16-latest
+    image: timescale/timescaledb-ha:pg16
     container_name: costa-postgres
     restart: unless-stopped
     environment:
@@ -83,7 +81,7 @@ services:
 
   # MinIO bucket bootstrap (runs once, then exits)
   minio-init:
-    image: minio/mc:RELEASE.2025-04-16T13-58-23Z
+    image: minio/mc:latest
     container_name: costa-minio-init
     depends_on:
       minio:
@@ -152,7 +150,7 @@ services:
 
   # ── Prefect Server ─────────────────────────────────────────────────────────
   prefect-server:
-    image: prefecthq/prefect:2-latest
+    image: prefecthq/prefect:3-latest
     container_name: costa-prefect-server
     restart: unless-stopped
     command: prefect server start --host 0.0.0.0
@@ -167,11 +165,11 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4200/api/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4200/api/health')"]
       interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
+      timeout: 10s
+      retries: 15
+      start_period: 60s
 
   # ── Prefect Worker (ingest + ML flows) ────────────────────────────────────
   prefect-worker:
@@ -215,11 +213,11 @@ services:
     #           count: 1
     #           capabilities: [gpu]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/11434 && echo -e \"GET /api/tags HTTP/1.0\\r\\n\\r\\n\" >&3 && cat <&3 | grep -q 200'"]
       interval: 20s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
   # ── Next.js Frontend ───────────────────────────────────────────────────────
   web:

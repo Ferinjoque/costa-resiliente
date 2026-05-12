@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "costa-workers"
@@ -9,8 +9,8 @@ description = "Costa Resiliente — Prefect ingestion flows + ML workers"
 requires-python = ">=3.12"
 dependencies = [
     # Orchestration
-    "prefect>=2.19",
-    "prefect-sqlalchemy>=0.4",
+    "prefect>=3.0,<4",
+    "prefect-sqlalchemy>=0.5",
 
     # Data access
     "pystac-client>=0.8",

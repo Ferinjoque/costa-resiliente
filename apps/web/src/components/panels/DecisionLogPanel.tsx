@@ -33,7 +33,7 @@ export function DecisionLogPanel() {
 
   return (
     <aside
-      className="absolute top-4 right-4 bottom-4 w-80 bg-surface-raised border border-slate-700 rounded-xl shadow-xl z-20 flex flex-col"
+      className="absolute top-4 right-4 bottom-4 w-[calc(100vw-4.5rem-2rem)] sm:w-80 max-w-sm bg-surface-raised border border-slate-700 rounded-xl shadow-xl z-20 flex flex-col"
       aria-label="Registro de decisiones"
     >
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
@@ -42,7 +42,7 @@ export function DecisionLogPanel() {
         <a
           href={decisionLogCsvUrl()}
           download
-          className="ml-auto text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-xs"
+          className="ml-auto text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-xs rounded focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none"
           aria-label="Exportar registro a CSV"
         >
           <Download size={13} /> CSV
@@ -81,7 +81,7 @@ export function DecisionLogPanel() {
                   {preview && (
                     <p className="text-xs text-slate-400 truncate mt-0.5">{preview}</p>
                   )}
-                  <p className="text-xs text-slate-600 mt-0.5">
+                  <p className="text-xs text-slate-400 mt-0.5">
                     {entry.operator_id} · {timeStamp(entry.logged_at)}
                   </p>
                 </div>
