@@ -1,92 +1,157 @@
 # Data Sources — Costa Resiliente
 
+> Status column reflects actual implementation state as of 2026-05-13.
+
+---
+
 ## Tier 1 — Foundation
 
 ### Sentinel-1 GRD (Microsoft Planetary Computer)
 - **Endpoint**: `https://planetarycomputer.microsoft.com/api/stac/v1`
 - **Collection**: `sentinel-1-grd`
-- **Access**: Public STAC, signed asset URLs via PC SDK
-- **Resolution**: 10m (GRD), 5×20m (SLC)
-- **Revisit**: ~6 days (Lima AOI, combined A/B)
+- **Access**: Public STAC; signed asset URLs via PC SDK
+- **Resolution**: 10m (GRD IW mode)
+- **Revisit**: ~6 days over Lima AOI (ascending + descending combined)
 - **Latency**: ~3h after acquisition
 - **Implementation**: `apps/workers/src/costa_workers/ingest/sentinel1.py`
+- **Storage**: MinIO (raw GRD) + pgstac catalog + `ml.flood_polygons` (derived)
+- **Status**: ✅ Implemented and running
 
 ### NASA IMERG Early Run (V07B)
 - **Endpoint**: NASA GES DISC OPeNDAP
-- **Resolution**: 0.1° (~11km), half-hourly
-- **Latency**: ~4h
-- **Accumulations**: 1h, 3h, 6h, 12h, 24h, 72h per watershed
+- **Credentials**: `EARTHDATA_USERNAME` / `EARTHDATA_PASSWORD` (set in `.env`)
+- **Resolution**: 0.1° (~11km), half-hourly granules
+- **Latency**: ~4h after observation
+- **Accumulations stored**: 1h, 3h, 6h, 12h, 24h, 72h per Lima watershed
 - **Implementation**: `apps/workers/src/costa_workers/ingest/imerg.py`
+- **Storage**: `hydro.imerg_accumulations` (TimescaleDB hypertable)
+- **Status**: ✅ Implemented and running
 
-### OpenStreetMap — Critical Infrastructure
-- **Access**: Overpass API (`https://overpass-api.de/api/interpreter`)
-- **Layers**: hospitals, schools, fire stations, power substations, bridges
-- **Update cadence**: Weekly refresh
-- **Storage**: `geo.infrastructure` table (PostGIS)
+### Lima Geodata (OSM + INEI)
+- **Districts**: 43 Lima province distritos as MultiPolygon, WGS84
+- **Watersheds**: Rímac, Chillón, Lurín (3 watersheds)
+- **Quebradas**: 10 priority quebradas with IMERG rainfall thresholds
+- **Infrastructure**: hospitals, schools, fire stations, substations, bridges from Overpass API
+- **Population**: INEI 2017 census at district level (`geo.districts.population`)
+- **Load script**: `scripts/load_lima_geodata.py`
+- **Status**: ✅ Loaded into PostGIS
 
-### INEI 2017 Census
-- **Access**: Open data portal `datosabiertos.gob.pe`
-- **Resolution**: Manzana (block), fallback to district
-- **Use**: Population exposure estimates for affected districts
+### STAC Catalog (pgstac)
+- **Backend**: pgstac schema inside the primary Postgres instance
+- **Collections**: sentinel-1-grd, imerg-v07b, flood-polygons
+- **Access**: `http://localhost:8082` (STAC API, pgstac-fastapi)
+- **Status**: ✅ Running; scenes registered on ingest
+
+---
 
 ## Tier 2 — Operational Layers
 
 ### ANA Observatorio Chirilu + SNIRH
 - **URLs**: `observatoriochirilu.ana.gob.pe`, `snirh.ana.gob.pe`
-- **Access**: Polite scraper (no public REST API confirmed)
-- **Caveat**: Scraping is fragile — documented gap, fallback to manual nightly CSV
+- **Access**: HTML scraper (no public REST API confirmed)
+- **Known fragility**: scraping is brittle; documented gap; fallback = manual nightly CSV
 - **Storage**: `hydro.stations` + `hydro.station_observations`
+- **Implementation**: `apps/workers/src/costa_workers/ingest/hydro.py`
+- **Status**: ✅ Scraper implemented; data populates station layer on map
 
 ### SENAMHI
 - **URL**: `senamhi.gob.pe`
-- **Access**: Scraper — same caveats as ANA
+- **Access**: Scraper (same caveats as ANA)
 - **Layers**: Precipitation, temperature, wind, official advisories
+- **Status**: ✅ Scraped alongside ANA in hydro.py
 
 ### INDECI SINPAD Historical
-- **URL**: `datosabiertos.gob.pe/dataset/emergencias-históricas-registradas-con-sinpad`
-- **Access**: Public CSV/API (read-only)
-- **Note**: SINPAD v2.0 live feed requires authorized account — Phase 3 partnership ask
+- **Source file**: `docs/BD-EMER-Y-DAÑOS-INTEGRADA-2003-2020-validada.xlsx` (gitignored, large binary)
+- **Download URL**: `datosabiertos.gob.pe/dataset/emergencias-históricas-registradas-con-sinpad`
+- **Coverage**: 96,531 national records (2003–2020); 2,063 Lima flood/huayco records loaded
+- **Load script**: `scripts/load_sinpad.py`
+- **Storage**: `historical.sinpad_events` (BIGSERIAL, indexed by ubigeo/year/event_type)
+- **Use**: Hazard zone classification (SINPAD event density → flood/landslide levels per district)
+- **Note**: SINPAD v2.0 live feed requires authorized INDECI account — documented as Phase 3 partnership ask; not used here
+- **Status**: ✅ Historical data loaded (2,063 Lima records); hazard zones derived and in `geo.hazard_zones`
 
 ### CENEPRED SIGRID
-- **URL**: `sigrid.cenepred.gob.pe`
-- **Access**: Shapefile downloads (manual refresh)
-- **Layers**: Peligro polygons, EVAR Chosica zones
+- **URL**: `sigrid.cenepred.gob.pe` / `sig.cenepred.gob.pe/arcgis_server/`
+- **Access**: ArcGIS REST — requires token. Portal uses SSO (browser OAuth); `generateToken` endpoint returns 401 for direct API auth. Tokens are IP-bound and short-lived (60 min).
+- **Current approach**: `geo.hazard_zones` is populated from SINPAD historical event density (18-year record as proxy for hazard classification). See `scripts/load_sigrid.py` for future ArcGIS REST loader.
+- **Status**: ⚠️ SIGRID native polygons blocked (SSO auth); SINPAD-derived fallback loaded and serving
 
 ### IGP Seismic Feed
 - **URL**: `ultimosismo.igp.gob.pe`
 - **Use**: Multi-hazard context (secondary to flood/huayco scenario)
+- **Status**: ❌ Not implemented (low priority for current scenario focus)
+
+---
 
 ## Tier 3 — Social & Infrastructure Signals
 
-### Bluesky Jetstream Firehose
-- **Endpoint**: `wss://jetstream2.us-east.bsky.network/subscribe`
-- **Access**: Public WebSocket, no API key required
-- **Filter**: Spanish keyword match + Lima district name match
-- **Privacy**: PII redaction via presidio-analyzer before storage
+### Bluesky Jetstream v2
+- **Endpoint**: `wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post`
+- **Access**: Fully public WebSocket firehose, no credentials required
+- **Filter**: Disaster keyword match (60+ terms) + Lima district vocabulary
+- **Schedule**: Every 15 minutes (30-second window per run)
+- **Privacy**: PII redaction via presidio-analyzer before storage; 7-day retention
+- **Implementation**: `apps/workers/src/costa_workers/ingest/social.py::ingest_bluesky_firehose()`
+- **Status**: ✅ Active
+
+### RSS News Feeds
+- RPP: `https://rpp.pe/rss`
+- Andina (official Peru news agency): `https://andina.pe/agencia/rss.aspx`
+- Canal N: `https://canaln.pe/rss`
+- El Comercio: `https://elcomercio.pe/rss/`
+- La República: `https://larepublica.pe/rss/`
+- Peru21: `https://peru21.pe/rss/`
+- **Filter**: Disaster keyword match; last 48h only
+- **Implementation**: `apps/workers/src/costa_workers/ingest/social.py::ingest_rss_feeds()`
+- **Status**: ✅ Active
 
 ### Reddit
-- **Subreddits**: `r/Peru`, `r/Lima`
-- **Access**: PRAW with registered app credentials
-- **Rate limit**: 60 requests/minute on free tier
+- **Subreddits**: r/Peru, r/Lima, r/Chosica
+- **Access**: Public JSON API (`/r/{sub}/new.json`) — no OAuth required. `REDDIT_CLIENT_ID/SECRET` optional (higher rate limit if set)
+- **Filter**: Disaster keywords; last 48h
+- **Implementation**: `apps/workers/src/costa_workers/ingest/social.py::ingest_reddit()`
+- **Status**: ✅ Active (public API, no credentials needed)
 
-### News RSS
-- RPP: `rpp.pe/rss`
-- Andina: `andina.pe/agencia/rss.aspx`
-- El Comercio: `elcomercio.pe/rss/`
-- Canal N: TBD
-- La República: TBD
+### Telegram
+- **Channel**: `Senamhi_Peru` — SENAMHI official weather and hydro alerts
+- **Access**: Telethon library, read-only. Credentials: `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_SESSION_STRING` (all set in `.env`)
+- **Filter**: Disaster keywords; last 48h
+- **Implementation**: `apps/workers/src/costa_workers/ingest/social.py::ingest_telegram()`
+- **Status**: ✅ Session configured and active (Senamhi_Peru channel)
 
-### Telegram Public Channels
-- COER Lima, distrital civil defense channels
-- **Access**: Telethon client (opt-in per channel)
-- **Privacy**: Only public channels; no private group monitoring
+---
+
+## ML-Derived Layers
+
+### SAR Flood Segmentation
+- **Model**: U-Net initialized from Sen1Floods11 weights (Bonafilia et al. 2020)
+- **Input**: Sentinel-1 GRD IW VV/VH dual-polarization
+- **Output**: `ml.flood_polygons` (MultiPolygon, confidence, area_km2)
+- **Inference time**: <5 min CPU per scene
+- **Status**: ✅ Implemented; polygon layer live on map
+
+### Huayco Susceptibility
+- **Model**: XGBoost, methodology from Castro-Cabrera et al. (Geosciences 14(6):168, 2024)
+- **Features**: slope, aspect, lithology, distance-to-stream, NDVI, soil_moisture, IMERG 24h/72h
+- **Output**: `ml.huayco_susceptibility` (probability + risk_level per quebrada)
+- **Status**: ✅ Implemented; susceptibility circles live on map
+
+### Hazard Zone Classification (SINPAD-derived)
+- **Method**: District-level event frequency + severity score from SINPAD 2003–2020; quartile classification → muy_alto / alto / medio / bajo per hazard type (flood, landslide)
+- **Output**: `geo.hazard_zones` (50 district polygons; source_layer='sinpad_historical')
+- **Status**: ✅ Loaded; layer live on map as "Peligro Histórico"
+
+### Spanish Signal Triage (LLM)
+- **Model**: gemma4:e4b (primary) / qwen3:14b (fallback) via Ollama
+- **Labels**: needs_help, infrastructure_damage, road_blocked, weather_observation, false_alarm, irrelevant
+- **Output**: `social.signals.triage_label` + `triage_confidence`
+- **Status**: ✅ Implemented; all ingested signals are triaged
+
+---
 
 ## Novelty Justification (IEEE Rubric)
 
-The combination of:
-1. **Bluesky AT Protocol firehose** — underutilized in disaster platforms (most use Twitter/X)
-2. **Spanish-language LLM triage** with Pydantic-validated structured output and injection hardening
-3. **r.avaflow simulation triggered by real-time IMERG thresholds** — on-demand debris flow physics
-4. **pgstac + PostGIS + TimescaleDB** unified in one Postgres instance for spatial-temporal queries
-
-...provides novel data discovery and integration that goes beyond simple layer aggregation.
+1. **Bluesky AT Protocol firehose** — underutilized in disaster platforms (most use Twitter/X or WhatsApp groups); provides real-time Spanish citizen reports
+2. **Spanish-language LLM triage** with Pydantic-validated structured output and prompt-injection hardening (Aegis-style cognitive firewall)
+3. **pgstac + PostGIS + TimescaleDB** unified in one Postgres instance — single engine for spatial vector, raster catalog, and time-series; enables complex spatial-temporal joins without cross-service latency
+4. **SINPAD 18-year event density** as a data-driven hazard proxy — honest, reproducible, and more operationally grounded than GIS polygon approximations
