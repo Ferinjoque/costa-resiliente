@@ -15,6 +15,12 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _iso(dt: Any) -> str | None:
+    if dt is None:
+        return None
+    return dt.isoformat() if hasattr(dt, "isoformat") else str(dt)
+
+
 @router.get("/imerg/latest")
 async def imerg_latest(
     watershed_id: int | None = Query(None, description="Filter by watershed ID"),
@@ -31,6 +37,12 @@ async def imerg_latest(
     if watershed_id is not None:
         where_clause = "AND ia.watershed_id = :watershed_id"
         params["watershed_id"] = watershed_id
+
+    # Actual data freshness — time of the most recent IMERG record in DB
+    freshness_row = await db.execute(
+        text("SELECT MAX(time) FROM hydro.imerg_accumulations")
+    )
+    data_updated_at = _iso(freshness_row.scalar())
 
     result = await db.execute(
         text(f"""
@@ -64,7 +76,9 @@ async def imerg_latest(
     return {
         "type": "FeatureCollection",
         "source": "NASA IMERG Early Run v07 (GPM)",
+        "source_url": "https://gpm.nasa.gov/data/imerg",
         "retrieved_at": _now_iso(),
+        "data_updated_at": data_updated_at,
         "features": [
             {
                 "type": "Feature",
@@ -72,7 +86,7 @@ async def imerg_latest(
                     "id": r["id"],
                     "name": r["name"],
                     "river": r["river"],
-                    "latest_time": r["latest_time"].isoformat() if r["latest_time"] else None,
+                    "latest_time": _iso(r["latest_time"]),
                     "acc_1h_mm": r["acc_1h_mm"],
                     "acc_3h_mm": r["acc_3h_mm"],
                     "acc_6h_mm": r["acc_6h_mm"],
@@ -93,6 +107,11 @@ async def flood_latest(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Latest SAR flood polygons from ml.flood_polygons."""
+    freshness_row = await db.execute(
+        text("SELECT MAX(acquired_at) FROM ml.flood_polygons")
+    )
+    data_updated_at = _iso(freshness_row.scalar())
+
     result = await db.execute(
         text("""
             SELECT
@@ -108,14 +127,16 @@ async def flood_latest(
     return {
         "type": "FeatureCollection",
         "source": "ESA Sentinel-1 SAR (flood-seg-v0.1)",
+        "source_url": "https://planetarycomputer.microsoft.com/dataset/sentinel-1-grd",
         "retrieved_at": _now_iso(),
+        "data_updated_at": data_updated_at,
         "features": [
             {
                 "type": "Feature",
                 "properties": {
                     "id": r["id"],
                     "scene_id": r["scene_id"],
-                    "acquired_at": r["acquired_at"].isoformat() if r["acquired_at"] else None,
+                    "acquired_at": _iso(r["acquired_at"]),
                     "model_version": r["model_version"],
                     "confidence": r["confidence"],
                     "area_km2": r["area_km2"],
@@ -130,6 +151,11 @@ async def flood_latest(
 @router.get("/huayco/susceptibility")
 async def huayco_susceptibility(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """Latest huayco probability per quebrada."""
+    freshness_row = await db.execute(
+        text("SELECT MAX(computed_at) FROM ml.huayco_susceptibility")
+    )
+    data_updated_at = _iso(freshness_row.scalar())
+
     result = await db.execute(
         text("""
             SELECT DISTINCT ON (hs.quebrada_id)
@@ -150,7 +176,9 @@ async def huayco_susceptibility(db: AsyncSession = Depends(get_db)) -> dict[str,
     return {
         "type": "FeatureCollection",
         "source": "XGBoost huayco model v0.1 + IMERG trigger",
+        "source_url": "https://www.ingemmet.gob.pe/mapas-de-peligros",
         "retrieved_at": _now_iso(),
+        "data_updated_at": data_updated_at,
         "features": [
             {
                 "type": "Feature",
@@ -160,8 +188,83 @@ async def huayco_susceptibility(db: AsyncSession = Depends(get_db)) -> dict[str,
                     "priority": r["priority"],
                     "probability": r["probability"],
                     "risk_level": r["risk_level"],
-                    "computed_at": r["computed_at"].isoformat() if r["computed_at"] else None,
+                    "computed_at": _iso(r["computed_at"]),
                     "trigger_rain_24h_mm": r["trigger_rain_24h_mm"],
+                },
+                "geometry": r["geometry"],
+            }
+            for r in rows
+        ],
+    }
+
+
+@router.get("/hazard")
+async def hazard_zones(
+    hazard_type: str | None = Query(None, description="Filter: flood, landslide, huayco"),
+    level: str | None = Query(None, description="Filter: muy_alto, alto, medio, bajo"),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """CENEPRED SIGRID official hazard zone polygons."""
+    freshness_row = await db.execute(
+        text("SELECT MAX(loaded_at) FROM geo.hazard_zones")
+    )
+    data_updated_at = _iso(freshness_row.scalar())
+
+    params: dict = {}
+    conditions = []
+    if hazard_type:
+        conditions.append("hazard_type = :hazard_type")
+        params["hazard_type"] = hazard_type
+    if level:
+        conditions.append("level = :level")
+        params["level"] = level
+
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+
+    result = await db.execute(
+        text(f"""
+            SELECT id, name, hazard_type, level, source_layer, loaded_at,
+                   ST_AsGeoJSON(geom)::json AS geometry
+            FROM geo.hazard_zones
+            {where}
+            ORDER BY hazard_type, level, id
+            LIMIT 5000
+        """),
+        params,
+    )
+    rows = result.mappings().all()
+    # Dynamic source attribution based on what data is loaded
+    source_row = await db.execute(
+        text("SELECT ARRAY_AGG(DISTINCT source_layer) FROM geo.hazard_zones")
+    )
+    loaded_sources = source_row.scalar() or []
+    if loaded_sources and loaded_sources != [None]:
+        if any("sinpad" in (s or "") for s in loaded_sources):
+            src_name = "INDECI SINPAD 2003–2020 (densidad histórica de eventos)"
+            src_url = "https://sinpad2.indeci.gob.pe"
+        else:
+            src_name = "CENEPRED SIGRID — Cartografía de Peligros"
+            src_url = "https://sigrid.cenepred.gob.pe"
+    else:
+        src_name = "CENEPRED SIGRID"
+        src_url = "https://sigrid.cenepred.gob.pe"
+
+    return {
+        "type": "FeatureCollection",
+        "source": src_name,
+        "source_url": src_url,
+        "retrieved_at": _now_iso(),
+        "data_updated_at": data_updated_at,
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {
+                    "id": r["id"],
+                    "name": r["name"],
+                    "hazard_type": r["hazard_type"],
+                    "level": r["level"],
+                    "source_layer": r["source_layer"],
+                    "loaded_at": _iso(r["loaded_at"]),
                 },
                 "geometry": r["geometry"],
             }
@@ -206,6 +309,7 @@ async def infrastructure(
     return {
         "type": "FeatureCollection",
         "source": "OpenStreetMap (Overpass API)",
+        "source_url": "https://overpass-api.de",
         "retrieved_at": _now_iso(),
         "features": [
             {
@@ -231,6 +335,11 @@ async def stations(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Hydro station locations with latest reading."""
+    freshness_row = await db.execute(
+        text("SELECT MAX(time) FROM hydro.station_observations")
+    )
+    data_updated_at = _iso(freshness_row.scalar())
+
     params: dict = {}
     where = ""
     if source:
@@ -260,7 +369,9 @@ async def stations(
     return {
         "type": "FeatureCollection",
         "source": "ANA / SENAMHI river monitoring network",
+        "source_url": "https://www.ana.gob.pe/monitoreo-hidrologico",
         "retrieved_at": _now_iso(),
+        "data_updated_at": data_updated_at,
         "features": [
             {
                 "type": "Feature",
@@ -272,7 +383,7 @@ async def stations(
                     "river": r["river"],
                     "elevation_m": r["elevation_m"],
                     "active": r["active"],
-                    "latest_time": r["latest_time"].isoformat() if r["latest_time"] else None,
+                    "latest_time": _iso(r["latest_time"]),
                     "level_m": r["level_m"],
                     "flow_m3s": r["flow_m3s"],
                     "rain_mm": r["rain_mm"],
@@ -300,6 +411,7 @@ async def watersheds(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     return {
         "type": "FeatureCollection",
         "source": "ANA cuencas hidrograficas Lima",
+        "source_url": "https://www.ana.gob.pe",
         "retrieved_at": _now_iso(),
         "features": [
             {
@@ -333,6 +445,7 @@ async def quebradas(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     return {
         "type": "FeatureCollection",
         "source": "INGEMMET + ANA quebradas prioritarias Lima",
+        "source_url": "https://www.ingemmet.gob.pe",
         "retrieved_at": _now_iso(),
         "features": [
             {
