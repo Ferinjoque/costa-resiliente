@@ -461,3 +461,120 @@ async def quebradas(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
             for r in rows
         ],
     }
+
+
+@router.get("/flood/exposure")
+async def flood_exposure(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
+    """Population at risk — spatial join of recent flood polygons × districts."""
+    result = await db.execute(
+        text("""
+            SELECT
+                d.id AS district_id,
+                d.name AS district_name,
+                d.population,
+                COUNT(DISTINCT f.id) AS flood_polygon_count,
+                COALESCE(
+                    ROUND(
+                        SUM(
+                            ST_Area(
+                                ST_Intersection(
+                                    ST_MakeValid(f.geom), ST_MakeValid(d.geom)
+                                )::geography
+                            ) / 1000000
+                        )::numeric, 2
+                    ), 0
+                ) AS overlap_km2,
+                MAX(f.acquired_at) AS latest_scene_at
+            FROM geo.districts d
+            JOIN ml.flood_polygons f
+              ON ST_Intersects(ST_MakeValid(f.geom), ST_MakeValid(d.geom))
+            GROUP BY d.id, d.name, d.population
+            ORDER BY overlap_km2 DESC
+        """)
+    )
+    rows = result.mappings().all()
+    total_pop = sum((r["population"] or 0) for r in rows)
+    return {
+        "retrieved_at": _now_iso(),
+        "source": "ml.flood_polygons × geo.districts (INEI 2017)",
+        "total_affected_population": total_pop,
+        "districts": [
+            {
+                "district_id": r["district_id"],
+                "district_name": r["district_name"],
+                "population": r["population"],
+                "flood_polygon_count": r["flood_polygon_count"],
+                "overlap_km2": float(r["overlap_km2"]),
+                "latest_scene_at": _iso(r["latest_scene_at"]),
+            }
+            for r in rows
+        ],
+    }
+
+
+@router.get("/social")
+async def social_signals(
+    hours: int = Query(48, ge=1, le=168, description="Lookback window hours"),
+    label: str | None = Query(None, description="Filter by triage_label"),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Social signal pins — GeoJSON FeatureCollection for map layer."""
+    params: dict = {"hours": hours}
+    conditions = [
+        "s.triage_label NOT IN ('irrelevant', 'false_alarm')",
+        "s.ingested_at >= NOW() - INTERVAL '1 hour' * :hours",
+        "(s.geom IS NOT NULL OR s.district_id IS NOT NULL)",
+    ]
+    if label:
+        conditions.append("s.triage_label = :label")
+        params["label"] = label
+
+    where = " AND ".join(conditions)
+    result = await db.execute(
+        text(f"""
+            SELECT
+                s.id, s.source, s.triage_label, s.triage_confidence,
+                s.ingested_at, s.district_id, d.name AS district_name,
+                COALESCE(
+                    ST_AsGeoJSON(s.geom)::json,
+                    ST_AsGeoJSON(ST_Centroid(ST_MakeValid(d.geom)))::json
+                ) AS geometry
+            FROM social.signals s
+            LEFT JOIN geo.districts d ON d.id = s.district_id
+            WHERE {where}
+            ORDER BY s.ingested_at DESC
+            LIMIT 500
+        """),
+        params,
+    )
+    rows = result.mappings().all()
+
+    freshness_row = await db.execute(
+        text("SELECT MAX(ingested_at) FROM social.signals")
+    )
+    data_updated_at = _iso(freshness_row.scalar())
+
+    return {
+        "type": "FeatureCollection",
+        "source": "Bluesky + RSS + Reddit + Telegram (señales sociales)",
+        "source_url": "https://bsky.app",
+        "retrieved_at": _now_iso(),
+        "data_updated_at": data_updated_at,
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {
+                    "id": r["id"],
+                    "source": r["source"],
+                    "triage_label": r["triage_label"],
+                    "triage_confidence": r["triage_confidence"],
+                    "ingested_at": _iso(r["ingested_at"]),
+                    "district_id": r["district_id"],
+                    "district_name": r["district_name"],
+                },
+                "geometry": r["geometry"],
+            }
+            for r in rows
+            if r["geometry"] is not None
+        ],
+    }

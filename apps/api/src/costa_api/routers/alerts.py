@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import io
 import csv
@@ -148,6 +149,46 @@ async def act_on_alert(
 
 
 # ─── Decision log ─────────────────────────────────────────────────────────────
+
+@router.get("/stream")
+async def alerts_stream(db: AsyncSession = Depends(get_db)) -> StreamingResponse:
+    """Server-Sent Events — pushes active alerts every 10 s."""
+    async def generate():
+        while True:
+            try:
+                result = await db.execute(
+                    text("""
+                        SELECT id, type, severity, title, status, created_at, district_id
+                        FROM ops.alerts
+                        WHERE status = 'active'
+                        ORDER BY created_at DESC
+                        LIMIT 20
+                    """)
+                )
+                rows = result.mappings().all()
+                alerts = []
+                for r in rows:
+                    d = dict(r)
+                    if isinstance(d.get("created_at"), datetime):
+                        d["created_at"] = d["created_at"].isoformat()
+                    alerts.append(d)
+                yield f"data: {json.dumps(alerts)}\n\n"
+                await asyncio.sleep(10)
+            except GeneratorExit:
+                break
+            except Exception:
+                break
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
 
 @router.get("/decision-log", response_model=list[DecisionLogEntry])
 async def list_decision_log(
