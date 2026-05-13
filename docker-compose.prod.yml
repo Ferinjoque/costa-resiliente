@@ -1,0 +1,106 @@
+# Production overrides — use alongside docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# What this file does:
+#   - Adds Caddy as TLS-terminating reverse proxy (ports 80 + 443)
+#   - Removes dev port exposures (only Caddy is internet-facing)
+#   - Sets production build targets for api, workers, web
+#   - Bakes PUBLIC_DOMAIN into the Next.js build via build arg
+#   - Configures production-grade restart / logging policies
+
+services:
+
+  # ── Caddy (TLS termination + routing) ─────────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: costa-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:?Set PUBLIC_DOMAIN in .env, e.g. costa.yourdomain.com}
+    networks:
+      - costa-net
+    depends_on:
+      - web
+      - api
+
+  # ── Next.js frontend (production build, no port exposed) ──────────────────
+  web:
+    build:
+      context: apps/web
+      dockerfile: Dockerfile
+      target: production
+      args:
+        # Empty = relative URL; Caddy routes /api/* to the api container.
+        NEXT_PUBLIC_API_URL: ""
+    environment:
+      NODE_ENV: production
+    ports: []
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── FastAPI backend (production target, no port exposed) ──────────────────
+  api:
+    build:
+      context: apps/api
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      APP_ENV: production
+      APP_CORS_ORIGINS: "https://${PUBLIC_DOMAIN}"
+    ports: []
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Prefect worker (production) ────────────────────────────────────────────
+  prefect-worker:
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Prefect server (no port exposed — internal only) ──────────────────────
+  prefect-server:
+    ports: []
+    restart: unless-stopped
+
+  # ── Postgres (no port exposed in production) ──────────────────────────────
+  postgres:
+    ports: []
+    restart: unless-stopped
+
+  # ── Redis (no port exposed in production) ─────────────────────────────────
+  redis:
+    ports: []
+    restart: unless-stopped
+
+  # ── MinIO (no management console exposed) ─────────────────────────────────
+  minio:
+    ports:
+      - "9000:9000"    # S3 API — keep for Prefect workers; block at firewall if needed
+    restart: unless-stopped
+
+  # ── Ollama (no port exposed — internal only) ──────────────────────────────
+  ollama:
+    ports: []
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+  caddy-config:
