@@ -74,6 +74,20 @@ CREATE TABLE IF NOT EXISTS geo.infrastructure (
 CREATE INDEX IF NOT EXISTS infra_geom_idx ON geo.infrastructure USING GIST (geom);
 CREATE INDEX IF NOT EXISTS infra_type_idx ON geo.infrastructure (type);
 
+-- ─── geo: CENEPRED SIGRID Hazard Zones ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS geo.hazard_zones (
+    id           BIGSERIAL PRIMARY KEY,
+    name         TEXT,
+    hazard_type  TEXT NOT NULL,   -- flood | landslide | huayco | earthquake | tsunami
+    level        TEXT NOT NULL,   -- muy_alto | alto | medio | bajo
+    source_layer TEXT,            -- original SIGRID WFS layer name
+    geom         GEOMETRY(MULTIPOLYGON, 4326) NOT NULL,
+    loaded_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS hazard_zones_geom_idx  ON geo.hazard_zones USING GIST (geom);
+CREATE INDEX IF NOT EXISTS hazard_zones_type_idx  ON geo.hazard_zones (hazard_type);
+CREATE INDEX IF NOT EXISTS hazard_zones_level_idx ON geo.hazard_zones (level);
+
 -- ─── hydro: IMERG Rainfall Accumulations ──────────────────────────────────────
 CREATE TABLE IF NOT EXISTS hydro.imerg_accumulations (
     time            TIMESTAMPTZ NOT NULL,
