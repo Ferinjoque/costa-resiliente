@@ -81,6 +81,14 @@ secrets/
 # Geospatial data (rasters, large files)
 data/raw/
 data/processed/
+# Large source data files in docs/ (Excel, shapefiles — download separately)
+docs/*.xlsx
+docs/*.xls
+docs/*.zip
+docs/*.shp
+docs/*.dbf
+docs/*.shx
+docs/*.prj
 # PMTiles and OSM extracts (generated, large)
 data/pmtiles/*.pmtiles
 data/pmtiles/*.osm.pbf
