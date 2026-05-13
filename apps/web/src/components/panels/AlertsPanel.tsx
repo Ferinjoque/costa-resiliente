@@ -1,10 +1,11 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Bell, CheckCircle, AlertTriangle, TrendingUp, Users, type LucideIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
-import { useAlerts } from "@/lib/queries";
-import { actOnAlert } from "@/lib/api";
+import { useAlerts, useFloodExposure } from "@/lib/queries";
+import { actOnAlert, alertsStreamUrl } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Alert } from "@/lib/api";
 import { timeAgo } from "@/lib/utils";
@@ -23,7 +24,6 @@ const SEVERITY_DOT: Record<string, string> = {
   medium: "bg-yellow-400",
   low: "bg-blue-400",
 };
-
 
 function AlertRow({ alert }: { alert: Alert }) {
   const qc = useQueryClient();
@@ -48,9 +48,9 @@ function AlertRow({ alert }: { alert: Alert }) {
         <div className="flex-1 min-w-0">
           <p className="text-sm text-white truncate">{alert.title}</p>
           <p className="text-xs text-slate-300 mt-0.5 flex items-center gap-1.5">
-            <Icon size={11} />
+            <Icon size={11} aria-hidden="true" />
             <span className="capitalize">{alert.type.replace("_", " ")}</span>
-            <span>·</span>
+            <span aria-hidden="true">·</span>
             <span>{timeAgo(alert.created_at)}</span>
           </p>
         </div>
@@ -73,7 +73,36 @@ function AlertRow({ alert }: { alert: Alert }) {
 
 export function AlertsPanel() {
   const { activePanel } = useUIStore();
+  const qc = useQueryClient();
   const { data: alerts = [], isLoading, isError, dataUpdatedAt } = useAlerts();
+  const { data: exposure } = useFloodExposure();
+  const sseRef = useRef<EventSource | null>(null);
+
+  // SSE: subscribe to live alert push
+  useEffect(() => {
+    if (sseRef.current) return;
+    const es = new EventSource(alertsStreamUrl());
+    sseRef.current = es;
+
+    es.onmessage = (evt) => {
+      try {
+        const fresh: Alert[] = JSON.parse(evt.data);
+        qc.setQueryData(["alerts", undefined], fresh);
+      } catch {
+        // malformed SSE frame — ignore
+      }
+    };
+
+    es.onerror = () => {
+      es.close();
+      sseRef.current = null;
+    };
+
+    return () => {
+      es.close();
+      sseRef.current = null;
+    };
+  }, [qc]);
 
   if (activePanel !== "alerts") return null;
 
@@ -82,14 +111,12 @@ export function AlertsPanel() {
   return (
     <aside
       className={[
-        // Mobile: bottom sheet above the tab bar
         "fixed bottom-14 left-0 right-0 h-[62vh] rounded-t-2xl",
-        // Desktop: right panel
         "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
-        // Common
         "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col",
       ].join(" ")}
       aria-label="Feed de alertas"
+      role="complementary"
     >
       {/* Mobile drag handle */}
       <div className="sm:hidden flex justify-center pt-2 pb-1" aria-hidden="true">
@@ -97,21 +124,37 @@ export function AlertsPanel() {
       </div>
 
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
-        <Bell size={15} className="text-costa-500" />
+        <Bell size={15} className="text-costa-500" aria-hidden="true" />
         <h2 className="text-sm font-semibold text-white">Alertas</h2>
         {activeCount > 0 && (
-          <span className="ml-auto bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+          <span
+            className="ml-auto bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full"
+            aria-label={`${activeCount} alertas activas`}
+          >
             {activeCount}
           </span>
         )}
       </div>
 
-      <ul className="flex-1 overflow-y-auto divide-y divide-slate-700/50">
+      {/* Population exposure callout */}
+      {exposure && exposure.total_affected_population > 0 && (
+        <div className="mx-3 mt-2 bg-red-900/30 border border-red-700/50 rounded-lg px-3 py-2">
+          <p className="text-xs text-red-300 font-medium">
+            ~{exposure.total_affected_population.toLocaleString("es-PE")} personas en zona inundada
+          </p>
+          <p className="text-[10px] text-red-400 mt-0.5">
+            {exposure.districts.slice(0, 3).map((d) => d.district_name).join(", ")}
+            {exposure.districts.length > 3 && ` +${exposure.districts.length - 3} distritos`}
+          </p>
+        </div>
+      )}
+
+      <ul className="flex-1 overflow-y-auto divide-y divide-slate-700/50" role="list" aria-label="Lista de alertas">
         {isLoading && (
-          <li className="px-4 py-8 text-xs text-slate-400 text-center">Cargando alertas…</li>
+          <li className="px-4 py-8 text-xs text-slate-400 text-center" aria-live="polite">Cargando alertas…</li>
         )}
         {isError && (
-          <li className="px-4 py-8 text-xs text-red-400 text-center">Error al cargar alertas</li>
+          <li className="px-4 py-8 text-xs text-red-400 text-center" role="alert">Error al cargar alertas</li>
         )}
         {!isLoading && !isError && alerts.length === 0 && (
           <li className="px-4 py-8 text-xs text-slate-400 text-center">
@@ -124,7 +167,7 @@ export function AlertsPanel() {
       </ul>
 
       <div className="px-4 py-2 border-t border-slate-700 text-xs text-slate-400 text-center">
-        {dataUpdatedAt ? `Actualizado ${timeAgo(new Date(dataUpdatedAt).toISOString())}` : "Actualización cada 30 s"}
+        {dataUpdatedAt ? `Actualizado ${timeAgo(new Date(dataUpdatedAt).toISOString())}` : "Actualización en tiempo real (SSE)"}
       </div>
     </aside>
   );

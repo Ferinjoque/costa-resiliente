@@ -45,7 +45,7 @@ export function DecisionLogPanel() {
       </div>
 
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
-        <ClipboardList size={15} className="text-costa-500" />
+        <ClipboardList size={15} className="text-costa-500" aria-hidden="true" />
         <h2 className="text-sm font-semibold text-white">Registro</h2>
         <a
           href={decisionLogCsvUrl()}
@@ -57,12 +57,18 @@ export function DecisionLogPanel() {
         </a>
       </div>
 
-      <ul className="flex-1 overflow-y-auto divide-y divide-slate-700/50">
+      <ul
+        className="flex-1 overflow-y-auto divide-y divide-slate-700/50"
+        role="list"
+        aria-label="Entradas del registro de decisiones"
+        aria-live="polite"
+        aria-busy={isLoading}
+      >
         {isLoading && (
-          <li className="px-4 py-8 text-xs text-slate-400 text-center">Cargando registro…</li>
+          <li className="px-4 py-8 text-xs text-slate-400 text-center" aria-live="polite">Cargando registro…</li>
         )}
         {isError && (
-          <li className="px-4 py-8 text-xs text-red-400 text-center">Error al cargar registro</li>
+          <li className="px-4 py-8 text-xs text-red-400 text-center" role="alert">Error al cargar registro</li>
         )}
         {!isLoading && !isError && entries.length === 0 && (
           <li className="px-4 py-8 text-xs text-slate-400 text-center">
