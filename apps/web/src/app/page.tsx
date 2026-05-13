@@ -14,7 +14,7 @@ const MapView = dynamic(() => import("@/components/map/MapView"), {
   ssr: false,
   loading: () => (
     <div className="flex-1 bg-surface-base flex items-center justify-center">
-      <span className="text-slate-500 text-sm">Cargando mapa…</span>
+      <span className="text-slate-400 text-sm">Cargando mapa…</span>
     </div>
   ),
 });
@@ -25,14 +25,18 @@ export default function Home() {
       {/* Left navigation rail */}
       <LeftRail />
 
-      {/* Main content area */}
-      <main className="relative flex-1 overflow-hidden">
+      {/* Main content area — pb-14 reserves space for mobile bottom nav */}
+      <main
+        id="main-content"
+        className="relative flex-1 overflow-hidden pb-14 sm:pb-0"
+        aria-label="Mapa y paneles operacionales"
+      >
         {/* Map layer — sits at z-0, fills main */}
         <div className="absolute inset-0 z-0">
           <Suspense
             fallback={
               <div className="flex h-full w-full items-center justify-center bg-surface-base">
-                <span className="text-slate-500 text-sm">Cargando mapa…</span>
+                <span className="text-slate-400 text-sm">Cargando mapa…</span>
               </div>
             }
           >

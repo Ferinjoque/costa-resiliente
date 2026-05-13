@@ -34,9 +34,17 @@ export function AskPanel() {
 
   return (
     <aside
-      className="absolute top-4 right-4 bottom-4 w-[calc(100vw-4.5rem-2rem)] sm:w-80 max-w-sm bg-surface-raised border border-slate-700 rounded-xl shadow-xl z-20 flex flex-col"
+      className={[
+        "fixed bottom-14 left-0 right-0 h-[62vh] rounded-t-2xl",
+        "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
+        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col",
+      ].join(" ")}
       aria-label="Panel de consulta"
     >
+      <div className="sm:hidden flex justify-center pt-2 pb-1" aria-hidden="true">
+        <div className="w-8 h-1 rounded-full bg-slate-600" />
+      </div>
+
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
         <Search size={15} className="text-costa-500" />
         <h2 className="text-sm font-semibold text-white">Consultar</h2>
@@ -48,7 +56,7 @@ export function AskPanel() {
             <p className="text-sm text-white leading-relaxed">{answer}</p>
           </div>
         ) : (
-          <p className="text-xs text-slate-500 text-center mt-8">
+          <p className="text-xs text-slate-400 text-center mt-8">
             Haz una pregunta en español sobre la situación actual en Lima.
             <br />
             <br />
@@ -67,7 +75,7 @@ export function AskPanel() {
             placeholder="Consulta en español…"
             aria-label="Consulta en español"
             disabled={loading}
-            className="flex-1 bg-surface-panel border border-slate-600 text-white text-sm rounded-lg px-3 py-2 placeholder:text-slate-500 focus:outline-none focus:border-costa-500 focus-visible:ring-2 focus-visible:ring-costa-500 disabled:opacity-50"
+            className="flex-1 bg-surface-panel border border-slate-600 text-white text-sm rounded-lg px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-costa-500 focus-visible:ring-2 focus-visible:ring-costa-500 disabled:opacity-50"
           />
           <button
             type="submit"

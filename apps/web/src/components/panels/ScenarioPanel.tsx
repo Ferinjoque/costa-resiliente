@@ -15,7 +15,14 @@ export function ScenarioPanel() {
 
   return (
     <aside
-      className="absolute top-4 left-4 w-[calc(100vw-4.5rem-2rem)] sm:w-72 max-w-xs bg-surface-raised border border-slate-700 rounded-xl shadow-xl z-20"
+      className={[
+        // Mobile: drops from top, full-width
+        "fixed top-0 left-0 right-0 rounded-b-xl",
+        // Desktop: absolute top-left corner of main
+        "sm:absolute sm:top-4 sm:left-4 sm:right-auto sm:w-72 sm:max-w-xs sm:rounded-xl",
+        // Common
+        "bg-surface-raised border border-slate-700 shadow-xl z-20",
+      ].join(" ")}
       aria-label="Panel de escenario"
     >
       {/* Header */}
@@ -118,6 +125,7 @@ function LayerToggles() {
     { id: "imerg", label: "Lluvia IMERG" },
     { id: "flood", label: "Inundación SAR" },
     { id: "huayco", label: "Huayco" },
+    { id: "hazard", label: "Peligro Histórico" },
     { id: "infrastructure", label: "Infraestructura" },
   ];
 

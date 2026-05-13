@@ -11,6 +11,10 @@ CMD ["npm", "run", "dev"]
 
 # ── Builder ────────────────────────────────────────────────────────────────────
 FROM base AS builder
+# Empty string = relative URLs; Caddy proxies /api/* to the API container.
+# Override at build time: docker compose build --build-arg NEXT_PUBLIC_API_URL=https://yourdomain
+ARG NEXT_PUBLIC_API_URL=""
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN npm ci
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1

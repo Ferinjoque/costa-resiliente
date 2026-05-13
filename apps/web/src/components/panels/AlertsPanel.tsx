@@ -81,9 +81,21 @@ export function AlertsPanel() {
 
   return (
     <aside
-      className="absolute top-4 right-4 bottom-4 w-[calc(100vw-4.5rem-2rem)] sm:w-80 max-w-sm bg-surface-raised border border-slate-700 rounded-xl shadow-xl z-20 flex flex-col"
+      className={[
+        // Mobile: bottom sheet above the tab bar
+        "fixed bottom-14 left-0 right-0 h-[62vh] rounded-t-2xl",
+        // Desktop: right panel
+        "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
+        // Common
+        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col",
+      ].join(" ")}
       aria-label="Feed de alertas"
     >
+      {/* Mobile drag handle */}
+      <div className="sm:hidden flex justify-center pt-2 pb-1" aria-hidden="true">
+        <div className="w-8 h-1 rounded-full bg-slate-600" />
+      </div>
+
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
         <Bell size={15} className="text-costa-500" />
         <h2 className="text-sm font-semibold text-white">Alertas</h2>
@@ -96,13 +108,13 @@ export function AlertsPanel() {
 
       <ul className="flex-1 overflow-y-auto divide-y divide-slate-700/50">
         {isLoading && (
-          <li className="px-4 py-8 text-xs text-slate-500 text-center">Cargando alertas…</li>
+          <li className="px-4 py-8 text-xs text-slate-400 text-center">Cargando alertas…</li>
         )}
         {isError && (
           <li className="px-4 py-8 text-xs text-red-400 text-center">Error al cargar alertas</li>
         )}
         {!isLoading && !isError && alerts.length === 0 && (
-          <li className="px-4 py-8 text-xs text-slate-500 text-center">
+          <li className="px-4 py-8 text-xs text-slate-400 text-center">
             No hay alertas activas
           </li>
         )}
@@ -111,7 +123,7 @@ export function AlertsPanel() {
         ))}
       </ul>
 
-      <div className="px-4 py-2 border-t border-slate-700 text-xs text-slate-500 text-center">
+      <div className="px-4 py-2 border-t border-slate-700 text-xs text-slate-400 text-center">
         {dataUpdatedAt ? `Actualizado ${timeAgo(new Date(dataUpdatedAt).toISOString())}` : "Actualización cada 30 s"}
       </div>
     </aside>

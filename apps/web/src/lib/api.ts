@@ -82,7 +82,9 @@ export interface ImergFeature {
 export interface ImergCollection {
   type: "FeatureCollection";
   source?: string;
+  source_url?: string;
   retrieved_at?: string;
+  data_updated_at?: string;
   features: ImergFeature[];
 }
 
@@ -96,7 +98,9 @@ export function fetchImerg(hours = 24): Promise<ImergCollection> {
 export interface FloodCollection {
   type: "FeatureCollection";
   source?: string;
+  source_url?: string;
   retrieved_at?: string;
+  data_updated_at?: string;
   features: GeoJSON.Feature[];
 }
 
@@ -125,7 +129,9 @@ export interface HuaycoFeature {
 export interface HuaycoCollection {
   type: "FeatureCollection";
   source?: string;
+  source_url?: string;
   retrieved_at?: string;
+  data_updated_at?: string;
   features: HuaycoFeature[];
 }
 
@@ -159,6 +165,37 @@ export interface InfraCollection {
 export function fetchInfrastructure(type?: string): Promise<InfraCollection> {
   const q = type ? `?type=${encodeURIComponent(type)}` : "";
   return get<InfraCollection>(`/api/v1/layers/infrastructure${q}`);
+}
+
+// ─── Hazard zones (CENEPRED SIGRID) ──────────────────────────────────────────
+
+export interface HazardProperties {
+  id: number;
+  name: string | null;
+  hazard_type: string;
+  level: string;
+  source_layer: string | null;
+  loaded_at: string | null;
+}
+
+export interface HazardFeature {
+  type: "Feature";
+  geometry: GeoJSON.Geometry;
+  properties: HazardProperties;
+}
+
+export interface HazardCollection {
+  type: "FeatureCollection";
+  source?: string;
+  source_url?: string;
+  retrieved_at?: string;
+  data_updated_at?: string;
+  features: HazardFeature[];
+}
+
+export function fetchHazard(hazardType?: string): Promise<HazardCollection> {
+  const q = hazardType ? `?hazard_type=${encodeURIComponent(hazardType)}` : "";
+  return get<HazardCollection>(`/api/v1/layers/hazard${q}`);
 }
 
 // ─── Alerts ───────────────────────────────────────────────────────────────────
