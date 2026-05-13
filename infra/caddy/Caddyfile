@@ -1,0 +1,58 @@
+# Caddy reverse proxy — TLS auto-provisioned via Let's Encrypt.
+# PUBLIC_DOMAIN env var is injected by docker-compose.prod.yml.
+#
+# Routing:
+#   /api/*   → FastAPI (costa-api:8000)   — REST API + copilot
+#   /stac/*  → STAC API (costa-stac:8080) — STAC catalog (internal use)
+#   *        → Next.js  (costa-web:3000)  — frontend
+
+{env.PUBLIC_DOMAIN} {
+
+    # ── API backend ───────────────────────────────────────────────────────────
+    handle /api/* {
+        reverse_proxy api:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # ── STAC catalog (stac-fastapi-pgstac) ────────────────────────────────────
+    handle /stac/* {
+        uri strip_prefix /stac
+        reverse_proxy stac-api:8080 {
+            header_up Host {host}
+        }
+    }
+
+    # ── Next.js frontend (catch-all) ──────────────────────────────────────────
+    handle {
+        reverse_proxy web:3000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # ── Security headers (supplement Next.js headers) ─────────────────────────
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # ── Logging ───────────────────────────────────────────────────────────────
+    log {
+        output stdout
+        format json
+        level INFO
+    }
+}
+
+# Redirect http → https (Caddy does this automatically, but explicit is clear)
+http://{env.PUBLIC_DOMAIN} {
+    redir https://{env.PUBLIC_DOMAIN}{uri} permanent
+}
