@@ -1,17 +1,18 @@
 "use client";
 
-import { Map, Bell, Search, ClipboardList, Settings } from "lucide-react";
+import { Map, Bell, Search, ClipboardList, Info, Languages } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { clsx } from "clsx";
+import type { Locale } from "@/store/ui";
 
 const NAV_ITEMS = [
-  { id: "map",    label: "Mapa",      icon: Map },
-  { id: "alerts", label: "Alertas",   icon: Bell },
-  { id: "ask",    label: "Consultar", icon: Search },
-  { id: "log",    label: "Registro",  icon: ClipboardList },
+  { id: "map",     label: "Mapa",      icon: Map },
+  { id: "alerts",  label: "Alertas",   icon: Bell },
+  { id: "ask",     label: "Consultar", icon: Search },
+  { id: "log",     label: "Registro",  icon: ClipboardList },
 ] as const;
 
-type PanelId = (typeof NAV_ITEMS)[number]["id"];
+type PanelId = (typeof NAV_ITEMS)[number]["id"] | "sources";
 
 function NavButton({
   id,
@@ -43,16 +44,17 @@ function NavButton({
         active ? "bg-costa-700 text-white" : "text-slate-400 hover:text-white",
       )}
     >
-      <Icon size={mobile ? 20 : 18} />
+      <Icon size={mobile ? 20 : 18} aria-hidden="true" />
       {mobile && <span className="leading-none">{label}</span>}
     </button>
   );
 }
 
 export function LeftRail() {
-  const { activePanel, setActivePanel } = useUIStore();
+  const { activePanel, setActivePanel, locale, setLocale } = useUIStore();
 
   const handleNav = (id: PanelId) => setActivePanel(id);
+  const toggleLocale = () => setLocale(locale === "es" ? "en" : "es");
 
   return (
     <>
@@ -62,7 +64,10 @@ export function LeftRail() {
         aria-label="Navegación principal"
       >
         {/* Logo */}
-        <div className="mb-4 w-8 h-8 rounded bg-costa-500 flex items-center justify-center text-white font-bold text-xs select-none">
+        <div
+          className="mb-4 w-8 h-8 rounded bg-costa-500 flex items-center justify-center text-white font-bold text-xs select-none"
+          aria-hidden="true"
+        >
           CR
         </div>
 
@@ -77,12 +82,30 @@ export function LeftRail() {
           />
         ))}
 
-        <div className="mt-auto">
+        <div className="mt-auto flex flex-col gap-1">
+          {/* About this data */}
           <button
-            aria-label="Configuración"
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-surface-panel transition-colors"
+            onClick={() => handleNav("sources")}
+            aria-label="Sobre los datos"
+            aria-pressed={activePanel === "sources"}
+            title="Sobre los datos"
+            className={clsx(
+              "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+              "hover:bg-surface-panel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-costa-500",
+              activePanel === "sources" ? "bg-costa-700 text-white" : "text-slate-400 hover:text-white",
+            )}
           >
-            <Settings size={18} />
+            <Info size={18} aria-hidden="true" />
+          </button>
+
+          {/* Language toggle */}
+          <button
+            onClick={toggleLocale}
+            aria-label={locale === "es" ? "Switch to English" : "Cambiar a Español"}
+            title={locale === "es" ? "EN" : "ES"}
+            className="w-10 h-10 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-surface-panel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-costa-500"
+          >
+            <Languages size={18} aria-hidden="true" />
           </button>
         </div>
       </nav>
@@ -104,11 +127,16 @@ export function LeftRail() {
           />
         ))}
         <button
-          aria-label="Configuración"
-          className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full text-[10px] text-slate-400 hover:text-white hover:bg-surface-panel transition-colors rounded-lg"
+          onClick={() => handleNav("sources")}
+          aria-label="Sobre los datos"
+          aria-pressed={activePanel === "sources"}
+          className={clsx(
+            "flex flex-col items-center justify-center gap-0.5 flex-1 h-full text-[10px] transition-colors rounded-lg",
+            activePanel === "sources" ? "bg-costa-700 text-white" : "text-slate-400 hover:text-white hover:bg-surface-panel",
+          )}
         >
-          <Settings size={20} />
-          <span className="leading-none">Config</span>
+          <Info size={20} aria-hidden="true" />
+          <span className="leading-none">Info</span>
         </button>
       </nav>
     </>

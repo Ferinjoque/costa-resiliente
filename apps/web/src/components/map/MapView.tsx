@@ -11,6 +11,7 @@ import {
   useHuayco,
   useInfrastructure,
   useHazard,
+  useSocialSignals,
 } from "@/lib/queries";
 
 const LIMA_CENTER: [number, number] = [-76.97, -12.05];
@@ -69,6 +70,7 @@ export default function MapView() {
   const { data: huaycoData } = useHuayco();
   const { data: infraData } = useInfrastructure();
   const { data: hazardData } = useHazard();
+  const { data: socialData } = useSocialSignals(48);
 
   // ─── Map initialisation ────────────────────────────────────────────────────
   useEffect(() => {
@@ -330,6 +332,44 @@ export default function MapView() {
     }
   }, [infraData, addOrUpdateSource]);
 
+  // ─── Sync social signal pins ──────────────────────────────────────────
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !socialData) return;
+
+    const labelColor: maplibregl.ExpressionSpecification = [
+      "match",
+      ["get", "triage_label"],
+      "needs_help",           "#ef4444",
+      "infrastructure_damage","#f97316",
+      "road_blocked",         "#f59e0b",
+      "weather_observation",  "#38bdf8",
+      "#94a3b8",
+    ];
+
+    const onLoad = () => {
+      addOrUpdateSource("social-src", socialData);
+
+      if (!m.getLayer("social-circle")) {
+        m.addLayer({
+          id: "social-circle",
+          type: "circle",
+          source: "social-src",
+          paint: {
+            "circle-radius": 5,
+            "circle-color": labelColor,
+            "circle-opacity": 0.85,
+            "circle-stroke-color": "#0f172a",
+            "circle-stroke-width": 1,
+          },
+        });
+      }
+    };
+
+    if (m.loaded()) onLoad();
+    else m.once("load", onLoad);
+  }, [socialData, addOrUpdateSource]);
+
   // ─── Sync hazard zones (CENEPRED SIGRID) ──────────────────────────────────
   useEffect(() => {
     const m = map.current;
@@ -395,6 +435,7 @@ export default function MapView() {
       huayco: ["huayco-circle"],
       hazard: ["hazard-fill", "hazard-outline"],
       infrastructure: ["infra-circle"],
+      social: ["social-circle"],
     };
 
     for (const [key, ids] of Object.entries(layerMap)) {
