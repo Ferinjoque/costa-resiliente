@@ -1,17 +1,28 @@
-﻿{
-  "name": "Costa Resiliente",
-  "short_name": "CostaRes",
-  "description": "Plataforma de conciencia situacional para inundaciones y huaycos — Lima Metropolitana",
+{
+  "name": "Costa Resiliente — Lima Metropolitana",
+  "short_name": "Costa Resiliente",
+  "description": "Plataforma de conciencia situacional en tiempo real para inundaciones y huaycos en Lima Metropolitana",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "es",
+  "categories": ["government", "utilities"],
   "icons": [
     {
       "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Alertas activas",
+      "url": "/?panel=alerts",
+      "description": "Ver alertas de inundación y huayco activas"
     }
   ]
 }

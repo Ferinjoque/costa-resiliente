@@ -1,0 +1,80 @@
+{
+  "nav": {
+    "map": "Map",
+    "alerts": "Alerts",
+    "ask": "Ask",
+    "log": "Log",
+    "sources": "Info",
+    "settings": "Settings"
+  },
+  "scenario": {
+    "title": "Scenario",
+    "district": "District / Watershed",
+    "allLima": "Lima Metropolitan Area (all)",
+    "timeWindow": "Time window",
+    "layers": "Layers",
+    "replayBadge": "REPLAY 2017",
+    "enterReplay": "El Niño 2017",
+    "exitReplay": "Exit replay",
+    "tutorial": "Tutorial",
+    "replayLabel": "Replay date",
+    "replayNote": "Coastal El Niño: Jan–Apr 2017"
+  },
+  "layers": {
+    "districts": "Districts",
+    "imerg": "IMERG Rainfall",
+    "flood": "SAR Flood",
+    "huayco": "Huayco",
+    "hazard": "Historical Hazard",
+    "infrastructure": "Infrastructure",
+    "social": "Social signals"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "loading": "Loading alerts…",
+    "error": "Error loading alerts",
+    "empty": "No active alerts",
+    "acknowledge": "Acknowledge alert",
+    "footer": "Live updates (SSE)",
+    "exposure": "~{count, number} people in flooded area"
+  },
+  "ask": {
+    "title": "Ask",
+    "placeholder": "Ask in Spanish or English…",
+    "send": "Send query",
+    "hint": "Ask a question about the current situation in Lima.\nE.g. \"How many active alerts in Lurigancho?\" or \"Which quebradas have high risk?\""
+  },
+  "log": {
+    "title": "Decision Log",
+    "loading": "Loading log…",
+    "error": "Error loading log",
+    "empty": "Decision log entries will appear here.\nEvery query, acknowledgement, and escalation is recorded immutably for EDAN-Peru export.",
+    "export": "Export log to CSV",
+    "footer": "Append-only log · EDAN-Peru export"
+  },
+  "sources": {
+    "title": "About the data",
+    "close": "Close panel",
+    "meta": "{count} active sources · PII redacted (presidio) · 7-day retention",
+    "coverage": "Coverage:",
+    "latency": "Latency:",
+    "open": "Open {name} in new tab"
+  },
+  "tutorial": {
+    "title": "Coastal El Niño 2017 Tutorial",
+    "subtitle": "Follow the steps to explore how Lima Metropolitana was affected during the 2017 Coastal El Niño event.",
+    "close": "Close tutorial",
+    "start": "Start tutorial",
+    "next": "Next",
+    "prev": "Back",
+    "finish": "Finish",
+    "step": "Step {current} of {total}"
+  },
+  "map": {
+    "loading": "Loading map…",
+    "aria": "Operational map of Lima Metropolitana"
+  },
+  "freshness": {
+    "aria": "Data freshness"
+  }
+}
