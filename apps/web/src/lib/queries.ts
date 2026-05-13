@@ -20,6 +20,7 @@ import {
   fetchFlood,
   fetchHuayco,
   fetchInfrastructure,
+  fetchHazard,
   fetchAlerts,
   fetchDecisionLog,
   type DistrictCollection,
@@ -28,6 +29,7 @@ import {
   type FloodCollection,
   type HuaycoCollection,
   type InfraCollection,
+  type HazardCollection,
   type Alert,
   type DecisionLogEntry,
 } from "./api";
@@ -98,6 +100,18 @@ export function useInfrastructure(
   return useQuery({
     queryKey: ["infrastructure", type],
     queryFn: () => fetchInfrastructure(type),
+    staleTime: 60 * MIN,
+    ...opts,
+  });
+}
+
+export function useHazard(
+  hazardType?: string,
+  opts?: Partial<UseQueryOptions<HazardCollection>>
+): UseQueryResult<HazardCollection> {
+  return useQuery({
+    queryKey: ["hazard", hazardType],
+    queryFn: () => fetchHazard(hazardType),
     staleTime: 60 * MIN,
     ...opts,
   });

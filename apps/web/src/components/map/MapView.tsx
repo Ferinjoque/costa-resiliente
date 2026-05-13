@@ -10,6 +10,7 @@ import {
   useFlood,
   useHuayco,
   useInfrastructure,
+  useHazard,
 } from "@/lib/queries";
 
 const LIMA_CENTER: [number, number] = [-76.97, -12.05];
@@ -67,6 +68,7 @@ export default function MapView() {
   const { data: floodData } = useFlood();
   const { data: huaycoData } = useHuayco();
   const { data: infraData } = useInfrastructure();
+  const { data: hazardData } = useHazard();
 
   // ─── Map initialisation ────────────────────────────────────────────────────
   useEffect(() => {
@@ -328,6 +330,59 @@ export default function MapView() {
     }
   }, [infraData, addOrUpdateSource]);
 
+  // ─── Sync hazard zones (CENEPRED SIGRID) ──────────────────────────────────
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !hazardData) return;
+
+    const levelColor: maplibregl.ExpressionSpecification = [
+      "match",
+      ["get", "level"],
+      "muy_alto", "#dc2626",
+      "alto",     "#f97316",
+      "medio",    "#fbbf24",
+      "bajo",     "#84cc16",
+      "#94a3b8",
+    ];
+
+    const onLoad = () => {
+      addOrUpdateSource("hazard-src", hazardData);
+
+      if (!m.getLayer("hazard-fill")) {
+        m.addLayer(
+          {
+            id: "hazard-fill",
+            type: "fill",
+            source: "hazard-src",
+            paint: {
+              "fill-color": levelColor,
+              "fill-opacity": 0.35,
+            },
+          },
+          m.getLayer("districts-outline") ? "districts-outline" : undefined
+        );
+      }
+      if (!m.getLayer("hazard-outline")) {
+        m.addLayer({
+          id: "hazard-outline",
+          type: "line",
+          source: "hazard-src",
+          paint: {
+            "line-color": levelColor,
+            "line-width": 1,
+            "line-opacity": 0.7,
+          },
+        });
+      }
+    };
+
+    if (m.loaded()) {
+      onLoad();
+    } else {
+      m.once("load", onLoad);
+    }
+  }, [hazardData, addOrUpdateSource]);
+
   // ─── Layer visibility from Zustand store ──────────────────────────────────
   useEffect(() => {
     const m = map.current;
@@ -338,6 +393,7 @@ export default function MapView() {
       imerg: ["imerg-fill"],
       flood: ["flood-fill"],
       huayco: ["huayco-circle"],
+      hazard: ["hazard-fill", "hazard-outline"],
       infrastructure: ["infra-circle"],
     };
 
