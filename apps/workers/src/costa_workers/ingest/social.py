@@ -1,14 +1,14 @@
-"""Social signal ingestion — Bluesky and RSS.
+"""Social signal ingestion — Bluesky, RSS, Reddit, Telegram.
 
 Active sources:
-  Bluesky: Jetstream v2 WebSocket (wss://jetstream2.us-east.bsky.network/subscribe)
-           Public firehose, no credentials required.
-  RSS:     RPP, Andina, Canal N, El Comercio, La República, Peru21,
-           Defensoría del Pueblo Peru (feedparser, no auth)
-
-Disabled sources (kept for future use):
-  Reddit:  Removed — developer API policy changes made stable access unreliable.
-  Telegram: Removed — session authentication errors in CI/CD environments.
+  Bluesky:  Jetstream v2 WebSocket (wss://jetstream2.us-east.bsky.network/subscribe)
+            Public firehose, no credentials required.
+  RSS:      RPP, Andina, Canal N, El Comercio, La República, Peru21,
+            Defensoría del Pueblo Peru (feedparser, no auth)
+  Reddit:   /r/Peru /r/Lima /r/Chosica public JSON API.
+            Uses REDDIT_CLIENT_ID/SECRET if set (higher rate limit).
+  Telegram: INDECI Peru + COER Lima public channels via telethon.
+            Requires TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_SESSION_STRING.
 
 PII redaction: presidio-analyzer with es_core_news_sm spaCy model.
   Entities stripped: PERSON, PHONE_NUMBER, EMAIL_ADDRESS, STREET_ADDRESS,
@@ -82,6 +82,11 @@ RSS_FEEDS = [
 REQUEST_TIMEOUT = 20.0
 RATE_LIMIT_S = 1.5
 BLUESKY_WINDOW_S = 30
+
+# Public Telegram channels — read-only civil-defense monitoring
+TELEGRAM_CHANNELS: list[str] = [
+    "Senamhi_Peru",  # SENAMHI official: weather/hydro alerts for Peru
+]
 
 
 # ─── RawSignal ────────────────────────────────────────────────────────────────
@@ -436,18 +441,21 @@ async def upsert_signals(signals: list[RawSignal]) -> int:
 @flow(name="ingest-social", log_prints=True)
 async def ingest_social_flow() -> dict:
     """
-    Collect social signals from Bluesky and RSS feeds.
+    Collect social signals from Bluesky, RSS, Reddit, and Telegram.
     PII is redacted before any signal touches the database.
+    Reddit/Telegram skip gracefully if credentials are unset.
     Schedule: every 15 minutes.
     """
-    bluesky, rss = await asyncio.gather(
+    results = await asyncio.gather(
         ingest_bluesky_firehose(),
         ingest_rss_feeds(),
+        ingest_reddit(),
+        ingest_telegram(),
         return_exceptions=True,
     )
 
     all_signals: list[RawSignal] = []
-    for result in (bluesky, rss):
+    for result in results:
         if isinstance(result, list):
             all_signals.extend(result)
         elif isinstance(result, Exception):
