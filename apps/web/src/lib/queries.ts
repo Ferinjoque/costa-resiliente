@@ -23,6 +23,8 @@ import {
   fetchHazard,
   fetchAlerts,
   fetchDecisionLog,
+  fetchFloodExposure,
+  fetchSocialSignals,
   type DistrictCollection,
   type DistrictListItem,
   type ImergCollection,
@@ -32,6 +34,8 @@ import {
   type HazardCollection,
   type Alert,
   type DecisionLogEntry,
+  type FloodExposure,
+  type SocialSignalCollection,
 } from "./api";
 
 const MIN = 1000 * 60;
@@ -139,6 +143,31 @@ export function useDecisionLog(
     queryFn: () => fetchDecisionLog(limit),
     staleTime: 15 * 1000,
     refetchInterval: 30 * 1000,
+    ...opts,
+  });
+}
+
+export function useFloodExposure(
+  opts?: Partial<UseQueryOptions<FloodExposure>>
+): UseQueryResult<FloodExposure> {
+  return useQuery({
+    queryKey: ["flood-exposure"],
+    queryFn: fetchFloodExposure,
+    staleTime: 10 * MIN,
+    ...opts,
+  });
+}
+
+export function useSocialSignals(
+  hours = 48,
+  label?: string,
+  opts?: Partial<UseQueryOptions<SocialSignalCollection>>
+): UseQueryResult<SocialSignalCollection> {
+  return useQuery({
+    queryKey: ["social-signals", hours, label],
+    queryFn: () => fetchSocialSignals(hours, label),
+    staleTime: 5 * MIN,
+    refetchInterval: 5 * MIN,
     ...opts,
   });
 }

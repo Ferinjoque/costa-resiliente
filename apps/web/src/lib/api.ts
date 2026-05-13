@@ -249,3 +249,66 @@ export function fetchDecisionLog(limit = 100): Promise<DecisionLogEntry[]> {
 export function decisionLogCsvUrl(): string {
   return `${BASE}/api/v1/alerts/decision-log/export`;
 }
+
+// ─── Flood exposure (population at risk) ──────────────────────────────────────
+
+export interface ExposedDistrict {
+  district_id: number;
+  district_name: string;
+  population: number | null;
+  flood_polygon_count: number;
+  overlap_km2: number;
+  latest_scene_at: string | null;
+}
+
+export interface FloodExposure {
+  retrieved_at: string;
+  source: string;
+  total_affected_population: number;
+  districts: ExposedDistrict[];
+}
+
+export function fetchFloodExposure(): Promise<FloodExposure> {
+  return get<FloodExposure>("/api/v1/layers/flood/exposure");
+}
+
+// ─── Social signal pins ───────────────────────────────────────────────────────
+
+export interface SocialSignalProperties {
+  id: number;
+  source: string;
+  triage_label: string | null;
+  triage_confidence: number | null;
+  ingested_at: string;
+  district_id: number | null;
+  district_name: string | null;
+}
+
+export interface SocialSignalFeature {
+  type: "Feature";
+  geometry: GeoJSON.Geometry;
+  properties: SocialSignalProperties;
+}
+
+export interface SocialSignalCollection {
+  type: "FeatureCollection";
+  source?: string;
+  retrieved_at?: string;
+  data_updated_at?: string;
+  features: SocialSignalFeature[];
+}
+
+export function fetchSocialSignals(
+  hours = 48,
+  label?: string,
+): Promise<SocialSignalCollection> {
+  const params = new URLSearchParams({ hours: String(hours) });
+  if (label) params.set("label", label);
+  return get<SocialSignalCollection>(`/api/v1/layers/social?${params}`);
+}
+
+// ─── SSE alerts stream ────────────────────────────────────────────────────────
+
+export function alertsStreamUrl(): string {
+  return `${BASE}/api/v1/alerts/stream`;
+}

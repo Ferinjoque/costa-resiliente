@@ -1,0 +1,80 @@
+{
+  "nav": {
+    "map": "Mapa",
+    "alerts": "Alertas",
+    "ask": "Consultar",
+    "log": "Registro",
+    "sources": "Info",
+    "settings": "Configuración"
+  },
+  "scenario": {
+    "title": "Escenario",
+    "district": "Distrito / Cuenca",
+    "allLima": "Lima Metropolitana (todos)",
+    "timeWindow": "Ventana de tiempo",
+    "layers": "Capas",
+    "replayBadge": "REPLAY 2017",
+    "enterReplay": "El Niño 2017",
+    "exitReplay": "Salir del replay",
+    "tutorial": "Tutorial",
+    "replayLabel": "Fecha del replay",
+    "replayNote": "El Niño Costero: ene–abr 2017"
+  },
+  "layers": {
+    "districts": "Distritos",
+    "imerg": "Lluvia IMERG",
+    "flood": "Inundación SAR",
+    "huayco": "Huayco",
+    "hazard": "Peligro Histórico",
+    "infrastructure": "Infraestructura",
+    "social": "Señales sociales"
+  },
+  "alerts": {
+    "title": "Alertas",
+    "loading": "Cargando alertas…",
+    "error": "Error al cargar alertas",
+    "empty": "No hay alertas activas",
+    "acknowledge": "Reconocer alerta",
+    "footer": "Actualización en tiempo real (SSE)",
+    "exposure": "{count, number} personas en zona inundada"
+  },
+  "ask": {
+    "title": "Consultar",
+    "placeholder": "Consulta en español…",
+    "send": "Enviar consulta",
+    "hint": "Haz una pregunta sobre la situación actual en Lima.\nEj: \"¿Cuántas alertas activas hay en Lurigancho?\" o \"¿Qué quebradas tienen riesgo alto?\""
+  },
+  "log": {
+    "title": "Registro",
+    "loading": "Cargando registro…",
+    "error": "Error al cargar registro",
+    "empty": "El registro de decisiones aparecerá aquí.\nCada consulta, reconocimiento y escalada queda registrada de forma inmutable para exportación EDAN-Perú.",
+    "export": "Exportar registro a CSV",
+    "footer": "Registro append-only · Exportación EDAN-Perú"
+  },
+  "sources": {
+    "title": "Sobre los datos",
+    "close": "Cerrar panel",
+    "meta": "{count} fuentes activas · PII redactado (presidio) · retención 7 días",
+    "coverage": "Cobertura:",
+    "latency": "Latencia:",
+    "open": "Abrir {name} en nueva pestaña"
+  },
+  "tutorial": {
+    "title": "Tutorial El Niño Costero 2017",
+    "subtitle": "Sigue los pasos para explorar cómo Lima Metropolitana fue afectada durante El Niño Costero de 2017.",
+    "close": "Cerrar tutorial",
+    "start": "Iniciar tutorial",
+    "next": "Siguiente",
+    "prev": "Anterior",
+    "finish": "Finalizar",
+    "step": "Paso {current} de {total}"
+  },
+  "map": {
+    "loading": "Cargando mapa…",
+    "aria": "Mapa operacional de Lima Metropolitana"
+  },
+  "freshness": {
+    "aria": "Datos actualizados"
+  }
+}
