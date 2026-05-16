@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type PanelId = "map" | "alerts" | "ask" | "log" | "sources";
+type PanelId = "map" | "alerts" | "ask" | "log" | "sources" | "share";
 
 export type Locale = "es" | "en";
 
@@ -28,6 +28,9 @@ interface UIState {
 
   isTutorialOpen: boolean;
   setTutorialOpen: (open: boolean) => void;
+
+  isShareMode: boolean;
+  setShareMode: (on: boolean) => void;
 
   locale: Locale;
   setLocale: (locale: Locale) => void;
@@ -62,6 +65,9 @@ export const useUIStore = create<UIState>((set) => ({
 
   isTutorialOpen: false,
   setTutorialOpen: (open) => set({ isTutorialOpen: open }),
+
+  isShareMode: false,
+  setShareMode: (on) => set({ isShareMode: on }),
 
   locale: "es",
   setLocale: (locale) => set({ locale }),

@@ -234,8 +234,21 @@ CREATE TRIGGER decision_log_no_update
     BEFORE UPDATE OR DELETE ON ops.decision_log
     FOR EACH ROW EXECUTE FUNCTION ops.prevent_decision_log_mutation();
 
+-- ─── ops: Share tokens ───────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS ops.share_tokens (
+    id          BIGSERIAL PRIMARY KEY,
+    token       TEXT UNIQUE NOT NULL,
+    scenario    JSONB NOT NULL,           -- {districtUbigeo, districtName, timeWindowHours, isReplayMode, replayDate, activeLayers}
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at  TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '30 days',
+    accessed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS share_tokens_token_idx ON ops.share_tokens (token);
+CREATE INDEX IF NOT EXISTS share_tokens_expires_idx ON ops.share_tokens (expires_at);
+
 -- ─── Retention ────────────────────────────────────────────────────────────────
 -- Signal expiry is handled by the Prefect retention flow (social.signals.expires_at)
+-- Share tokens expire automatically; expired tokens rejected at query time
 
 -- ─── Spatial Reference Helpers ────────────────────────────────────────────────
 -- Lima Metropolitana bounding box as a helper function

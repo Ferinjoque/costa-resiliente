@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Target, Loader2, PlayCircle, XCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, Target, Loader2, PlayCircle, XCircle, Lock } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useDistrictList } from "@/lib/queries";
 import { clsx } from "clsx";
@@ -19,6 +19,7 @@ export function ScenarioPanel() {
     isScenarioPanelOpen,
     toggleScenarioPanel,
     setTutorialOpen,
+    isShareMode,
   } = useUIStore();
 
   const { data: districts, isLoading } = useDistrictList();
@@ -58,6 +59,12 @@ export function ScenarioPanel() {
 
       {isScenarioPanelOpen && (
         <div id="scenario-body" className="px-4 pb-4 space-y-3 border-t border-slate-700 pt-3">
+          {isShareMode && (
+            <div className="flex items-center gap-2 text-xs text-amber-300 bg-amber-900/30 border border-amber-700/40 rounded-lg px-3 py-2">
+              <Lock size={12} aria-hidden="true" />
+              <span>Vista de solo lectura</span>
+            </div>
+          )}
 
           {/* El Niño replay toggle */}
           <div className="flex items-center justify-between">

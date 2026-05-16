@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from costa_api.config import settings
-from costa_api.routers import districts, health, layers, alerts, copilot
+from costa_api.routers import districts, health, layers, alerts, copilot, share
 
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
@@ -38,3 +38,4 @@ app.include_router(districts.router, prefix="/api/v1")
 app.include_router(layers.router, prefix="/api/v1")
 app.include_router(alerts.router, prefix="/api/v1")
 app.include_router(copilot.router, prefix="/api/v1")
+app.include_router(share.router, prefix="/api/v1")

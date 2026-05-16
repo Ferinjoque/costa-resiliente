@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     ollama_primary_model: str = "gemma4:e4b"
     ollama_fallback_model: str = "qwen3:14b"
 
+    # Share tokens
+    share_token_secret: str = "dev-share-secret-change-me"
+    share_token_ttl_days: int = 30
+
     # Lima AOI
     lima_bbox_west: float = -77.2
     lima_bbox_south: float = -12.5
