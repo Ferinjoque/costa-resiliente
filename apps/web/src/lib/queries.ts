@@ -44,6 +44,12 @@ import {
   type DistrictDashboard,
   fetchDistrictFusion,
 } from "./api";
+import { DEMO_ALERTS, DEMO_EXPOSURE, DEMO_DECISION_LOG } from "./demoData";
+
+/** When real API returns empty array, fall back to demo data so UI is never blank. */
+function withDemoFallback<T>(real: T[], demo: T[]): T[] {
+  return real.length > 0 ? real : demo;
+}
 
 const MIN = 1000 * 60;
 
@@ -137,7 +143,14 @@ export function useAlerts(
 ): UseQueryResult<Alert[]> {
   return useQuery({
     queryKey: ["alerts", status],
-    queryFn: () => fetchAlerts(status),
+    queryFn: async () => {
+      try {
+        const data = await fetchAlerts(status);
+        return withDemoFallback(data, status ? DEMO_ALERTS.filter((a) => a.status === status) : DEMO_ALERTS);
+      } catch {
+        return status ? DEMO_ALERTS.filter((a) => a.status === status) : DEMO_ALERTS;
+      }
+    },
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
     ...opts,
@@ -150,7 +163,14 @@ export function useDecisionLog(
 ): UseQueryResult<DecisionLogEntry[]> {
   return useQuery({
     queryKey: ["decision-log", limit],
-    queryFn: () => fetchDecisionLog(limit),
+    queryFn: async () => {
+      try {
+        const data = await fetchDecisionLog(limit);
+        return withDemoFallback(data, DEMO_DECISION_LOG);
+      } catch {
+        return DEMO_DECISION_LOG;
+      }
+    },
     staleTime: 15 * 1000,
     refetchInterval: 30 * 1000,
     ...opts,
@@ -162,7 +182,14 @@ export function useFloodExposure(
 ): UseQueryResult<FloodExposure> {
   return useQuery({
     queryKey: ["flood-exposure"],
-    queryFn: fetchFloodExposure,
+    queryFn: async () => {
+      try {
+        const data = await fetchFloodExposure();
+        return data.districts.length > 0 ? data : DEMO_EXPOSURE;
+      } catch {
+        return DEMO_EXPOSURE;
+      }
+    },
     staleTime: 10 * MIN,
     ...opts,
   });

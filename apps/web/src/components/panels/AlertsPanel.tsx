@@ -59,7 +59,10 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
           aria-label={`Severidad: ${alert.severity}`}
         />
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-white truncate">{alert.title}</p>
+          <p className="text-sm text-white leading-snug">{alert.title}</p>
+          {alert.description && (
+            <p className="text-[11px] text-slate-400 mt-0.5 leading-snug line-clamp-2">{alert.description}</p>
+          )}
           <p className="text-xs text-slate-300 mt-0.5 flex items-center gap-1.5">
             <Icon size={11} aria-hidden="true" />
             <span className="capitalize">{typeLabel}</span>

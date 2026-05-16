@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -13,13 +14,27 @@ logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
 
 
+async def _seed_with_retry(max_attempts: int = 5, delay: float = 5.0) -> None:
+    """Retry auto_seed up to max_attempts times — Postgres may need a moment after healthcheck passes."""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            await maybe_seed(engine)
+            return
+        except Exception as exc:
+            if attempt < max_attempts:
+                logger.warning(
+                    "auto_seed attempt %d/%d failed (%s) — retrying in %.0fs",
+                    attempt, max_attempts, exc, delay,
+                )
+                await asyncio.sleep(delay)
+            else:
+                logger.error("auto_seed failed after %d attempts: %s", max_attempts, exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Costa Resiliente API starting up")
-    try:
-        await maybe_seed(engine)
-    except Exception as exc:
-        logger.warning("auto_seed failed (DB may not be ready yet): %s", exc)
+    await _seed_with_retry()
     yield
     logger.info("Costa Resiliente API shutting down")
 
