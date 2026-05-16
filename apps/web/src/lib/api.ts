@@ -208,8 +208,10 @@ export interface Alert {
   type: string;
   severity: "low" | "medium" | "high" | "critical";
   title: string;
+  description?: string | null;
   district_id: number | null;
   created_at: string;
+  updated_at: string;
   status: string;
 }
 
