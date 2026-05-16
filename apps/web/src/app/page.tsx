@@ -12,6 +12,7 @@ import { DataSourcesPanel } from "@/components/panels/DataSourcesPanel";
 import { TutorialOverlay } from "@/components/panels/TutorialOverlay";
 import { SharePanel } from "@/components/panels/SharePanel";
 import { ShareLoader } from "@/components/panels/ShareLoader";
+import { FusionCallout } from "@/components/panels/FusionCallout";
 
 // MapView must be client-only (MapLibre GL uses window APIs)
 const MapView = dynamic(() => import("@/components/map/MapView"), {
@@ -55,6 +56,7 @@ export default function Home() {
         <DecisionLogPanel />
         <DataSourcesPanel />
         <SharePanel />
+        <FusionCallout />
         <DataFreshnessBar />
         <TutorialOverlay />
         <ShareLoader />

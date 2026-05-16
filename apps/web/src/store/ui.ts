@@ -32,6 +32,9 @@ interface UIState {
   isShareMode: boolean;
   setShareMode: (on: boolean) => void;
 
+  is3DMode: boolean;
+  set3DMode: (on: boolean) => void;
+
   locale: Locale;
   setLocale: (locale: Locale) => void;
 }
@@ -68,6 +71,9 @@ export const useUIStore = create<UIState>((set) => ({
 
   isShareMode: false,
   setShareMode: (on) => set({ isShareMode: on }),
+
+  is3DMode: false,
+  set3DMode: (on) => set({ is3DMode: on }),
 
   locale: "es",
   setLocale: (locale) => set({ locale }),

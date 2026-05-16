@@ -117,7 +117,7 @@ export default function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const activePopup = useRef<maplibregl.Popup | null>(null);
-  const { activeLayers, scenario } = useUIStore();
+  const { activeLayers, scenario, is3DMode } = useUIStore();
 
   const { data: districtGeoJSON } = useDistricts();
   const { data: imergData } = useImerg(scenario.timeWindowHours);
@@ -267,6 +267,34 @@ export default function MapView() {
 
     return () => { m.remove(); map.current = null; };
   }, []);
+
+  // ─── 3D mode — pitch map + extrusion layer ────────────────────────────────
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !m.loaded()) return;
+    m.easeTo({ pitch: is3DMode ? 45 : 0, bearing: is3DMode ? -15 : 0, duration: 600 });
+
+    if (is3DMode && m.getSource("flood-src") && !m.getLayer("flood-extrusion")) {
+      m.addLayer({
+        id: "flood-extrusion",
+        type: "fill-extrusion",
+        source: "flood-src",
+        layout: { visibility: activeLayers.has("flood") ? "visible" : "none" },
+        paint: {
+          "fill-extrusion-color": "#2563eb",
+          "fill-extrusion-opacity": 0.6,
+          "fill-extrusion-height": [
+            "interpolate", ["linear"],
+            ["coalesce", ["get", "area_km2"], 0],
+            0, 50, 5, 400, 20, 1200,
+          ],
+          "fill-extrusion-base": 0,
+        },
+      });
+    } else if (!is3DMode && m.getLayer("flood-extrusion")) {
+      m.removeLayer("flood-extrusion");
+    }
+  }, [is3DMode, activeLayers]);
 
   // ─── Close popup when context changes ─────────────────────────────────────
   useEffect(() => { activePopup.current?.remove(); activePopup.current = null; },

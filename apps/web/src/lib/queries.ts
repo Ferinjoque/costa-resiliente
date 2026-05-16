@@ -36,6 +36,8 @@ import {
   type DecisionLogEntry,
   type FloodExposure,
   type SocialSignalCollection,
+  type DistrictFusion,
+  fetchDistrictFusion,
 } from "./api";
 
 const MIN = 1000 * 60;
@@ -168,6 +170,20 @@ export function useSocialSignals(
     queryFn: () => fetchSocialSignals(hours, label),
     staleTime: 5 * MIN,
     refetchInterval: 5 * MIN,
+    ...opts,
+  });
+}
+
+export function useFusion(
+  ubigeo: string | null,
+  opts?: Partial<UseQueryOptions<DistrictFusion>>
+): UseQueryResult<DistrictFusion> {
+  return useQuery({
+    queryKey: ["fusion", ubigeo],
+    queryFn: () => fetchDistrictFusion(ubigeo!),
+    enabled: !!ubigeo,
+    staleTime: 3 * MIN,
+    refetchInterval: 3 * MIN,
     ...opts,
   });
 }
