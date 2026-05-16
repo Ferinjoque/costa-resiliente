@@ -78,3 +78,73 @@ body {
     touch-action: manipulation;
   }
 }
+
+/* ─── MapLibre popup — dark operational theme ──────────────────────────────── */
+.maplibregl-popup.cr-map-popup { z-index: 25; }
+
+.cr-map-popup .maplibregl-popup-content {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+/* Tip triangle — match per anchor direction */
+.cr-map-popup.maplibregl-popup-anchor-top    .maplibregl-popup-tip { border-bottom-color: #1e293b; }
+.cr-map-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color:    #1e293b; }
+.cr-map-popup.maplibregl-popup-anchor-left   .maplibregl-popup-tip { border-right-color:  #1e293b; }
+.cr-map-popup.maplibregl-popup-anchor-right  .maplibregl-popup-tip { border-left-color:   #1e293b; }
+.cr-map-popup.maplibregl-popup-anchor-top-left    .maplibregl-popup-tip { border-bottom-color: #1e293b; }
+.cr-map-popup.maplibregl-popup-anchor-top-right   .maplibregl-popup-tip { border-bottom-color: #1e293b; }
+.cr-map-popup.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip { border-top-color:    #1e293b; }
+.cr-map-popup.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color:   #1e293b; }
+
+/* Close button */
+.cr-map-popup .maplibregl-popup-close-button {
+  color: #64748b;
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 0 8px 0 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.cr-map-popup .maplibregl-popup-close-button:hover { color: #e2e8f0; }
+
+/* Popup content */
+.cr-popup {
+  padding: 10px 32px 10px 12px; /* right pad for close btn */
+  min-width: 160px;
+  font-family: system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #e2e8f0;
+}
+.cr-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #f1f5f9;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 4px;
+}
+.cr-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cr-key { color: #94a3b8; flex-shrink: 0; }
+.cr-val {
+  color: #e2e8f0;
+  font-weight: 500;
+  text-align: right;
+  word-break: break-all;
+  max-width: 160px;
+}
