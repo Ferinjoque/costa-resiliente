@@ -1,35 +1,92 @@
 "use client";
 
-import { Search, Send, Loader2 } from "lucide-react";
+import { Search, Send, Loader2, Sparkles, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useUIStore } from "@/store/ui";
 
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+const SUGGESTIONS: { es: string; en: string }[] = [
+  { es: "¿Cuáles son los distritos en mayor riesgo ahora?", en: "Which districts have the highest risk right now?" },
+  { es: "¿Qué quebradas tienen riesgo alto de huayco?", en: "Which quebradas have high huayco risk?" },
+  { es: "¿Cuánta lluvia acumulada hubo en el Rímac en las últimas 72h?", en: "How much rain accumulated in the Rímac watershed in the last 72h?" },
+  { es: "¿Cuántas personas están en zona de inundación activa?", en: "How many people are in active flood zones?" },
+  { es: "¿Qué infraestructura crítica está en zona inundada?", en: "What critical infrastructure is in flooded areas?" },
+  { es: "¿Cuál es el nivel del río Rímac en Chosica?", en: "What is the Rímac river level at Chosica?" },
+];
+
+const UI: Record<"es" | "en", {
+  title: string; model: string; placeholder: string; queryLabel: string;
+  responseLabel: string; newQuery: string; hint: string; send: string;
+}> = {
+  es: {
+    title: "Copiloto",
+    model: "Gemma 4",
+    placeholder: "Consulta en español…",
+    queryLabel: "Consulta",
+    responseLabel: "Respuesta",
+    newQuery: "Nueva consulta",
+    hint: "Haz una pregunta sobre la situación actual en Lima.",
+    send: "Enviar",
+  },
+  en: {
+    title: "Copilot",
+    model: "Gemma 4",
+    placeholder: "Ask about the current situation…",
+    queryLabel: "Query",
+    responseLabel: "Response",
+    newQuery: "New query",
+    hint: "Ask a question about Lima's current situation.",
+    send: "Send",
+  },
+};
+
 export function AskPanel() {
-  const { activePanel } = useUIStore();
+  const { activePanel, locale } = useUIStore();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
+  const [sources, setSources] = useState<{ label: string; value: string }[]>([]);
+  const [lastQuery, setLastQuery] = useState<string | null>(null);
+  const ui = UI[locale];
 
   if (activePanel !== "ask") return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
+  const submit = async (q: string) => {
+    const trimmed = q.trim();
+    if (!trimmed) return;
     setLoading(true);
     setAnswer(null);
+    setSources([]);
+    setLastQuery(trimmed);
     try {
-      const res = await fetch("/api/v1/copilot/ask", {
+      const res = await fetch(`${BASE}/api/v1/copilot/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, operator_id: "demo" }),
+        body: JSON.stringify({ query: trimmed, operator_id: "demo" }),
       });
       const data = await res.json();
-      setAnswer(data.answer);
+      setAnswer(data.answer ?? data.detail ?? locale === "es" ? "Sin respuesta." : "No response.");
+      // Extract source metadata if available
+      if (data.intent && data.confidence) {
+        setSources([
+          { label: locale === "es" ? "Intent" : "Intent", value: data.intent.replace("_", " ") },
+          { label: locale === "es" ? "Confianza" : "Confidence", value: `${(data.confidence * 100).toFixed(0)}%` },
+          ...(data.query_plan ? [{ label: "Query", value: data.query_plan }] : []),
+        ]);
+      }
     } catch {
-      setAnswer("Error al conectar con el servidor. Inténtalo nuevamente.");
+      setAnswer(locale === "es"
+        ? "Error al conectar con el servidor. Inténtalo nuevamente."
+        : "Connection error. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submit(query);
   };
 
   return (
@@ -39,7 +96,7 @@ export function AskPanel() {
         "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
         "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col",
       ].join(" ")}
-      aria-label="Panel de consulta"
+      aria-label={ui.title}
     >
       <div className="sm:hidden flex justify-center pt-2 pb-1" aria-hidden="true">
         <div className="w-8 h-1 rounded-full bg-slate-600" />
@@ -47,33 +104,67 @@ export function AskPanel() {
 
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
         <Search size={15} className="text-costa-500" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-white">Consultar</h2>
+        <h2 className="text-sm font-semibold text-white">{ui.title}</h2>
+        <span className="ml-auto text-[10px] text-costa-400 flex items-center gap-1">
+          <Sparkles size={10} aria-hidden="true" /> {ui.model}
+        </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4" aria-live="polite" aria-atomic="true">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3" aria-live="polite" aria-atomic="true">
         {answer ? (
-          <div className="bg-surface-panel rounded-lg p-3" role="region" aria-label="Respuesta del copiloto">
-            <p className="text-sm text-white leading-relaxed">{answer}</p>
-          </div>
+          <>
+            <div className="bg-surface-panel/60 rounded-lg px-3 py-2">
+              <p className="text-[11px] text-slate-400 mb-1">{ui.queryLabel}</p>
+              <p className="text-xs text-slate-200 leading-snug">{lastQuery}</p>
+            </div>
+            <div className="bg-costa-900/30 border border-costa-700/40 rounded-lg px-3 py-2" role="region" aria-label={ui.responseLabel}>
+              <p className="text-[11px] text-costa-400 mb-1">{ui.responseLabel}</p>
+              <p className="text-sm text-white leading-relaxed">{answer}</p>
+              {sources.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-costa-700/30 flex flex-wrap gap-1.5">
+                  {sources.map((s) => (
+                    <span key={s.label} className="text-[10px] bg-surface-panel rounded px-1.5 py-0.5 text-slate-400">
+                      {s.label}: <span className="text-slate-300">{s.value}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => { setAnswer(null); setSources([]); setQuery(""); }}
+              className="flex items-center gap-1 text-xs text-slate-400 hover:text-costa-400 underline underline-offset-2 transition-colors"
+            >
+              <RefreshCw size={11} aria-hidden="true" />
+              {ui.newQuery}
+            </button>
+          </>
         ) : (
-          <p className="text-xs text-slate-400 text-center mt-8">
-            Haz una pregunta en español sobre la situación actual en Lima.
-            <br />
-            <br />
-            Ej: "¿Cuántas alertas activas hay en Lurigancho?" o "¿Qué quebradas
-            tienen riesgo alto?"
-          </p>
+          <>
+            <p className="text-[11px] text-slate-500 text-center pt-2">{ui.hint}</p>
+            <div className="space-y-1.5">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s.es}
+                  onClick={() => { setQuery(s.es); submit(s.es); }}
+                  disabled={loading}
+                  className="w-full text-left text-xs text-slate-300 bg-surface-panel hover:bg-costa-900/40 hover:text-costa-200 border border-slate-700 hover:border-costa-700/50 rounded-lg px-3 py-2 transition-colors disabled:opacity-40"
+                >
+                  {locale === "es" ? s.es : s.en}
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 border-t border-slate-700">
+      <form onSubmit={handleSubmit} className="p-3 border-t border-slate-700">
         <div className="flex gap-2">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Consulta en español…"
-            aria-label="Consulta en español"
+            placeholder={ui.placeholder}
+            aria-label={ui.placeholder}
             disabled={loading}
             className="flex-1 bg-surface-panel border border-slate-600 text-white text-sm rounded-lg px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-costa-500 focus-visible:ring-2 focus-visible:ring-costa-500 disabled:opacity-50"
           />
@@ -81,7 +172,7 @@ export function AskPanel() {
             type="submit"
             disabled={loading || !query.trim()}
             className="bg-costa-700 hover:bg-costa-500 disabled:opacity-40 text-white rounded-lg px-3 py-2 transition-colors"
-            aria-label="Enviar consulta"
+            aria-label={ui.send}
           >
             {loading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
           </button>

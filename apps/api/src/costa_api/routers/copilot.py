@@ -88,10 +88,99 @@ Responde ÚNICAMENTE con JSON:
 }"""
 
 
+def _keyword_classify(query: str) -> dict:
+    """Fast keyword-based intent classifier — no LLM required."""
+    q = query.lower()
+
+    # Keyword sets per intent (Spanish)
+    _PATTERNS: list[tuple[str, list[str]]] = [
+        ("flood_status",          ["inundaci", "desborde", "sar", "sentinel", "poligono", "anegad", "inundad"]),
+        ("huayco_risk",           ["huayco", "quebrada", "deslizami", "flujo", "lahar", "alud"]),
+        ("river_level",           ["río", "rio", "nivel", "caudal", "estaci", "chosica", "ñaña", "carapong"]),
+        ("social_cluster",        ["social", "reporte", "publicaci", "bluesky", "reddit", "vecino", "señal"]),
+        ("infrastructure_impact", ["hospital", "escuela", "colegio", "puente", "subestaci", "infraestructura", "afectad"]),
+        ("rainfall_accumulation", ["lluvia", "precipitaci", "imerg", "acumul", "mm", "milímet"]),
+    ]
+
+    # Extract district name from query (top-10 Lima districts by population)
+    _DISTRICTS = [
+        "san juan de lurigancho", "ate", "comas", "villa el salvador",
+        "villa maría del triunfo", "san martín de porres", "lurigancho",
+        "carabayllo", "puente piedra", "lima", "chorrillos", "san juan de miraflores",
+        "la molina", "chaclacayo", "chosica", "cieneguilla", "pachacámac",
+    ]
+    district_name = next((d for d in _DISTRICTS if d in q), None)
+
+    for intent, keywords in _PATTERNS:
+        if any(kw in q for kw in keywords):
+            return {
+                "intent": intent,
+                "district_name": district_name,
+                "hours_back": 72 if "72" in q else 24,
+                "confidence": 0.75,
+            }
+    return {"intent": "flood_status", "district_name": district_name, "hours_back": 24, "confidence": 0.5}
+
+
+def _template_summary(intent: str, rows: list[dict]) -> str:
+    """Generate a Spanish prose summary from DB rows — no LLM required."""
+    if not rows:
+        return "No se encontraron datos para el período consultado."
+
+    if intent == "flood_status":
+        total_area = sum(r.get("area_km2") or 0 for r in rows)
+        max_conf = max((r.get("confidence") or 0) for r in rows)
+        return (
+            f"Se detectaron {len(rows)} polígono{'s' if len(rows) != 1 else ''} de inundación "
+            f"con un área total de {total_area:.1f} km². "
+            f"Confianza máxima del modelo SAR: {max_conf * 100:.0f}%. "
+            f"Datos provenientes de imágenes Sentinel-1."
+        )
+    if intent == "huayco_risk":
+        high = [r for r in rows if (r.get("risk_level") or "") in ("high", "very_high")]
+        names = ", ".join(r.get("name", "?") for r in high[:3])
+        return (
+            f"Se identificaron {len(high)} quebrada{'s' if len(high) != 1 else ''} con riesgo alto o muy alto. "
+            f"Las más críticas: {names or 'sin datos'}. "
+            f"La probabilidad máxima es {max((r.get('probability') or 0) for r in rows) * 100:.0f}%."
+        )
+    if intent == "river_level":
+        latest = rows[0]
+        return (
+            f"Última lectura en estación {latest.get('name', '?')} (río {latest.get('river', '?')}): "
+            f"nivel {latest.get('level_m', '—')} m, caudal {latest.get('flow_m3s', '—')} m³/s. "
+            f"Total de registros en el período: {len(rows)}."
+        )
+    if intent == "social_cluster":
+        total = sum(r.get("count") or 0 for r in rows)
+        top_label = rows[0].get("triage_label", "desconocido") if rows else "—"
+        return (
+            f"Se registraron {total} señal{'es' if total != 1 else ''} sociales en el período. "
+            f"Categoría más frecuente: {top_label.replace('_', ' ')}. "
+            f"Fuentes: Bluesky, Reddit, RSS de medios peruanos."
+        )
+    if intent == "infrastructure_impact":
+        types = list({r.get("type", "") for r in rows})
+        return (
+            f"Se identificaron {len(rows)} infraestructura{'s' if len(rows) != 1 else ''} "
+            f"en zonas de inundación activa ({', '.join(t for t in types if t)}). "
+            f"Verificar accesibilidad para operaciones de emergencia."
+        )
+    if intent == "rainfall_accumulation":
+        max_72 = max((r.get("acc_72h_mm") or 0) for r in rows)
+        max_ws = next((r.get("watershed", "?") for r in rows if (r.get("acc_72h_mm") or 0) >= max_72), "?")
+        return (
+            f"Acumulación máxima en 72h: {max_72:.1f} mm en cuenca {max_ws}. "
+            f"Umbral de alerta: 42 mm/72h. "
+            f"{'⚠️ Umbral SUPERADO' if max_72 > 42 else 'Por debajo del umbral de alerta'}."
+        )
+    return f"Se recuperaron {len(rows)} registros para el período consultado."
+
+
 async def _classify_intent(query: str) -> dict:
-    """Classify operator query intent using Gemma. Returns intent dict."""
+    """Classify operator query intent using Gemma, with keyword fallback."""
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(
                 f"{settings.ollama_host}/api/chat",
                 json={
@@ -106,10 +195,13 @@ async def _classify_intent(query: str) -> dict:
             )
             resp.raise_for_status()
             data = resp.json()
-            return json.loads(data["message"]["content"])
+            result = json.loads(data["message"]["content"])
+            if result.get("intent") in INTENT_TYPES:
+                return result
+            raise ValueError("invalid intent from LLM")
     except Exception as exc:
-        logger.warning("Intent classification failed: %s", exc)
-        return {"intent": "unknown", "district_name": None, "hours_back": 24, "confidence": 0.0}
+        logger.info("Ollama unavailable (%s) — using keyword classifier", type(exc).__name__)
+        return _keyword_classify(query)
 
 
 # ─── Query catalog (whitelist) ────────────────────────────────────────────────
@@ -235,7 +327,7 @@ REGLAS ESTRICTAS:
 
 
 async def _generate_summary(query: str, intent: str, rows: list[dict]) -> str:
-    """Summarize DB results in Spanish. All numbers must come from rows."""
+    """Summarize DB results in Spanish. Falls back to template prose when Ollama unavailable."""
     if not rows:
         return "No se encontraron datos para el período consultado."
 
@@ -243,7 +335,7 @@ async def _generate_summary(query: str, intent: str, rows: list[dict]) -> str:
     user_msg = f"Consulta del operador: {query}\n\nDatos del sistema:\n{context}"
 
     try:
-        async with httpx.AsyncClient(timeout=45.0) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
                 f"{settings.ollama_host}/api/chat",
                 json={
@@ -259,8 +351,8 @@ async def _generate_summary(query: str, intent: str, rows: list[dict]) -> str:
             data = resp.json()
             return data["message"]["content"].strip()
     except Exception as exc:
-        logger.warning("Summary generation failed: %s", exc)
-        return f"Se recuperaron {len(rows)} registros. Sistema de resumen temporalmente no disponible."
+        logger.info("Ollama unavailable for summary (%s) — using template", type(exc).__name__)
+        return _template_summary(intent, rows)
 
 
 # ─── Decision log ─────────────────────────────────────────────────────────────
@@ -310,12 +402,11 @@ async def ask(query: CopilotQuery, db: AsyncSession = Depends(get_db)) -> Copilo
     hours_back = intent_data.get("hours_back", 24)
 
     if intent == "unknown":
-        return CopilotResponse(
-            answer="No pude entender la consulta. Por favor reformule en términos de inundaciones, huaycos, estaciones hidrológicas, o infraestructura afectada.",
-            sources=[],
-            confidence=0.0,
-            intent="unknown",
-        )
+        # Last-resort keyword classification
+        fallback = _keyword_classify(query.query)
+        intent = fallback["intent"]
+        district_name = fallback.get("district_name")
+        hours_back = fallback.get("hours_back", 24)
 
     # 2. Execute whitelisted query
     try:
