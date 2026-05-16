@@ -1,6 +1,6 @@
 "use client";
 
-import { Map, Bell, Search, ClipboardList, Info, Languages } from "lucide-react";
+import { Map, Bell, Search, ClipboardList, Info, Languages, Link2 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { clsx } from "clsx";
 import type { Locale } from "@/store/ui";
@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { id: "log",     label: "Registro",  icon: ClipboardList },
 ] as const;
 
-type PanelId = (typeof NAV_ITEMS)[number]["id"] | "sources";
+type PanelId = (typeof NAV_ITEMS)[number]["id"] | "sources" | "share";
 
 function NavButton({
   id,
@@ -83,6 +83,21 @@ export function LeftRail() {
         ))}
 
         <div className="mt-auto flex flex-col gap-1">
+          {/* Share */}
+          <button
+            onClick={() => handleNav("share")}
+            aria-label="Compartir escenario"
+            aria-pressed={activePanel === "share"}
+            title="Compartir"
+            className={clsx(
+              "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+              "hover:bg-surface-panel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-costa-500",
+              activePanel === "share" ? "bg-costa-700 text-white" : "text-slate-400 hover:text-white",
+            )}
+          >
+            <Link2 size={18} aria-hidden="true" />
+          </button>
+
           {/* About this data */}
           <button
             onClick={() => handleNav("sources")}

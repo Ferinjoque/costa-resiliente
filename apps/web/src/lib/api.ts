@@ -312,3 +312,42 @@ export function fetchSocialSignals(
 export function alertsStreamUrl(): string {
   return `${BASE}/api/v1/alerts/stream`;
 }
+
+// ─── Share tokens ─────────────────────────────────────────────────────────────
+
+export interface ScenarioSnapshot {
+  districtUbigeo: string | null;
+  districtName: string | null;
+  timeWindowHours: number;
+  isReplayMode: boolean;
+  replayDate: string | null;
+  activeLayers: string[];
+}
+
+export interface MintShareResponse {
+  token: string;
+  url: string;
+  expires_at: string;
+}
+
+export interface ResolveShareResponse {
+  scenario: ScenarioSnapshot;
+  created_at: string;
+  expires_at: string;
+}
+
+export async function mintShareToken(
+  scenario: ScenarioSnapshot,
+): Promise<MintShareResponse> {
+  const res = await fetch(`${BASE}/api/v1/share`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ scenario }),
+  });
+  if (!res.ok) throw new Error(`mintShareToken → ${res.status}`);
+  return res.json();
+}
+
+export function fetchShareToken(token: string): Promise<ResolveShareResponse> {
+  return get<ResolveShareResponse>(`/api/v1/share/${encodeURIComponent(token)}`);
+}
