@@ -150,19 +150,33 @@ HUAYCO_RECORDS = [
 async def seed_alerts(conn: asyncpg.Connection) -> int:
     count = 0
     for a in ALERTS:
+        # Resolve district_id via point-in-polygon
+        district_id = await conn.fetchval(
+            """
+            SELECT id FROM geo.districts
+            WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326))
+            LIMIT 1
+            """,
+            a["lon"], a["lat"],
+        )
+        existing = await conn.fetchval(
+            "SELECT id FROM ops.alerts WHERE title = $1", a["title"]
+        )
+        if existing:
+            continue
         await conn.execute(
             """
             INSERT INTO ops.alerts
-              (type, severity, status, title, description, geom, created_at, updated_at)
+              (type, severity, status, title, description, geom,
+               district_id, created_at, updated_at)
             VALUES
               ($1, $2, $3, $4, $5,
                ST_SetSRID(ST_MakePoint($6, $7), 4326),
-               $8, $8)
-            ON CONFLICT DO NOTHING
+               $8, $9, $9)
             """,
             a["type"], a["severity"], a["status"], a["title"],
             a["description"], a["lon"], a["lat"],
-            ts(a["created_offset_h"]),
+            district_id, ts(a["created_offset_h"]),
         )
         count += 1
     return count
@@ -235,37 +249,241 @@ async def seed_huayco(conn: asyncpg.Connection) -> int:
     return count
 
 
+import hashlib
+
+# ── Sample social signals ─────────────────────────────────────────────────────
+
+SOCIAL_SIGNALS = [
+    {
+        "source": "bluesky",
+        "content": "Rímac desbordado en Huachipa, varias familias evacuadas. Necesitamos ayuda urgente.",
+        "triage_label": "needs_help",
+        "triage_confidence": 0.94,
+        "lon": -76.8780, "lat": -11.9510,
+        "offset_h": 0.3,
+    },
+    {
+        "source": "rss_rpp",
+        "content": "RPP Noticias: Deslizamiento de lodo bloquea Carretera Central a la altura de Chosica km 38.",
+        "triage_label": "road_blocked",
+        "triage_confidence": 0.91,
+        "lon": -76.6950, "lat": -11.9370,
+        "offset_h": 0.7,
+    },
+    {
+        "source": "reddit",
+        "content": "Puente Huachipa colapsó parcialmente. Autos varados en ambos lados. Eviten la zona.",
+        "triage_label": "infrastructure_damage",
+        "triage_confidence": 0.88,
+        "lon": -76.8820, "lat": -11.9490,
+        "offset_h": 1.2,
+    },
+    {
+        "source": "bluesky",
+        "content": "Lluvia intensa en Ate Vitarte desde las 3am. Calles inundadas en sector Los Jardines.",
+        "triage_label": "weather_observation",
+        "triage_confidence": 0.85,
+        "lon": -76.9100, "lat": -12.0250,
+        "offset_h": 2.0,
+    },
+    {
+        "source": "rss_andina",
+        "content": "INDECI activa protocolo de emergencia para distritos de Lurigancho y Chosica por desborde del río Rímac.",
+        "triage_label": "needs_help",
+        "triage_confidence": 0.96,
+        "lon": -76.7200, "lat": -11.9600,
+        "offset_h": 1.5,
+    },
+    {
+        "source": "bluesky",
+        "content": "Huayco en Jicamarca bloqueó acceso principal. Vecinos atrapados. SOS.",
+        "triage_label": "needs_help",
+        "triage_confidence": 0.97,
+        "lon": -76.9180, "lat": -11.9050,
+        "offset_h": 0.9,
+    },
+    {
+        "source": "reddit",
+        "content": "Rímac sigue creciendo. Medí 2.3m en estación Chosica. Umbral de alerta es 2.0m.",
+        "triage_label": "weather_observation",
+        "triage_confidence": 0.82,
+        "lon": -76.6980, "lat": -11.9390,
+        "offset_h": 3.1,
+    },
+    {
+        "source": "rss_rpp",
+        "content": "Avenida La Molina inundada por desborde de canal de riego. Tránsito interrumpido.",
+        "triage_label": "road_blocked",
+        "triage_confidence": 0.89,
+        "lon": -76.9420, "lat": -12.0850,
+        "offset_h": 2.5,
+    },
+    {
+        "source": "bluesky",
+        "content": "Colegio Nro 1225 en Ate reporta inundación de primer piso. Clases suspendidas.",
+        "triage_label": "infrastructure_damage",
+        "triage_confidence": 0.86,
+        "lon": -76.9050, "lat": -12.0150,
+        "offset_h": 4.0,
+    },
+    {
+        "source": "rss_canal_n",
+        "content": "SENAMHI advierte acumulación de 45mm en cuenca del Rímac. Riesgo extremo de huaycos en próximas horas.",
+        "triage_label": "weather_observation",
+        "triage_confidence": 0.93,
+        "lon": -76.7500, "lat": -11.9500,
+        "offset_h": 5.0,
+    },
+]
+
+# ── Sample hydro stations + observations ──────────────────────────────────────
+
+STATIONS = [
+    {"code": "ANA-001-DEMO", "name": "Chosica", "source": "ana", "river": "Rímac",
+     "lon": -76.6950, "lat": -11.9380, "elev": 880.0},
+    {"code": "ANA-002-DEMO", "name": "Ñaña",    "source": "ana", "river": "Rímac",
+     "lon": -76.8180, "lat": -11.9830, "elev": 560.0},
+    {"code": "ANA-003-DEMO", "name": "Carapongo", "source": "senamhi", "river": "Rímac",
+     "lon": -76.9100, "lat": -12.0200, "elev": 320.0},
+]
+
+STATION_OBS = [
+    # Chosica (code ANA-001) — elevated, trending up
+    {"code": "ANA-001-DEMO", "h": 0,   "level": 2.41, "flow": 68.2, "rain": 1.2},
+    {"code": "ANA-001-DEMO", "h": 1,   "level": 2.28, "flow": 61.4, "rain": 3.8},
+    {"code": "ANA-001-DEMO", "h": 3,   "level": 2.05, "flow": 52.1, "rain": 7.2},
+    {"code": "ANA-001-DEMO", "h": 6,   "level": 1.92, "flow": 44.8, "rain": 5.1},
+    {"code": "ANA-001-DEMO", "h": 12,  "level": 1.78, "flow": 38.3, "rain": 2.0},
+    {"code": "ANA-001-DEMO", "h": 24,  "level": 1.61, "flow": 29.7, "rain": 0.3},
+    # Ñaña (code ANA-002)
+    {"code": "ANA-002-DEMO", "h": 0,   "level": 1.85, "flow": 52.4, "rain": 0.8},
+    {"code": "ANA-002-DEMO", "h": 6,   "level": 1.72, "flow": 44.1, "rain": 3.2},
+    {"code": "ANA-002-DEMO", "h": 24,  "level": 1.44, "flow": 31.0, "rain": 0.1},
+    # Carapongo (senamhi)
+    {"code": "ANA-003-DEMO", "h": 0,   "level": 1.55, "flow": 38.1, "rain": 0.4},
+    {"code": "ANA-003-DEMO", "h": 6,   "level": 1.48, "flow": 34.6, "rain": 1.9},
+]
+
+
+async def seed_social_signals(conn: asyncpg.Connection) -> int:
+    count = 0
+    for s in SOCIAL_SIGNALS:
+        h = hashlib.sha256(s["content"].encode()).hexdigest()
+        t = ts(s["offset_h"])
+        existing = await conn.fetchval(
+            "SELECT id FROM social.signals WHERE content_hash = $1", h
+        )
+        if existing:
+            continue
+        # Resolve district_id via spatial lookup
+        district_id = await conn.fetchval(
+            """
+            SELECT id FROM geo.districts
+            WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326))
+            LIMIT 1
+            """,
+            s["lon"], s["lat"],
+        )
+        try:
+            await conn.execute(
+                """
+                INSERT INTO social.signals
+                  (source, content_hash, content_redacted, published_at, ingested_at,
+                   triage_label, triage_confidence, triage_model, triage_at,
+                   geom, district_id, expires_at)
+                VALUES ($1, $2, $3, $4, $4, $5, $6, 'gemma4-demo', $4,
+                        ST_SetSRID(ST_MakePoint($7, $8), 4326),
+                        $9, $4 + INTERVAL '7 days')
+                """,
+                s["source"], h, s["content"], t,
+                s["triage_label"], s["triage_confidence"],
+                s["lon"], s["lat"], district_id,
+            )
+            count += 1
+        except Exception as exc:
+            print(f"  skip signal: {exc}")
+    return count
+
+
+async def seed_stations(conn: asyncpg.Connection) -> int:
+    count = 0
+    for st in STATIONS:
+        sid = await conn.fetchval(
+            """
+            INSERT INTO hydro.stations (code, name, source, river, geom, elevation_m)
+            VALUES ($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326), $7)
+            ON CONFLICT (code) DO NOTHING
+            RETURNING id
+            """,
+            st["code"], st["name"], st["source"], st["river"],
+            st["lon"], st["lat"], st["elev"],
+        )
+        if sid:
+            count += 1
+
+    for obs in STATION_OBS:
+        sid = await conn.fetchval(
+            "SELECT id FROM hydro.stations WHERE code = $1", obs["code"]
+        )
+        if not sid:
+            continue
+        t = ts(obs["h"])
+        try:
+            await conn.execute(
+                """
+                INSERT INTO hydro.station_observations
+                  (time, station_id, level_m, flow_m3s, rain_mm)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT DO NOTHING
+                """,
+                t, sid, obs["level"], obs["flow"], obs["rain"],
+            )
+        except Exception:
+            pass
+    return count
+
+
 async def main() -> None:
     print("Costa Resiliente — demo data seeder")
     print(f"Connecting to {DSN.split('@')[-1]}...\n")
 
     conn = await asyncpg.connect(DSN)
     try:
-        print("[1/4] Seeding alerts...")
+        print("[1/6] Seeding alerts...")
         n = await seed_alerts(conn)
         print(f"  ok {n} alerts")
 
-        print("[2/4] Seeding flood polygons...")
+        print("[2/6] Seeding flood polygons...")
         n = await seed_flood_polygons(conn)
         print(f"  ok {n} flood polygons")
 
-        print("[3/4] Seeding IMERG accumulations...")
+        print("[3/6] Seeding IMERG accumulations...")
         n = await seed_imerg(conn)
         print(f"  ok {n} IMERG rows")
 
-        print("[4/4] Seeding huayco susceptibility...")
+        print("[4/6] Seeding huayco susceptibility...")
         n = await seed_huayco(conn)
         print(f"  ok {n} susceptibility records")
+
+        print("[5/6] Seeding social signals...")
+        n = await seed_social_signals(conn)
+        print(f"  ok {n} social signals")
+
+        print("[6/6] Seeding hydro stations + observations...")
+        n = await seed_stations(conn)
+        print(f"  ok {n} stations")
 
         rows = await conn.fetchrow("""
             SELECT
               (SELECT COUNT(*) FROM ops.alerts)                AS alerts,
               (SELECT COUNT(*) FROM ml.flood_polygons)         AS flood_polygons,
               (SELECT COUNT(*) FROM hydro.imerg_accumulations) AS imerg_rows,
-              (SELECT COUNT(*) FROM ml.huayco_susceptibility)  AS huayco_records
+              (SELECT COUNT(*) FROM ml.huayco_susceptibility)  AS huayco_records,
+              (SELECT COUNT(*) FROM social.signals)            AS social_signals,
+              (SELECT COUNT(*) FROM hydro.stations)            AS hydro_stations
         """)
         print(f"\nDatabase totals: {dict(rows)}")
-        print("\nDone. Refresh http://localhost:3001 to see data on the map.")
+        print("\nDone. Refresh http://localhost:3000 to see data on the map.")
 
     finally:
         await conn.close()

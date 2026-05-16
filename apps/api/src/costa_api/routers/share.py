@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import secrets
 from datetime import datetime, timezone, timedelta
 from typing import Any
@@ -80,9 +81,9 @@ async def mint_share_token(
     await db.execute(
         text(
             "INSERT INTO ops.share_tokens (token, scenario, expires_at) "
-            "VALUES (:token, :scenario::jsonb, :expires_at)"
+            "VALUES (:token, CAST(:scenario AS JSONB), :expires_at)"
         ),
-        {"token": token, "scenario": str(scenario_dict).replace("'", '"'), "expires_at": expires_at},
+        {"token": token, "scenario": json.dumps(scenario_dict), "expires_at": expires_at},
     )
     await db.commit()
 

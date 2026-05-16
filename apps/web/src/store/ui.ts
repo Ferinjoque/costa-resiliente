@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type PanelId = "map" | "alerts" | "ask" | "log" | "sources" | "share";
+type PanelId = "map" | "alerts" | "ask" | "log" | "sources" | "share" | "dashboard";
 
 export type Locale = "es" | "en";
 
@@ -54,7 +54,7 @@ export const useUIStore = create<UIState>((set) => ({
   setScenario: (s) =>
     set((state) => ({ scenario: { ...state.scenario, ...s } })),
 
-  activeLayers: new Set(["districts", "imerg", "infrastructure"]),
+  activeLayers: new Set(["districts", "imerg", "flood", "huayco", "social", "infrastructure"]),
   toggleLayer: (layer) =>
     set((state) => {
       const next = new Set(state.activeLayers);

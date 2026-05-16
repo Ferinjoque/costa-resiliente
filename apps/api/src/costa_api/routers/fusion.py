@@ -111,22 +111,26 @@ async def district_fusion(
                 COUNT(fp.id)::int AS polygon_count,
                 COALESCE(
                     SUM(
-                        ST_Area(ST_Intersection(d.geom, fp.geom)::geography) / 1e6
+                        ST_Area(
+                            ST_Intersection(
+                                ST_MakeValid(d.geom), ST_MakeValid(fp.geom)
+                            )::geography
+                        ) / 1e6
                     ), 0
                 )::float AS overlap_km2,
-                MAX(fp.created_at) AS latest_flood_at
+                MAX(fp.acquired_at) AS latest_flood_at
             FROM geo.districts d
             JOIN ml.flood_polygons fp
-              ON ST_Intersects(d.geom, fp.geom)
+              ON ST_Intersects(ST_MakeValid(d.geom), ST_MakeValid(fp.geom))
             WHERE d.id = :district_id
-              AND fp.created_at > NOW() - INTERVAL '7 days'
+              AND fp.acquired_at > NOW() - INTERVAL '7 days'
         """),
         {"district_id": district_id},
     )
     flood = flood_row.mappings().first()
     flood_count = int(flood["polygon_count"]) if flood and flood["polygon_count"] else 0
     flood_area = float(flood["overlap_km2"]) if flood and flood["overlap_km2"] else 0.0
-    latest_flood_at = flood["latest_flood_at"].isoformat() if flood and flood["latest_flood_at"] else None
+    latest_flood_at = flood["latest_flood_at"].isoformat() if flood and flood.get("latest_flood_at") else None
 
     # ── Huayco risk (highest-probability quebrada in district's watersheds) ───
     huayco_row = await db.execute(

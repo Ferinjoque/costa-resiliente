@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { LeftRail } from "@/components/ui/LeftRail";
 import { ScenarioPanel } from "@/components/panels/ScenarioPanel";
@@ -10,9 +10,12 @@ import { DecisionLogPanel } from "@/components/panels/DecisionLogPanel";
 import { DataFreshnessBar } from "@/components/ui/DataFreshnessBar";
 import { DataSourcesPanel } from "@/components/panels/DataSourcesPanel";
 import { TutorialOverlay } from "@/components/panels/TutorialOverlay";
+import { MapLegend } from "@/components/map/MapLegend";
 import { SharePanel } from "@/components/panels/SharePanel";
 import { ShareLoader } from "@/components/panels/ShareLoader";
 import { FusionCallout } from "@/components/panels/FusionCallout";
+import { DistrictDashboardPanel } from "@/components/panels/DistrictDashboardPanel";
+import { useUIStore } from "@/store/ui";
 
 // MapView must be client-only (MapLibre GL uses window APIs)
 const MapView = dynamic(() => import("@/components/map/MapView"), {
@@ -23,6 +26,28 @@ const MapView = dynamic(() => import("@/components/map/MapView"), {
     </div>
   ),
 });
+
+const FIRST_VISIT_KEY = "cr_visited_v1";
+
+function FirstRunTrigger() {
+  const { setTutorialOpen, setScenario } = useUIStore();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    // Don't auto-open if it's a shared scenario link
+    if (window.location.search.includes("token=")) return;
+    if (localStorage.getItem(FIRST_VISIT_KEY)) return;
+    localStorage.setItem(FIRST_VISIT_KEY, "1");
+    // Delay slightly so map finishes rendering
+    const t = setTimeout(() => {
+      setScenario({ isReplayMode: true, replayDate: "2017-03-15" });
+      setTutorialOpen(true);
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [setTutorialOpen, setScenario]);
+
+  return null;
+}
 
 export default function Home() {
   return (
@@ -47,6 +72,7 @@ export default function Home() {
           >
             <MapView />
           </Suspense>
+          <MapLegend />
         </div>
 
         {/* UI layer — panels and controls always above the map */}
@@ -56,10 +82,12 @@ export default function Home() {
         <DecisionLogPanel />
         <DataSourcesPanel />
         <SharePanel />
+        <DistrictDashboardPanel />
         <FusionCallout />
         <DataFreshnessBar />
         <TutorialOverlay />
         <ShareLoader />
+        <FirstRunTrigger />
       </main>
     </div>
   );

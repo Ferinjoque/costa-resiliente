@@ -1,6 +1,6 @@
 """Map layer data endpoints — IMERG, SAR flood, huayco, infrastructure, stations."""
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
@@ -21,18 +21,34 @@ def _iso(dt: Any) -> str | None:
     return dt.isoformat() if hasattr(dt, "isoformat") else str(dt)
 
 
+def _parse_replay_time(at: Optional[str]) -> datetime:
+    """Parse ISO date string for replay; return UTC now if absent."""
+    if not at:
+        return datetime.now(timezone.utc)
+    try:
+        dt = datetime.fromisoformat(at)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
+    except ValueError:
+        return datetime.now(timezone.utc)
+
+
 @router.get("/imerg/latest")
 async def imerg_latest(
     watershed_id: int | None = Query(None, description="Filter by watershed ID"),
     hours: int = Query(24, ge=1, le=168, description="Accumulation window hours"),
+    at: Optional[str] = Query(None, description="Replay reference date ISO (YYYY-MM-DD)"),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """
     Latest IMERG rainfall accumulations per watershed.
     Returns a GeoJSON FeatureCollection — one Feature per watershed,
     with accumulation values attached as properties.
+    Supports replay mode via ?at=YYYY-MM-DD.
     """
-    params: dict = {"hours": hours}
+    ref_time = _parse_replay_time(at)
+    params: dict = {"hours": hours, "ref_time": ref_time}
     where_clause = ""
     if watershed_id is not None:
         where_clause = "AND ia.watershed_id = :watershed_id"
@@ -63,7 +79,8 @@ async def imerg_latest(
                 SELECT *
                 FROM hydro.imerg_accumulations ia
                 WHERE ia.watershed_id = w.id
-                  AND ia.time >= NOW() - INTERVAL '1 hour' * :hours
+                  AND ia.time <= :ref_time
+                  AND ia.time >= :ref_time - INTERVAL '1 hour' * :hours
                 ORDER BY ia.time DESC
                 LIMIT 1
             ) ia ON TRUE
@@ -104,9 +121,11 @@ async def imerg_latest(
 @router.get("/flood/latest")
 async def flood_latest(
     limit: int = Query(10, le=50),
+    at: Optional[str] = Query(None, description="Replay reference date ISO (YYYY-MM-DD)"),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    """Latest SAR flood polygons from ml.flood_polygons."""
+    """Latest SAR flood polygons from ml.flood_polygons. Supports replay via ?at=."""
+    ref_time = _parse_replay_time(at)
     freshness_row = await db.execute(
         text("SELECT MAX(acquired_at) FROM ml.flood_polygons")
     )
@@ -118,10 +137,11 @@ async def flood_latest(
                 id, scene_id, acquired_at, model_version, confidence, area_km2,
                 ST_AsGeoJSON(geom)::json AS geometry
             FROM ml.flood_polygons
+            WHERE acquired_at <= :ref_time
             ORDER BY acquired_at DESC
             LIMIT :limit
         """),
-        {"limit": limit},
+        {"limit": limit, "ref_time": ref_time},
     )
     rows = result.mappings().all()
     return {
@@ -166,7 +186,7 @@ async def huayco_susceptibility(db: AsyncSession = Depends(get_db)) -> dict[str,
                 hs.risk_level,
                 hs.computed_at,
                 hs.trigger_rain_24h_mm,
-                ST_AsGeoJSON(q.geom)::json AS geometry
+                ST_AsGeoJSON(ST_PointOnSurface(q.geom))::json AS geometry
             FROM geo.quebradas q
             LEFT JOIN ml.huayco_susceptibility hs ON hs.quebrada_id = q.id
             ORDER BY hs.quebrada_id, hs.computed_at DESC

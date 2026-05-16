@@ -6,7 +6,7 @@ import { Protocol } from "pmtiles";
 import { useUIStore } from "@/store/ui";
 import {
   useDistricts, useImerg, useFlood, useHuayco,
-  useInfrastructure, useHazard, useSocialSignals,
+  useInfrastructure, useHazard, useSocialSignals, useDistrictRiskSummary,
 } from "@/lib/queries";
 
 const LIMA_CENTER: [number, number] = [-76.97, -12.05];
@@ -120,8 +120,10 @@ export default function MapView() {
   const { activeLayers, scenario, is3DMode } = useUIStore();
 
   const { data: districtGeoJSON } = useDistricts();
-  const { data: imergData } = useImerg(scenario.timeWindowHours);
-  const { data: floodData } = useFlood();
+  const { data: riskSummary } = useDistrictRiskSummary();
+  const replayDate = scenario.isReplayMode ? (scenario.replayDate ?? undefined) : undefined;
+  const { data: imergData } = useImerg(scenario.timeWindowHours, replayDate);
+  const { data: floodData } = useFlood(replayDate);
   const { data: huaycoData } = useHuayco();
   const { data: infraData } = useInfrastructure();
   const { data: hazardData } = useHazard();
@@ -342,6 +344,49 @@ export default function MapView() {
     };
     if (m.loaded()) setup(); else m.once("load", setup);
   }, [districtGeoJSON, addOrUpdateSource]);
+
+  // ─── District risk fills ──────────────────────────────────────────────────
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !riskSummary) return;
+    const riskColor: maplibregl.ExpressionSpecification = [
+      "match", ["get", "risk_level"],
+      "alto",     "#dc2626",
+      "moderado", "#f97316",
+      "bajo",     "#22c55e",
+      "#94a3b8",
+    ];
+    const setup = () => {
+      addOrUpdateSource("risk-src", riskSummary);
+      if (!m.getLayer("risk-fill")) {
+        m.addLayer(
+          {
+            id: "risk-fill",
+            type: "fill",
+            source: "risk-src",
+            layout: { visibility: "visible" },
+            paint: { "fill-color": riskColor, "fill-opacity": 0.18 },
+          },
+          m.getLayer("districts-fill") ? "districts-fill" : undefined,
+        );
+        m.addLayer({
+          id: "risk-outline",
+          type: "line",
+          source: "risk-src",
+          filter: ["!=", ["get", "risk_level"], "bajo"],
+          layout: { visibility: "visible" },
+          paint: {
+            "line-color": riskColor,
+            "line-width": ["match", ["get", "risk_level"], "alto", 2, 1],
+            "line-opacity": 0.7,
+          },
+        });
+      } else {
+        (m.getSource("risk-src") as maplibregl.GeoJSONSource)?.setData(riskSummary);
+      }
+    };
+    if (m.loaded()) setup(); else m.once("load", setup);
+  }, [riskSummary, addOrUpdateSource]);
 
   // ─── District zoom + highlight ────────────────────────────────────────────
   useEffect(() => {
