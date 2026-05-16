@@ -1,21 +1,27 @@
 # Submission Gaps — Costa Resiliente
 
 > Rubric-mapped gap analysis against IEEE Response Quest 2026 Phase 3 criteria.
-> Last updated: 2026-05-13.
+> Last updated: 2026-05-16.
 > Score scale: 1–5 per criterion. Total: 25.
 
 ---
 
 ## Score Summary
 
-| # | Criterion | Current | Target | Gap |
-|---|-----------|---------|--------|-----|
-| C1 | **Timeliness** — data latency, refresh cadence | 4.0 | 5.0 | WebSocket live push |
-| C2 | **Comprehensiveness** — source coverage | 4.5 | 5.0 | Population exposure |
-| C3 | **Integration** — data fusion depth | 4.5 | 5.0 | Social pins on map |
-| C4 | **Usability** — UX, PWA, accessibility, tutorial | 3.5 | 5.0 | Tutorial, PWA, i18n |
-| C5 | **Scenario Fit** — Lima flood/huayco operational relevance | 4.0 | 5.0 | El Niño replay |
-| | **Total** | **20.5 / 25** | **25 / 25** | |
+| # | Criterion | Sprint 8 | Sprint 9 | Target | Remaining gap |
+|---|-----------|----------|----------|--------|---------------|
+| C1 | **Timeliness** | 4.3 | 4.3 | 5.0 | SSE alerts fully wired |
+| C2 | **Comprehensiveness** | 4.8 | 4.8 | 5.0 | — |
+| C3 | **Integration** | 4.8 | 5.0 ✅ | 5.0 | Fusion callout shipped |
+| C4 | **Usability** | 4.5 | 4.8 | 5.0 | WCAG Lighthouse pass on VPS |
+| C5 | **Scenario Fit** | 4.3 | 4.8 | 5.0 | El Niño replay + fusion |
+| | **Total** | **~22.7 / 25** | **~23.7 / 25** | **25 / 25** | VPS deploy unblocks all |
+
+## Sprint 9 Shipped (2026-05-16)
+
+- `refactor(map)`: Source labels, popup helpers, unified click priority, dark popup CSS
+- `feat(share)`: Read-only share tokens — `POST /share` mint, `GET /share/{token}` resolve; SharePanel + ShareLoader + LeftRail button + read-only mode banner
+- `feat(fusion)`: Multi-hazard district callout — `GET /fusion/{ubigeo}` joins flood×huayco×social×population; FusionCallout.tsx with risk badge + Spanish prose; 3D flood extrusion (fill-extrusion, 45° pitch toggle)
 
 ---
 
