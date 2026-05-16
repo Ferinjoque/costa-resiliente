@@ -1,7 +1,7 @@
 # Submission Gaps — Costa Resiliente
 
 > Rubric-mapped gap analysis against IEEE Response Quest 2026 Phase 3 criteria.
-> Last updated: 2026-05-16.
+> Last updated: 2026-05-16 (Sprint 10 session).
 > Score scale: 1–5 per criterion. Total: 25.
 
 ---
