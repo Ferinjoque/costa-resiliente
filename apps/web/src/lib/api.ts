@@ -351,3 +351,43 @@ export async function mintShareToken(
 export function fetchShareToken(token: string): Promise<ResolveShareResponse> {
   return get<ResolveShareResponse>(`/api/v1/share/${encodeURIComponent(token)}`);
 }
+
+// ─── Multi-hazard fusion ──────────────────────────────────────────────────────
+
+export interface FusionDistrict {
+  ubigeo: string;
+  name: string;
+  population: number | null;
+}
+
+export interface FusionFlood {
+  active_polygon_count: number;
+  overlap_km2: number;
+  latest_scene_at: string | null;
+}
+
+export interface FusionHuayco {
+  highest_risk_level: string | null;
+  highest_probability: number | null;
+  quebrada_name: string | null;
+  computed_at: string | null;
+}
+
+export interface FusionSocial {
+  total_signals_3h: number;
+  urgent_signals_3h: number;
+}
+
+export interface DistrictFusion {
+  retrieved_at: string;
+  district: FusionDistrict;
+  risk_level: "bajo" | "moderado" | "alto";
+  prose_es: string;
+  flood: FusionFlood;
+  huayco: FusionHuayco;
+  social: FusionSocial;
+}
+
+export function fetchDistrictFusion(ubigeo: string): Promise<DistrictFusion> {
+  return get<DistrictFusion>(`/api/v1/fusion/${encodeURIComponent(ubigeo)}`);
+}

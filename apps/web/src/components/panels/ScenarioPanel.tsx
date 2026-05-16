@@ -195,7 +195,7 @@ export function ScenarioPanel() {
 }
 
 function LayerToggles() {
-  const { activeLayers, toggleLayer } = useUIStore();
+  const { activeLayers, toggleLayer, is3DMode, set3DMode } = useUIStore();
 
   const layers: { id: string; label: string }[] = [
     { id: "districts", label: "Distritos" },
@@ -226,6 +226,17 @@ function LayerToggles() {
             <span className="text-xs text-slate-300">{label}</span>
           </label>
         ))}
+        {/* 3D flood extrusion toggle */}
+        <label className="flex items-center gap-2 cursor-pointer select-none pt-1 mt-1 border-t border-slate-700">
+          <input
+            type="checkbox"
+            className="accent-costa-500 w-3 h-3 focus-visible:ring-2 focus-visible:ring-costa-500"
+            checked={is3DMode}
+            onChange={() => set3DMode(!is3DMode)}
+            aria-label="Vista 3D de inundaciones"
+          />
+          <span className="text-xs text-slate-300">Vista 3D</span>
+        </label>
       </div>
     </fieldset>
   );
