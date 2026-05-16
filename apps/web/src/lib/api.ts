@@ -89,8 +89,10 @@ export interface ImergCollection {
 }
 
 /** Fetches IMERG per-watershed accumulations. `hours` must be 1|3|6|12|24|72. */
-export function fetchImerg(hours = 24): Promise<ImergCollection> {
-  return get<ImergCollection>(`/api/v1/layers/imerg/latest?hours=${hours}`);
+export function fetchImerg(hours = 24, replayDate?: string | null): Promise<ImergCollection> {
+  const params = new URLSearchParams({ hours: String(hours) });
+  if (replayDate) params.set("at", replayDate);
+  return get<ImergCollection>(`/api/v1/layers/imerg/latest?${params}`);
 }
 
 // ─── Flood polygons ───────────────────────────────────────────────────────────
@@ -104,8 +106,9 @@ export interface FloodCollection {
   features: GeoJSON.Feature[];
 }
 
-export function fetchFlood(): Promise<FloodCollection> {
-  return get<FloodCollection>("/api/v1/layers/flood/latest");
+export function fetchFlood(replayDate?: string | null): Promise<FloodCollection> {
+  const params = replayDate ? `?at=${encodeURIComponent(replayDate)}` : "";
+  return get<FloodCollection>(`/api/v1/layers/flood/latest${params}`);
 }
 
 // ─── Huayco susceptibility ────────────────────────────────────────────────────
@@ -313,6 +316,12 @@ export function alertsStreamUrl(): string {
   return `${BASE}/api/v1/alerts/stream`;
 }
 
+// ─── Health check ────────────────────────────────────────────────────────────
+
+export async function fetchHealth(): Promise<{ status: string; version: string }> {
+  return get<{ status: string; version: string }>("/api/v1/health");
+}
+
 // ─── Share tokens ─────────────────────────────────────────────────────────────
 
 export interface ScenarioSnapshot {
@@ -350,6 +359,93 @@ export async function mintShareToken(
 
 export function fetchShareToken(token: string): Promise<ResolveShareResponse> {
   return get<ResolveShareResponse>(`/api/v1/share/${encodeURIComponent(token)}`);
+}
+
+// ─── District risk summary (map fills) ───────────────────────────────────────
+
+export interface DistrictRiskProperties {
+  ubigeo: string;
+  name: string;
+  population: number | null;
+  risk_level: "bajo" | "moderado" | "alto";
+  active_alerts: number;
+  social_3h: number;
+  urgent_social_3h: number;
+}
+
+export interface DistrictRiskFeature {
+  type: "Feature";
+  geometry: GeoJSON.Geometry;
+  properties: DistrictRiskProperties;
+}
+
+export interface DistrictRiskSummary {
+  type: "FeatureCollection";
+  retrieved_at: string;
+  features: DistrictRiskFeature[];
+}
+
+export function fetchDistrictRiskSummary(): Promise<DistrictRiskSummary> {
+  return get<DistrictRiskSummary>("/api/v1/districts/risk-summary");
+}
+
+// ─── District dashboard ───────────────────────────────────────────────────────
+
+export interface DashboardAlert {
+  id: number;
+  type: string;
+  severity: string;
+  status: string;
+  title: string;
+  created_at: string;
+}
+
+export interface AlertTrendDay {
+  day: string;
+  severity: string;
+  count: number;
+}
+
+export interface SocialBreakdown {
+  label: string;
+  count: number;
+}
+
+export interface ImergTrendDay {
+  day: string;
+  acc_24h_mm: number;
+  acc_72h_mm: number;
+}
+
+export interface DashboardStation {
+  code: string;
+  name: string;
+  source: string;
+  river: string;
+  latest_time: string | null;
+  level_m: number | null;
+  flow_m3s: number | null;
+  rain_mm: number | null;
+}
+
+export interface DistrictDashboard {
+  retrieved_at: string;
+  district: {
+    ubigeo: string;
+    name: string;
+    population: number | null;
+    area_km2: number | null;
+  };
+  active_alerts: DashboardAlert[];
+  alerts_trend_7d: AlertTrendDay[];
+  social_24h: SocialBreakdown[];
+  imerg_trend_30d: ImergTrendDay[];
+  stations: DashboardStation[];
+  sinpad_historical_events: number;
+}
+
+export function fetchDistrictDashboard(ubigeo: string): Promise<DistrictDashboard> {
+  return get<DistrictDashboard>(`/api/v1/districts/${encodeURIComponent(ubigeo)}/dashboard`);
 }
 
 // ─── Multi-hazard fusion ──────────────────────────────────────────────────────

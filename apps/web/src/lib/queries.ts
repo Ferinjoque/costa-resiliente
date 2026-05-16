@@ -25,6 +25,9 @@ import {
   fetchDecisionLog,
   fetchFloodExposure,
   fetchSocialSignals,
+  fetchDistrictRiskSummary,
+  fetchDistrictDashboard,
+  fetchHealth,
   type DistrictCollection,
   type DistrictListItem,
   type ImergCollection,
@@ -37,6 +40,8 @@ import {
   type FloodExposure,
   type SocialSignalCollection,
   type DistrictFusion,
+  type DistrictRiskSummary,
+  type DistrictDashboard,
   fetchDistrictFusion,
 } from "./api";
 
@@ -66,24 +71,27 @@ export function useDistrictList(
 
 export function useImerg(
   hours = 24,
+  replayDate?: string | null,
   opts?: Partial<UseQueryOptions<ImergCollection>>
 ): UseQueryResult<ImergCollection> {
   return useQuery({
-    queryKey: ["imerg", hours],
-    queryFn: () => fetchImerg(hours),
-    staleTime: 2 * MIN,
-    refetchInterval: 2 * MIN,
+    queryKey: ["imerg", hours, replayDate ?? null],
+    queryFn: () => fetchImerg(hours, replayDate),
+    staleTime: replayDate ? 60 * MIN : 2 * MIN,
+    refetchInterval: replayDate ? false : 2 * MIN,
     ...opts,
   });
 }
 
 export function useFlood(
+  replayDate?: string | null,
   opts?: Partial<UseQueryOptions<FloodCollection>>
 ): UseQueryResult<FloodCollection> {
   return useQuery({
-    queryKey: ["flood"],
-    queryFn: fetchFlood,
-    staleTime: 10 * MIN,
+    queryKey: ["flood", replayDate ?? null],
+    queryFn: () => fetchFlood(replayDate),
+    staleTime: replayDate ? 60 * MIN : 10 * MIN,
+    refetchInterval: replayDate ? false : undefined,
     ...opts,
   });
 }
@@ -184,6 +192,42 @@ export function useFusion(
     enabled: !!ubigeo,
     staleTime: 3 * MIN,
     refetchInterval: 3 * MIN,
+    ...opts,
+  });
+}
+
+export function useDistrictRiskSummary(
+  opts?: Partial<UseQueryOptions<DistrictRiskSummary>>
+): UseQueryResult<DistrictRiskSummary> {
+  return useQuery({
+    queryKey: ["district-risk-summary"],
+    queryFn: fetchDistrictRiskSummary,
+    staleTime: 3 * MIN,
+    refetchInterval: 5 * MIN,
+    ...opts,
+  });
+}
+
+export function useApiHealth(): UseQueryResult<{ status: string; version: string }> {
+  return useQuery({
+    queryKey: ["health"],
+    queryFn: fetchHealth,
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+    retry: 1,
+  });
+}
+
+export function useDistrictDashboard(
+  ubigeo: string | null,
+  opts?: Partial<UseQueryOptions<DistrictDashboard>>
+): UseQueryResult<DistrictDashboard> {
+  return useQuery({
+    queryKey: ["district-dashboard", ubigeo],
+    queryFn: () => fetchDistrictDashboard(ubigeo!),
+    enabled: !!ubigeo,
+    staleTime: 2 * MIN,
+    refetchInterval: 5 * MIN,
     ...opts,
   });
 }

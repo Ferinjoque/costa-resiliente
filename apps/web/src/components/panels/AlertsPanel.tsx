@@ -9,6 +9,7 @@ import { actOnAlert, alertsStreamUrl } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Alert } from "@/lib/api";
 import { timeAgo } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 const OPERATOR_ID = "operator-1";
 
@@ -25,9 +26,10 @@ const SEVERITY_DOT: Record<string, string> = {
   low: "bg-blue-400",
 };
 
-function AlertRow({ alert }: { alert: Alert }) {
+function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   const qc = useQueryClient();
   const Icon = TYPE_ICON[alert.type] ?? Bell;
+  const tr = useT(locale);
 
   async function handleAck() {
     try {
@@ -38,18 +40,29 @@ function AlertRow({ alert }: { alert: Alert }) {
     }
   }
 
+  const TYPE_LABELS: Record<string, { es: string; en: string }> = {
+    flood: { es: "inundación", en: "flood" },
+    huayco: { es: "huayco", en: "huayco" },
+    social_cluster: { es: "señal social", en: "social signal" },
+  };
+  const typeLabel = TYPE_LABELS[alert.type]?.[locale] ?? alert.type.replace("_", " ");
+
   return (
     <li className="px-4 py-3 hover:bg-surface-panel transition-colors">
       <div className="flex items-start gap-2">
         <span
-          className={clsx("mt-1 h-2 w-2 rounded-full shrink-0", SEVERITY_DOT[alert.severity] ?? "bg-slate-400")}
+          className={clsx(
+            "mt-1 h-2 w-2 rounded-full shrink-0",
+            SEVERITY_DOT[alert.severity] ?? "bg-slate-400",
+            alert.severity === "critical" && "animate-pulse",
+          )}
           aria-label={`Severidad: ${alert.severity}`}
         />
         <div className="flex-1 min-w-0">
           <p className="text-sm text-white truncate">{alert.title}</p>
           <p className="text-xs text-slate-300 mt-0.5 flex items-center gap-1.5">
             <Icon size={11} aria-hidden="true" />
-            <span className="capitalize">{alert.type.replace("_", " ")}</span>
+            <span className="capitalize">{typeLabel}</span>
             <span aria-hidden="true">·</span>
             <span>{timeAgo(alert.created_at)}</span>
           </p>
@@ -58,8 +71,8 @@ function AlertRow({ alert }: { alert: Alert }) {
           <button
             onClick={handleAck}
             className="shrink-0 text-slate-400 hover:text-green-400 transition-colors"
-            aria-label="Reconocer alerta"
-            title="Reconocer"
+            aria-label={tr("alerts", "acknowledge")}
+            title={tr("alerts", "acknowledge")}
           >
             <CheckCircle size={15} />
           </button>
@@ -72,11 +85,12 @@ function AlertRow({ alert }: { alert: Alert }) {
 }
 
 export function AlertsPanel() {
-  const { activePanel } = useUIStore();
+  const { activePanel, locale } = useUIStore();
   const qc = useQueryClient();
   const { data: alerts = [], isLoading, isError, dataUpdatedAt } = useAlerts();
   const { data: exposure } = useFloodExposure();
   const sseRef = useRef<EventSource | null>(null);
+  const tr = useT(locale);
 
   // SSE: subscribe to live alert push
   useEffect(() => {
@@ -115,7 +129,7 @@ export function AlertsPanel() {
         "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
         "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col",
       ].join(" ")}
-      aria-label="Feed de alertas"
+      aria-label={tr("alerts", "title")}
       role="complementary"
     >
       {/* Mobile drag handle */}
@@ -125,11 +139,11 @@ export function AlertsPanel() {
 
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
         <Bell size={15} className="text-costa-500" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-white">Alertas</h2>
+        <h2 className="text-sm font-semibold text-white">{tr("alerts", "title")}</h2>
         {activeCount > 0 && (
           <span
             className="ml-auto bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full"
-            aria-label={`${activeCount} alertas activas`}
+            aria-label={`${activeCount} ${tr("alerts", "title").toLowerCase()} activas`}
           >
             {activeCount}
           </span>
@@ -140,7 +154,7 @@ export function AlertsPanel() {
       {exposure && exposure.total_affected_population > 0 && (
         <div className="mx-3 mt-2 bg-red-900/30 border border-red-700/50 rounded-lg px-3 py-2">
           <p className="text-xs text-red-300 font-medium">
-            ~{exposure.total_affected_population.toLocaleString("es-PE")} personas en zona inundada
+            ~{exposure.total_affected_population.toLocaleString(locale === "es" ? "es-PE" : "en-US")} {tr("alerts", "personsAtRisk")}
           </p>
           <p className="text-[10px] text-red-400 mt-0.5">
             {exposure.districts.slice(0, 3).map((d) => d.district_name).join(", ")}
@@ -149,25 +163,27 @@ export function AlertsPanel() {
         </div>
       )}
 
-      <ul className="flex-1 overflow-y-auto divide-y divide-slate-700/50" role="list" aria-label="Lista de alertas">
+      <ul className="flex-1 overflow-y-auto divide-y divide-slate-700/50" role="list" aria-label={tr("alerts", "title")}>
         {isLoading && (
-          <li className="px-4 py-8 text-xs text-slate-400 text-center" aria-live="polite">Cargando alertas…</li>
+          <li className="px-4 py-8 text-xs text-slate-400 text-center" aria-live="polite">{tr("alerts", "loading")}</li>
         )}
         {isError && (
-          <li className="px-4 py-8 text-xs text-red-400 text-center" role="alert">Error al cargar alertas</li>
+          <li className="px-4 py-8 text-xs text-red-400 text-center" role="alert">{tr("alerts", "error")}</li>
         )}
         {!isLoading && !isError && alerts.length === 0 && (
           <li className="px-4 py-8 text-xs text-slate-400 text-center">
-            No hay alertas activas
+            {tr("alerts", "noAlerts")}
           </li>
         )}
         {alerts.map((alert) => (
-          <AlertRow key={alert.id} alert={alert} />
+          <AlertRow key={alert.id} alert={alert} locale={locale} />
         ))}
       </ul>
 
       <div className="px-4 py-2 border-t border-slate-700 text-xs text-slate-400 text-center">
-        {dataUpdatedAt ? `Actualizado ${timeAgo(new Date(dataUpdatedAt).toISOString())}` : "Actualización en tiempo real (SSE)"}
+        {dataUpdatedAt
+          ? `${tr("alerts", "updated")} ${timeAgo(new Date(dataUpdatedAt).toISOString())}`
+          : tr("alerts", "liveSSE")}
       </div>
     </aside>
   );
