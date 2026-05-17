@@ -7,6 +7,7 @@ CREATE EXTENSION IF NOT EXISTS postgis_topology;
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;  -- trigram search for social signals
 CREATE EXTENSION IF NOT EXISTS unaccent; -- accent-insensitive Spanish search
+CREATE EXTENSION IF NOT EXISTS vector;   -- pgvector for RAG embeddings
 -- pg_cron not available in timescaledb-ha image; retention handled by Prefect flow
 
 -- ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -15,6 +16,7 @@ CREATE SCHEMA IF NOT EXISTS hydro;     -- hydrometeorological time-series
 CREATE SCHEMA IF NOT EXISTS social;    -- ingested social signals
 CREATE SCHEMA IF NOT EXISTS ml;        -- ML output tables
 CREATE SCHEMA IF NOT EXISTS ops;       -- operator decision log, alerts
+CREATE SCHEMA IF NOT EXISTS rag;       -- protocol documents + embeddings
 
 -- ─── geo: Lima Administrative Boundaries ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS geo.districts (
@@ -249,6 +251,91 @@ CREATE INDEX IF NOT EXISTS share_tokens_expires_idx ON ops.share_tokens (expires
 -- ─── Retention ────────────────────────────────────────────────────────────────
 -- Signal expiry is handled by the Prefect retention flow (social.signals.expires_at)
 -- Share tokens expire automatically; expired tokens rejected at query time
+
+-- ─── ops: Security Events ────────────────────────────────────────────────────
+-- Append-only log of guardrail triggers (input blocks, output redactions)
+CREATE TABLE IF NOT EXISTS ops.security_events (
+    id          BIGSERIAL PRIMARY KEY,
+    operator_id TEXT NOT NULL,
+    event_type  TEXT NOT NULL,          -- input_blocked | output_redacted
+    detail      TEXT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS security_events_op_idx ON ops.security_events (operator_id);
+CREATE INDEX IF NOT EXISTS security_events_ts_idx  ON ops.security_events (created_at DESC);
+
+-- ─── ops: Alert Proposals (HITL gate) ───────────────────────────────────────
+-- AI can only propose alerts; a human must approve before insertion into ops.alerts
+CREATE TABLE IF NOT EXISTS ops.alert_proposals (
+    id              BIGSERIAL PRIMARY KEY,
+    proposed_by     TEXT NOT NULL DEFAULT 'copilot',
+    severity        TEXT NOT NULL CHECK (severity IN ('critical','high','medium','low')),
+    alert_type      TEXT NOT NULL,
+    district_ubigeo CHAR(6),
+    title           TEXT NOT NULL,
+    summary         TEXT NOT NULL,
+    source_refs     JSONB,
+    status          TEXT NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending','approved','rejected')),
+    reviewed_by     TEXT,
+    reviewed_at     TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS alert_proposals_status_idx ON ops.alert_proposals (status);
+
+-- ─── rag: Protocol Documents ─────────────────────────────────────────────────
+-- Stores chunked text from INDECI/CENEPRED/MINSA manuals + their embeddings
+-- nomic-embed-text produces 768-dim vectors; bge-m3 produces 1024-dim.
+-- Default: 768 (nomic-embed-text). Change LLM_EMBED_MODEL + vector(dim) together.
+CREATE TABLE IF NOT EXISTS rag.documents (
+    id          BIGSERIAL PRIMARY KEY,
+    source      TEXT NOT NULL,          -- e.g. "INDECI_Plan_Familiar_2024"
+    title       TEXT NOT NULL,
+    lang        CHAR(2) NOT NULL DEFAULT 'es',
+    chunk_index INTEGER NOT NULL DEFAULT 0,
+    chunk       TEXT NOT NULL,
+    embedding   vector(768),            -- nomic-embed-text dimension
+    content_hash CHAR(64),              -- SHA-256 for idempotent upsert
+    meta        JSONB,                  -- page, section, url, etc.
+    indexed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS rag_documents_source_idx    ON rag.documents (source);
+CREATE INDEX IF NOT EXISTS rag_documents_hash_idx      ON rag.documents (content_hash);
+-- HNSW index for fast ANN search (created after first data load)
+-- CREATE INDEX rag_documents_embedding_hnsw ON rag.documents
+--     USING hnsw (embedding vector_cosine_ops) WITH (m=16, ef_construction=64);
+
+-- ─── Read-Only AI Database Role ──────────────────────────────────────────────
+-- Used by the agentic copilot. SELECT-only on data schemas, no write access.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'costa_ai_ro') THEN
+        CREATE ROLE costa_ai_ro LOGIN PASSWORD 'change_me_in_production';
+    END IF;
+END
+$$;
+
+-- Grant connect + usage
+GRANT CONNECT ON DATABASE costa_resiliente TO costa_ai_ro;
+GRANT USAGE ON SCHEMA geo, hydro, social, ml, ops, rag TO costa_ai_ro;
+
+-- Grant SELECT on all current + future tables in each schema
+GRANT SELECT ON ALL TABLES IN SCHEMA geo     TO costa_ai_ro;
+GRANT SELECT ON ALL TABLES IN SCHEMA hydro   TO costa_ai_ro;
+GRANT SELECT ON ALL TABLES IN SCHEMA ml      TO costa_ai_ro;
+GRANT SELECT ON ALL TABLES IN SCHEMA rag     TO costa_ai_ro;
+
+-- social: read only the redacted view (no raw handles / URLs)
+GRANT SELECT ON ALL TABLES IN SCHEMA social TO costa_ai_ro;
+-- ops: alerts + decision_log read-only; NO write access whatsoever
+GRANT SELECT ON ops.alerts, ops.decision_log, ops.alert_proposals TO costa_ai_ro;
+
+-- Future tables auto-granted (run after each migration)
+ALTER DEFAULT PRIVILEGES IN SCHEMA geo     GRANT SELECT ON TABLES TO costa_ai_ro;
+ALTER DEFAULT PRIVILEGES IN SCHEMA hydro   GRANT SELECT ON TABLES TO costa_ai_ro;
+ALTER DEFAULT PRIVILEGES IN SCHEMA social  GRANT SELECT ON TABLES TO costa_ai_ro;
+ALTER DEFAULT PRIVILEGES IN SCHEMA ml      GRANT SELECT ON TABLES TO costa_ai_ro;
+ALTER DEFAULT PRIVILEGES IN SCHEMA rag     GRANT SELECT ON TABLES TO costa_ai_ro;
 
 -- ─── Spatial Reference Helpers ────────────────────────────────────────────────
 -- Lima Metropolitana bounding box as a helper function

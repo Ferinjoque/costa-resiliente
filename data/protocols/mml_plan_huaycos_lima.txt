@@ -1,0 +1,119 @@
+PLAN METROPOLITANO DE CONTINGENCIA ANTE HUAYCOS — LIMA
+Municipalidad Metropolitana de Lima — Gerencia de Gestión del Riesgo de Desastres
+
+INTRODUCCIÓN
+
+Lima Metropolitana concentra 43 distritos con 11 millones de habitantes. Aproximadamente 800,000 personas viven en zonas con susceptibilidad alta o muy alta a huaycos, principalmente en los distritos de Lurigancho-Chosica, Carabayllo, San Juan de Lurigancho y Ate.
+
+Los eventos de El Niño Costero (2017) causaron 14 muertos, 12,000 damnificados y S/. 3,200 millones en daños en Lima y Callao.
+
+SISTEMA DE ALERTA TEMPRANA DE LIMA (SIAT-LIMA)
+
+El SIAT-LIMA opera bajo la coordinación del COER Lima e integra:
+- 48 pluviómetros automáticos en cuencas Rímac, Chillón y Lurín (ANA/SENAMHI).
+- 12 sensores de nivel en quebradas críticas (INDECI Lima).
+- Sistema de sirenas en Chosica (8 sirenas) y Carabayllo (4 sirenas).
+- Difusión de alertas por SMS masivo (convenio con operadoras Claro, Entel, Movistar, Bitel).
+
+Protocolo de activación de sirenas:
+- 1 tono largo (10 seg) = ALERTA (prepare para evacuar).
+- 3 tonos cortos repetidos = EVACUACIÓN INMEDIATA.
+- 2 tonos largo-corto = FIN DE ALERTA (regreso seguro autorizado).
+
+FASES DE RESPUESTA
+
+FASE 0 — Pre-alerta (lluvia pronosticada ≥ 20 mm):
+- SENAMHI emite boletín de alerta.
+- COER Lima activa monitoreo permanente.
+- Municipios distritales verifican funcionamiento de vías de evacuación y albergues.
+
+FASE 1 — Alerta amarilla (lluvia 20–30 mm/24h observada):
+- Brigadas de Defensa Civil en campo (puntos de vigilancia de quebradas).
+- Establecimientos educativos y de salud en zonas de riesgo inician protocolo de resguardo.
+- Comunicación a medios de comunicación.
+
+FASE 2 — Alerta naranja (lluvia 30–42 mm/24h o señales de inestabilidad):
+- Evacuación preventiva de familias en primera línea de quebradas.
+- Apertura de albergues de emergencia (Coliseo Eduardo Dibós, Colegio Particular San José, Estadio de la UNMSM).
+- Cierre de vía a la Sierra (carretera central) a vehículos livianos.
+- Activación de brigadas de búsqueda y rescate (CGBVP, PNP, Ejército).
+
+FASE 3 — Alerta roja (lluvia ≥ 42 mm/24h o huayco en curso):
+- Sirenas: activación de señal de EVACUACIÓN INMEDIATA.
+- Evacuación total de zonas de riesgo alto y muy alto.
+- Cierre total de carretera central y vías alternas.
+- Coordinación COEN para apoyo nacional.
+
+ALBERGUES DE EMERGENCIA (Lima Metropolitana)
+
+Capacidad total disponible en albergues municipales: 18,500 personas.
+Principales albergues para eventos en cuenca Rímac (Chosica-Ate):
+
+| Albergue | Distrito | Cap. | Condición |
+|---|---|---|---|
+| Coliseo Eduardo Dibós | San Borja | 3,000 | Disponible |
+| Estadio UNMSM (Cangallo) | San Marcos | 2,000 | Disponible |
+| Polideportivo Municipal | Ate | 800 | Disponible |
+| Colegio San Ignacio Recalde | La Molina | 400 | Disponible |
+| Centro Cívico Chosica | Lurigancho | 600 | Disponible |
+
+Dotación mínima de albergue: agua (20 L/persona/día), colchonetas, kits de higiene, cocina comunitaria, área de salud básica.
+
+ROLES Y RESPONSABILIDADES
+
+Centro de Operaciones de Emergencia Regional Lima (COER):
+- Coordinación de respuesta interinstitucional.
+- Gestión de información (mapa de afectados, necesidades).
+- Solicitud de recursos a INDECI y Gobierno Central.
+
+Municipios Distritales:
+- Activar Plan de Operaciones de Emergencia distrital.
+- Coordinar evacuación de su jurisdicción.
+- Apertura y operación de albergues locales.
+- Levantamiento de daños (EDAN-Perú, primeras 4 horas).
+
+Cuerpo General de Bomberos del Perú (CGBVP):
+- Búsqueda y rescate en escombros.
+- Atención pre-hospitalaria.
+- Combate de incendios post-evento.
+
+Policía Nacional del Perú (PNP):
+- Control de acceso y seguridad en zonas afectadas.
+- Apoyo en evacuación.
+- Control de tráfico en vías alternativas.
+
+Ejército del Perú:
+- Apoyo logístico pesado (helicópteros, maquinaria).
+- Búsqueda y rescate en zonas de difícil acceso.
+- Solo activado por disposición del COEN.
+
+COORDINACIÓN POST-EVENTO
+
+Primeras 24 horas:
+1. Levantamiento de daños con formulario EDAN-Perú (físico + app INDECI).
+2. Estimación de necesidades: agua, alimentos, refugio temporal, salud.
+3. Reporte al COER Lima cada 6 horas.
+4. Habilitación de vías de acceso para entrada de ayuda humanitaria.
+
+Semana 1:
+- Evaluación estructural de viviendas (MVCS — ingenieros de SENCICO).
+- Distribución de kits de emergencia (INDECI — familias damnificadas).
+- Inicio de proceso de reasentamiento si hay zonas intangibles.
+
+Mes 1:
+- Plan de recuperación temprana.
+- Gestión de recursos del FONDES (Fondo de Desastres).
+- Proceso de reconstrucción con cambios (planificación técnica con CENEPRED).
+
+COMUNICACIONES DE EMERGENCIA
+
+- Frecuencia principal COER Lima: 148.025 MHz (VHF-FM).
+- Frecuencia alterna: 156.025 MHz.
+- Enlace satelital: terminales Iridium en puntos críticos.
+- WhatsApp institucional: coordinadores de Defensa Civil distritales.
+
+ACTUALIZACIÓN Y VIGENCIA
+
+Este plan se actualiza anualmente en octubre (inicio de temporada de lluvias).
+Última actualización: octubre 2024.
+Próxima revisión: octubre 2025.

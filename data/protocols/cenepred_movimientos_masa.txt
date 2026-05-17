@@ -1,0 +1,98 @@
+SUSCEPTIBILIDAD POR MOVIMIENTOS EN MASA EN LIMA METROPOLITANA
+Centro Nacional de Estimación, Prevención y Reducción del Riesgo de Desastres — CENEPRED
+
+DEFINICIONES
+
+Movimientos en masa: desplazamiento de suelos, rocas o detritos por efecto de la gravedad, acelerados por lluvia intensa, sismos o saturación del suelo. Incluyen: huaycos, deslizamientos, derrumbes y flujos de lodo.
+
+Huayco (aluvión): flujo rápido de mezcla de agua, sedimentos y rocas por quebradas andinas. Velocidad típica: 3–10 m/s. Distancia de viaje: 1–15 km desde la cabecera de la quebrada. Triggerado por: lluvia acumulada > 30 mm en 24h en la cabecera de cuenca.
+
+Umbral de alerta temprana CENEPRED:
+- Lluvia 24h en cuenca alta ≥ 20 mm: VIGILANCIA
+- Lluvia 24h en cuenca alta ≥ 30 mm: ALERTA TEMPRANA (posible huayco)
+- Lluvia 24h en cuenca alta ≥ 42 mm: ALERTA ROJA (huayco probable)
+
+QUEBRADAS CRÍTICAS EN LIMA METROPOLITANA
+
+Las 10 quebradas de mayor riesgo según el Inventario Nacional de Peligros Geológicos:
+
+1. Quebrada Pedregal (Carabayllo) — Cuenca: Chillón. Exposición: 3,200 hab. en zona de influencia directa.
+2. Quebrada Quirio (Chosica, Lurigancho) — Cuenca: Rímac. Exposición: 2,100 hab. Historial de eventos: 1987, 2015, 2017.
+3. Quebrada Carossio (Chosica, Lurigancho) — Cuenca: Rímac. Exposición: 1,800 hab.
+4. Quebrada Huaycoloro (Lurigancho-Chosica) — Cuenca: Rímac. Desemboca al Río Rímac. Mayor frecuencia de eventos.
+5. Quebrada Rímac (Sector Chosica) — Cuenca: Rímac. Exposición alta: zona urbana consolidada.
+6. Quebrada Manchay (Pachacámac) — Cuenca: Lurín. Expansión urbana informal en zona de riesgo.
+7. Quebrada La Molina (Ate, La Molina) — Cuenca: Rímac/Lurín. Crecimiento urbano en lecho de quebrada seca.
+8. Quebrada Cieneguilla (Cieneguilla) — Cuenca: Lurín. Baja densidad poblacional actual, alto potencial de expansión.
+9. Quebrada Pampa de Comas (Comas) — Cuenca: Chillón. Asentamientos informales en ladera.
+10. Quebrada Surco (Surco, Santiago de Surco) — Cuenca: Rímac. Parcialmente urbanizada; tramo bajo canalizado.
+
+NIVELES DE SUSCEPTIBILIDAD
+
+- MUY ALTA: quebrada activa, pendiente > 25°, litología inestable, sin vegetación. Ocurrencia reciente (< 10 años).
+- ALTA: quebrada activa o semiactiva, pendiente 15°–25°, sin obras de control. Ocurrencia histórica.
+- MEDIA: terreno con potencial de inestabilidad, pendiente 10°–15°. Sin evento reciente documentado.
+- BAJA: terreno relativamente estable, pendiente < 10°. Bajo historial de eventos.
+
+FACTORES CONDICIONANTES Y DESENCADENANTES
+
+Factores condicionantes (permanentes):
+- Pendiente: > 30° en cabecera, 5°–15° en zona de deposición.
+- Litología: depósitos cuaternarios no consolidados, suelos residuales, arenas sueltas.
+- Geomorfología: conos aluviales, abanicos torrenciales, coluvios.
+- Cobertura vegetal: escasa o nula aumenta la susceptibilidad.
+
+Factores desencadenantes (temporales):
+- Lluvia intensa: el principal detonante en Lima. Umbral: > 30 mm en 24h en cuenca alta.
+- Sismos: pueden desestabilizar laderas previamente saturadas.
+- Actividades humanas: cortes de ladera, sobrecarga con rellenos, eliminación de vegetación.
+
+SEÑALES DE ALERTA TEMPRANA (OBSERVACIÓN EN CAMPO)
+
+Signos que preceden o acompañan un huayco:
+1. Ruido sordo proveniente de la quebrada (golpe de rocas y troncos).
+2. Olor a tierra mojada o vegetación podrida.
+3. Vibración del suelo (puede confundirse con sismo leve).
+4. Incremento rápido y turbulento del caudal del río (color marrón oscuro).
+5. Presencia de troncos, ramas o espuma en el agua.
+6. Agrietamiento del suelo en laderas cercanas.
+7. Caída de pequeñas piedras desde la ladera (precursor de deslizamiento mayor).
+
+ACCIONES DE RESPUESTA POR NIVEL
+
+VIGILANCIA (lluvia 20–29 mm/24h):
+- Activar brigadas de vigilancia de quebradas.
+- Informar a la población de la activación del sistema.
+- Preparar albergues de emergencia.
+
+ALERTA TEMPRANA (lluvia 30–41 mm/24h):
+- Evacuar preventivamente a familias en zona de influencia directa.
+- Cerrar vías de acceso a quebradas (barreras físicas).
+- Activar COEN y COER Lima.
+- Coordinar con SAMU, Bomberos, PNP.
+
+ALERTA ROJA (lluvia ≥ 42 mm/24h o huayco confirmado):
+- Evacuación obligatoria total de zonas de riesgo alto y muy alto.
+- Activar Sistema de Alerta por Sirenas en Chosica y Carabayllo.
+- INDECI asume coordinación central de la respuesta.
+- Solicitar apoyo de Fuerzas Armadas si se supera capacidad local.
+
+MEDIDAS DE REDUCCIÓN DEL RIESGO
+
+Infraestructura:
+- Construcción de diques de gaviones en cabeceras de quebradas (capacidad: 10,000 m³/evento).
+- Muros de contención de mampostería de piedra en zonas urbanas consolidadas.
+- Sistemas de drenaje pluvial en laderas (no implementado en la mayoría de distritos).
+- Forestación de laderas con especies nativas resistentes a la aridez.
+
+Ordenamiento territorial:
+- Restricción de habilitaciones urbanas en conos aluviales activos (Ordenanza Metropolitana N° 1862).
+- Registro de asentamientos en zona de riesgo y plan de reasentamiento progresivo.
+- Actualización del mapa de zonificación de riesgos cada 5 años.
+
+HERRAMIENTAS DE MONITOREO
+
+- SIGRID (cenepred.gob.pe/sigrid): mapa interactivo de peligros geológicos, actualizado mensualmente.
+- Datos SENAMHI (estaciones automáticas): lluvia en tiempo real, umbrales de alerta.
+- Telefonía satelital Iridium en puestos de vigilancia de quebradas críticas.
+- Red de pluviómetros ANA: 18 estaciones en cuencas Rímac, Chillón y Lurín.

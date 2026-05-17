@@ -1,0 +1,104 @@
+GUÍA DE VIGILANCIA HIDROMETEOROLÓGICA PARA GESTIÓN DE RIESGOS
+Servicio Nacional de Meteorología e Hidrología del Perú — SENAMHI
+
+SISTEMA DE MONITOREO HIDROMÉTRICO
+
+Estaciones en operación en Lima Metropolitana (cuencas Rímac, Chillón, Lurín):
+
+CUENCA RÍMAC:
+- Estación Chosica (Lima-15): caudal + nivel + lluvia. Coordenadas: 11°55'S, 76°42'W. Altitud: 870 m s.n.m.
+- Estación Ñaña (Lima-13): caudal + nivel. Coordenadas: 11°59'S, 76°50'W. Altitud: 540 m s.n.m.
+- Estación Carapongo (Lima-11): caudal + nivel. Coordenadas: 12°01'S, 76°55'W. Altitud: 320 m s.n.m.
+- Estación Surco (Lima-16): lluvia en cuenca alta. Altitud: 3,200 m s.n.m.
+- Estación San Mateo (Lima-17): lluvia + temperatura. Altitud: 3,250 m s.n.m.
+
+CUENCA CHILLÓN:
+- Estación Obrajillo (Lima-21): caudal + nivel. Coordenadas: 11°32'S, 76°41'W.
+- Estación Yangas (Lima-22): caudal + nivel.
+
+CUENCA LURÍN:
+- Estación Manchay (Lima-31): caudal + nivel. Coordenadas: 12°11'S, 76°52'W.
+
+UMBRALES DE ALERTA HIDROLÓGICA
+
+Río Rímac — Estación Chosica:
+- NORMAL: nivel < 1.8 m, caudal < 80 m³/s.
+- VIGILANCIA: nivel 1.8–2.5 m, caudal 80–200 m³/s.
+- ALERTA: nivel 2.5–3.2 m, caudal 200–400 m³/s.
+- EMERGENCIA: nivel > 3.2 m, caudal > 400 m³/s.
+
+Historial de caudales extremos (Rímac-Chosica):
+- El Niño 1983: 1,800 m³/s (máximo histórico).
+- El Niño 1998: 1,100 m³/s.
+- El Niño Costero 2017: 850 m³/s (9 de marzo).
+- Normal: 30–60 m³/s (época seca, mayo–noviembre).
+
+PRONÓSTICO METEOROLÓGICO PARA GESTIÓN DE EMERGENCIAS
+
+Tipos de productos SENAMHI para GRD:
+1. Boletín Hidrometeorológico Diario (07:00 y 15:00 hora Lima): lluvia observada 24h, pronóstico 48h.
+2. Boletín de Alerta por Lluvias Intensas: emitido cuando se prevé > 30 mm en 24h en cuenca alta.
+3. Boletín Mensual de Predicción Climática: tendencia de precipitaciones para el mes siguiente.
+4. Producto IMERG-SENAMHI: integración de datos NASA IMERG con estaciones locales, disponible 4h post-observación.
+
+Consulta en tiempo real: senamhi.gob.pe/alertas y senamhi.gob.pe/hidrologia
+
+INTERPRETACIÓN DE DATOS IMERG (NASA)
+
+IMERG (Integrated Multi-satellitE Retrievals for GPM): estimaciones de lluvia global cada 30 min, resolución 0.1° (~11 km).
+
+Variantes disponibles:
+- IMERG Early: latencia ~4 horas. Menos precisa, útil para alerta temprana.
+- IMERG Late: latencia ~12 horas. Mayor precisión.
+- IMERG Final: latencia ~3 meses. Calibrada con pluviómetros. Solo para análisis histórico.
+
+Para gestión de emergencias en Lima: usar IMERG Early + validación con estaciones ANA/SENAMHI locales.
+
+Acumulaciones de referencia para Lima (cuencas Rímac/Chillón):
+- 1 hora: > 10 mm = lluvia intensa, posible activación de quebradas locales.
+- 3 horas: > 20 mm = alerta temprana.
+- 6 horas: > 30 mm = riesgo alto de huaycos.
+- 24 horas: > 42 mm = umbral de emergencia (CENEPRED).
+- 72 horas: > 80 mm = evento extraordinario (El Niño).
+
+FENÓMENO EL NIÑO COSTERO
+
+El Niño Costero es la variante peruana del ENSO, caracterizada por:
+- Calentamiento anómalo del mar frente a las costas de Ecuador y norte del Perú (> 3°C sobre la media).
+- Duración típica: enero–abril.
+- Impacto en Lima: lluvias 10–30 veces por encima del promedio histórico en cuencas de montaña.
+- Pronóstico: ENFEN (Estudio Nacional del Fenómeno "El Niño") emite alerta desde octubre–noviembre.
+
+Impactos en cuencas de Lima durante El Niño Costero 2017:
+- Rímac: caudal 12 veces el promedio. 47 huaycos registrados.
+- Chillón: desborde en Carabayllo. 3,200 damnificados.
+- Lurín: inundaciones en Manchay y Pachacámac. 1,800 damnificados.
+
+SISTEMA DE PRONÓSTICO ESTACIONAL
+
+El ENFEN (Comité Multisectorial ENFEN) emite mensualmente:
+- Índice de Oscilación del Sur (IOS).
+- Temperatura superficial del mar (TSM) frente a Perú.
+- Pronóstico de probabilidad de El Niño: escalas débil/moderado/fuerte/extraordinario.
+
+Consulta: enfen.gob.pe (actualización mensual).
+
+PROTOCOLO DE DIFUSIÓN DE ALERTAS
+
+Cuando SENAMHI emite una ALERTA por lluvias intensas:
+1. Notificación simultánea a: INDECI-COEN, COER Lima, municipios de la cuenca afectada.
+2. Difusión a medios: boletín de prensa + publicación en senamhi.gob.pe.
+3. Difusión a redes sociales: @SENAMHI_PERU en Twitter/X.
+4. Activación de alerta SMS masivo (coordinación con MTC).
+
+Tiempo de anticipación de alertas:
+- Lluvias convectivas (tormentas locales): 1–3 horas.
+- Lluvias frontales: 6–12 horas.
+- Evento El Niño: semanas o meses (pronóstico estacional).
+
+CONTACTO
+
+Centro de Predicción Numérica — SENAMHI Lima:
+- Teléfono: +51 1 614-1414
+- Correo emergencias: prediccion@senamhi.gob.pe
+- Guardia hidrológica 24/7: +51 1 614-1414 ext. 230

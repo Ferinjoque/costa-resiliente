@@ -1,3 +1,4 @@
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,10 +22,21 @@ class Settings(BaseSettings):
     postgres_user: str = "costa"
     postgres_password: str = "change_me_in_production"
 
+    # Read-only AI user (used by ai/ tools — no write access)
+    postgres_ai_user: str = "costa_ai_ro"
+    postgres_ai_password: str = "change_me_in_production"
+
     @property
     def database_url(self) -> str:
         return (
             f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
+
+    @property
+    def database_ai_url(self) -> str:
+        return (
+            f"postgresql+asyncpg://{self.postgres_ai_user}:{self.postgres_ai_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 
@@ -39,10 +51,34 @@ class Settings(BaseSettings):
     minio_bucket_rasters: str = "rasters"
     minio_bucket_models: str = "models"
 
-    # Ollama
-    ollama_host: str = "http://localhost:11434"
-    ollama_primary_model: str = "gemma4:e4b"
-    ollama_fallback_model: str = "qwen3:14b"
+    # LLM — accepts both new (LLM_*) and old (OLLAMA_*) env var names
+    llm_provider: str = "ollama"
+    llm_base_url: str = Field(
+        default="http://localhost:11434",
+        validation_alias=AliasChoices("LLM_BASE_URL", "OLLAMA_HOST"),
+    )
+    llm_primary_model: str = Field(
+        default="qwen2.5:7b-instruct-q4_K_M",
+        validation_alias=AliasChoices("LLM_PRIMARY_MODEL", "OLLAMA_PRIMARY_MODEL"),
+    )
+    llm_fast_model: str = Field(
+        default="gemma2:2b",
+        validation_alias=AliasChoices("LLM_FAST_MODEL", "OLLAMA_FALLBACK_MODEL"),
+    )
+    llm_embed_model: str = "nomic-embed-text"
+    llm_timeout_chat: float = 30.0   # 30s per call; keyword fallback handles slowness
+    llm_timeout_embed: float = 10.0
+    llm_max_tool_iters: int = 4
+    llm_daily_token_budget: int = 500_000
+
+    # Legacy compat
+    @property
+    def ollama_host(self) -> str:
+        return self.llm_base_url
+
+    @property
+    def ollama_primary_model(self) -> str:
+        return self.llm_primary_model
 
     # Share tokens
     share_token_secret: str = "dev-share-secret-change-me"

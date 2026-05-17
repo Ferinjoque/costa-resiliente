@@ -42,6 +42,9 @@ dependencies = [
     # Utilities
     "python-multipart>=0.0.9",
     "orjson>=3.10",
+
+    # AI / LLM (httpx already included above)
+    # No heavy ML deps needed — embeddings via Ollama API, structured output via pydantic
 ]
 
 [project.optional-dependencies]
