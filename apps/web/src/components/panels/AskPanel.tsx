@@ -7,6 +7,33 @@ import { DEMO_COPILOT_RESPONSES } from "@/lib/demoData";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+/** Render basic markdown inline: **bold** and numbered lists */
+function MarkdownLine({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.startsWith("**") && part.endsWith("**")
+          ? <strong key={i} className="font-semibold text-white">{part.slice(2, -2)}</strong>
+          : <span key={i}>{part}</span>
+      )}
+    </>
+  );
+}
+
+function MarkdownText({ text }: { text: string }) {
+  const lines = text.split("\n");
+  return (
+    <div className="space-y-0.5">
+      {lines.map((line, i) => (
+        <div key={i} className={line.startsWith("•") || line.match(/^\d+\./) ? "pl-1" : ""}>
+          <MarkdownLine text={line} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // Keyword → demo response key mapping for fuzzy fallback
 const KEYWORD_ROUTES: Array<{ keys: string[]; demo: string }> = [
   { keys: ["alerta", "alert", "activ", "active alerts", "alertas activas"], demo: "¿Cuáles son las alertas activas ahora?" },
@@ -189,8 +216,8 @@ export function AskPanel() {
                   <span className="text-[9px] bg-slate-700 text-slate-400 border border-slate-600 px-1 rounded">DEMO</span>
                 )}
               </div>
-              <div className="text-sm text-white leading-relaxed whitespace-pre-line">
-                {displayedAnswer ?? ""}
+              <div className="text-sm text-slate-200 leading-relaxed">
+                <MarkdownText text={displayedAnswer ?? ""} />
                 {displayedAnswer !== null && displayedAnswer.length < (answer?.length ?? 0) && (
                   <span className="inline-block w-0.5 h-4 bg-costa-400 ml-0.5 animate-pulse align-text-bottom" aria-hidden="true" />
                 )}

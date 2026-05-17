@@ -8,6 +8,7 @@ const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 async function get<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
+    signal: AbortSignal.timeout(4_000),
     headers: { Accept: "application/json", ...init?.headers },
   });
   if (!res.ok) {
