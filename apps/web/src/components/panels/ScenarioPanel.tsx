@@ -39,6 +39,7 @@ export function ScenarioPanel() {
 
   return (
     <Panel
+      id="driver-scenario-panel"
       className={clsx(
         "fixed top-0 left-0 right-0",
         "sm:absolute sm:top-4 sm:left-4 sm:right-auto sm:w-[260px]",
@@ -79,6 +80,7 @@ export function ScenarioPanel() {
             {/* El Niño replay toggle */}
             <div className="flex items-center justify-between gap-2">
               <Button
+                id="driver-replay-btn"
                 variant={scenario.isReplayMode ? "primary" : "secondary"}
                 size="xs"
                 onClick={() => {
@@ -94,14 +96,6 @@ export function ScenarioPanel() {
                   ? <><X size={12} /> {L(locale, "Salir", "Exit replay")}</>
                   : <><PlayCircle size={12} /> El Niño 2017</>}
               </Button>
-              {!scenario.isReplayMode && (
-                <button
-                  onClick={() => setTutorialOpen(true)}
-                  className="text-xs text-accent hover:underline"
-                >
-                  Tutorial →
-                </button>
-              )}
             </div>
 
             {/* Replay date input */}
@@ -188,7 +182,7 @@ function LayerToggles({ locale }: { locale: Locale }) {
       </SectionLabel>
       <div className="space-y-2">
         {LAYERS.map(({ id, label }) => (
-          <div key={id} className="flex items-center justify-between gap-3">
+          <div key={id} id={`driver-layer-${id}`} className="flex items-center justify-between gap-3">
             <span className="text-sm text-ink flex-1">{label[locale]}</span>
             <Toggle
               checked={activeLayers.has(id)}

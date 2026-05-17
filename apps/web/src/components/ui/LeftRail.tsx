@@ -85,6 +85,7 @@ export function LeftRail() {
               return (
                 <li key={id}>
                   <button
+                    id={`driver-nav-${id}`}
                     onClick={() => setActivePanel(id)}
                     aria-label={`${label[locale]} [${shortcut}]`}
                     aria-current={active ? "page" : undefined}

@@ -37,7 +37,7 @@ TOOL_SCHEMAS: list[dict] = [
                     "hours_back": {
                         "type": "integer",
                         "description": "Horas hacia atrás desde ahora. Mínimo 1, máximo 168.",
-                        "default": 24,
+                        "default": 168,
                     },
                     "district_name": {
                         "type": "string",
@@ -190,7 +190,7 @@ TOOL_SCHEMAS: list[dict] = [
 
 # ─── Tool implementations ─────────────────────────────────────────────────────
 
-async def get_flood_polygons(db: AsyncSession, hours_back: int = 24, district_name: str | None = None) -> list[dict]:
+async def get_flood_polygons(db: AsyncSession, hours_back: int = 168, district_name: str | None = None) -> list[dict]:
     hours_back = min(max(int(hours_back), 1), 168)
     sql = text("""
         SELECT fp.scene_id, fp.acquired_at, fp.confidence,
