@@ -39,6 +39,8 @@ const ACTION_LABELS: Record<string, { es: string; en: string }> = {
   map_pin:                { es: "Pin en mapa",         en: "Map pin" },
   export:                 { es: "Exportó datos",       en: "Data exported" },
   social_signal_received: { es: "Señal social (auto)", en: "Social signal (auto)" },
+  resource_dispatch:      { es: "Despacho recurso",    en: "Resource dispatched" },
+  protocol_step:          { es: "Paso protocolo",      en: "Protocol step" },
 };
 
 export function DecisionLogPanel() {
@@ -124,9 +126,13 @@ export function DecisionLogPanel() {
             ? String(entry.payload.query).slice(0, 60)
             : entry.payload?.note
               ? String(entry.payload.note).slice(0, 60)
-              : entry.payload?.district && entry.payload?.source
-                ? `${entry.payload.source} · ${entry.payload.district}`
-                : null;
+              : entry.payload?.resource_name
+                ? String(entry.payload.resource_name)
+                : entry.payload?.label
+                  ? String(entry.payload.label).slice(0, 60)
+                  : entry.payload?.district && entry.payload?.source
+                    ? `${entry.payload.source} · ${entry.payload.district}`
+                    : null;
 
           return (
             <li key={entry.id} className="px-4 py-3">
