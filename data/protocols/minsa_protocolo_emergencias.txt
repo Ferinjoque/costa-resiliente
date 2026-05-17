@@ -1,0 +1,89 @@
+PROTOCOLO DE EMERGENCIAS Y DESASTRES — MINSA
+Ministerio de Salud del Perú — Dirección General de Operaciones en Salud
+
+ACTIVACIÓN DEL SISTEMA DE SALUD EN EMERGENCIAS
+
+Niveles de activación:
+1. NIVEL 1 (Local): el establecimiento de salud del área afectada activa su Plan de Contingencia sin apoyo externo.
+2. NIVEL 2 (Regional): DIRIS o DIRESA Lima coordina refuerzos entre establecimientos.
+3. NIVEL 3 (Nacional): MINSA activa el Centro de Operaciones de Emergencias en Salud (COES-MINSA). Convocatoria de brigadas nacionales.
+
+TRIAGE EN DESASTRES (Método START — Simple Triage And Rapid Treatment)
+
+Categorías de triage:
+- ROJO (Inmediato): paciente con riesgo vital, tratamiento en < 1 hora. Prioridad máxima.
+- AMARILLO (Diferido): lesiones graves, estabilizado, puede esperar 1–6 horas.
+- VERDE (Leve): ambulatorio, heridas menores. Puede esperar.
+- NEGRO (Fallecido o sin sobrevivencia posible): no se iniciará reanimación en escenario masivo con recursos limitados.
+
+Criterios START:
+1. ¿Camina el paciente? → VERDE (leve)
+2. ¿Respira espontáneamente? → No → abrir vía aérea → si respira: ROJO | si no: NEGRO
+3. Frecuencia respiratoria > 30/min o < 10/min → ROJO
+4. Llenado capilar > 2 segundos o pulso radial ausente → ROJO
+5. No sigue órdenes simples → ROJO
+
+PRIMEROS AUXILIOS EN INUNDACIONES Y HUAYCOS
+
+Lesiones más frecuentes:
+- Traumatismos por impacto de rocas y detritos.
+- Ahogamiento / casi-ahogamiento por sumersión.
+- Hipotermia por exposición al agua fría.
+- Heridas cortantes por vidrios y metales.
+- Infecciones por exposición a agua contaminada.
+
+Atención de casi-ahogamiento:
+1. Retirar del agua manteniendo la columna vertebral alineada.
+2. Si no respira: iniciar RCP (30 compresiones : 2 ventilaciones).
+3. No usar maniobra de Heimlich para eliminar agua — no es efectiva.
+4. Trasladar a establecimiento de salud aunque el paciente esté asintomático (edema pulmonar diferido).
+
+Hipotermia:
+1. Retirar ropa mojada, cubrir con mantas secas.
+2. No friccionar extremidades (puede empeorar hipotermia profunda).
+3. Proporcionar bebidas calientes si está consciente.
+4. Temperatura < 32°C: traslado urgente (ROJO).
+
+Heridas en zonas inundadas:
+1. Lavar con abundante agua limpia (o agua hervida).
+2. Aplicar antiséptico: povidona yodada al 10% o clorhexidina.
+3. Cubrir con apósito estéril.
+4. Evaluar necesidad de profilaxis antitetánica (< 5 años desde última dosis → aplicar toxoide).
+5. Alto riesgo de infección por agua contaminada con aguas servidas — consultar médico si hay enrojecimiento, pus o fiebre.
+
+SALUD AMBIENTAL Y AGUA SEGURA POST-DESASTRE
+
+Riesgo: aguas inundadas contaminadas con aguas servidas, productos químicos industriales y cadáveres de animales.
+
+Medidas inmediatas:
+1. Solo agua hervida (3 minutos) o con 2 gotas de lejía por litro (esperar 30 min).
+2. Disposición de excretas: letrina de emergencia, mínimo 30 metros de cualquier fuente de agua.
+3. Eliminación de basura: no acumular dentro del albergue. Quema controlada si no hay recolección.
+4. Control de vectores: eliminar aguas estancadas (criaderos de mosquitos), aplicar larvicida BTI en pozas.
+
+Enfermedades transmisibles post-inundación:
+- Leptospirosis: transmitida por orina de roedores en agua inundada. Síntomas: fiebre, ictericia, mialgias. Tratamiento: doxiciclina / penicilina.
+- Cólera: raro en Lima con sistema de agua potable. Reporte inmediato si se sospecha.
+- Hepatitis A: por agua y alimentos contaminados. Profilaxis: vacunación preventiva.
+- Enfermedades respiratorias: por hacinamiento en albergues. Ventilación adecuada.
+
+ACTIVACIÓN DE ALBERGUES DE SALUD
+
+El MINSA coordina con INDECI la activación de unidades de salud en albergues:
+- Brigada básica: médico + enfermera + técnico de salud (mínimo por 500 personas).
+- Medicamentos esenciales: hidratación oral, antipiréticos, antibióticos, antiparasitarios, insulina.
+- Cadena de frío: mantenimiento de vacunas en termos con cadena de frío < 8°C.
+
+COORDINACIÓN CON SISTEMA SINAGERD
+
+El MINSA integra la Mesa de Trabajo 2 (Salud) del SINAGERD:
+- Reporte de víctimas: formulario EDAN-Perú campo 5 (salud), en < 4 horas post-evento.
+- Coordinación COEN: reportes cada 6 horas durante la emergencia activa.
+- Activación de reservas estratégicas nacionales: coordinar con CENARES (Centro Nacional de Abastecimiento de Recursos Estratégicos en Salud).
+
+NÚMEROS CLAVE PARA COORDINACIÓN
+
+- COES-MINSA: +51 1 315-6600 ext. 1550
+- SAMU: 106 (para traslado de emergencias)
+- Centro de Control de Intoxicaciones: +51 1 479-2798
+- DIGESA (salud ambiental): +51 1 631-4480

@@ -12,9 +12,6 @@ from costa_workers.ml.alert_generator import generate_alerts_flow
 
 
 # ─── Thin wrappers for plain-async pipelines ─────────────────────────────────
-# run_triage_pipeline and run_huayco_susceptibility are plain async by design
-# (avoids Prefect overhead in unit tests). These @flow wrappers make them
-# schedulable without modifying the underlying functions.
 
 @flow(name="run-triage", log_prints=True)
 async def triage_flow() -> dict:
@@ -23,8 +20,8 @@ async def triage_flow() -> dict:
 
     return await run_triage_pipeline(
         db_dsn=os.getenv("DATABASE_URL", "postgresql://costa:costa@postgres:5432/costa_resiliente"),
-        ollama_host=os.getenv("OLLAMA_HOST", "http://ollama:11434"),
-        model=os.getenv("OLLAMA_PRIMARY_MODEL", "gemma4:e4b"),
+        ollama_host=os.getenv("LLM_BASE_URL", "http://ollama:11434"),
+        model=os.getenv("LLM_FAST_MODEL", "gemma2:2b"),
     )
 
 
@@ -41,8 +38,15 @@ async def huayco_flow() -> dict:
 
 # ─── Deployment registry ──────────────────────────────────────────────────────
 
+@flow(name="index-protocols-rag", log_prints=True)
+async def rag_index_flow() -> dict:
+    """Index protocol documents into pgvector for RAG search (idempotent)."""
+    from costa_workers.rag.ingest import index_protocols
+    return await index_protocols()
+
+
 def deploy_all() -> None:
-    """Register all 8 flows with Prefect server and start serving."""
+    """Register all flows with Prefect server and start serving."""
 
     serve(
         # Satellite ingest — daily at 06:00 UTC (01:00 Lima)
@@ -94,6 +98,12 @@ def deploy_all() -> None:
             name="alerts-5min",
             interval=300,
             tags=["ml", "alerts"],
+        ),
+        # RAG protocol index — daily at 02:00 UTC (idempotent, skips unchanged chunks)
+        rag_index_flow.to_deployment(
+            name="rag-index-daily",
+            cron="0 2 * * *",
+            tags=["rag", "ai"],
         ),
     )
 
