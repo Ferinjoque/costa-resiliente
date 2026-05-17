@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, Send, Loader2, Sparkles, RefreshCw, Database } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUIStore } from "@/store/ui";
 import { DEMO_COPILOT_RESPONSES } from "@/lib/demoData";
 
@@ -70,11 +70,33 @@ export function AskPanel() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
+  const [displayedAnswer, setDisplayedAnswer] = useState<string | null>(null);
   const [sources, setSources] = useState<{ label: string; value: string }[]>([]);
   const [dataRows, setDataRows] = useState<Array<Record<string, unknown>>>([]);
   const [lastQuery, setLastQuery] = useState<string | null>(null);
   const [isDemo, setIsDemo] = useState(false);
+  const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const ui = UI[locale];
+
+  // Typewriter effect for demo responses
+  useEffect(() => {
+    if (typewriterRef.current) clearInterval(typewriterRef.current);
+    if (!answer) { setDisplayedAnswer(null); return; }
+    if (!isDemo) { setDisplayedAnswer(answer); return; }
+    setDisplayedAnswer("");
+    let i = 0;
+    // Reveal ~4 chars per tick at 12ms → smooth but fast enough not to bore
+    typewriterRef.current = setInterval(() => {
+      i += 4;
+      setDisplayedAnswer(answer.slice(0, i));
+      if (i >= answer.length) {
+        clearInterval(typewriterRef.current!);
+        typewriterRef.current = null;
+        setDisplayedAnswer(answer);
+      }
+    }, 12);
+    return () => { if (typewriterRef.current) clearInterval(typewriterRef.current); };
+  }, [answer, isDemo]);
 
   if (activePanel !== "ask") return null;
 
@@ -167,7 +189,12 @@ export function AskPanel() {
                   <span className="text-[9px] bg-slate-700 text-slate-400 border border-slate-600 px-1 rounded">DEMO</span>
                 )}
               </div>
-              <div className="text-sm text-white leading-relaxed whitespace-pre-line">{answer}</div>
+              <div className="text-sm text-white leading-relaxed whitespace-pre-line">
+                {displayedAnswer ?? ""}
+                {displayedAnswer !== null && displayedAnswer.length < (answer?.length ?? 0) && (
+                  <span className="inline-block w-0.5 h-4 bg-costa-400 ml-0.5 animate-pulse align-text-bottom" aria-hidden="true" />
+                )}
+              </div>
               {sources.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-costa-700/30 flex flex-wrap gap-1.5">
                   {sources.map((s) => (
@@ -193,7 +220,7 @@ export function AskPanel() {
               )}
             </div>
             <button
-              onClick={() => { setAnswer(null); setSources([]); setDataRows([]); setQuery(""); setIsDemo(false); }}
+              onClick={() => { setAnswer(null); setDisplayedAnswer(null); setSources([]); setDataRows([]); setQuery(""); setIsDemo(false); }}
               className="flex items-center gap-1 text-xs text-slate-400 hover:text-costa-400 underline underline-offset-2 transition-colors"
             >
               <RefreshCw size={11} aria-hidden="true" />

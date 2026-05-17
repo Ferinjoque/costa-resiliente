@@ -7,7 +7,7 @@ import { useUIStore } from "@/store/ui";
 import {
   useDistricts, useImerg, useFlood, useHuayco,
   useInfrastructure, useHazard, useSocialSignals, useDistrictRiskSummary,
-  useFloodExposure, useStations,
+  useFloodExposure, useStations, useAlerts,
 } from "@/lib/queries";
 import type { FloodExposure } from "@/lib/api";
 
@@ -121,6 +121,7 @@ export default function MapView() {
   const map = useRef<maplibregl.Map | null>(null);
   const activePopup = useRef<maplibregl.Popup | null>(null);
   const exposureRef = useRef<FloodExposure | null>(null);
+  const criticalMarkers = useRef<maplibregl.Marker[]>([]);
   const { activeLayers, scenario, is3DMode } = useUIStore();
 
   const { data: districtGeoJSON } = useDistricts();
@@ -134,6 +135,7 @@ export default function MapView() {
   const { data: socialData } = useSocialSignals(48);
   const { data: stationsData } = useStations();
   const { data: exposureData } = useFloodExposure();
+  const { data: alertsData = [] } = useAlerts();
 
   // Keep ref in sync so click handler always has fresh exposure data
   useEffect(() => { exposureRef.current = exposureData ?? null; }, [exposureData]);
@@ -162,7 +164,30 @@ export default function MapView() {
       // Order: points (social/huayco/infra) → flood polygon → hazard polygon
       //        → district (select only, no popup) → empty (dismiss popup)
       m.on("click", (e) => {
-        // 0. Hydro stations — highest priority (smallest target)
+        // 0a. Alert pins — operator-synthesized events, always check first
+        if (m.getLayer("alerts-circle")) {
+          const feats = m.queryRenderedFeatures(e.point, { layers: ["alerts-circle"] });
+          if (feats.length) {
+            const p = feats[0].properties as Record<string, string | number | null>;
+            const SEV_ES: Record<string, string> = {
+              critical: "Crítico", high: "Alto", medium: "Medio", low: "Bajo",
+            };
+            const TYPE_ES: Record<string, string> = {
+              flood: "Inundación", huayco: "Huayco / deslizamiento",
+              social_cluster: "Señal social", weather: "Meteorológica",
+            };
+            const sev = String(p.severity ?? "");
+            const sevClass = sev === "critical" ? "cr-val-critical" : sev === "high" ? "cr-val-alert" : undefined;
+            openPopup(m, e.lngLat, popupHtml(`⚠ ${String(p.title ?? "Alerta")}`, [
+              ["Tipo",      p.type ? (TYPE_ES[String(p.type)] ?? String(p.type)) : null],
+              ["Severidad", sev ? (SEV_ES[sev] ?? sev) : null, sevClass],
+              ["Estado",    p.status ? String(p.status) : null],
+            ], "cr-title-critical"), activePopup);
+            return;
+          }
+        }
+
+        // 0b. Hydro stations — smallest clickable target
         if (m.getLayer("stations-circle")) {
           const feats = m.queryRenderedFeatures(e.point, { layers: ["stations-circle"] });
           if (feats.length) {
@@ -306,7 +331,7 @@ export default function MapView() {
       // ── Unified hover cursor ────────────────────────────────────────────
       m.on("mousemove", (e) => {
         const interactive = [
-          "social-circle", "huayco-circle", "infra-circle", "stations-circle",
+          "alerts-circle", "social-circle", "huayco-circle", "infra-circle", "stations-circle",
           "flood-fill", "hazard-fill", "districts-fill",
         ].filter(l => m.getLayer(l));
         if (!interactive.length) { m.getCanvas().style.cursor = ""; return; }
@@ -627,6 +652,82 @@ export default function MapView() {
     };
     if (m.loaded()) setup(); else m.once("load", setup);
   }, [stationsData, addOrUpdateSource]);
+
+  // ─── Alert pins ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    const features: GeoJSON.Feature[] = alertsData
+      .filter((a) => a.lat != null && a.lng != null)
+      .map((a) => ({
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [a.lng!, a.lat!] },
+        properties: {
+          id: a.id, type: a.type, severity: a.severity,
+          title: a.title, status: a.status, description: a.description ?? null,
+        },
+      }));
+    const geoJSON: GeoJSON.FeatureCollection = { type: "FeatureCollection", features };
+    const severityColor: maplibregl.ExpressionSpecification = [
+      "match", ["get", "severity"],
+      "critical", "#dc2626", "high", "#f97316", "medium", "#f59e0b", "low", "#22c55e", "#94a3b8",
+    ];
+    const setup = () => {
+      addOrUpdateSource("alerts-src", geoJSON);
+      if (m.getLayer("alerts-halo")) return;
+      m.addLayer({
+        id: "alerts-halo",
+        type: "circle",
+        source: "alerts-src",
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 16, 13, 26],
+          "circle-color": severityColor,
+          "circle-opacity": ["match", ["get", "status"], "active", 0.20, 0.08],
+          "circle-stroke-width": 0,
+        },
+      });
+      m.addLayer({
+        id: "alerts-circle",
+        type: "circle",
+        source: "alerts-src",
+        paint: {
+          "circle-radius": [
+            "match", ["get", "severity"], "critical", 11, "high", 9, "medium", 7, 6,
+          ],
+          "circle-color": severityColor,
+          "circle-opacity": ["match", ["get", "status"], "active", 0.92, 0.45],
+          "circle-stroke-color": "#0f172a",
+          "circle-stroke-width": 2,
+        },
+      });
+    };
+    if (m.loaded()) setup(); else m.once("load", setup);
+  }, [alertsData, addOrUpdateSource]);
+
+  // ─── Pulsing HTML markers for critical alerts ─────────────────────────────
+  useEffect(() => {
+    const m = map.current;
+    // Remove previous markers
+    criticalMarkers.current.forEach((mk) => mk.remove());
+    criticalMarkers.current = [];
+    if (!m) return;
+    const criticals = alertsData.filter(
+      (a) => a.severity === "critical" && a.status === "active" && a.lat != null && a.lng != null,
+    );
+    const add = () => {
+      criticals.forEach((a) => {
+        const el = document.createElement("div");
+        el.className = "cr-critical-pulse";
+        el.setAttribute("aria-hidden", "true");
+        const mk = new maplibregl.Marker({ element: el, anchor: "center" })
+          .setLngLat([a.lng!, a.lat!])
+          .addTo(m);
+        criticalMarkers.current.push(mk);
+      });
+    };
+    if (m.loaded()) add(); else m.once("load", add);
+    return () => { criticalMarkers.current.forEach((mk) => mk.remove()); criticalMarkers.current = []; };
+  }, [alertsData]);
 
   // ─── Layer visibility sync ────────────────────────────────────────────────
   useEffect(() => {

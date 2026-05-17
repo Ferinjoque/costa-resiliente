@@ -210,6 +210,8 @@ export interface Alert {
   title: string;
   description?: string | null;
   district_id: number | null;
+  lat?: number | null;
+  lng?: number | null;
   created_at: string;
   updated_at: string;
   status: string;
