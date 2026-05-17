@@ -1,8 +1,9 @@
 "use client";
 
-import { Search, Send, Loader2, Sparkles, RefreshCw } from "lucide-react";
+import { Search, Send, Loader2, Sparkles, RefreshCw, Database } from "lucide-react";
 import { useState } from "react";
 import { useUIStore } from "@/store/ui";
+import { DEMO_COPILOT_RESPONSES } from "@/lib/demoData";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -47,7 +48,9 @@ export function AskPanel() {
   const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
   const [sources, setSources] = useState<{ label: string; value: string }[]>([]);
+  const [dataRows, setDataRows] = useState<Array<Record<string, unknown>>>([]);
   const [lastQuery, setLastQuery] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
   const ui = UI[locale];
 
   if (activePanel !== "ask") return null;
@@ -58,27 +61,43 @@ export function AskPanel() {
     setLoading(true);
     setAnswer(null);
     setSources([]);
+    setDataRows([]);
     setLastQuery(trimmed);
+    setIsDemo(false);
     try {
       const res = await fetch(`${BASE}/api/v1/copilot/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: trimmed, operator_id: "demo" }),
+        signal: AbortSignal.timeout(10_000),
       });
       const data = await res.json();
-      setAnswer(data.answer ?? data.detail ?? locale === "es" ? "Sin respuesta." : "No response.");
-      // Extract source metadata if available
+      setAnswer(data.answer ?? (locale === "es" ? "Sin respuesta." : "No response."));
       if (data.intent && data.confidence) {
         setSources([
-          { label: locale === "es" ? "Intent" : "Intent", value: data.intent.replace("_", " ") },
+          { label: locale === "es" ? "Intención" : "Intent", value: data.intent.replace(/_/g, " ") },
           { label: locale === "es" ? "Confianza" : "Confidence", value: `${(data.confidence * 100).toFixed(0)}%` },
-          ...(data.query_plan ? [{ label: "Query", value: data.query_plan }] : []),
+          ...(data.query_plan ? [{ label: locale === "es" ? "Plan" : "Plan", value: data.query_plan.replace(/_/g, " ") }] : []),
         ]);
+        if (Array.isArray(data.sources)) setDataRows(data.sources.slice(0, 5));
       }
     } catch {
-      setAnswer(locale === "es"
-        ? "Error al conectar con el servidor. Inténtalo nuevamente."
-        : "Connection error. Please try again.");
+      // Try demo response first, fall back to error message
+      const demo = DEMO_COPILOT_RESPONSES[trimmed];
+      if (demo) {
+        setIsDemo(true);
+        setAnswer(demo.answer);
+        setSources([
+          { label: locale === "es" ? "Intención" : "Intent", value: demo.intent.replace(/_/g, " ") },
+          { label: locale === "es" ? "Confianza" : "Confidence", value: `${(demo.confidence * 100).toFixed(0)}%` },
+          { label: locale === "es" ? "Plan" : "Plan", value: demo.query_plan.replace(/_/g, " ") },
+        ]);
+        setDataRows(demo.sources.slice(0, 5));
+      } else {
+        setAnswer(locale === "es"
+          ? "Error al conectar con el servidor. Prueba una de las consultas sugeridas."
+          : "Connection error. Try one of the suggested queries.");
+      }
     } finally {
       setLoading(false);
     }
@@ -118,8 +137,13 @@ export function AskPanel() {
               <p className="text-xs text-slate-200 leading-snug">{lastQuery}</p>
             </div>
             <div className="bg-costa-900/30 border border-costa-700/40 rounded-lg px-3 py-2" role="region" aria-label={ui.responseLabel}>
-              <p className="text-[11px] text-costa-400 mb-1">{ui.responseLabel}</p>
-              <p className="text-sm text-white leading-relaxed">{answer}</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] text-costa-400">{ui.responseLabel}</p>
+                {isDemo && (
+                  <span className="text-[9px] bg-slate-700 text-slate-400 border border-slate-600 px-1 rounded">DEMO</span>
+                )}
+              </div>
+              <div className="text-sm text-white leading-relaxed whitespace-pre-line">{answer}</div>
               {sources.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-costa-700/30 flex flex-wrap gap-1.5">
                   {sources.map((s) => (
@@ -129,9 +153,23 @@ export function AskPanel() {
                   ))}
                 </div>
               )}
+              {dataRows.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-costa-700/30">
+                  <p className="text-[10px] text-slate-500 mb-1 flex items-center gap-1">
+                    <Database size={9} aria-hidden="true" /> {locale === "es" ? "Datos de origen (PostGIS)" : "Source data (PostGIS)"}
+                  </p>
+                  <div className="space-y-1">
+                    {dataRows.map((row, i) => (
+                      <div key={i} className="text-[10px] bg-surface-panel/50 rounded px-2 py-1 text-slate-400 font-mono truncate">
+                        {Object.entries(row).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(" · ")}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <button
-              onClick={() => { setAnswer(null); setSources([]); setQuery(""); }}
+              onClick={() => { setAnswer(null); setSources([]); setDataRows([]); setQuery(""); setIsDemo(false); }}
               className="flex items-center gap-1 text-xs text-slate-400 hover:text-costa-400 underline underline-offset-2 transition-colors"
             >
               <RefreshCw size={11} aria-hidden="true" />
