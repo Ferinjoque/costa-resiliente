@@ -12,6 +12,7 @@ import { DataSourcesPanel } from "@/components/panels/DataSourcesPanel";
 import { MapLegend } from "@/components/map/MapLegend";
 import { OperationalHUD } from "@/components/map/OperationalHUD";
 import { LiveTicker } from "@/components/map/LiveTicker";
+import { MapRadar } from "@/components/map/MapRadar";
 import { ShareLoader } from "@/components/panels/ShareLoader";
 import { FusionCallout } from "@/components/panels/FusionCallout";
 import { DistrictDashboardPanel } from "@/components/panels/DistrictDashboardPanel";
@@ -127,6 +128,7 @@ export default function Home() {
           <MapLegend />
           <OperationalHUD />
           <LiveTicker />
+          <MapRadar />
         </div>
 
         {/* UI layer — panels and controls always above the map */}
