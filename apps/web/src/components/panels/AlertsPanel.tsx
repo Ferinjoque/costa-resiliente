@@ -20,10 +20,10 @@ const TYPE_ICON: Record<string, LucideIcon> = {
 };
 
 const SEVERITY_DOT: Record<string, string> = {
-  critical: "bg-red-500",
-  high: "bg-orange-400",
-  medium: "bg-yellow-400",
-  low: "bg-blue-400",
+  critical: "bg-severity-critical",
+  high: "bg-severity-high",
+  medium: "bg-severity-medium",
+  low: "bg-costa-400",
 };
 
 const ACTION_MAP: Record<string, string> = {
@@ -51,8 +51,8 @@ function EscalationModal({
   };
   const sinagerdLevel = SEVERITY_SINAGERD[alert.severity] ?? "ALERTA";
   const sinagerdColor = sinagerdLevel === "EMERGENCIA"
-    ? "text-red-300 bg-red-900/30 border-red-600/50"
-    : "text-orange-300 bg-orange-900/30 border-orange-600/50";
+    ? "text-severity-critical bg-severity-critical/30 border-severity-critical/50"
+    : "text-severity-high bg-severity-high/30 border-severity-high/50";
 
   const TYPE_ES: Record<string, string> = {
     flood: "Inundación SAR", huayco: "Huayco / Deslizamiento", social_cluster: "Señal social urgente",
@@ -86,7 +86,7 @@ function EscalationModal({
       <div className="relative w-full sm:max-w-md bg-surface-raised border border-slate-700 rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col z-10">
         {/* Header */}
         <div className="flex items-center gap-2 px-5 pt-4 pb-3 border-b border-slate-700">
-          <TrendingUp size={15} className="text-orange-400 shrink-0" aria-hidden="true" />
+          <TrendingUp size={15} className="text-severity-high shrink-0" aria-hidden="true" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-white">{title}</p>
             <p className="text-[10px] text-slate-400 mt-0.5">{subtitle}</p>
@@ -112,7 +112,7 @@ function EscalationModal({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={6}
-            className="w-full bg-surface-panel border border-slate-600 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono resize-none focus:outline-none focus:ring-1 focus:ring-orange-500/60"
+            className="w-full bg-surface-panel border border-slate-600 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono resize-none focus:outline-none focus:ring-1 focus:ring-severity-high/60"
             aria-label={locale === "es" ? "Notas de escalada" : "Escalation notes"}
           />
         </div>
@@ -127,7 +127,7 @@ function EscalationModal({
           </button>
           <button
             onClick={() => onConfirm(note)}
-            className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-orange-700 hover:bg-orange-600 text-white rounded-lg py-2 transition-colors font-medium"
+            className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-severity-high/90 hover:bg-severity-high text-white rounded-lg py-2 transition-colors font-medium"
           >
             <Send size={12} />
             {confirmLabel}
@@ -214,7 +214,7 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
           <div className="shrink-0 flex items-center gap-1">
             <button
               onClick={() => handleAction("acknowledge")}
-              className="text-slate-400 hover:text-green-400 transition-colors"
+              className="text-slate-400 hover:text-severity-low transition-colors"
               aria-label={tr("alerts", "acknowledge")}
               title={locale === "es" ? "Reconocer" : "Acknowledge"}
             >
@@ -233,7 +233,7 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
                 <div className="absolute right-0 top-6 z-30 bg-surface-raised border border-slate-600 rounded-lg shadow-xl w-40 py-1 animate-fade-in">
                   <button
                     onClick={() => { setMenuOpen(false); setShowEscalation(true); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-orange-300 hover:bg-orange-900/30 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-severity-high hover:bg-severity-high/30 transition-colors"
                   >
                     <TrendingUp size={12} />
                     {locale === "es" ? "Escalar" : "Escalate"}
@@ -259,8 +259,8 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
         ) : (
           <span className={clsx(
             "text-[10px] shrink-0 capitalize px-1.5 py-0.5 rounded",
-            alert.status === "escalated" ? "bg-orange-900/40 text-orange-300" :
-            alert.status === "acknowledged" ? "bg-green-900/30 text-green-400" :
+            alert.status === "escalated" ? "bg-severity-high/40 text-severity-high" :
+            alert.status === "acknowledged" ? "bg-severity-low/30 text-severity-low" :
             "bg-surface-panel text-slate-400"
           )}>{alert.status === "acknowledged" ? (locale === "es" ? "Reconocido" : "Acked") :
              alert.status === "escalated" ? (locale === "es" ? "Escalado" : "Escalated") :
@@ -326,7 +326,17 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   );
 }
 
-let _actionId = 700;
+// Monotonic action id generator for client-side decision log entries.
+// Uses Date.now() with an in-process bump so concurrent calls in the same
+// millisecond still collide-free. HMR-safe because no value lives across
+// reloads except `_lastTs`, which self-recovers on next call.
+let _lastTs = 0;
+function nextActionId(): number {
+  const now = Date.now();
+  const id = now <= _lastTs ? _lastTs + 1 : now;
+  _lastTs = id;
+  return id;
+}
 
 function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en" }) {
   const qc = useQueryClient();
@@ -337,10 +347,10 @@ function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en
   if (critical.length === 0) return null;
 
   const resources = [
-    { id: "bote",  es: "Bote Rescate", en: "Rescue Boat",   cls: "text-blue-300 border-blue-700/60 bg-blue-900/20" },
-    { id: "usar",  es: "USAR Alfa",    en: "USAR Alpha",    cls: "text-orange-300 border-orange-700/60 bg-orange-900/20" },
-    { id: "amb",   es: "Ambulancia",   en: "Ambulance",     cls: "text-red-300 border-red-700/60 bg-red-900/20" },
-    { id: "bomb",  es: "Bomberos",     en: "Fire Brigade",  cls: "text-yellow-300 border-yellow-700/60 bg-yellow-900/20" },
+    { id: "bote",  es: "Bote Rescate", en: "Rescue Boat",   cls: "text-costa-300 border-costa-700/60 bg-costa-900/20" },
+    { id: "usar",  es: "USAR Alfa",    en: "USAR Alpha",    cls: "text-severity-high border-severity-high/60 bg-severity-high/20" },
+    { id: "amb",   es: "Ambulancia",   en: "Ambulance",     cls: "text-severity-critical border-severity-critical/60 bg-severity-critical/20" },
+    { id: "bomb",  es: "Bomberos",     en: "Fire Brigade",  cls: "text-severity-medium border-severity-medium/60 bg-severity-medium/20" },
   ];
 
   function dispatch(id: string, label: string) {
@@ -348,7 +358,7 @@ function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en
     setDispatched((s) => new Set([...s, id]));
     qc.setQueryData<DecisionLogEntry[]>(["decision-log", 100], (old) => {
       if (!old) return old;
-      return [{ id: _actionId++, logged_at: new Date().toISOString(), operator_id: "operator-1",
+      return [{ id: nextActionId(), logged_at: new Date().toISOString(), operator_id: "operator-1",
         action_type: "resource_dispatch", alert_id: critical[0]?.id ?? null,
         payload: { resource: id, resource_name: label }, session_id: "demo" }, ...old].slice(0, 100);
     });
@@ -365,7 +375,7 @@ function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en
             disabled={dispatched.has(r.id)}
             className={clsx("text-[10px] px-2 py-1 rounded-md border transition-all font-medium",
               dispatched.has(r.id)
-                ? "text-green-400 border-green-700/50 bg-green-900/20 cursor-default"
+                ? "text-severity-low border-severity-low/50 bg-severity-low/20 cursor-default"
                 : r.cls + " hover:opacity-90"
             )}
           >
@@ -402,7 +412,7 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
       next.add(id);
       qc.setQueryData<DecisionLogEntry[]>(["decision-log", 100], (old) => {
         if (!old) return old;
-        return [{ id: _actionId++, logged_at: new Date().toISOString(), operator_id: "operator-1",
+        return [{ id: nextActionId(), logged_at: new Date().toISOString(), operator_id: "operator-1",
           action_type: "protocol_step", alert_id: critical[0]?.id ?? null,
           payload: { step: id, label }, session_id: "demo" }, ...old].slice(0, 100);
       });
@@ -424,7 +434,7 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
         {done > 0 && done < steps.length && (
           <span className="text-[10px] text-costa-400">{Math.round((done / steps.length) * 100)}%</span>
         )}
-        {done === steps.length && <span className="text-[10px] text-green-400">✓ completo</span>}
+        {done === steps.length && <span className="text-[10px] text-severity-low">✓ completo</span>}
         <ChevronDown size={12} className={clsx("text-slate-500 transition-transform", !collapsed && "rotate-180")} />
       </button>
       {!collapsed && (
@@ -514,14 +524,14 @@ export function AlertsPanel() {
           {tr("alerts", "title")}
         </h2>
         {sseConnected && (
-          <span className="flex items-center gap-1 text-[10px] text-green-400 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 live-dot" aria-hidden="true" />
+          <span className="flex items-center gap-1 text-[10px] text-severity-low font-mono">
+            <span className="w-1.5 h-1.5 rounded-full bg-severity-low live-dot" aria-hidden="true" />
             LIVE
           </span>
         )}
         {activeCount > 0 && (
           <span
-            className="ml-auto bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full"
+            className="ml-auto bg-severity-critical text-white text-xs px-1.5 py-0.5 rounded-full"
             aria-label={`${activeCount} ${tr("alerts", "title").toLowerCase()} activas`}
           >
             {activeCount}
@@ -531,11 +541,11 @@ export function AlertsPanel() {
 
       {/* Population exposure callout */}
       {exposure && exposure.total_affected_population > 0 && (
-        <div className="mx-3 mt-2 bg-red-900/30 border border-red-700/50 rounded-lg px-3 py-2">
-          <p className="text-xs text-red-300 font-medium">
+        <div className="mx-3 mt-2 bg-severity-critical/30 border border-severity-critical/50 rounded-lg px-3 py-2">
+          <p className="text-xs text-severity-critical font-medium">
             ~{exposure.total_affected_population.toLocaleString(locale === "es" ? "es-PE" : "en-US")} {tr("alerts", "personsAtRisk")}
           </p>
-          <p className="text-[10px] text-red-400 mt-0.5">
+          <p className="text-[10px] text-severity-critical mt-0.5">
             {exposure.districts.slice(0, 3).map((d) => d.district_name).join(", ")}
             {exposure.districts.length > 3 && ` +${exposure.districts.length - 3} ${locale === "es" ? "distritos" : "districts"}`}
           </p>
@@ -554,7 +564,7 @@ export function AlertsPanel() {
           <li className="px-4 py-8 text-xs text-slate-400 text-center" aria-live="polite">{tr("alerts", "loading")}</li>
         )}
         {isError && (
-          <li className="px-4 py-8 text-xs text-red-400 text-center" role="alert">{tr("alerts", "error")}</li>
+          <li className="px-4 py-8 text-xs text-severity-critical text-center" role="alert">{tr("alerts", "error")}</li>
         )}
         {!isLoading && !isError && alerts.length === 0 && (
           <li className="px-4 py-10 text-center">

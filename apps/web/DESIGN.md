@@ -267,24 +267,38 @@ Lazy-loaded panels (excluded from initial bundle):
 
 ## 9. Migration debts
 
-Tracked here so future work can address incrementally without breaking
-the visual system contract.
+> Phase 10 (`/impeccable extract` + `/impeccable harden`) closed the
+> bulk of the inherited debt. Remaining items below.
 
-1. Some Tailwind palette utilities (`bg-red-900/...`, `text-blue-300`,
-   etc.) still appear inside AlertsPanel, FusionCallout T strings,
-   SocialPill, MapLegend swatches, ResponseProtocol, ForecastSection.
-   These resolve to stock Tailwind hex and should migrate to severity
-   / costa / sand tokens.
-2. `SVG` charts (Sparkline, BarMini, ForecastChart) use raw
-   `stroke="#38bdf8"` etc. — should accept color via prop and source
-   the brand token via `useMemo`.
-3. `MapLegend` `RISK_ITEMS` / `SOCIAL_ITEMS` / `HUAYCO_ITEMS` /
-   `ALERT_ITEMS` / `STATION_ITEMS` arrays use hex literals. Replace
-   with token references when the legend gets a Phase 8 polish.
-4. EDAN-Perú report builder is Spanish-only inside `buildReport()` —
-   should branch on locale.
-5. Inline `_actionId = 700` module-level mutable counter in AlertsPanel
-   — replace with a `useRef` or a store-backed sequence.
+**Closed in Phase 10:**
+
+- ✅ All `(bg|text|border|ring|fill|stroke|outline|from|to|via)-{red|orange|yellow|amber|green|emerald|blue|cyan|sky|purple}-NNN` utility
+  references across `src/components/**/*.tsx` collapsed to `severity-*` /
+  `costa-NNN` / `sand-NNN` tokens (146 occurrences across 14 files).
+- ✅ `MapLegend` swatch arrays now source from `src/lib/colors.ts`
+  (single source-of-truth module).
+- ✅ `Sparkline`, `BarMini`, `ForecastChart` SVG charts pull stroke /
+  fill from `src/lib/colors.ts` exports — no hex literals in chart
+  bodies.
+- ✅ `EDAN-Perú` `buildReport()` branches on `locale`; English judges
+  get a parseable report with SINAGERD level words preserved as
+  proper-name terminology.
+- ✅ `_actionId = 700` mutable module counter replaced with an
+  HMR-safe `nextActionId()` helper backed by `Date.now()` with collision
+  bump.
+
+**Still open:**
+
+1. `EscalationModal` lacks a programmatic focus trap (Esc to close +
+   Tab cycle inside dialog). Currently `aria-modal=true` + click-backdrop
+   dismiss only.
+2. Some Tailwind utilities still reference `slate-700` / `slate-400`
+   etc. by design — these are neutral text/border classes, not brand
+   colors. Could be migrated to `surface-line` / `surface-muted`
+   tokens for full consistency, but no functional gain.
+3. `MapView.tsx` raster styling (flood layer color, huayco circle color
+   stops) still uses hex via MapLibre paint specs. These are
+   data-driven map styles, not UI chrome — left untouched.
 
 ---
 

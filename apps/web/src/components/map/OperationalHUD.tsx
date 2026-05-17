@@ -93,9 +93,9 @@ export function OperationalHUD() {
         "bg-surface-base/85 backdrop-blur-md shadow-xl",
         "text-xs font-mono transition-all duration-500",
         level === "EMERGENCIA"
-          ? "border border-red-500/50 emergency-glow"
+          ? "border border-severity-critical/50 emergency-glow"
           : level === "ALERTA"
-          ? "border border-orange-500/40"
+          ? "border border-severity-high/40"
           : "border border-slate-700/80",
       ].join(" ")}
       role="status"
@@ -121,7 +121,7 @@ export function OperationalHUD() {
           {active.length}
         </span>
         {critical > 0 && (
-          <span className="ml-0.5 text-[10px] bg-red-800/60 text-red-300 px-1 rounded">
+          <span className="ml-0.5 text-[10px] bg-severity-critical/60 text-severity-critical px-1 rounded">
             {critical} {locale === "es" ? "crít." : "crit."}
           </span>
         )}
@@ -131,7 +131,7 @@ export function OperationalHUD() {
       {floodKm2 > 0 && (
         <div className="flex items-center gap-1 px-3 py-2 border-r border-slate-700/60">
           <span className="text-slate-400">SAR</span>
-          <span className="text-blue-300 font-semibold ml-1">{floodKm2.toFixed(1)} km²</span>
+          <span className="text-costa-300 font-semibold ml-1">{floodKm2.toFixed(1)} km²</span>
         </div>
       )}
 
@@ -139,7 +139,7 @@ export function OperationalHUD() {
       {affectedPop > 0 && (
         <div className="flex items-center gap-1 px-3 py-2 border-r border-slate-700/60">
           <span className="text-slate-400">{locale === "es" ? "Pob." : "Pop."}</span>
-          <span className="text-purple-300 font-semibold ml-1">
+          <span className="text-sand-300 font-semibold ml-1">
             ~{affectedPop >= 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : affectedPop}
           </span>
         </div>
@@ -149,14 +149,14 @@ export function OperationalHUD() {
       {urgentSocial > 0 && (
         <div className="flex items-center gap-1 px-3 py-2 border-r border-slate-700/60">
           <span className="text-slate-400">{locale === "es" ? "Social" : "Social"}</span>
-          <span className="text-orange-300 font-semibold ml-1">{urgentSocial}</span>
+          <span className="text-severity-high font-semibold ml-1">{urgentSocial}</span>
         </div>
       )}
 
       {/* Replay mode badge */}
       {scenario.isReplayMode && (
         <div className="flex items-center gap-1 px-3 py-2 border-r border-slate-700/60">
-          <span className="text-[10px] bg-amber-600/40 text-amber-300 border border-amber-600/50 px-1.5 py-0.5 rounded-full">
+          <span className="text-[10px] bg-severity-medium/40 text-severity-medium border border-severity-medium/50 px-1.5 py-0.5 rounded-full">
             REPLAY {scenario.replayDate ?? "2017"}
           </span>
         </div>

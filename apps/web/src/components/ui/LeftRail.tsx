@@ -105,7 +105,7 @@ export function LeftRail() {
             />
             {id === "alerts" && activeAlertCount > 0 && (
               <span
-                className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 pointer-events-none"
+                className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-severity-critical text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 pointer-events-none"
                 aria-label={`${activeAlertCount} ${locale === "es" ? "alertas activas" : "active alerts"}`}
               >
                 {activeAlertCount > 9 ? "9+" : activeAlertCount}
@@ -113,7 +113,7 @@ export function LeftRail() {
             )}
             {id === "social" && urgentSocialCount > 0 && (
               <span
-                className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 pointer-events-none"
+                className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-severity-high text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 pointer-events-none"
                 aria-label={`${urgentSocialCount} ${locale === "es" ? "señales urgentes" : "urgent signals"}`}
               >
                 {urgentSocialCount > 9 ? "9+" : urgentSocialCount}
@@ -128,7 +128,7 @@ export function LeftRail() {
             onClick={() => setTutorialOpen(true)}
             aria-label={locale === "es" ? "Abrir tutorial (tecla ?)" : "Open tutorial (key ?)"}
             title={locale === "es" ? "Tutorial (?)" : "Tutorial (?)"}
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-surface-panel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-costa-500"
+            className="w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 hover:text-severity-medium hover:bg-surface-panel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-costa-500"
           >
             <HelpCircle size={18} aria-hidden="true" />
           </button>
@@ -193,7 +193,7 @@ export function LeftRail() {
             />
             {id === "alerts" && activeAlertCount > 0 && (
               <span
-                className="absolute top-1 right-2 min-w-[15px] h-[15px] bg-red-600 text-white text-[8px] font-bold rounded-full flex items-center justify-center px-0.5 pointer-events-none"
+                className="absolute top-1 right-2 min-w-[15px] h-[15px] bg-severity-critical text-white text-[8px] font-bold rounded-full flex items-center justify-center px-0.5 pointer-events-none"
                 aria-hidden="true"
               >
                 {activeAlertCount > 9 ? "9+" : activeAlertCount}

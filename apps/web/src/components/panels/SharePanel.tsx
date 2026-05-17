@@ -166,13 +166,13 @@ export function SharePanel() {
             title={copied ? t.copied : t.copy}
             className="shrink-0 p-1 rounded text-slate-400 hover:text-white transition-colors"
           >
-            {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+            {copied ? <Check size={14} className="text-severity-low" /> : <Copy size={14} />}
           </button>
         </div>
       )}
 
       {error && (
-        <p className="text-xs text-red-400 flex items-center gap-1">
+        <p className="text-xs text-severity-critical flex items-center gap-1">
           <X size={12} /> {error}
         </p>
       )}

@@ -7,31 +7,31 @@ import { clsx } from "clsx";
 
 const LEVEL_CFG = {
   EMERGENCIA: {
-    badge: "bg-red-600 text-white",
-    border: "border-red-500/60",
-    bg: "bg-red-900/15",
-    dot: "bg-red-500 animate-pulse",
+    badge: "bg-severity-critical text-white",
+    border: "border-severity-critical/60",
+    bg: "bg-severity-critical/15",
+    dot: "bg-severity-critical animate-pulse",
     label: { es: "EMERGENCIA", en: "EMERGENCY" },
   },
   ALERTA: {
-    badge: "bg-orange-600 text-white",
-    border: "border-orange-500/50",
-    bg: "bg-orange-900/10",
-    dot: "bg-orange-400 animate-pulse",
+    badge: "bg-severity-high text-white",
+    border: "border-severity-high/50",
+    bg: "bg-severity-high/10",
+    dot: "bg-severity-high animate-pulse",
     label: { es: "ALERTA", en: "ALERT" },
   },
   AVISO: {
-    badge: "bg-yellow-600 text-white",
-    border: "border-yellow-600/40",
-    bg: "bg-yellow-900/10",
-    dot: "bg-yellow-400",
+    badge: "bg-severity-medium text-white",
+    border: "border-severity-medium/40",
+    bg: "bg-severity-medium/10",
+    dot: "bg-severity-medium",
     label: { es: "AVISO", en: "NOTICE" },
   },
   NORMAL: {
-    badge: "bg-green-700 text-white",
-    border: "border-green-700/40",
-    bg: "bg-green-900/10",
-    dot: "bg-green-400",
+    badge: "bg-severity-low text-white",
+    border: "border-severity-low/40",
+    bg: "bg-severity-low/10",
+    dot: "bg-severity-low",
     label: { es: "NORMAL", en: "NORMAL" },
   },
 };
@@ -72,7 +72,7 @@ export function SituationBrief() {
 
   if (active.length > 0) {
     bullets.push({
-      icon: <AlertTriangle size={10} className="text-red-400 shrink-0 mt-px" />,
+      icon: <AlertTriangle size={10} className="text-severity-critical shrink-0 mt-px" />,
       text: locale === "es"
         ? `${active.length} alerta${active.length !== 1 ? "s" : ""} activa${active.length !== 1 ? "s" : ""}${critical > 0 ? ` · ${critical} crítica${critical !== 1 ? "s" : ""}` : ""}`
         : `${active.length} active alert${active.length !== 1 ? "s" : ""}${critical > 0 ? ` · ${critical} critical` : ""}`,
@@ -81,7 +81,7 @@ export function SituationBrief() {
 
   if (floodKm2 > 0) {
     bullets.push({
-      icon: <Waves size={10} className="text-blue-400 shrink-0 mt-px" />,
+      icon: <Waves size={10} className="text-costa-400 shrink-0 mt-px" />,
       text: locale === "es"
         ? `${floodKm2.toFixed(1)} km² inundados (SAR Sentinel-1)`
         : `${floodKm2.toFixed(1)} km² flooded (SAR Sentinel-1)`,
@@ -90,7 +90,7 @@ export function SituationBrief() {
 
   if (affectedPop > 0) {
     bullets.push({
-      icon: <Users size={10} className="text-purple-400 shrink-0 mt-px" />,
+      icon: <Users size={10} className="text-sand-300 shrink-0 mt-px" />,
       text: locale === "es"
         ? `~${affectedPop >= 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : affectedPop} personas en zona de riesgo`
         : `~${affectedPop >= 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : affectedPop} people in risk zones`,

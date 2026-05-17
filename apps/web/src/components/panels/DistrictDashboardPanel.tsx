@@ -9,6 +9,10 @@ import type { AlertTrendDay, SocialBreakdown } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
 import { DEMO_FORECAST, HUAYCO_THRESHOLD_MM, DEMO_RESOURCES, type ForecastStep, type ResourceCategory } from "@/lib/demoData";
+import {
+  SEVERITY_CRITICAL, SEVERITY_HIGH, SEVERITY_MEDIUM, SEVERITY_LOW,
+  COSTA_300, COSTA_400,
+} from "@/lib/colors";
 
 // ANA alert thresholds per station code (meters)
 const STATION_THRESHOLDS: Record<string, number> = {
@@ -23,7 +27,7 @@ const STATION_THRESHOLDS: Record<string, number> = {
 
 function Sparkline({
   values,
-  color = "#38bdf8",
+  color = COSTA_300,
   height = 32,
 }: {
   values: number[];
@@ -72,7 +76,7 @@ function BarMini({ days }: { days: AlertTrendDay[] }) {
   }
   const entries = Object.entries(buckets).slice(-7);
   const maxTotal = Math.max(...entries.map(([, v]) => v.critical + v.high + v.medium + v.low), 1);
-  const SEV_COLOR = { critical: "#dc2626", high: "#f97316", medium: "#fbbf24", low: "#38bdf8" };
+  const SEV_COLOR = { critical: SEVERITY_CRITICAL, high: SEVERITY_HIGH, medium: SEVERITY_MEDIUM, low: COSTA_400 };
   const w = 120;
   const bw = Math.floor(w / entries.length) - 2;
 
@@ -114,10 +118,10 @@ const LABEL_TEXT: Record<string, { es: string; en: string }> = {
 };
 
 const LABEL_COLOR: Record<string, string> = {
-  needs_help:            "bg-red-900/40 text-red-300 border-red-700/50",
-  infrastructure_damage: "bg-orange-900/40 text-orange-300 border-orange-700/50",
-  road_blocked:          "bg-yellow-900/40 text-yellow-300 border-yellow-700/50",
-  weather_observation:   "bg-blue-900/40 text-blue-300 border-blue-700/50",
+  needs_help:            "bg-severity-critical/40 text-severity-critical border-severity-critical/50",
+  infrastructure_damage: "bg-severity-high/40 text-severity-high border-severity-high/50",
+  road_blocked:          "bg-severity-medium/40 text-severity-medium border-severity-medium/50",
+  weather_observation:   "bg-costa-900/40 text-costa-300 border-costa-700/50",
 };
 
 function SocialPill({ item, locale }: { item: SocialBreakdown; locale: Locale }) {
@@ -162,9 +166,9 @@ function SituationSummary() {
     : { EMERGENCIA: "EMERGENCY", ALERTA: "ALERT", AVISO: "NOTICE" }[sinagerdLevel];
 
   const levelColor =
-    sinagerdLevel === "EMERGENCIA" ? "border-red-500/60 bg-red-900/20 text-red-200"
-    : sinagerdLevel === "ALERTA" ? "border-orange-500/50 bg-orange-900/20 text-orange-200"
-    : "border-yellow-600/40 bg-yellow-900/15 text-yellow-200";
+    sinagerdLevel === "EMERGENCIA" ? "border-severity-critical/60 bg-severity-critical/20 text-severity-critical"
+    : sinagerdLevel === "ALERTA" ? "border-severity-high/50 bg-severity-high/20 text-severity-high"
+    : "border-severity-medium/40 bg-severity-medium/15 text-severity-medium";
 
   const topDistricts = highRiskDistricts.slice(0, 3).map((f) => f.properties.name);
   const alertLabel = locale === "es"
@@ -328,7 +332,7 @@ function TopRiskList() {
     );
   }
 
-  const RISK_DOT = { alto: "bg-red-500", moderado: "bg-orange-400", bajo: "bg-green-500" };
+  const RISK_DOT = { alto: "bg-severity-critical", moderado: "bg-severity-high", bajo: "bg-severity-low" };
 
   return (
     <ul className="space-y-1">
@@ -351,12 +355,12 @@ function TopRiskList() {
             />
             <span className="text-xs text-slate-200 flex-1 truncate">{f.properties.name}</span>
             {f.properties.active_alerts > 0 && (
-              <span className="text-[10px] bg-red-900/50 text-red-300 px-1.5 rounded-full">
+              <span className="text-[10px] bg-severity-critical/50 text-severity-critical px-1.5 rounded-full">
                 {f.properties.active_alerts} {tr("dashboard", "alertsBadge")}
               </span>
             )}
             {f.properties.urgent_social_3h > 0 && (
-              <span className="text-[10px] bg-orange-900/50 text-orange-300 px-1.5 rounded-full">
+              <span className="text-[10px] bg-severity-high/50 text-severity-high px-1.5 rounded-full">
                 {f.properties.urgent_social_3h} {tr("dashboard", "signalsBadge")}
               </span>
             )}
@@ -370,10 +374,10 @@ function TopRiskList() {
 // ─── District detail view ─────────────────────────────────────────────────────
 
 const SEVERITY_BADGE: Record<string, string> = {
-  critical: "bg-red-900/50 text-red-300 border-red-700/50",
-  high:     "bg-orange-900/40 text-orange-300 border-orange-700/50",
-  medium:   "bg-yellow-900/30 text-yellow-300 border-yellow-700/40",
-  low:      "bg-blue-900/30 text-blue-300 border-blue-700/40",
+  critical: "bg-severity-critical/50 text-severity-critical border-severity-critical/50",
+  high:     "bg-severity-high/40 text-severity-high border-severity-high/50",
+  medium:   "bg-severity-medium/30 text-severity-medium border-severity-medium/40",
+  low:      "bg-costa-900/30 text-costa-300 border-costa-700/40",
 };
 
 function DistrictDetail({ ubigeo }: { ubigeo: string }) {
@@ -385,7 +389,7 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
   if (isLoading)
     return <p className="text-xs text-slate-400 px-1 py-4 text-center">{tr("dashboard", "loading")}</p>;
   if (isError || !data)
-    return <p className="text-xs text-red-400 px-1 py-4 text-center">{tr("dashboard", "errorLoad")}</p>;
+    return <p className="text-xs text-severity-critical px-1 py-4 text-center">{tr("dashboard", "errorLoad")}</p>;
 
   const imergValues = data.imerg_trend_30d.map((d) => d.acc_24h_mm);
   const maxImerg = Math.max(...imergValues, 0);
@@ -393,12 +397,12 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
   const activeAlerts = data.active_alerts.filter((a) => a.status === "active");
 
   const RISK_BORDER: Record<string, string> = {
-    alto:     "border-red-500/50 bg-red-900/15",
-    moderado: "border-orange-500/40 bg-orange-900/10",
-    bajo:     "border-green-700/30 bg-green-900/10",
+    alto:     "border-severity-critical/50 bg-severity-critical/15",
+    moderado: "border-severity-high/40 bg-severity-high/10",
+    bajo:     "border-severity-low/30 bg-severity-low/10",
   };
   const RISK_TEXT: Record<string, string> = {
-    alto: "text-red-300", moderado: "text-orange-300", bajo: "text-green-400",
+    alto: "text-severity-critical", moderado: "text-severity-high", bajo: "text-severity-low",
   };
 
   const sarPolygonLabel = (n: number) =>
@@ -452,7 +456,7 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
           label={tr("dashboard", "rain24h")}
           value={latestImerg > 0 ? `${latestImerg.toFixed(1)} mm` : "— mm"}
           sub={maxImerg > 0 ? `${tr("dashboard", "maxLast30d")} ${maxImerg.toFixed(1)} mm` : tr("dashboard", "noRecentData")}
-          color="text-blue-400"
+          color="text-costa-400"
         />
         <MetricCard
           icon={Users}
@@ -466,7 +470,7 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
           label={tr("dashboard", "historical")}
           value={String(data.sinpad_historical_events)}
           sub={tr("dashboard", "sinpad")}
-          color="text-amber-400"
+          color="text-severity-medium"
         />
         {fusion?.flood.overlap_km2 != null && fusion.flood.overlap_km2 > 0 && (
           <MetricCard
@@ -474,7 +478,7 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
             label={tr("dashboard", "sarFlooded")}
             value={`${fusion.flood.overlap_km2.toFixed(1)} km²`}
             sub={sarPolygonLabel(fusion.flood.active_polygon_count)}
-            color="text-cyan-400"
+            color="text-costa-400"
           />
         )}
       </div>
@@ -486,9 +490,9 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
             <p className="text-[11px] text-slate-400 flex items-center gap-1">
               <TrendingUp size={10} /> {tr("dashboard", "rain30d")}
             </p>
-            <p className="text-[10px] text-blue-400">{latestImerg.toFixed(1)} mm {tr("dashboard", "today")}</p>
+            <p className="text-[10px] text-costa-400">{latestImerg.toFixed(1)} mm {tr("dashboard", "today")}</p>
           </div>
-          <Sparkline values={imergValues} color="#38bdf8" />
+          <Sparkline values={imergValues} color={COSTA_300} />
         </div>
       )}
 
@@ -530,25 +534,25 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
                   className={clsx(
                     "flex items-center justify-between rounded-lg px-2.5 py-1.5",
                     overThreshold
-                      ? "bg-orange-900/30 border border-orange-600/50"
+                      ? "bg-severity-high/30 border border-severity-high/50"
                       : "bg-surface-panel",
                   )}
                 >
                   <div>
                     <div className="flex items-center gap-1">
-                      {overThreshold && <AlertTriangle size={9} className="text-orange-400 shrink-0" />}
-                      <p className={clsx("text-xs", overThreshold ? "text-orange-200" : "text-slate-200")}>{st.name}</p>
+                      {overThreshold && <AlertTriangle size={9} className="text-severity-high shrink-0" />}
+                      <p className={clsx("text-xs", overThreshold ? "text-severity-high" : "text-slate-200")}>{st.name}</p>
                     </div>
                     <p className="text-[10px] text-slate-500">{st.river} · {st.source.toUpperCase()}</p>
                     {overThreshold && threshold != null && (
-                      <p className="text-[10px] text-orange-400 mt-0.5">
+                      <p className="text-[10px] text-severity-high mt-0.5">
                         {tr("dashboard", "threshold")} {threshold.toFixed(1)} m {tr("dashboard", "exceeded")}
                       </p>
                     )}
                   </div>
                   <div className="text-right">
                     {st.level_m != null && (
-                      <p className={clsx("text-xs font-mono", overThreshold ? "text-orange-300" : "text-blue-300")}>
+                      <p className={clsx("text-xs font-mono", overThreshold ? "text-severity-high" : "text-costa-300")}>
                         {st.level_m.toFixed(2)} m
                       </p>
                     )}
@@ -604,7 +608,8 @@ function EDANReportButton() {
   const { data: summary } = useDistrictRiskSummary();
 
   function buildReport(): string {
-    const now = new Date().toLocaleString("es-PE", { timeZone: "America/Lima" });
+    const locale_tag = locale === "en" ? "en-US" : "es-PE";
+    const now = new Date().toLocaleString(locale_tag, { timeZone: "America/Lima" });
     const active = alerts.filter((a) => a.status === "active");
     const critical = active.filter((a) => a.severity === "critical");
     const high = active.filter((a) => a.severity === "high");
@@ -616,18 +621,55 @@ function EDANReportButton() {
 
     const level = critical.length > 0 ? "EMERGENCIA" : high.length > 1 ? "ALERTA" : active.length > 0 ? "AVISO" : "NORMAL";
 
-    return [
-      "═══════════════════════════════════════════",
+    // SINAGERD level labels stay in Spanish — they are official terminology
+    // for INDECI/COEN and should not be translated. Surrounding form copy
+    // branches on locale so an English-speaking judge sees a parseable report.
+    const RULE = "═══════════════════════════════════════════";
+    const RULE_THIN = "─────────────────────────────────────────────";
+    const popFormatted = `${affectedPop > 1000 ? (affectedPop / 1000).toFixed(0) + "k" : affectedPop}`;
+
+    const lines = locale === "en" ? [
+      RULE,
+      "SITUATION REPORT — COSTA RESILIENTE",
+      `Date / Time: ${now} (Lima, Peru)`,
+      `SINAGERD level: ${level}`,
+      "Generated by: Costa Resiliente platform",
+      RULE,
+      "",
+      "1. EXECUTIVE SUMMARY",
+      `   Active alerts:        ${active.length} (${critical.length} critical, ${high.length} high)`,
+      `   SAR flooded area:     ${floodArea.toFixed(1)} km²`,
+      `   Pop. at risk (est.):  ~${popFormatted} inhabitants`,
+      `   High-risk districts:  ${highRiskDistricts || "None"}`,
+      "",
+      "2. ACTIVE ALERTS",
+      ...active.slice(0, 5).map((a, i) =>
+        `   ${i + 1}. [${a.severity.toUpperCase()}] ${a.title}${a.description ? "\n      " + a.description : ""}`
+      ),
+      active.length > 5 ? `   ... and ${active.length - 5} more alerts` : "",
+      "",
+      "3. DATA SOURCES",
+      "   • SAR: Sentinel-1 (Microsoft Planetary Computer)",
+      "   • Rainfall: NASA IMERG Early Run v07B",
+      "   • Hydrology: ANA Observatorio Chirilu + SENAMHI",
+      "   • Social: Bluesky + RSS + Reddit + Telegram",
+      "",
+      RULE_THIN,
+      "FOR OFFICIAL USE — EDAN-PERÚ FORM",
+      "System: Costa Resiliente v1.0 (IEEE Response Quest 2026)",
+      RULE,
+    ] : [
+      RULE,
       "REPORTE DE SITUACIÓN — COSTA RESILIENTE",
       `Fecha/Hora: ${now} (Lima, Perú)`,
       `Nivel SINAGERD: ${level}`,
       "Generado por: Plataforma Costa Resiliente",
-      "═══════════════════════════════════════════",
+      RULE,
       "",
       "1. RESUMEN EJECUTIVO",
       `   Alertas activas:    ${active.length} (${critical.length} críticas, ${high.length} altas)`,
       `   Área inundada SAR:  ${floodArea.toFixed(1)} km²`,
-      `   Pob. en riesgo est: ~${affectedPop > 1000 ? (affectedPop / 1000).toFixed(0) + "k" : affectedPop} habitantes`,
+      `   Pob. en riesgo est: ~${popFormatted} habitantes`,
       `   Distritos riesgo alto: ${highRiskDistricts || "Ninguno"}`,
       "",
       "2. ALERTAS ACTIVAS",
@@ -642,11 +684,13 @@ function EDANReportButton() {
       "   • Hidrología: ANA Observatorio Chirilu + SENAMHI",
       "   • Social: Bluesky + RSS + Reddit + Telegram",
       "",
-      "─────────────────────────────────────────────",
+      RULE_THIN,
       "PARA USO OFICIAL — FORMULARIO EDAN-PERÚ",
       "Sistema: Costa Resiliente v1.0 (IEEE Response Quest 2026)",
-      "═══════════════════════════════════════════",
-    ].filter((l) => l !== "").join("\n");
+      RULE,
+    ];
+
+    return lines.filter((l) => l !== "").join("\n");
   }
 
   async function handleCopy() {
@@ -663,7 +707,7 @@ function EDANReportButton() {
       aria-label={locale === "es" ? "Copiar reporte EDAN-Perú al portapapeles" : "Copy EDAN-Peru report to clipboard"}
       title={locale === "es" ? "Generar reporte EDAN-Perú" : "Generate EDAN-Peru report"}
     >
-      {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
+      {copied ? <Check size={13} className="text-severity-low" /> : <Copy size={13} />}
       {copied ? tr("dashboard", "edanCopied") : tr("dashboard", "edan")}
     </button>
   );
@@ -672,9 +716,9 @@ function EDANReportButton() {
 // ─── 72h Rainfall Forecast ────────────────────────────────────────────────────
 
 const RISK_STEP_COLOR: Record<ForecastStep["risk"], { fill: string; stroke: string; badge: string; badgeBg: string }> = {
-  bajo:     { fill: "#22c55e", stroke: "#16a34a", badge: "text-green-300",  badgeBg: "bg-green-900/30" },
-  moderado: { fill: "#fbbf24", stroke: "#d97706", badge: "text-yellow-300", badgeBg: "bg-yellow-900/30" },
-  alto:     { fill: "#f97316", stroke: "#dc2626", badge: "text-red-300",    badgeBg: "bg-red-900/30" },
+  bajo:     { fill: SEVERITY_LOW,      stroke: SEVERITY_LOW,      badge: "text-severity-low",      badgeBg: "bg-severity-low/30" },
+  moderado: { fill: SEVERITY_MEDIUM,   stroke: SEVERITY_MEDIUM,   badge: "text-severity-medium",   badgeBg: "bg-severity-medium/30" },
+  alto:     { fill: SEVERITY_HIGH,     stroke: SEVERITY_CRITICAL, badge: "text-severity-critical", badgeBg: "bg-severity-critical/30" },
 };
 
 function ForecastChart({ steps }: { steps: ForecastStep[] }) {
@@ -699,11 +743,11 @@ function ForecastChart({ steps }: { steps: ForecastStep[] }) {
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true" className="w-full">
       {/* Threshold line */}
-      <line x1={0} y1={threshY} x2={W} y2={threshY} stroke="#f97316" strokeWidth={0.75} strokeDasharray="3,3" opacity={0.6} />
+      <line x1={0} y1={threshY} x2={W} y2={threshY} stroke={SEVERITY_HIGH} strokeWidth={0.75} strokeDasharray="3,3" opacity={0.6} />
       {/* Area fill */}
       <polyline
         points={`0,${H} ${pts} ${W},${H}`}
-        fill="#38bdf8"
+        fill={COSTA_300}
         fillOpacity={0.08}
         stroke="none"
       />
@@ -756,7 +800,7 @@ function ForecastSection({ locale }: { locale: Locale }) {
     <div className="mb-4 bg-surface-panel rounded-xl px-3 py-2.5">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[11px] text-slate-300 font-medium flex items-center gap-1.5">
-          <CloudRain size={11} className="text-blue-400" aria-hidden="true" />
+          <CloudRain size={11} className="text-costa-400" aria-hidden="true" />
           {L(label.title)}
         </p>
         <p className="text-[10px] text-slate-500">{L(label.source)}</p>
@@ -791,16 +835,16 @@ function ForecastSection({ locale }: { locale: Locale }) {
       <div className="flex items-center justify-between">
         <p className="text-[10px] text-slate-500">{L(label.rim)}</p>
         <div className="flex items-center gap-1">
-          <span className="inline-block w-3 border-t border-dashed border-orange-400" aria-hidden="true" />
-          <span className="text-[10px] text-orange-400">{L(label.thresh)} {HUAYCO_THRESHOLD_MM} mm</span>
+          <span className="inline-block w-3 border-t border-dashed border-severity-high" aria-hidden="true" />
+          <span className="text-[10px] text-severity-high">{L(label.thresh)} {HUAYCO_THRESHOLD_MM} mm</span>
         </div>
       </div>
 
       {/* Pre-alert banner */}
       {firstAlert && (
-        <div className="mt-2 rounded-lg border border-orange-500/50 bg-orange-900/20 px-2.5 py-1.5 flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse shrink-0" aria-hidden="true" />
-          <p className="text-[10px] text-orange-300">
+        <div className="mt-2 rounded-lg border border-severity-high/50 bg-severity-high/20 px-2.5 py-1.5 flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-severity-high animate-pulse shrink-0" aria-hidden="true" />
+          <p className="text-[10px] text-severity-high">
             <span className="font-bold">{L(label.preAlert)}</span>
             {" "}{L(label.thresh)} {L(label.at)} +{firstAlert.hours}h
             {" "}— {firstAlert.rimac_mm.toFixed(0)} mm
@@ -815,9 +859,9 @@ function ForecastSection({ locale }: { locale: Locale }) {
 // ─── Resource deployment status ───────────────────────────────────────────────
 
 const STATUS_STYLE: Record<ResourceCategory["status"], { dot: string; bar: string }> = {
-  ok:      { dot: "bg-green-400",  bar: "bg-green-500" },
-  partial: { dot: "bg-yellow-400", bar: "bg-yellow-500" },
-  deficit: { dot: "bg-red-400",    bar: "bg-red-500" },
+  ok:      { dot: "bg-severity-low",  bar: "bg-severity-low" },
+  partial: { dot: "bg-severity-medium", bar: "bg-severity-medium" },
+  deficit: { dot: "bg-severity-critical",    bar: "bg-severity-critical" },
 };
 
 function ResourceStatus({ locale }: { locale: Locale }) {

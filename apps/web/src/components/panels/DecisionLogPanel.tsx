@@ -114,7 +114,7 @@ export function DecisionLogPanel() {
           <li className="px-4 py-8 text-xs text-slate-400 text-center" aria-live="polite">{loadingText}</li>
         )}
         {isError && (
-          <li className="px-4 py-8 text-xs text-red-400 text-center" role="alert">{errorText}</li>
+          <li className="px-4 py-8 text-xs text-severity-critical text-center" role="alert">{errorText}</li>
         )}
         {!isLoading && !isError && entries.length === 0 && (
           <li className="px-4 py-8 text-xs text-slate-400 text-center">{emptyText}</li>

@@ -134,7 +134,7 @@ function SourceRow({ source, locale }: { source: Source; locale: "es" | "en" }) 
             <span className="text-slate-400">{locale === "es" ? "Latencia:" : "Latency:"}</span> {source.latency}
           </p>
           {source.notes && (
-            <p className="text-[10px] text-amber-400">{source.notes}</p>
+            <p className="text-[10px] text-severity-medium">{source.notes}</p>
           )}
           <a
             href={source.url}
