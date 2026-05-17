@@ -4,6 +4,14 @@ type PanelId = "map" | "alerts" | "ask" | "log" | "sources" | "share" | "dashboa
 
 export type Locale = "es" | "en";
 
+export interface LiveToast {
+  id: string;
+  source: string;
+  label: string;
+  district: string;
+  at: number;
+}
+
 interface Scenario {
   districtUbigeo: string | null;
   districtName: string | null;
@@ -37,6 +45,13 @@ interface UIState {
 
   locale: Locale;
   setLocale: (locale: Locale) => void;
+
+  toasts: LiveToast[];
+  addToast: (toast: Omit<LiveToast, "id" | "at">) => void;
+  removeToast: (id: string) => void;
+
+  flyToPoint: [number, number] | null;
+  setFlyToPoint: (pt: [number, number] | null) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -77,4 +92,18 @@ export const useUIStore = create<UIState>((set) => ({
 
   locale: "es",
   setLocale: (locale) => set({ locale }),
+
+  toasts: [],
+  addToast: (toast) =>
+    set((state) => ({
+      toasts: [
+        ...state.toasts.slice(-3),
+        { ...toast, id: `${Date.now()}-${Math.random()}`, at: Date.now() },
+      ],
+    })),
+  removeToast: (id) =>
+    set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
+
+  flyToPoint: null,
+  setFlyToPoint: (pt) => set({ flyToPoint: pt }),
 }));

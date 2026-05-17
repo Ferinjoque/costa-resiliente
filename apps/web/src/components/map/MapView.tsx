@@ -122,7 +122,7 @@ export default function MapView() {
   const activePopup = useRef<maplibregl.Popup | null>(null);
   const exposureRef = useRef<FloodExposure | null>(null);
   const criticalMarkers = useRef<maplibregl.Marker[]>([]);
-  const { activeLayers, scenario, is3DMode } = useUIStore();
+  const { activeLayers, scenario, is3DMode, flyToPoint, setFlyToPoint } = useUIStore();
 
   const { data: districtGeoJSON } = useDistricts();
   const { data: riskSummary } = useDistrictRiskSummary();
@@ -490,6 +490,15 @@ export default function MapView() {
     const feat = districtGeoJSON?.features.find(d => d.properties?.ubigeo === ubigeo);
     if (feat?.geometry) m.fitBounds(geomBounds(feat.geometry), { padding: 60, maxZoom: 14, duration: 600 });
   }, [scenario.districtUbigeo, districtGeoJSON]);
+
+  // ─── Fly to point (alert / social signal navigation) ─────────────────────
+  useEffect(() => {
+    if (!flyToPoint) return;
+    const m = map.current;
+    if (!m) return;
+    m.flyTo({ center: flyToPoint, zoom: 14, duration: 700 });
+    setFlyToPoint(null);
+  }, [flyToPoint, setFlyToPoint]);
 
   // ─── IMERG ────────────────────────────────────────────────────────────────
   useEffect(() => {

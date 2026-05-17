@@ -17,6 +17,8 @@ import { ShareLoader } from "@/components/panels/ShareLoader";
 import { FusionCallout } from "@/components/panels/FusionCallout";
 import { DistrictDashboardPanel } from "@/components/panels/DistrictDashboardPanel";
 import { useUIStore } from "@/store/ui";
+import { DemoLiveSimulator } from "@/components/DemoLiveSimulator";
+import { ToastStack } from "@/components/ui/ToastStack";
 
 // MapView must be client-only (MapLibre GL uses window APIs)
 const MapView = dynamic(() => import("@/components/map/MapView"), {
@@ -117,6 +119,8 @@ export default function Home() {
         <ShareLoader />
         <FirstRunTrigger />
         <KeyboardNavigator />
+        <DemoLiveSimulator />
+        <ToastStack />
       </main>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUIStore } from "@/store/ui";
-import { useAlerts, useFloodExposure, useApiHealth } from "@/lib/queries";
+import { useAlerts, useFloodExposure, useApiHealth, useSocialSignals } from "@/lib/queries";
 import { clsx } from "clsx";
 
 function limaTime(): string {
@@ -56,6 +56,7 @@ export function OperationalHUD() {
   const { data: alerts = [] } = useAlerts();
   const { data: exposure } = useFloodExposure();
   const { data: health, isError: apiDown } = useApiHealth();
+  const { data: socialData } = useSocialSignals(48);
 
   const [clock, setClock] = useState(limaTime);
   useEffect(() => {
@@ -71,6 +72,9 @@ export function OperationalHUD() {
 
   const floodKm2 = exposure?.districts.reduce((s, d) => s + d.overlap_km2, 0) ?? 0;
   const affectedPop = exposure?.total_affected_population ?? 0;
+  const urgentSocial = socialData?.features.filter(
+    (f) => f.properties.triage_label === "needs_help" || f.properties.triage_label === "road_blocked",
+  ).length ?? 0;
 
   const online = health?.status === "ok" && !apiDown;
 
@@ -133,6 +137,14 @@ export function OperationalHUD() {
           <span className="text-purple-300 font-semibold ml-1">
             ~{affectedPop >= 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : affectedPop}
           </span>
+        </div>
+      )}
+
+      {/* Metric: urgent social signals (3h) */}
+      {urgentSocial > 0 && (
+        <div className="flex items-center gap-1 px-3 py-2 border-r border-slate-700/60">
+          <span className="text-slate-400">{locale === "es" ? "Social" : "Social"}</span>
+          <span className="text-orange-300 font-semibold ml-1">{urgentSocial}</span>
         </div>
       )}
 
