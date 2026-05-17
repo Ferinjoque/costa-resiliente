@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   X, ChevronLeft, ChevronRight, PlayCircle, AlertTriangle,
-  Droplets, MapPin, Users, MessageSquare,
+  Droplets, MapPin, Users, MessageSquare, Radio,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
@@ -20,7 +20,7 @@ interface Step {
   autoReplayDate?: string;
   autoTimeWindow?: number;
   autoDistrict?: { ubigeo: string; name: string } | null;
-  autoPanel?: "alerts" | "ask" | "dashboard";
+  autoPanel?: "alerts" | "ask" | "dashboard" | "social";
   actionLabel?: string;
 }
 
@@ -87,11 +87,23 @@ const STEPS: Step[] = [
     id: "copilot",
     icon: MessageSquare,
     iconColor: "text-costa-400",
-    title: "5 — Copiloto operacional",
-    body: "Consultas en español conectadas directamente a la base de datos. Sin alucinaciones — cada número proviene de una fila real de PostGIS.",
-    stat: "\"¿Qué quebradas superaron umbral en 72h?\" → respuesta en <3s",
+    title: "5 — Copiloto operacional (Gemma 3)",
+    body: "Consultas en español o inglés directamente sobre la base de datos PostGIS. Sin alucinaciones — cada cifra proviene de una fila real. Pregunta por distritos, quebradas, nivel del río, o rutas bloqueadas.",
+    stat: "21 consultas cubiertas · Triaje por intención · Fuente: PostGIS + IMERG + SAR",
     autoPanel: "ask",
     actionLabel: "Copiloto abierto",
+  },
+  {
+    id: "social",
+    icon: Radio,
+    iconColor: "text-orange-400",
+    title: "6 — Señales sociales en tiempo real",
+    body: "Bluesky, Reddit y Telegram geolocalizado con triaje por IA (Gemma 3) y anonimización PII (Presidio). Las señales urgentes aparecen en el mapa y en el HUD superior.",
+    stat: "Fuentes: Bluesky · Reddit · Telegram · Confianza media: 0.82",
+    autoLayers: ["districts", "flood", "social"],
+    autoPanel: "social",
+    autoDistrict: null,
+    actionLabel: "Feed social abierto",
   },
 ];
 
