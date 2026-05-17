@@ -347,7 +347,7 @@ export default function MapView() {
       // ── Unified hover cursor ────────────────────────────────────────────
       m.on("mousemove", (e) => {
         const interactive = [
-          "alerts-circle", "social-circle", "huayco-circle", "infra-circle", "stations-circle",
+          "alerts-circle", "social-clusters", "social-circle", "huayco-circle", "infra-circle", "stations-circle",
           "flood-fill", "hazard-fill", "districts-fill",
         ].filter(l => m.getLayer(l));
         if (!interactive.length) { m.getCanvas().style.cursor = ""; return; }
