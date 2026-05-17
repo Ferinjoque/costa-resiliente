@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Radio, MapPin, X, Filter } from "lucide-react";
+import { Radio, MapPin, X, Filter, Send, PlusCircle } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSocialSignals } from "@/lib/queries";
-import type { SocialSignalProperties } from "@/lib/api";
+import type { SocialSignalProperties, SocialSignalCollection, DecisionLogEntry } from "@/lib/api";
 
 const LABEL_ES: Record<string, string> = {
   needs_help:            "Ayuda urgente",
@@ -39,6 +40,7 @@ const SOURCE_BADGE: Record<string, string> = {
   bluesky:  "text-sky-400 bg-sky-900/30 border-sky-700/50",
   telegram: "text-blue-400 bg-blue-900/30 border-blue-700/50",
   reddit:   "text-orange-400 bg-orange-900/30 border-orange-700/50",
+  campo:    "text-emerald-400 bg-emerald-900/30 border-emerald-700/50",
 };
 
 function timeAgoShort(iso: string): string {
@@ -50,6 +52,8 @@ function timeAgoShort(iso: string): string {
 
 const ALL_LABELS = ["needs_help", "road_blocked", "infrastructure_damage", "weather_observation"] as const;
 type Label = typeof ALL_LABELS[number];
+
+let _fieldId = 9000;
 
 function SignalRow({
   props,
@@ -119,11 +123,109 @@ function SignalRow({
   );
 }
 
+function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [label, setLabel] = useState<Label>("needs_help");
+  const [text, setText] = useState("");
+
+  function submit() {
+    if (!text.trim()) return;
+    const now = new Date().toISOString();
+    const id = String(_fieldId++);
+
+    qc.setQueryData<SocialSignalCollection>(["social-signals", 48, undefined], (old) => {
+      if (!old) return old;
+      const feature = {
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [-77.042, -12.046] as [number, number] },
+        properties: {
+          id,
+          source: "campo",
+          triage_label: label,
+          triage_confidence: 1.0,
+          text: text.trim(),
+          district_name: "Lima Cercado",
+          district_id: null,
+          ingested_at: now,
+        } as unknown as SocialSignalProperties,
+      };
+      return { ...old, features: [...old.features, feature] };
+    });
+
+    qc.setQueryData<DecisionLogEntry[]>(["decision-log", 100], (old) => {
+      if (!old) return old;
+      return [
+        {
+          id: _fieldId,
+          logged_at: now,
+          operator_id: "operator-1",
+          action_type: "map_pin",
+          alert_id: null,
+          payload: { label: LABEL_ES[label] ?? label, district: "Lima Cercado", source: "campo" },
+          session_id: "demo",
+        },
+        ...old,
+      ].slice(0, 100);
+    });
+
+    setText("");
+    onClose();
+  }
+
+  return (
+    <div className="px-3 py-2.5 border-b border-slate-700 bg-slate-800/40">
+      <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide mb-2">
+        {locale === "es" ? "Reporte de campo" : "Field report"}
+      </p>
+      <div className="flex flex-wrap gap-1 mb-2">
+        {ALL_LABELS.map((l) => (
+          <button
+            key={l}
+            onClick={() => setLabel(l)}
+            className={clsx(
+              "text-[10px] px-2 py-0.5 rounded-full border transition-colors",
+              label === l
+                ? "bg-costa-700 border-costa-600 text-white"
+                : "bg-surface-panel border-slate-600 text-slate-300 hover:border-costa-600",
+            )}
+          >
+            {locale === "es" ? LABEL_ES[l] : LABEL_EN[l]}
+          </button>
+        ))}
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value.slice(0, 140))}
+        placeholder={
+          locale === "es"
+            ? "Descripción del reporte de campo…"
+            : "Field report description…"
+        }
+        className="w-full bg-slate-900/60 border border-slate-600 rounded-lg text-[11px] text-slate-200 placeholder-slate-500 p-2 resize-none focus:outline-none focus:border-costa-500 transition-colors"
+        rows={2}
+      />
+      <div className="flex items-center justify-between mt-1.5">
+        <span className="text-[9px] text-slate-500">{text.length}/140</span>
+        <button
+          onClick={submit}
+          disabled={!text.trim()}
+          className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg bg-costa-700 text-white hover:bg-costa-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          aria-label={locale === "es" ? "Enviar reporte" : "Send report"}
+        >
+          <Send size={9} />
+          {locale === "es" ? "Enviar" : "Send"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function SocialFeedPanel() {
   const { activePanel, setActivePanel, locale, setFlyToPoint } = useUIStore();
   const { data: signals, dataUpdatedAt } = useSocialSignals(48);
   const [labelFilter, setLabelFilter] = useState<Label | "all">("all");
   const [showFilter, setShowFilter] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
   if (activePanel !== "social") return null;
 
@@ -179,6 +281,17 @@ export function SocialFeedPanel() {
           <Filter size={14} />
         </button>
         <button
+          onClick={() => setShowReport((o) => !o)}
+          className={clsx(
+            "text-slate-400 hover:text-emerald-400 transition-colors rounded",
+            showReport && "text-emerald-400",
+          )}
+          aria-label={locale === "es" ? "Añadir reporte de campo" : "Add field report"}
+          aria-pressed={showReport}
+        >
+          <PlusCircle size={14} />
+        </button>
+        <button
           onClick={() => setActivePanel("map")}
           className="text-slate-400 hover:text-white transition-colors rounded focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none"
           aria-label={locale === "es" ? "Cerrar panel" : "Close panel"}
@@ -207,9 +320,14 @@ export function SocialFeedPanel() {
         </div>
       )}
 
+      {/* Field report form */}
+      {showReport && (
+        <FieldReport locale={locale} onClose={() => setShowReport(false)} />
+      )}
+
       {/* Source legend row */}
       <div className="px-3 py-1.5 border-b border-slate-700/50 flex gap-2 flex-wrap">
-        {(["bluesky", "telegram", "reddit"] as const).map((src) => (
+        {(["bluesky", "telegram", "reddit", "campo"] as const).map((src) => (
           <span key={src} className={clsx("text-[9px] border rounded-full px-1.5 py-0.5", SOURCE_BADGE[src])}>
             {src}
           </span>
