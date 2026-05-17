@@ -885,3 +885,25 @@ export const DEMO_DECISION_LOG: DecisionLogEntry[] = [
     session_id: "demo",
   },
 ];
+
+// ─── 72h Rainfall Forecast (SENAMHI-derived, demo) ───────────────────────────
+
+export type ForecastStep = {
+  hours: number;
+  rimac_mm: number;
+  chilion_mm: number;
+  lurin_mm: number;
+  risk: "bajo" | "moderado" | "alto";
+  huayco_prob: number;  // 0–1
+};
+
+/** Threshold above which huayco activation risk is significant (mm / step window). */
+export const HUAYCO_THRESHOLD_MM = 42;
+
+export const DEMO_FORECAST: ForecastStep[] = [
+  { hours: 6,  rimac_mm: 8.5,  chilion_mm: 5.2,  lurin_mm: 1.8,  risk: "bajo",     huayco_prob: 0.15 },
+  { hours: 12, rimac_mm: 15.8, chilion_mm: 9.4,  lurin_mm: 3.2,  risk: "moderado", huayco_prob: 0.28 },
+  { hours: 24, rimac_mm: 31.2, chilion_mm: 18.7, lurin_mm: 5.6,  risk: "alto",     huayco_prob: 0.52 },
+  { hours: 48, rimac_mm: 48.5, chilion_mm: 28.3, lurin_mm: 8.1,  risk: "alto",     huayco_prob: 0.71 },
+  { hours: 72, rimac_mm: 64.2, chilion_mm: 38.9, lurin_mm: 11.4, risk: "alto",     huayco_prob: 0.82 },
+];

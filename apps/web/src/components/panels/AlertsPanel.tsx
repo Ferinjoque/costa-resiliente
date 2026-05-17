@@ -253,7 +253,7 @@ export function AlertsPanel() {
           </p>
           <p className="text-[10px] text-red-400 mt-0.5">
             {exposure.districts.slice(0, 3).map((d) => d.district_name).join(", ")}
-            {exposure.districts.length > 3 && ` +${exposure.districts.length - 3} distritos`}
+            {exposure.districts.length > 3 && ` +${exposure.districts.length - 3} ${locale === "es" ? "distritos" : "districts"}`}
           </p>
         </div>
       )}
