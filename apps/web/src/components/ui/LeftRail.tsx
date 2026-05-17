@@ -105,7 +105,7 @@ export function LeftRail() {
             />
             {id === "alerts" && activeAlertCount > 0 && (
               <span
-                className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 pointer-events-none"
+                className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 pointer-events-none"
                 aria-label={`${activeAlertCount} ${locale === "es" ? "alertas activas" : "active alerts"}`}
               >
                 {activeAlertCount > 9 ? "9+" : activeAlertCount}
@@ -113,7 +113,7 @@ export function LeftRail() {
             )}
             {id === "social" && urgentSocialCount > 0 && (
               <span
-                className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-orange-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 pointer-events-none"
+                className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 pointer-events-none"
                 aria-label={`${urgentSocialCount} ${locale === "es" ? "señales urgentes" : "urgent signals"}`}
               >
                 {urgentSocialCount > 9 ? "9+" : urgentSocialCount}
