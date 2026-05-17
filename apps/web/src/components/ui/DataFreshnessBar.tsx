@@ -10,7 +10,7 @@ export function DataFreshnessBar() {
   const { data: flood } = useFlood();
   const { data: huayco } = useHuayco();
   const { data: health, isError: apiDown, isFetching } = useApiHealth();
-  const { locale } = useUIStore();
+  const { locale, scenario } = useUIStore();
 
   const items: { label: string; at: string | undefined }[] = [
     { label: "IMERG", at: imerg?.data_updated_at ?? imerg?.retrieved_at },
@@ -19,11 +19,13 @@ export function DataFreshnessBar() {
   ];
 
   const online = health?.status === "ok" && !apiDown;
+  const isDemo = !online;
+  const isReplay = scenario.isReplayMode;
 
   return (
     <div
       className={[
-        "flex items-center gap-3 px-3 py-1.5",
+        "flex items-center gap-2 px-3 py-1.5",
         "bg-surface-base/80 backdrop-blur-sm border border-slate-700",
         "text-xs text-slate-400 pointer-events-none",
         "fixed bottom-14 left-1/2 -translate-x-1/2 rounded-full z-10 whitespace-nowrap",
@@ -32,31 +34,45 @@ export function DataFreshnessBar() {
       aria-label="Estado del sistema y actualización de datos"
       role="status"
     >
-      {/* Connection dot */}
+      {/* Connection / mode indicator */}
       <span className="flex items-center gap-1">
         <span
           className={clsx(
             "inline-block w-1.5 h-1.5 rounded-full",
             isFetching ? "bg-yellow-400 animate-pulse" :
-            online ? "bg-green-400" : "bg-red-500"
+            isReplay ? "bg-amber-400" :
+            online ? "bg-green-400 animate-pulse" : "bg-slate-500"
           )}
           aria-hidden="true"
         />
-        <span className={online ? "text-green-400" : apiDown ? "text-red-400" : "text-slate-400"}>
-          {isFetching ? "…" : online
-            ? (locale === "en" ? "ONLINE" : "EN LÍNEA")
-            : (locale === "en" ? "OFFLINE" : "DESCONECTADO")}
+        <span className={clsx(
+          isFetching ? "text-yellow-400" :
+          isReplay ? "text-amber-400" :
+          online ? "text-green-400" : "text-slate-500"
+        )}>
+          {isFetching ? "…" :
+           isReplay ? `REPLAY ${scenario.replayDate?.slice(0, 7) ?? "2017"}` :
+           online ? (locale === "en" ? "LIVE" : "EN VIVO") :
+           "DEMO"}
         </span>
       </span>
 
-      <span className="text-slate-600" aria-hidden="true">·</span>
-
+      {/* Data freshness items — show in live mode */}
       {online && items.map(({ label, at }) => (
         <span key={label} className="flex items-center gap-1">
-          <span className="text-slate-400">{label}</span>
-          <span className="text-slate-300">{timeAgo(at)}</span>
+          <span className="text-slate-600" aria-hidden="true">·</span>
+          <span className="text-slate-500">{label}</span>
+          <span className="text-slate-400">{timeAgo(at)}</span>
         </span>
       ))}
+
+      {/* Demo mode source hint */}
+      {isDemo && !isReplay && (
+        <span className="flex items-center gap-1 text-slate-500">
+          <span className="text-slate-700" aria-hidden="true">·</span>
+          <span>{locale === "en" ? "El Niño 2017 sample data" : "Datos muestra El Niño 2017"}</span>
+        </span>
+      )}
     </div>
   );
 }
