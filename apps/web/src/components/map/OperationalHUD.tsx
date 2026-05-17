@@ -117,7 +117,7 @@ export function OperationalHUD() {
         </span>
         {critical > 0 && (
           <span className="ml-0.5 text-[9px] bg-red-800/60 text-red-300 px-1 rounded">
-            {critical} crít.
+            {critical} {locale === "es" ? "crít." : "crit."}
           </span>
         )}
       </div>

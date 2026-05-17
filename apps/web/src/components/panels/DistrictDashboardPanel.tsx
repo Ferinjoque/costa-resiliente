@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Droplets, AlertTriangle, Users, History, Radio, TrendingUp, Waves, Mountain, Zap, Brain, CheckCircle2, FileText, Copy, Check } from "lucide-react";
+import { BarChart3, Droplets, AlertTriangle, Users, History, Radio, TrendingUp, Waves, Mountain, Zap, Brain, CheckCircle2, Copy, Check, CloudRain } from "lucide-react";
 import { useState } from "react";
 import { useUIStore } from "@/store/ui";
 import { useDistrictDashboard, useDistrictRiskSummary, useAlerts, useFloodExposure, useFusion } from "@/lib/queries";
@@ -8,6 +8,7 @@ import { clsx } from "clsx";
 import type { AlertTrendDay, SocialBreakdown } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
+import { DEMO_FORECAST, HUAYCO_THRESHOLD_MM, type ForecastStep } from "@/lib/demoData";
 
 // ANA alert thresholds per station code (meters)
 const STATION_THRESHOLDS: Record<string, number> = {
@@ -624,6 +625,90 @@ function EDANReportButton() {
   );
 }
 
+// ─── 72h Rainfall Forecast ────────────────────────────────────────────────────
+
+const RISK_STEP_COLOR: Record<ForecastStep["risk"], { bg: string; text: string; dot: string }> = {
+  bajo:     { bg: "bg-green-900/25",  text: "text-green-300",  dot: "bg-green-400" },
+  moderado: { bg: "bg-yellow-900/25", text: "text-yellow-300", dot: "bg-yellow-400" },
+  alto:     { bg: "bg-red-900/25",    text: "text-red-300",    dot: "bg-red-500" },
+};
+
+function ForecastSection({ locale }: { locale: Locale }) {
+  const steps = DEMO_FORECAST;
+  const firstAlert = steps.find((s) => s.rimac_mm >= HUAYCO_THRESHOLD_MM);
+
+  const label = {
+    title:     { es: "Pronóstico 72h",              en: "72h Forecast" },
+    source:    { es: "SENAMHI · modelo WRF",        en: "SENAMHI · WRF model" },
+    rimac:     { es: "Rímac",                       en: "Rímac" },
+    chilion:   { es: "Chillón",                     en: "Chillón" },
+    preAlert:  { es: "PRE-ALERTA: umbral huayco en", en: "PRE-ALERT: huayco threshold at" },
+    hours:     { es: "h",                           en: "h" },
+    probLabel: { es: "prob. huayco:",               en: "huayco prob.:" },
+    risk:      {
+      bajo:     { es: "BAJO",     en: "LOW" },
+      moderado: { es: "MOD",      en: "MOD" },
+      alto:     { es: "ALTO",     en: "HIGH" },
+    },
+  } as const;
+
+  return (
+    <div className="mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[11px] text-slate-400 flex items-center gap-1">
+          <CloudRain size={10} aria-hidden="true" />
+          {label.title[locale]}
+        </p>
+        <p className="text-[9px] text-slate-500">{label.source[locale]}</p>
+      </div>
+
+      {/* Pre-alert banner */}
+      {firstAlert && (
+        <div className="mb-2 rounded-lg border border-orange-500/50 bg-orange-900/20 px-2.5 py-1.5 flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse shrink-0" aria-hidden="true" />
+          <p className="text-[10px] text-orange-300">
+            {label.preAlert[locale]} {firstAlert.hours}{label.hours[locale]}: {firstAlert.rimac_mm.toFixed(0)} mm
+            {" "}({(firstAlert.huayco_prob * 100).toFixed(0)}% {label.probLabel[locale].replace(":", "")})
+          </p>
+        </div>
+      )}
+
+      {/* Forecast steps */}
+      <div className="grid grid-cols-5 gap-1">
+        {steps.map((step) => {
+          const cfg = RISK_STEP_COLOR[step.risk];
+          const riskShort = label.risk[step.risk][locale];
+          return (
+            <div
+              key={step.hours}
+              className={clsx("rounded-lg px-1.5 py-2 text-center", cfg.bg)}
+            >
+              <p className="text-[9px] text-slate-400 mb-1">{step.hours}{label.hours[locale]}</p>
+              <p className={clsx("text-[11px] font-semibold leading-none mb-0.5", cfg.text)}>
+                {step.rimac_mm.toFixed(0)}
+              </p>
+              <p className="text-[8px] text-slate-500">mm</p>
+              <span
+                className={clsx("inline-block mt-1 text-[8px] font-bold px-1 rounded", cfg.text)}
+                style={{ background: "transparent" }}
+              >
+                {riskShort}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* River labels */}
+      <div className="mt-1 flex gap-3 px-0.5">
+        <p className="text-[9px] text-slate-500">{label.rimac[locale]} (mm)</p>
+        <span className="text-[9px] text-slate-600">·</span>
+        <p className="text-[9px] text-slate-500">{label.chilion[locale]}: {steps[2].chilion_mm.toFixed(0)} / {steps[4].chilion_mm.toFixed(0)} mm</p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
 export function DistrictDashboardPanel() {
@@ -662,6 +747,7 @@ export function DistrictDashboardPanel() {
           <>
             <SituationSummary />
             <CityOverview />
+            <ForecastSection locale={locale} />
             <p className="text-[11px] text-slate-400 mb-2 flex items-center gap-1">
               <Mountain size={10} />
               {tr("dashboard", "priorityDistricts")}
