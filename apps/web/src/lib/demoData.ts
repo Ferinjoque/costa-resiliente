@@ -369,6 +369,123 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
       { quebrada: "Jicamarca", threshold_24h_mm: 42, current_24h_mm: 28.2, probability: 0.91, slope_deg: 35 },
     ],
   },
+  "¿Cuál es el pronóstico para las próximas 24 horas?": {
+    answer: "Pronóstico hidrometeorológico — Lima Metropolitana (próximas 24 h):\n\n• **Cuenca Rímac**: 18–24 mm adicionales previstos. Nivel Chosica podría alcanzar 2.9–3.1 m hacia las 20:00.\n• **Cuenca Chillón**: 12–16 mm. Carabayllo norte mantiene riesgo ALTO.\n• **Viento**: Brisa marina sin anomalías. Sin riesgo de lluvias costeras intensas.\n• **Temperatura**: Mínima 14 °C en cuencas altas, favorece saturación del suelo nocturna.\n\nVentana crítica: 02:00–08:00 Lima del 16 de marzo.\n\nFuente: SENAMHI pronóstico operacional + IMERG Early Run extrapolación.",
+    intent: "weather_forecast",
+    confidence: 0.85,
+    query_plan: "forecast_24h_watershed",
+    sources: [
+      { watershed: "Rímac", forecast_mm: 21, window_h: 24, risk: "high" },
+      { watershed: "Chillón", forecast_mm: 14, window_h: 24, risk: "high" },
+      { station: "Chosica", projected_level_m: 3.0, at_utc: "03:00 +05" },
+    ],
+  },
+  "¿Cuál es el estado del río Chillón?": {
+    answer: "Río Chillón — estado actual (estación Puente Carabayllo, ANA):\n\n• **Nivel**: 3.1 m — **sobre umbral de alerta** (2.5 m).\n• **Caudal**: 142 m³/s — 2.3× la media histórica para la fecha.\n• **Tendencia**: Descendente en las últimas 2 horas (pico fue 3.4 m a las 04:30).\n• **Desborde**: Sector norte Carabayllo afectado, AA.HH. El Progreso y 14 de Febrero.\n• **Umbral evacuación**: 4.0 m (no alcanzado).\n\nFuente: ANA Observatorio Chirilu + señales sociales Telegram/Reddit.",
+    intent: "river_level",
+    confidence: 0.94,
+    query_plan: "station_latest_reading",
+    sources: [
+      { station: "Puente Carabayllo", river: "Chillón", level_m: 3.1, flow_m3s: 142, threshold_m: 2.5, trend: "descending" },
+      { aahh: "El Progreso", district: "Carabayllo", flooded: true, households: 340 },
+    ],
+  },
+  "¿Dónde están los albergues más cercanos?": {
+    answer: "Albergues habilitados — Lima Metropolitana (actualizados por INDECI/PCM):\n\n• **Coliseo Lurigancho** — cap. 800 personas, abierto, sin cupo crítico. (Lurigancho-Chosica)\n• **IE San Luis Gonzaga** — cap. 400 personas, habilitado. (Carabayllo)\n• **Loza deportiva Huachipa** — cap. 250 personas. Solo techo; alimentos en coordinación. (Ate)\n• **Cuartel Barbones** — cap. 1,200 personas (FFAA). En alerta, disponible si se activa EDAN.\n\nTotal capacidad disponible: ~2,650 personas.\nDemanda estimada actual: ~1,100 desplazados registrados.\n\nFuente: INDECI SIT / SINPAD reporte 15-Mar-2017.",
+    intent: "evacuation_priority",
+    confidence: 0.82,
+    query_plan: "shelter_locations_capacity",
+    sources: [
+      { name: "Coliseo Lurigancho", capacity: 800, district: "Lurigancho", available: true },
+      { name: "IE San Luis Gonzaga", capacity: 400, district: "Carabayllo", available: true },
+      { name: "Loza deportiva Huachipa", capacity: 250, district: "Ate", available: true },
+    ],
+  },
+  "¿Cómo se compara con El Niño de 1998?": {
+    answer: "Comparación El Niño Costero 2017 vs. El Niño 1997–1998 (Lima Metropolitana):\n\n• **Temperatura mar (TSM)**: 2017 +2.8 °C anomalía costera vs. 1998 +3.1 °C en cuenca de Perú. Fenómeno local más focalizado.\n• **Lluvia acumulada Rímac (marzo)**: 2017 → 180 mm; 1998 → 142 mm. **2017 superó** a 1998 en cuenca baja.\n• **Eventos SINPAD**: 2017 registró 4,200 eventos en Lima vs. 1,800 en 1998 — mayor densidad de afectación urbana.\n• **Víctimas Lima**: 2017: 85 fallecidos; 1998: 61 fallecidos.\n• **Desborde Rímac 2017**: Pico 4.2 m (22-Mar). Estimado actual si tendencia continúa: 3.4–3.8 m el 16-Mar.\n\nFuente: SENAMHI datos históricos × SINPAD 2003–2020.",
+    intent: "historical_comparison",
+    confidence: 0.86,
+    query_plan: "historical_event_comparison",
+    sources: [
+      { event: "El Niño 1998", march_rain_mm: 142, sinpad_events: 1800, casualties_lima: 61 },
+      { event: "El Niño 2017", march_rain_mm: 180, sinpad_events: 4200, casualties_lima: 85 },
+    ],
+  },
+  "¿Cuántas señales sociales urgentes hay ahora?": {
+    answer: "Señales sociales urgentes — ventana 3 horas (triaje IA + Presidio PII):\n\n• **needs_help** (Ayuda urgente): 6 señales — Lurigancho (3), SJL (2), Ate (1).\n• **road_blocked** (Vía bloqueada): 5 señales — La Molina (2), Carabayllo (2), Lurigancho (1).\n• Total urgentes: **11 de 28 señales** en ventana de 48 h.\n\nFuentes activas: Bluesky (12), Reddit (8), Telegram (6), RSS (2).\nConfianza media de triaje: 0.82.\nPII detectado y anonimizado: 3 registros en 48 h.\n\nFuente: Costa Resiliente social pipeline + Presidio anonymizer.",
+    intent: "social_signals",
+    confidence: 0.88,
+    query_plan: "social_urgent_count_3h",
+    sources: [
+      { label: "needs_help", count: 6, top_district: "Lurigancho" },
+      { label: "road_blocked", count: 5, top_district: "La Molina" },
+      { label: "infrastructure_damage", count: 4, top_district: "Carabayllo" },
+    ],
+  },
+  "¿Qué rutas de evacuación están bloqueadas?": {
+    answer: "Rutas de evacuación con bloqueo confirmado o sospechoso:\n\n🔴 **Bloqueadas** (señales sociales + análisis SAR):\n• Av. La Molina altura km 12 — huayco activo.\n• Carretera Central km 20 (Ñaña) — desborde cuneta, tráfico detenido.\n• Jr. Chosica–Lurigancho altura Puente Huachipa — agua sobre calzada.\n\n🟡 **Restricción parcial**:\n• Av. Independencia (Carabayllo) — un carril.\n• Autopista Ramiro Prialé km 8 — barro lateral.\n\nRuta alternativa recomendada: Autopista Ramiro Prialé → Evitamiento → Panamericana Sur.\n\nFuente: Señales Reddit/Telegram × OSM × análisis SAR Sentinel-1.",
+    intent: "road_status",
+    confidence: 0.79,
+    query_plan: "road_blockage_social_sar",
+    sources: [
+      { road: "Carretera Central km 20", status: "blocked", source: "social+SAR" },
+      { road: "Av. La Molina km 12", status: "blocked", source: "huayco" },
+      { road: "Jr. Chosica–Lurigancho", status: "restricted", source: "SAR" },
+    ],
+  },
+  "¿Qué estaciones hidrológicas están en alerta?": {
+    answer: "Estaciones hidrológicas ANA/SENAMHI en nivel de alerta (Lima):\n\n🔴 **Alerta roja** (sobre umbral evacuación):\n• Estación Chosica (Rímac): 2.4 m / umbral 2.0 m — tendencia subiendo.\n\n🟠 **Alerta naranja**:\n• Puente Carabayllo (Chillón): 3.1 m / umbral 2.5 m — tendencia descendente.\n• Puente Los Ángeles (Rímac, Ate): 1.9 m / umbral 1.6 m.\n\n🟢 **Normal**:\n• Lurín (Manchay): 0.4 m / umbral 1.2 m.\n• Rímac en Santa Eulalia: 0.8 m — bajo, sin riesgo.\n\nFuente: ANA Observatorio Chirilu scraper en tiempo real.",
+    intent: "river_level",
+    confidence: 0.95,
+    query_plan: "all_stations_status",
+    sources: [
+      { station: "Chosica", level_m: 2.4, threshold_m: 2.0, status: "alert_red" },
+      { station: "Puente Carabayllo", level_m: 3.1, threshold_m: 2.5, status: "alert_orange" },
+      { station: "Puente Los Ángeles", level_m: 1.9, threshold_m: 1.6, status: "alert_orange" },
+    ],
+  },
+  "¿Cuál es el riesgo en San Juan de Lurigancho?": {
+    answer: "Evaluación de riesgo — San Juan de Lurigancho (ubigeo 150133):\n\n• **Nivel de riesgo**: MODERADO.\n• **Inundación SAR**: 0.8 km² en sector Zárate–Las Flores.\n• **Huayco**: Sin quebradas en zona crítica. Histórico SINPAD: 12 eventos 2003–2020.\n• **Señales sociales**: 5 en 3 h, 2 urgentes (needs_help sector Canto Rey).\n• **Población en riesgo**: ~11,772 hab. en zona SAR.\n• **Infraestructura**: 2 colegios en zona inundada, 0 hospitales afectados.\n\nAcción recomendada: vigilancia y preposicionamiento de recursos. Sin evacuación masiva por ahora.\n\nFuente: Costa Resiliente fusión multicapa.",
+    intent: "flood_status",
+    confidence: 0.87,
+    query_plan: "district_risk_composite",
+    sources: [
+      { district: "San Juan de Lurigancho", risk_level: "moderado", flood_km2: 0.8, pop_at_risk: 11772 },
+      { signal_type: "needs_help", count: 2, sector: "Canto Rey" },
+    ],
+  },
+  "¿Qué pasó en el evento El Niño Costero 2017?": {
+    answer: "El Niño Costero 2017 — Lima Metropolitana (resumen ejecutivo):\n\n• **Período crítico**: 15 de enero al 30 de abril de 2017.\n• **Lluvia Rímac cuenca baja (marzo)**: 180 mm — récord histórico para el mes.\n• **Eventos SINPAD solo Lima**: 4,218 registros (huaycos, inundaciones, derrumbes).\n• **Afectados**: 330,000 personas en Lima Metropolitana.\n• **Pérdidas**: 85 fallecidos, 18,000 viviendas colapsadas o inhabitables.\n• **Pico Rímac**: 4.2 m en Chosica (22-Mar-2017, 04:15 Lima).\n• **Distritos más afectados**: Lurigancho-Chosica, Carabayllo, SJL, Chaclacayo, Ate.\n\nCosta Resiliente replica esta escenografía con datos reales IMERG + SINPAD para entrenamiento.\n\nFuente: SENAMHI × INDECI × SINPAD.",
+    intent: "historical_comparison",
+    confidence: 0.98,
+    query_plan: "el_nino_2017_summary",
+    sources: [
+      { event: "El Niño Costero 2017", peak_level_m: 4.2, affected_people: 330000, deaths: 85 },
+      { month: "Marzo 2017", rainfall_mm: 180, sinpad_events: 4218 },
+    ],
+  },
+  "¿Cuántos recursos de respuesta están desplegados?": {
+    answer: "Recursos de respuesta activos — Lima Metropolitana (15-Mar-2017):\n\n• **Personal INDECI**: 240 efectivos en campo (Lurigancho: 80, Carabayllo: 60, Ate: 60, SJL: 40).\n• **Vehículos**: 18 camiones cisterna, 12 volquetes, 6 ambulancias, 3 helicópteros SAR.\n• **Equipos de búsqueda y rescate**: 4 equipos USAR, 1 equipo con perros de búsqueda.\n• **Alimentos**: 3,200 raciones distribuidas. Déficit estimado 800 raciones.\n• **Agua potable**: 12 cisternas operando en Lurigancho y Carabayllo.\n\nBrecha crítica: Déficit de 400 carpas de emergencia en Lurigancho.\n\nFuente: INDECI COEN reporte de turno 14:00.",
+    intent: "resource_status",
+    confidence: 0.83,
+    query_plan: "resource_deployment_summary",
+    sources: [
+      { resource: "personal_indeci", count: 240, deployed_districts: 4 },
+      { resource: "camiones_cisterna", count: 18, operational: 15 },
+      { resource: "raciones_alimentos", available: 3200, deficit: 800 },
+    ],
+  },
+  "¿Qué daños hay en infraestructura vial?": {
+    answer: "Daños en infraestructura vial — Lima Metropolitana:\n\n🔴 **Colapso** (requiere intervención inmediata):\n• Puente Peatonal Ñaña — socavamiento de base, cerrado al tránsito.\n• Carretera Central km 23 (Chosica) — derrumbe talud, corte total.\n\n🟠 **Daño mayor** (tránsito reducido):\n• Av. Lurigancho sector km 8–11 — baches y erosión.\n• Carretera Carabayllo–Canta km 4 — deslizamiento lateral.\n\n🟡 **Daño menor**:\n• 14 vías menores con lodo acumulado en Ate y SJL.\n\nCosto estimado de emergencia: S/ 8.2 millones (MVCS estimado preliminar).\n\nFuente: MTC reportes de campo + señales sociales.",
+    intent: "infrastructure_impact",
+    confidence: 0.81,
+    query_plan: "road_damage_assessment",
+    sources: [
+      { infrastructure: "Puente Ñaña", status: "collapsed", district: "Lurigancho" },
+      { infrastructure: "Carretera Central km 23", status: "blocked", district: "Lurigancho" },
+      { infrastructure: "Av. Lurigancho km 8-11", status: "damaged", district: "Lurigancho" },
+    ],
+  },
 };
 
 // ─── Critical infrastructure (OSM) ───────────────────────────────────────────
