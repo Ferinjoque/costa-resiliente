@@ -30,23 +30,32 @@ function timeStamp(iso: string): string {
   });
 }
 
-const ACTION_LABELS: Record<string, string> = {
-  query: "Consulta",
-  alert_acknowledge: "Reconoció alerta",
-  alert_escalate: "Escaló alerta",
-  alert_false_positive: "Falso positivo",
-  alert_close: "Cerró alerta",
-  map_pin: "Pin en mapa",
-  export: "Exportó datos",
+const ACTION_LABELS: Record<string, { es: string; en: string }> = {
+  query:               { es: "Consulta",          en: "Query" },
+  alert_acknowledge:   { es: "Reconoció alerta",  en: "Alert acknowledged" },
+  alert_escalate:      { es: "Escaló alerta",     en: "Alert escalated" },
+  alert_false_positive:{ es: "Falso positivo",    en: "False positive" },
+  alert_close:         { es: "Cerró alerta",      en: "Alert closed" },
+  map_pin:             { es: "Pin en mapa",       en: "Map pin" },
+  export:              { es: "Exportó datos",     en: "Data exported" },
 };
 
 export function DecisionLogPanel() {
-  const { activePanel } = useUIStore();
+  const { activePanel, locale } = useUIStore();
   const { data: entries = [], isLoading, isError } = useDecisionLog(100);
   const { data: health, isError: apiDown } = useApiHealth();
   const online = health?.status === "ok" && !apiDown;
 
   if (activePanel !== "log") return null;
+
+  const panelTitle = locale === "es" ? "Registro" : "Decision Log";
+  const exportLabel = locale === "es" ? "Exportar registro a CSV" : "Export log to CSV";
+  const loadingText = locale === "es" ? "Cargando registro…" : "Loading log…";
+  const errorText = locale === "es" ? "Error al cargar registro" : "Failed to load log";
+  const emptyText = locale === "es"
+    ? "El registro de decisiones aparecerá aquí. Cada consulta, reconocimiento y escalada queda registrada de forma inmutable para exportación EDAN-Perú."
+    : "Decision log entries will appear here. Every query, acknowledgement, and escalation is recorded immutably for EDAN-Peru export.";
+  const footerText = locale === "es" ? "Registro append-only · Exportación EDAN-Perú" : "Append-only log · EDAN-Peru export";
 
   return (
     <aside
@@ -55,7 +64,7 @@ export function DecisionLogPanel() {
         "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
         "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col",
       ].join(" ")}
-      aria-label="Registro de decisiones"
+      aria-label={locale === "es" ? "Registro de decisiones" : "Decision log"}
     >
       <div className="sm:hidden flex justify-center pt-2 pb-1" aria-hidden="true">
         <div className="w-8 h-1 rounded-full bg-slate-600" />
@@ -63,13 +72,13 @@ export function DecisionLogPanel() {
 
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
         <ClipboardList size={15} className="text-costa-500" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-white">Registro</h2>
+        <h2 className="text-sm font-semibold text-white">{panelTitle}</h2>
         {online ? (
           <a
             href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/alerts/decision-log/export`}
             download
             className="ml-auto text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-xs rounded focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none"
-            aria-label="Exportar registro a CSV"
+            aria-label={exportLabel}
           >
             <Download size={13} /> CSV
           </a>
@@ -77,7 +86,7 @@ export function DecisionLogPanel() {
           <button
             onClick={() => downloadCsv(entries)}
             className="ml-auto text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-xs rounded focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none"
-            aria-label="Exportar registro a CSV (modo demo)"
+            aria-label={exportLabel}
           >
             <Download size={13} /> CSV
           </button>
@@ -87,27 +96,22 @@ export function DecisionLogPanel() {
       <ul
         className="flex-1 overflow-y-auto divide-y divide-slate-700/50"
         role="list"
-        aria-label="Entradas del registro de decisiones"
+        aria-label={locale === "es" ? "Entradas del registro de decisiones" : "Decision log entries"}
         aria-live="polite"
         aria-busy={isLoading}
       >
         {isLoading && (
-          <li className="px-4 py-8 text-xs text-slate-400 text-center" aria-live="polite">Cargando registro…</li>
+          <li className="px-4 py-8 text-xs text-slate-400 text-center" aria-live="polite">{loadingText}</li>
         )}
         {isError && (
-          <li className="px-4 py-8 text-xs text-red-400 text-center" role="alert">Error al cargar registro</li>
+          <li className="px-4 py-8 text-xs text-red-400 text-center" role="alert">{errorText}</li>
         )}
         {!isLoading && !isError && entries.length === 0 && (
-          <li className="px-4 py-8 text-xs text-slate-400 text-center">
-            El registro de decisiones aparecerá aquí.
-            <br />
-            <br />
-            Cada consulta, reconocimiento y escalada queda registrada de forma
-            inmutable para exportación EDAN-Perú.
-          </li>
+          <li className="px-4 py-8 text-xs text-slate-400 text-center">{emptyText}</li>
         )}
         {entries.map((entry) => {
-          const label = ACTION_LABELS[entry.action_type] ?? entry.action_type;
+          const actionEntry = ACTION_LABELS[entry.action_type];
+          const label = actionEntry ? actionEntry[locale] : entry.action_type.replace(/_/g, " ");
           const preview = entry.payload?.query
             ? String(entry.payload.query).slice(0, 60)
             : entry.payload?.note
@@ -138,7 +142,7 @@ export function DecisionLogPanel() {
       </ul>
 
       <div className="px-4 py-2 border-t border-slate-700 text-xs text-slate-400 text-center">
-        Registro append-only · Exportación EDAN-Perú
+        {footerText}
       </div>
     </aside>
   );

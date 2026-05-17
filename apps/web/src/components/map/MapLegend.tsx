@@ -3,53 +3,76 @@
 import { useState } from "react";
 import { Layers } from "lucide-react";
 import { useUIStore } from "@/store/ui";
+import type { Locale } from "@/store/ui";
 
-const RISK_ITEMS = [
-  { color: "#dc2626", label: "Riesgo alto" },
-  { color: "#f97316", label: "Riesgo moderado" },
-  { color: "#22c55e", label: "Riesgo bajo" },
+const RISK_ITEMS: { color: string; label: { es: string; en: string } }[] = [
+  { color: "#dc2626", label: { es: "Riesgo alto",     en: "High risk" } },
+  { color: "#f97316", label: { es: "Riesgo moderado", en: "Moderate risk" } },
+  { color: "#22c55e", label: { es: "Riesgo bajo",     en: "Low risk" } },
 ];
 
 const RAIN_STOPS = ["#1e3a5f", "#2563eb", "#38bdf8", "#fbbf24", "#f97316", "#dc2626"];
 
-const SOCIAL_ITEMS = [
-  { color: "#ef4444", label: "Ayuda" },
-  { color: "#f97316", label: "Infraestructura" },
-  { color: "#f59e0b", label: "Vía bloqueada" },
-  { color: "#38bdf8", label: "Meteorología" },
+const SOCIAL_ITEMS: { color: string; label: { es: string; en: string } }[] = [
+  { color: "#ef4444", label: { es: "Ayuda",           en: "Needs help" } },
+  { color: "#f97316", label: { es: "Infraestructura", en: "Infrastructure" } },
+  { color: "#f59e0b", label: { es: "Vía bloqueada",   en: "Road blocked" } },
+  { color: "#38bdf8", label: { es: "Meteorología",    en: "Weather" } },
 ];
 
-const HUAYCO_ITEMS = [
-  { color: "#dc2626", label: "Muy alto" },
-  { color: "#f97316", label: "Alto" },
-  { color: "#f59e0b", label: "Moderado" },
-  { color: "#22c55e", label: "Bajo" },
+const HUAYCO_ITEMS: { color: string; label: { es: string; en: string } }[] = [
+  { color: "#dc2626", label: { es: "Muy alto",  en: "Very high" } },
+  { color: "#f97316", label: { es: "Alto",      en: "High" } },
+  { color: "#f59e0b", label: { es: "Moderado",  en: "Moderate" } },
+  { color: "#22c55e", label: { es: "Bajo",      en: "Low" } },
 ];
 
-const ALERT_ITEMS = [
-  { color: "#dc2626", label: "Crítico (pulsante)" },
-  { color: "#f97316", label: "Alto" },
-  { color: "#f59e0b", label: "Medio" },
-  { color: "#22c55e", label: "Bajo" },
+const ALERT_ITEMS: { color: string; label: { es: string; en: string } }[] = [
+  { color: "#dc2626", label: { es: "Crítico (pulsante)", en: "Critical (pulsing)" } },
+  { color: "#f97316", label: { es: "Alto",               en: "High" } },
+  { color: "#f59e0b", label: { es: "Medio",              en: "Medium" } },
+  { color: "#22c55e", label: { es: "Bajo",               en: "Low" } },
 ];
+
+const STATION_ITEMS: { color: string; label: { es: string; en: string } }[] = [
+  { color: "#f97316", label: { es: "Alerta (umbral superado)", en: "Alert (threshold exceeded)" } },
+  { color: "#fbbf24", label: { es: "Aviso (cerca umbral)",     en: "Warning (near threshold)" } },
+  { color: "#22c55e", label: { es: "Normal",                   en: "Normal" } },
+];
+
+const LABELS = {
+  legend:       { es: "Leyenda",                    en: "Legend" },
+  riskLevel:    { es: "Nivel de riesgo",            en: "Risk level" },
+  rainfall:     { es: "Lluvia acumulada (IMERG)",   en: "Accumulated rainfall (IMERG)" },
+  sarFlood:     { es: "Inundación SAR",             en: "SAR flood" },
+  sarPolygon:   { es: "Polígono inundado",          en: "Flood polygon" },
+  huayco:       { es: "Riesgo huayco",              en: "Huayco risk" },
+  social:       { es: "Señales sociales",           en: "Social signals" },
+  stations:     { es: "Estaciones ANA",             en: "ANA stations" },
+  opAlerts:     { es: "Alertas operacionales",      en: "Operational alerts" },
+};
+
+function L(key: keyof typeof LABELS, locale: Locale): string {
+  return LABELS[key][locale];
+}
 
 export function MapLegend() {
   const [open, setOpen] = useState(false);
-  const { activeLayers } = useUIStore();
+  const { activeLayers, locale } = useUIStore();
 
-  const showRisk      = activeLayers.has("districts");
-  const showRain      = activeLayers.has("imerg");
-  const showSocial    = activeLayers.has("social");
-  const showHuayco    = activeLayers.has("huayco");
-  const showFlood     = activeLayers.has("flood");
-  const showStations  = activeLayers.has("stations");
+  const showRisk     = activeLayers.has("districts");
+  const showRain     = activeLayers.has("imerg");
+  const showSocial   = activeLayers.has("social");
+  const showHuayco   = activeLayers.has("huayco");
+  const showFlood    = activeLayers.has("flood");
+  const showStations = activeLayers.has("stations");
 
   if (!showRisk && !showRain && !showSocial && !showHuayco && !showFlood && !showStations) return null;
 
   return (
     <div
       className="absolute bottom-20 left-2 z-10 sm:bottom-16 sm:left-4"
-      aria-label="Leyenda del mapa"
+      aria-label={L("legend", locale)}
     >
       <button
         onClick={() => setOpen((o) => !o)}
@@ -59,28 +82,27 @@ export function MapLegend() {
           open ? "text-white" : "text-slate-300 hover:text-white",
         ].join(" ")}
         aria-expanded={open}
+        aria-label={L("legend", locale)}
       >
         <Layers size={12} aria-hidden="true" />
-        Leyenda
+        {L("legend", locale)}
       </button>
 
       {open && (
         <div className="mt-1.5 bg-surface-raised/95 backdrop-blur-sm border border-slate-700 rounded-xl p-3 shadow-xl space-y-3 w-44">
           {showRisk && (
-            <Section label="Nivel de riesgo">
+            <Section label={L("riskLevel", locale)}>
               {RISK_ITEMS.map(({ color, label }) => (
-                <DotRow key={label} color={color} label={label} shape="square" />
+                <DotRow key={label.es} color={color} label={label[locale]} shape="square" />
               ))}
             </Section>
           )}
 
           {showRain && (
-            <Section label="Lluvia acumulada (IMERG)">
+            <Section label={L("rainfall", locale)}>
               <div
                 className="h-3 rounded-sm w-full"
-                style={{
-                  background: `linear-gradient(to right, ${RAIN_STOPS.join(", ")})`,
-                }}
+                style={{ background: `linear-gradient(to right, ${RAIN_STOPS.join(", ")})` }}
                 aria-hidden="true"
               />
               <div className="flex justify-between mt-0.5">
@@ -91,38 +113,38 @@ export function MapLegend() {
           )}
 
           {showFlood && (
-            <Section label="Inundación SAR">
-              <DotRow color="#2563eb" label="Polígono inundado" shape="square" />
+            <Section label={L("sarFlood", locale)}>
+              <DotRow color="#2563eb" label={L("sarPolygon", locale)} shape="square" />
             </Section>
           )}
 
           {showHuayco && (
-            <Section label="Riesgo huayco">
+            <Section label={L("huayco", locale)}>
               {HUAYCO_ITEMS.map(({ color, label }) => (
-                <DotRow key={label} color={color} label={label} shape="circle" />
+                <DotRow key={label.es} color={color} label={label[locale]} shape="circle" />
               ))}
             </Section>
           )}
 
           {showSocial && (
-            <Section label="Señales sociales">
+            <Section label={L("social", locale)}>
               {SOCIAL_ITEMS.map(({ color, label }) => (
-                <DotRow key={label} color={color} label={label} shape="circle" />
+                <DotRow key={label.es} color={color} label={label[locale]} shape="circle" />
               ))}
             </Section>
           )}
 
           {showStations && (
-            <Section label="Estaciones ANA">
-              <DotRow color="#f97316" label="Alerta (umbral superado)" shape="circle" />
-              <DotRow color="#fbbf24" label="Aviso (cerca umbral)" shape="circle" />
-              <DotRow color="#22c55e" label="Normal" shape="circle" />
+            <Section label={L("stations", locale)}>
+              {STATION_ITEMS.map(({ color, label }) => (
+                <DotRow key={label.es} color={color} label={label[locale]} shape="circle" />
+              ))}
             </Section>
           )}
 
-          <Section label="Alertas operacionales">
+          <Section label={L("opAlerts", locale)}>
             {ALERT_ITEMS.map(({ color, label }) => (
-              <DotRow key={label} color={color} label={label} shape="circle" />
+              <DotRow key={label.es} color={color} label={label[locale]} shape="circle" />
             ))}
           </Section>
         </div>
@@ -142,15 +164,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function DotRow({
-  color,
-  label,
-  shape,
-}: {
-  color: string;
-  label: string;
-  shape: "circle" | "square";
-}) {
+function DotRow({ color, label, shape }: { color: string; label: string; shape: "circle" | "square" }) {
   return (
     <div className="flex items-center gap-2">
       <span
