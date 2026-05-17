@@ -96,7 +96,7 @@ export function SituationBrief() {
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
-        <span className="text-xs font-semibold text-ink-subtle uppercase tracking-wide">
+        <span className="text-xs font-semibold text-ink-muted uppercase tracking-wide">
           {locale === "es" ? "Situación" : "Situation"}
         </span>
         <Pill variant={cfg.pill}>
@@ -114,7 +114,7 @@ export function SituationBrief() {
             </li>
           ))}
           {topDistrict && (
-            <li className="text-xs text-ink-subtle pt-1">
+            <li className="text-xs text-ink-muted pt-1">
               {locale === "es" ? "Prioridad 1" : "Priority 1"} ·{" "}
               <span className="font-medium text-ink">{topDistrict.properties.name}</span>
             </li>

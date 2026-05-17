@@ -167,7 +167,7 @@ export function LeftRail() {
               aria-current={active ? "page" : undefined}
               className={clsx(
                 "flex-1 flex flex-col items-center justify-center gap-1 relative transition-colors",
-                active ? "text-ink" : "text-ink-subtle",
+                active ? "text-ink" : "text-ink-muted",
               )}
             >
               {/* Top indicator */}

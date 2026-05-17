@@ -126,6 +126,7 @@ export function ScenarioPanel() {
               </SectionLabel>
               <div className="relative">
                 <select
+                  aria-label={L(locale, "Seleccionar distrito o cuenca", "Select district or watershed")}
                   className="w-full appearance-none bg-surface-sunken border border-border text-ink text-sm rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-accent cursor-pointer"
                   value={scenario.districtUbigeo ?? ""}
                   onChange={(e) => {
@@ -187,6 +188,7 @@ function LayerToggles({ locale }: { locale: Locale }) {
             <Toggle
               checked={activeLayers.has(id)}
               onChange={() => toggleLayer(id)}
+              ariaLabel={label[locale]}
             />
           </div>
         ))}
@@ -196,6 +198,7 @@ function LayerToggles({ locale }: { locale: Locale }) {
           <Toggle
             checked={is3DMode}
             onChange={() => set3DMode(!is3DMode)}
+            ariaLabel={locale === "es" ? "Vista 3D" : "3D view"}
           />
         </div>
       </div>

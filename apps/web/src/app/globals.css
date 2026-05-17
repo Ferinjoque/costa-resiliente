@@ -222,6 +222,14 @@ html, body {
 .maplibregl-ctrl-bottom-left {
   margin-bottom: 40px;
 }
+
+/* On mobile, push controls above SituationBrief panel (~200px from bottom)  */
+@media (max-width: 639px) {
+  .maplibregl-ctrl-bottom-right,
+  .maplibregl-ctrl-bottom-left {
+    margin-bottom: 200px !important;
+  }
+}
 /* Navigation (+/-) compact style to match the Felt chrome */
 .maplibregl-ctrl-group {
   border-radius: 10px !important;
@@ -233,8 +241,10 @@ html, body {
 .maplibregl-ctrl-group button {
   background: oklch(97.5% 0.006 80) !important;
   color: oklch(14% 0.008 240) !important;
-  width: 32px !important;
-  height: 32px !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
 }
 .maplibregl-ctrl-group button:hover {
   background: oklch(92% 0.008 80) !important;
