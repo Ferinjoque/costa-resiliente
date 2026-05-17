@@ -83,8 +83,13 @@ export function OperationalHUD() {
       className={[
         "absolute top-[70px] left-1/2 -translate-x-1/2 z-10",
         "hidden sm:flex items-center gap-0 rounded-xl",
-        "bg-surface-base/85 backdrop-blur-md border border-slate-700/80 shadow-xl",
-        "text-xs font-mono",
+        "bg-surface-base/85 backdrop-blur-md shadow-xl",
+        "text-xs font-mono transition-all duration-500",
+        level === "EMERGENCIA"
+          ? "border border-red-500/50 emergency-glow"
+          : level === "ALERTA"
+          ? "border border-orange-500/40"
+          : "border border-slate-700/80",
       ].join(" ")}
       role="status"
       aria-label="Estado operacional SINAGERD"

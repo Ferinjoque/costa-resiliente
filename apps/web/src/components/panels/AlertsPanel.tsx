@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Bell, CheckCircle, AlertTriangle, TrendingUp, Users, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Bell, CheckCircle, AlertTriangle, TrendingUp, Users, TrendingDown, XCircle, MoreHorizontal, type LucideIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import { useAlerts, useFloodExposure } from "@/lib/queries";
@@ -26,17 +26,31 @@ const SEVERITY_DOT: Record<string, string> = {
   low: "bg-blue-400",
 };
 
+const ACTION_MAP: Record<string, string> = {
+  acknowledge: "acknowledged",
+  escalate: "escalated",
+  false_positive: "resolved",
+  close: "closed",
+};
+
 function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   const qc = useQueryClient();
   const Icon = TYPE_ICON[alert.type] ?? Bell;
   const tr = useT(locale);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  async function handleAck() {
+  async function handleAction(action: "acknowledge" | "escalate" | "false_positive" | "close") {
+    const newStatus = ACTION_MAP[action];
+    // Optimistic update — works in demo mode
+    qc.setQueryData(["alerts", undefined], (old: Alert[] | undefined) =>
+      old ? old.map((a) => a.id === alert.id ? { ...a, status: newStatus } : a) : old
+    );
+    setMenuOpen(false);
     try {
-      await actOnAlert(alert.id, "acknowledge", OPERATOR_ID);
+      await actOnAlert(alert.id, action, OPERATOR_ID);
       qc.invalidateQueries({ queryKey: ["alerts"] });
     } catch {
-      // best-effort
+      // optimistic update stands in demo mode
     }
   }
 
@@ -48,7 +62,7 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   const typeLabel = TYPE_LABELS[alert.type]?.[locale] ?? alert.type.replace("_", " ");
 
   return (
-    <li className="px-4 py-3 hover:bg-surface-panel transition-colors">
+    <li className="px-4 py-3 hover:bg-surface-panel/50 transition-colors relative">
       <div className="flex items-start gap-2">
         <span
           className={clsx(
@@ -70,17 +84,63 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
             <span>{timeAgo(alert.created_at)}</span>
           </p>
         </div>
+
         {alert.status === "active" ? (
-          <button
-            onClick={handleAck}
-            className="shrink-0 text-slate-400 hover:text-green-400 transition-colors"
-            aria-label={tr("alerts", "acknowledge")}
-            title={tr("alerts", "acknowledge")}
-          >
-            <CheckCircle size={15} />
-          </button>
+          <div className="shrink-0 flex items-center gap-1">
+            <button
+              onClick={() => handleAction("acknowledge")}
+              className="text-slate-400 hover:text-green-400 transition-colors"
+              aria-label={tr("alerts", "acknowledge")}
+              title={locale === "es" ? "Reconocer" : "Acknowledge"}
+            >
+              <CheckCircle size={15} />
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                className="text-slate-500 hover:text-slate-300 transition-colors"
+                aria-label="Más acciones"
+                title="Más acciones"
+              >
+                <MoreHorizontal size={15} />
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-6 z-30 bg-surface-raised border border-slate-600 rounded-lg shadow-xl w-40 py-1 animate-fade-in">
+                  <button
+                    onClick={() => handleAction("escalate")}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-orange-300 hover:bg-orange-900/30 transition-colors"
+                  >
+                    <TrendingUp size={12} />
+                    {locale === "es" ? "Escalar" : "Escalate"}
+                  </button>
+                  <button
+                    onClick={() => handleAction("false_positive")}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-300 hover:bg-surface-panel transition-colors"
+                  >
+                    <TrendingDown size={12} />
+                    {locale === "es" ? "Falso positivo" : "False positive"}
+                  </button>
+                  <button
+                    onClick={() => handleAction("close")}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:bg-surface-panel transition-colors"
+                  >
+                    <XCircle size={12} />
+                    {locale === "es" ? "Cerrar" : "Close"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
-          <span className="text-xs text-slate-400 shrink-0 capitalize">{alert.status}</span>
+          <span className={clsx(
+            "text-[10px] shrink-0 capitalize px-1.5 py-0.5 rounded",
+            alert.status === "escalated" ? "bg-orange-900/40 text-orange-300" :
+            alert.status === "acknowledged" ? "bg-green-900/30 text-green-400" :
+            "bg-surface-panel text-slate-400"
+          )}>{alert.status === "acknowledged" ? (locale === "es" ? "Reconocido" : "Acked") :
+             alert.status === "escalated" ? (locale === "es" ? "Escalado" : "Escalated") :
+             alert.status === "resolved" ? (locale === "es" ? "F.Positivo" : "F.Positive") :
+             alert.status}</span>
         )}
       </div>
     </li>
@@ -93,6 +153,7 @@ export function AlertsPanel() {
   const { data: alerts = [], isLoading, isError, dataUpdatedAt } = useAlerts();
   const { data: exposure } = useFloodExposure();
   const sseRef = useRef<EventSource | null>(null);
+  const [sseConnected, setSseConnected] = useState(false);
   const tr = useT(locale);
 
   // SSE: subscribe to live alert push
@@ -100,6 +161,8 @@ export function AlertsPanel() {
     if (sseRef.current) return;
     const es = new EventSource(alertsStreamUrl());
     sseRef.current = es;
+
+    es.onopen = () => setSseConnected(true);
 
     es.onmessage = (evt) => {
       try {
@@ -114,6 +177,7 @@ export function AlertsPanel() {
     };
 
     es.onerror = () => {
+      setSseConnected(false);
       es.close();
       sseRef.current = null;
     };
@@ -133,7 +197,7 @@ export function AlertsPanel() {
       className={[
         "fixed bottom-14 left-0 right-0 h-[62vh] rounded-t-2xl",
         "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
-        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col",
+        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col panel-animate",
       ].join(" ")}
       aria-label={tr("alerts", "title")}
       role="complementary"
@@ -146,6 +210,12 @@ export function AlertsPanel() {
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
         <Bell size={15} className="text-costa-500" aria-hidden="true" />
         <h2 className="text-sm font-semibold text-white">{tr("alerts", "title")}</h2>
+        {sseConnected && (
+          <span className="flex items-center gap-1 text-[9px] text-green-400 font-mono">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 live-dot" aria-hidden="true" />
+            LIVE
+          </span>
+        )}
         {activeCount > 0 && (
           <span
             className="ml-auto bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full"

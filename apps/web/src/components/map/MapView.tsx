@@ -84,15 +84,16 @@ function geomBounds(geom: GeoJSON.Geometry): maplibregl.LngLatBoundsLike {
 /** Build dark-theme popup HTML. */
 function popupHtml(
   title: string,
-  rows: Array<[string, string | number | null | undefined]>,
+  rows: Array<[string, string | number | null | undefined, string?]>,
+  titleClass?: string,
 ): string {
   const body = rows
     .filter(([, v]) => v !== null && v !== undefined && v !== "")
-    .map(([k, v]) =>
-      `<div class="cr-row"><span class="cr-key">${k}</span><span class="cr-val">${v}</span></div>`
+    .map(([k, v, vc]) =>
+      `<div class="cr-row"><span class="cr-key">${k}</span><span class="cr-val${vc ? ` ${vc}` : ""}">${v}</span></div>`
     )
     .join("");
-  return `<div class="cr-popup"><div class="cr-title">${title}</div>${body}</div>`;
+  return `<div class="cr-popup"><div class="cr-title${titleClass ? ` ${titleClass}` : ""}">${title}</div>${body}</div>`;
 }
 
 /** Replace active popup with a new one. */
@@ -172,11 +173,11 @@ export default function MapView() {
             openPopup(m, e.lngLat, popupHtml(`Estación ${String(p.name ?? "—")}`, [
               ["Río",     p.river ? String(p.river) : null],
               ["Fuente",  p.source ? String(p.source).toUpperCase() : null],
-              ["Nivel",   lvl != null ? `${lvl.toFixed(2)} m${overThr ? " ⚠ ALERTA" : ""}` : null],
+              ["Nivel",   lvl != null ? `${lvl.toFixed(2)} m${overThr ? " ⚠ ALERTA" : ""}` : null, overThr ? "cr-val-alert" : undefined],
               ["Umbral",  thr != null ? `${thr.toFixed(1)} m` : null],
               ["Caudal",  p.flow_m3s != null ? `${Number(p.flow_m3s).toFixed(1)} m³/s` : null],
               ["Lluvia",  p.rain_mm != null ? `${Number(p.rain_mm).toFixed(1)} mm/h` : null],
-            ]), activePopup);
+            ], "cr-title-station"), activePopup);
             return;
           }
         }
@@ -251,9 +252,9 @@ export default function MapView() {
               ["Distrito",   expDistrict?.district_name ?? null],
               ["Confianza",  p.confidence != null ? `${(Number(p.confidence) * 100).toFixed(0)}%` : null],
               ["Área",       p.area_km2 != null ? `${Number(p.area_km2).toFixed(2)} km²` : null],
-              ["Pob. en riesgo", popLabel],
+              ["Pob. en riesgo", popLabel, popLabel ? "cr-val-alert" : undefined],
               ["Escena SAR", trunc(p.scene_id ? String(p.scene_id) : null)],
-            ]), activePopup);
+            ], "cr-title-flood"), activePopup);
             return;
           }
         }

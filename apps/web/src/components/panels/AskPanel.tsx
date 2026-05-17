@@ -45,7 +45,7 @@ const UI: Record<"es" | "en", {
 }> = {
   es: {
     title: "Copiloto",
-    model: "Gemma 4",
+    model: "Gemma 3",
     placeholder: "Consulta en español…",
     queryLabel: "Consulta",
     responseLabel: "Respuesta",
@@ -55,7 +55,7 @@ const UI: Record<"es" | "en", {
   },
   en: {
     title: "Copilot",
-    model: "Gemma 4",
+    model: "Gemma 3",
     placeholder: "Ask about the current situation…",
     queryLabel: "Query",
     responseLabel: "Response",
@@ -137,7 +137,7 @@ export function AskPanel() {
       className={[
         "fixed bottom-14 left-0 right-0 h-[62vh] rounded-t-2xl",
         "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
-        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col",
+        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col panel-animate",
       ].join(" ")}
       aria-label={ui.title}
     >

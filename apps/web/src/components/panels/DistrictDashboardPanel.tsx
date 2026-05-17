@@ -531,7 +531,7 @@ export function DistrictDashboardPanel() {
       className={[
         "fixed bottom-14 left-0 right-0 h-[75vh] rounded-t-2xl",
         "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
-        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col",
+        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col panel-animate",
       ].join(" ")}
       aria-label="Panel de estadísticas distritales"
     >
