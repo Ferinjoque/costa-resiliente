@@ -18,14 +18,17 @@ export function Panel({
   className,
   shadow = true,
   noPad = false,
+  id,
 }: {
   children: ReactNode;
   className?: string;
   shadow?: boolean;
   noPad?: boolean;
+  id?: string;
 }) {
   return (
     <div
+      id={id}
       className={clsx(
         "bg-surface border border-border-strong rounded-2xl overflow-hidden",
         shadow && "shadow-panel",
