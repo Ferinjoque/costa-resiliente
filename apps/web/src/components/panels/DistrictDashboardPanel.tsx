@@ -1,6 +1,7 @@
 "use client";
 
-import { BarChart3, Droplets, AlertTriangle, Users, History, Radio, TrendingUp, Waves, Mountain, Zap, Brain, CheckCircle2 } from "lucide-react";
+import { BarChart3, Droplets, AlertTriangle, Users, History, Radio, TrendingUp, Waves, Mountain, Zap, Brain, CheckCircle2, FileText, Copy, Check } from "lucide-react";
+import { useState } from "react";
 import { useUIStore } from "@/store/ui";
 import { useDistrictDashboard, useDistrictRiskSummary, useAlerts, useFloodExposure, useFusion } from "@/lib/queries";
 import { clsx } from "clsx";
@@ -520,6 +521,80 @@ function MetricCard({
   );
 }
 
+// ─── EDAN report generator ────────────────────────────────────────────────────
+
+function EDANReportButton() {
+  const [copied, setCopied] = useState(false);
+  const { data: alerts = [] } = useAlerts();
+  const { data: exposure } = useFloodExposure();
+  const { data: summary } = useDistrictRiskSummary();
+
+  function buildReport(): string {
+    const now = new Date().toLocaleString("es-PE", { timeZone: "America/Lima" });
+    const active = alerts.filter((a) => a.status === "active");
+    const critical = active.filter((a) => a.severity === "critical");
+    const high = active.filter((a) => a.severity === "high");
+    const floodArea = exposure?.districts.reduce((s, d) => s + d.overlap_km2, 0) ?? 0;
+    const affectedPop = exposure?.total_affected_population ?? 0;
+    const highRiskDistricts = summary?.features
+      .filter((f) => f.properties.risk_level === "alto")
+      .map((f) => f.properties.name).join(", ") ?? "—";
+
+    const level = critical.length > 0 ? "EMERGENCIA" : high.length > 1 ? "ALERTA" : active.length > 0 ? "AVISO" : "NORMAL";
+
+    return [
+      "═══════════════════════════════════════════",
+      "REPORTE DE SITUACIÓN — COSTA RESILIENTE",
+      `Fecha/Hora: ${now} (Lima, Perú)`,
+      `Nivel SINAGERD: ${level}`,
+      "Generado por: Plataforma Costa Resiliente",
+      "═══════════════════════════════════════════",
+      "",
+      "1. RESUMEN EJECUTIVO",
+      `   Alertas activas:    ${active.length} (${critical.length} críticas, ${high.length} altas)`,
+      `   Área inundada SAR:  ${floodArea.toFixed(1)} km²`,
+      `   Pob. en riesgo est: ~${affectedPop > 1000 ? (affectedPop / 1000).toFixed(0) + "k" : affectedPop} habitantes`,
+      `   Distritos riesgo alto: ${highRiskDistricts || "Ninguno"}`,
+      "",
+      "2. ALERTAS ACTIVAS",
+      ...active.slice(0, 5).map((a, i) =>
+        `   ${i + 1}. [${a.severity.toUpperCase()}] ${a.title}${a.description ? "\n      " + a.description : ""}`
+      ),
+      active.length > 5 ? `   ... y ${active.length - 5} alertas más` : "",
+      "",
+      "3. DATOS DE FUENTES",
+      "   • SAR: Sentinel-1 (Microsoft Planetary Computer)",
+      "   • Lluvia: NASA IMERG Early Run v07B",
+      "   • Hidrología: ANA Observatorio Chirilu + SENAMHI",
+      "   • Social: Bluesky + RSS + Reddit + Telegram",
+      "",
+      "─────────────────────────────────────────────",
+      "PARA USO OFICIAL — FORMULARIO EDAN-PERÚ",
+      "Sistema: Costa Resiliente v1.0 (IEEE Response Quest 2026)",
+      "═══════════════════════════════════════════",
+    ].filter((l) => l !== "").join("\n");
+  }
+
+  async function handleCopy() {
+    const report = buildReport();
+    await navigator.clipboard.writeText(report);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-costa-400 transition-colors ml-auto"
+      aria-label="Copiar reporte EDAN-Perú al portapapeles"
+      title="Generar reporte EDAN-Perú"
+    >
+      {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
+      {copied ? "¡Copiado!" : "EDAN"}
+    </button>
+  );
+}
+
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
 export function DistrictDashboardPanel() {
@@ -545,8 +620,9 @@ export function DistrictDashboardPanel() {
           {scenario.districtName ?? "Resumen Lima"}
         </h2>
         {scenario.districtUbigeo && (
-          <span className="ml-auto text-[10px] text-slate-500">{scenario.districtUbigeo}</span>
+          <span className="text-[10px] text-slate-500">{scenario.districtUbigeo}</span>
         )}
+        <EDANReportButton />
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
