@@ -207,6 +207,22 @@ export default function MapView() {
           }
         }
 
+        // 1a. Social clusters — click to zoom in
+        if (m.getLayer("social-clusters")) {
+          const clusterFeats = m.queryRenderedFeatures(e.point, { layers: ["social-clusters"] });
+          if (clusterFeats.length) {
+            const clusterId = clusterFeats[0].properties?.cluster_id as number | undefined;
+            const src = m.getSource("social-src") as maplibregl.GeoJSONSource | undefined;
+            if (src && clusterId != null) {
+              src.getClusterExpansionZoom(clusterId).then((zoom) => {
+                const coords = (clusterFeats[0].geometry as GeoJSON.Point).coordinates as [number, number];
+                m.flyTo({ center: coords, zoom: zoom + 0.5, duration: 400 });
+              }).catch(() => { /* ignore */ });
+            }
+            return;
+          }
+        }
+
         // 1. Point layers — small targets, highest priority
         const POINT_LAYERS = ["social-circle", "huayco-circle", "infra-circle"] as const;
         for (const lid of POINT_LAYERS) {
@@ -587,7 +603,7 @@ export default function MapView() {
     if (m.loaded()) setup(); else m.once("load", setup);
   }, [infraData, addOrUpdateSource]);
 
-  // ─── Social signal pins ───────────────────────────────────────────────────
+  // ─── Social signal pins (with clustering) ────────────────────────────────
   useEffect(() => {
     const m = map.current;
     if (!m || !socialData) return;
@@ -596,15 +612,24 @@ export default function MapView() {
       "needs_help", "#ef4444", "infrastructure_damage", "#f97316",
       "road_blocked", "#f59e0b", "weather_observation", "#38bdf8", "#94a3b8",
     ];
+    const v = vis("social");
     const setup = () => {
-      addOrUpdateSource("social-src", socialData);
-      if (m.getLayer("social-circle")) return;
+      const src = m.getSource("social-src");
+      if (src && "setData" in src) {
+        (src as maplibregl.GeoJSONSource).setData(socialData);
+      } else if (!src) {
+        m.addSource("social-src", { type: "geojson", data: socialData, cluster: true, clusterMaxZoom: 13, clusterRadius: 45 });
+      }
+      if (m.getLayer("social-clusters")) return;
+      m.addLayer({ id: "social-clusters", type: "circle", source: "social-src",
+        filter: ["has", "point_count"], layout: { visibility: v },
+        paint: { "circle-radius": ["step", ["get", "point_count"], 12, 5, 16, 10, 20], "circle-color": "#f97316", "circle-opacity": 0.85, "circle-stroke-color": "#0f172a", "circle-stroke-width": 1.5 } });
+      m.addLayer({ id: "social-cluster-count", type: "symbol", source: "social-src",
+        filter: ["has", "point_count"], layout: { visibility: v, "text-field": ["get", "point_count_abbreviated"], "text-size": 10, "text-font": ["Open Sans Bold"] },
+        paint: { "text-color": "#fff" } });
       m.addLayer({ id: "social-circle", type: "circle", source: "social-src",
-        layout: { visibility: vis("social") },
-        paint: {
-          "circle-radius": 5, "circle-color": labelColor,
-          "circle-opacity": 0.85, "circle-stroke-color": "#0f172a", "circle-stroke-width": 1,
-        } });
+        filter: ["!", ["has", "point_count"]], layout: { visibility: v },
+        paint: { "circle-radius": 5, "circle-color": labelColor, "circle-opacity": 0.85, "circle-stroke-color": "#0f172a", "circle-stroke-width": 1 } });
     };
     if (m.loaded()) setup(); else m.once("load", setup);
   }, [socialData, addOrUpdateSource]);
@@ -749,7 +774,7 @@ export default function MapView() {
       huayco:         ["huayco-circle"],
       hazard:         ["hazard-fill", "hazard-outline"],
       infrastructure: ["infra-circle"],
-      social:         ["social-circle"],
+      social:         ["social-clusters", "social-cluster-count", "social-circle"],
       stations:       ["stations-circle", "stations-label"],
     };
     for (const [key, ids] of Object.entries(layerMap)) {
