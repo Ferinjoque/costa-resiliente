@@ -1,46 +1,136 @@
 "use client";
 
-import { MessageSquare, Send, Loader2, Sparkles, RefreshCw, Database } from "lucide-react";
+import {
+  Send, Loader2, Sparkles, RefreshCw, Check,
+  Info, X, Bot,
+} from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useUIStore } from "@/store/ui";
 import { DEMO_COPILOT_RESPONSES } from "@/lib/demoData";
-import {
-  Panel,
-  PanelHeader,
-  PanelTitle,
-  Button,
-} from "@/components/ui/primitives";
+import { clsx } from "clsx";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-/** Render basic markdown inline: **bold** and numbered lists */
-function MarkdownLine({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return (
-    <>
-      {parts.map((part, i) =>
-        part.startsWith("**") && part.endsWith("**")
-          ? <strong key={i} className="font-semibold text-ink">{part.slice(2, -2)}</strong>
-          : <span key={i}>{part}</span>
-      )}
-    </>
-  );
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  displayed: string;
+  isDemo?: boolean;
+  isRedacted?: boolean;
 }
 
+// ─── Markdown renderer ────────────────────────────────────────────────────────
+
 function MarkdownText({ text }: { text: string }) {
-  const lines = text.split("\n");
   return (
-    <div className="space-y-0.5">
-      {lines.map((line, i) => (
-        <div key={i} className={line.startsWith("•") || line.match(/^\d+\./) ? "pl-1" : ""}>
-          <MarkdownLine text={line} />
-        </div>
-      ))}
+    <div className="space-y-1">
+      {text.split("\n").map((line, i) => {
+        const parts = line.split(/(\*\*[^*]+\*\*)/g);
+        return (
+          <p key={i} className={line.startsWith("•") || /^\d+\./.test(line) ? "pl-1" : ""}>
+            {parts.map((p, j) =>
+              p.startsWith("**") && p.endsWith("**")
+                ? <strong key={j} className="font-semibold">{p.slice(2, -2)}</strong>
+                : <span key={j}>{p}</span>
+            )}
+          </p>
+        );
+      })}
     </div>
   );
 }
 
-// Keyword → demo response key mapping for fuzzy fallback
+// ─── Thinking animation ───────────────────────────────────────────────────────
+
+const THINKING_STEPS: Record<"es" | "en", string[]> = {
+  es: [
+    "Analizando tu consulta",
+    "Consultando datos en tiempo real",
+    "Revisando alertas y sensores",
+    "Elaborando respuesta",
+  ],
+  en: [
+    "Analyzing your query",
+    "Querying real-time data",
+    "Reviewing alerts and sensors",
+    "Composing response",
+  ],
+};
+
+function ThinkingBubble({ locale }: { locale: "es" | "en" }) {
+  const [step, setStep] = useState(0);
+  const steps = THINKING_STEPS[locale];
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setStep(1), 1300);
+    const t2 = setTimeout(() => setStep(2), 3200);
+    const t3 = setTimeout(() => setStep(3), 6500);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+
+  return (
+    <div className="flex gap-2.5 items-start">
+      <div className="w-6 h-6 rounded-full bg-accent-soft shrink-0 flex items-center justify-center mt-0.5 ring-1 ring-accent/20">
+        <Bot size={11} className="text-accent" />
+      </div>
+      <div className="bg-surface-sunken rounded-2xl rounded-tl-sm px-4 py-3 space-y-2">
+        {steps.slice(0, step + 1).map((s, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            {i < step ? (
+              <Check size={11} className="text-ok-muted shrink-0" />
+            ) : (
+              <Loader2 size={11} className="animate-spin text-accent shrink-0" />
+            )}
+            <span className={i < step ? "text-ink-subtle" : "text-ink"}>{s}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Info popover ─────────────────────────────────────────────────────────────
+
+function InfoPopover({ locale, onClose }: { locale: "es" | "en"; onClose: () => void }) {
+  const es = locale === "es";
+  return (
+    <div className="absolute top-full right-0 mt-2 z-40 w-64 bg-surface border border-border-strong rounded-xl shadow-xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-ink">
+          {es ? "Cómo funciona" : "How it works"}
+        </p>
+        <button onClick={onClose} className="p-0.5 rounded text-ink-subtle hover:text-ink transition-colors">
+          <X size={13} />
+        </button>
+      </div>
+      <div className="space-y-2 text-xs">
+        {[
+          [es ? "Modelo" : "Model",           "Qwen 2.5 · 7B-Instruct"],
+          [es ? "Infraestructura" : "Infra",   es ? "Local · Docker" : "Local · Docker"],
+          [es ? "Datos" : "Data",              "PostGIS · IMERG · ANA"],
+          [es ? "Latencia típica" : "Latency", "15–45 s (CPU)"],
+          [es ? "Privacidad" : "Privacy",      es ? "Sin datos externos" : "No third-party data"],
+        ].map(([k, v]) => (
+          <div key={k} className="flex justify-between gap-2">
+            <span className="text-ink-subtle shrink-0">{k}</span>
+            <span className="text-ink font-medium text-right font-mono text-[11px]">{v}</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-ink-subtle border-t border-border pt-2.5 leading-relaxed">
+        {es
+          ? "Utiliza herramientas de análisis geoespacial en tiempo real. No tiene acceso a internet. Los resultados deben verificarse con fuentes oficiales."
+          : "Uses real-time geospatial analysis tools. No internet access. Results should be verified against official sources."}
+      </p>
+    </div>
+  );
+}
+
+// ─── Keyword routing for demo fallback ───────────────────────────────────────
+
 const KEYWORD_ROUTES: Array<{ keys: string[]; demo: string }> = [
   { keys: ["alerta", "alert", "activ", "active alerts", "alertas activas"], demo: "¿Cuáles son las alertas activas ahora?" },
   { keys: ["evacu", "prioridad", "priority", "evacuation", "primero", "first", "shelter", "albergue"], demo: "¿Qué distritos debo evacuar primero?" },
@@ -65,302 +155,307 @@ const KEYWORD_ROUTES: Array<{ keys: string[]; demo: string }> = [
 
 function findDemoResponse(query: string): string | null {
   const q = query.toLowerCase().trim();
-  // Exact match (handles both Spanish and English keys)
   const key = Object.keys(DEMO_COPILOT_RESPONSES).find((k) => k.toLowerCase().trim() === q);
   if (key) return key;
-  // Fuzzy keyword routing → falls back to Spanish demo key
   for (const { keys, demo } of KEYWORD_ROUTES) {
     if (keys.some((kw) => q.includes(kw.toLowerCase()))) return demo;
   }
   return null;
 }
 
+const GREETING_WORDS = new Set([
+  "hey", "hola", "hi", "hello", "hallo", "oi", "ola", "sup", "yo", "ok", "okay",
+  "test", "prueba", "buenos días", "buenas", "good morning", "good afternoon",
+]);
+
+function isGreeting(q: string): boolean {
+  const words = q.toLowerCase().trim().split(/\s+/);
+  return words.length <= 3 && words.every((w) => GREETING_WORDS.has(w.replace(/[¿?!.,;:]/g, "")));
+}
+
+const GREETING_REPLY: Record<"es" | "en", string> = {
+  es: "¡Hola! Soy el copiloto de Costa Resiliente. Puedo ayudarte con información sobre alertas activas, distritos en riesgo, niveles hidrológicos, pronóstico de lluvias, señales sociales y más.\n\n¿Qué deseas consultar?",
+  en: "Hi! I'm the Costa Resiliente copilot. I can help with active alerts, at-risk districts, hydrological levels, rainfall forecasts, social signals, and more.\n\nWhat would you like to know?",
+};
+
+// ─── Suggestion chips ─────────────────────────────────────────────────────────
+
 const SUGGESTIONS: { es: string; en: string }[] = [
-  { es: "¿Cuáles son las alertas activas ahora?", en: "What are the active alerts right now?" },
-  { es: "¿Qué distritos debo evacuar primero?", en: "Which districts should I evacuate first?" },
-  { es: "¿Cuáles son los distritos en mayor riesgo ahora?", en: "Which districts have the highest risk right now?" },
-  { es: "¿Cuál es el pronóstico para las próximas 24 horas?", en: "What is the forecast for the next 24 hours?" },
-  { es: "¿Qué rutas de evacuación están bloqueadas?", en: "Which evacuation routes are blocked?" },
-  { es: "¿Cuántas señales sociales urgentes hay ahora?", en: "How many urgent social signals are there now?" },
-  { es: "¿Qué estaciones hidrológicas están en alerta?", en: "Which hydrological stations are on alert?" },
-  { es: "¿Cuántas personas están en zona de inundación activa?", en: "How many people are in active flood zones?" },
+  { es: "¿Cuáles son las alertas activas ahora?",         en: "What are the active alerts right now?" },
+  { es: "¿Qué distritos debo evacuar primero?",           en: "Which districts should I evacuate first?" },
+  { es: "¿Cuáles son los distritos en mayor riesgo?",     en: "Which districts have the highest risk?" },
+  { es: "¿Cuál es el pronóstico para las próximas 24h?",  en: "What is the 24-hour forecast?" },
+  { es: "¿Qué rutas de evacuación están bloqueadas?",     en: "Which evacuation routes are blocked?" },
+  { es: "¿Cuántas personas están en zona de inundación?", en: "How many people are in active flood zones?" },
 ];
 
-const UI: Record<"es" | "en", {
-  title: string; model: string; placeholder: string; queryLabel: string;
-  responseLabel: string; newQuery: string; hint: string; send: string;
-}> = {
-  es: {
-    title: "Copiloto",
-    model: "Qwen 2.5",
-    placeholder: "Consulta en español…",
-    queryLabel: "Consulta",
-    responseLabel: "Respuesta",
-    newQuery: "Nueva consulta",
-    hint: "Haz una pregunta sobre la situación actual en Lima.",
-    send: "Enviar",
-  },
-  en: {
-    title: "Copilot",
-    model: "Qwen 2.5",
-    placeholder: "Ask about the current situation…",
-    queryLabel: "Query",
-    responseLabel: "Response",
-    newQuery: "New query",
-    hint: "Ask a question about Lima's current situation.",
-    send: "Send",
-  },
-};
+// ─── Main panel ───────────────────────────────────────────────────────────────
 
 export function AskPanel() {
   const { activePanel, locale } = useUIStore();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [answer, setAnswer] = useState<string | null>(null);
-  const [displayedAnswer, setDisplayedAnswer] = useState<string | null>(null);
-  const [sources, setSources] = useState<{ label: string; value: string }[]>([]);
-  const [dataRows, setDataRows] = useState<Array<Record<string, unknown>>>([]);
-  const [lastQuery, setLastQuery] = useState<string | null>(null);
-  const [isDemo, setIsDemo] = useState(false);
-  const [isRedacted, setIsRedacted] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const ui = UI[locale];
 
-  // Typewriter effect for demo responses
   useEffect(() => {
-    if (typewriterRef.current) clearInterval(typewriterRef.current);
-    if (!answer) { setDisplayedAnswer(null); return; }
-    if (!isDemo) { setDisplayedAnswer(answer); return; }
-    setDisplayedAnswer("");
-    let i = 0;
-    // Reveal ~4 chars per tick at 12ms → smooth but fast enough not to bore
-    typewriterRef.current = setInterval(() => {
-      i += 4;
-      setDisplayedAnswer(answer.slice(0, i));
-      if (i >= answer.length) {
-        clearInterval(typewriterRef.current!);
-        typewriterRef.current = null;
-        setDisplayedAnswer(answer);
-      }
-    }, 12);
-    return () => { if (typewriterRef.current) clearInterval(typewriterRef.current); };
-  }, [answer, isDemo]);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  useEffect(() => {
+    if (activePanel === "ask") setTimeout(() => inputRef.current?.focus(), 120);
+  }, [activePanel]);
 
   if (activePanel !== "ask") return null;
 
+  const es = locale === "es";
+
+  function animateMessage(fullContent: string, msgId: string) {
+    if (typewriterRef.current) clearInterval(typewriterRef.current);
+    let i = 0;
+    typewriterRef.current = setInterval(() => {
+      i += 5;
+      setMessages((prev) =>
+        prev.map((m) => m.id === msgId ? { ...m, displayed: fullContent.slice(0, i) } : m)
+      );
+      if (i >= fullContent.length) {
+        clearInterval(typewriterRef.current!);
+        typewriterRef.current = null;
+        setMessages((prev) =>
+          prev.map((m) => m.id === msgId ? { ...m, displayed: fullContent } : m)
+        );
+      }
+    }, 10);
+  }
+
   const submit = async (q: string) => {
     const trimmed = q.trim();
-    if (!trimmed) return;
+    if (!trimmed || loading) return;
+    setQuery("");
     setLoading(true);
-    setAnswer(null);
-    setSources([]);
-    setDataRows([]);
-    setLastQuery(trimmed);
-    setIsDemo(false);
-    setIsRedacted(false);
+    setShowInfo(false);
+    setMessages((prev) => [
+      ...prev,
+      { id: Math.random().toString(36).slice(2), role: "user", content: trimmed, displayed: trimmed },
+    ]);
+
+    // Short-circuit greetings — don't waste model inference on them
+    if (isGreeting(trimmed)) {
+      const reply = GREETING_REPLY[locale];
+      const asstId = Math.random().toString(36).slice(2);
+      setMessages((prev) => [...prev, { id: asstId, role: "assistant", content: reply, displayed: "" }]);
+      animateMessage(reply, asstId);
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch(`${BASE}/api/v1/copilot/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: trimmed, operator_id: "demo" }),
-        signal: AbortSignal.timeout(55_000),  // 55s — model inference can take 30–45s on CPU
+        signal: AbortSignal.timeout(55_000),
       });
+      let answerText: string;
+      let isRedacted = false;
       if (res.status === 400) {
         const err = await res.json();
-        setAnswer(err.detail ?? (locale === "es" ? "Consulta no permitida." : "Query not allowed."));
-        return;
+        answerText = err.detail ?? (es ? "Consulta no permitida." : "Query not allowed.");
+      } else {
+        const data = await res.json();
+        answerText = data.answer ?? (es ? "Sin respuesta." : "No response.");
+        isRedacted = !!data.redacted;
       }
-      const data = await res.json();
-      setAnswer(data.answer ?? (locale === "es" ? "Sin respuesta." : "No response."));
-      setIsRedacted(!!data.redacted);
-      // Build metadata chips from new agentic response shape
-      const chips: { label: string; value: string }[] = [];
-      if (data.confidence != null)
-        chips.push({ label: locale === "es" ? "Confianza" : "Confidence", value: `${(data.confidence * 100).toFixed(0)}%` });
-      if (Array.isArray(data.tool_calls) && data.tool_calls.length > 0) {
-        const toolNames = data.tool_calls.map((t: { tool: string }) => t.tool.replace(/_/g, " ")).join(", ");
-        chips.push({ label: locale === "es" ? "Herramientas" : "Tools", value: toolNames });
-      }
-      setSources(chips);
-      if (Array.isArray(data.sources)) setDataRows(data.sources.slice(0, 5));
+      const asstId = Math.random().toString(36).slice(2);
+      setMessages((prev) => [...prev, { id: asstId, role: "assistant", content: answerText, displayed: "", isRedacted }]);
+      animateMessage(answerText, asstId);
     } catch {
-      // Fuzzy match → demo response, fall back to generic error
       const demoKey = findDemoResponse(trimmed);
       const demo = demoKey ? DEMO_COPILOT_RESPONSES[demoKey] : null;
-      if (demo) {
-        setIsDemo(true);
-        setAnswer(demo.answer);
-        setSources([
-          { label: locale === "es" ? "Intención" : "Intent", value: demo.intent.replace(/_/g, " ") },
-          { label: locale === "es" ? "Confianza" : "Confidence", value: `${(demo.confidence * 100).toFixed(0)}%` },
-          { label: locale === "es" ? "Plan" : "Plan", value: demo.query_plan.replace(/_/g, " ") },
-        ]);
-        setDataRows(demo.sources.slice(0, 5));
-      } else {
-        setAnswer(locale === "es"
-          ? "Error al conectar con el servidor. Prueba una de las consultas sugeridas."
-          : "Connection error. Try one of the suggested queries.");
-      }
+      const answerText = demo?.answer ?? (es
+        ? "No pude conectar con el servidor. Intenta una de las consultas sugeridas."
+        : "Could not reach the server. Try one of the suggested queries.");
+      const asstId = Math.random().toString(36).slice(2);
+      setMessages((prev) => [...prev, { id: asstId, role: "assistant", content: answerText, displayed: "", isDemo: !!demo }]);
+      animateMessage(answerText, asstId);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    submit(query);
+  const clearChat = () => {
+    if (typewriterRef.current) clearInterval(typewriterRef.current);
+    setMessages([]);
+    setQuery("");
+    setLoading(false);
   };
+
+  const disclaimer = es
+    ? "Las respuestas son generadas por IA y pueden contener errores. Verifica información crítica con fuentes oficiales."
+    : "AI-generated responses may contain errors. Verify critical information with official sources.";
 
   return (
     <aside
-      className={[
-        // Mobile: slide-up sheet
-        "fixed bottom-14 left-0 right-0 h-[62vh] rounded-t-2xl",
-        // Desktop: fixed sidebar panel
-        "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-2xl",
-        // Felt-style cream surface — NO glass/blur
-        "bg-surface border-l border-border-strong shadow-panel z-20 flex flex-col panel-animate",
-      ].join(" ")}
-      aria-label={ui.title}
+      className={clsx(
+        "fixed bottom-14 left-0 right-0 h-[68vh] rounded-t-2xl",
+        "sm:absolute sm:top-0 sm:right-0 sm:bottom-0 sm:left-auto sm:h-full sm:w-[340px] sm:rounded-none",
+        "sm:border-l sm:border-border-strong",
+        "bg-surface shadow-panel z-20 flex flex-col panel-animate",
+      )}
+      aria-label={es ? "Consultar copiloto IA" : "AI copilot"}
     >
       {/* Mobile drag handle */}
-      <div className="sm:hidden flex justify-center pt-2 pb-1" aria-hidden="true">
-        <div className="w-8 h-1 rounded-full bg-border-strong" />
+      <div className="sm:hidden flex justify-center pt-2.5 pb-1" aria-hidden="true">
+        <div className="w-10 h-[3px] bg-border-strong rounded-full" />
       </div>
 
       {/* Header */}
-      <PanelHeader>
-        <MessageSquare size={15} className="text-accent shrink-0" aria-hidden="true" />
-        <PanelTitle>{ui.title}</PanelTitle>
-        <span className="text-[10px] text-ink-subtle flex items-center gap-1 shrink-0">
-          <Sparkles size={10} aria-hidden="true" /> {ui.model}
-        </span>
-      </PanelHeader>
-
-      {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3" aria-live="polite" aria-atomic="true">
-        {answer ? (
-          <>
-            {/* Echo of the submitted query */}
-            <div className="bg-surface-sunken rounded-xl px-3 py-2">
-              <p className="text-[11px] text-ink-subtle mb-1">{ui.queryLabel}</p>
-              <p className="text-xs text-ink leading-snug">{lastQuery}</p>
-            </div>
-
-            {/* Copilot response */}
-            <div
-              className="bg-surface-sunken rounded-xl px-4 py-3"
-              role="region"
-              aria-label={ui.responseLabel}
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[11px] text-ink-muted">{ui.responseLabel}</p>
-                <div className="flex items-center gap-1">
-                  {isRedacted && (
-                    <span className="text-[10px] bg-danger/10 border border-danger/30 text-danger px-1.5 py-0.5 rounded-md font-mono">
-                      {locale === "es" ? "SANITIZADO" : "SANITIZED"}
-                    </span>
-                  )}
-                  {isDemo && (
-                    <span className="text-[10px] bg-surface border border-border text-ink-subtle px-1.5 py-0.5 rounded-md font-mono">
-                      DEMO
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="text-sm text-ink leading-relaxed">
-                <MarkdownText text={displayedAnswer ?? ""} />
-                {displayedAnswer !== null && displayedAnswer.length < (answer?.length ?? 0) && (
-                  <span
-                    className="inline-block w-0.5 h-4 bg-accent ml-0.5 animate-pulse align-text-bottom"
-                    aria-hidden="true"
-                  />
-                )}
-              </div>
-
-              {/* Metadata chips */}
-              {sources.length > 0 && (
-                <div className="mt-2.5 pt-2 border-t border-border flex flex-wrap gap-1.5">
-                  {sources.map((s) => (
-                    <span
-                      key={s.label}
-                      className="text-[10px] bg-surface border border-border rounded-md px-1.5 py-0.5 text-ink-muted"
-                    >
-                      {s.label}: <span className="text-ink">{s.value}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Source data rows */}
-              {dataRows.length > 0 && (
-                <div className="mt-2.5 pt-2 border-t border-border">
-                  <p className="text-[10px] text-ink-subtle mb-1 flex items-center gap-1">
-                    <Database size={9} aria-hidden="true" />
-                    {locale === "es" ? "Datos de origen (PostGIS)" : "Source data (PostGIS)"}
-                  </p>
-                  <div className="space-y-1">
-                    {dataRows.map((row, i) => (
-                      <div
-                        key={i}
-                        className="text-[10px] bg-surface border border-border rounded-lg px-2 py-1 text-ink-muted font-mono truncate"
-                      >
-                        {Object.entries(row).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(" · ")}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* New query link */}
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border shrink-0">
+        <div className="w-7 h-7 rounded-full bg-accent-soft flex items-center justify-center shrink-0 ring-1 ring-accent/20">
+          <Bot size={14} className="text-accent" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-ink leading-tight">
+            {es ? "Copiloto" : "Copilot"}
+          </p>
+          <p className="text-[10px] text-ink-subtle">
+            {es ? "Asistente de emergencias · Lima" : "Emergency assistant · Lima"}
+          </p>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {messages.length > 0 && (
             <button
-              onClick={() => {
-                setAnswer(null);
-                setDisplayedAnswer(null);
-                setSources([]);
-                setDataRows([]);
-                setQuery("");
-                setIsDemo(false);
-                setIsRedacted(false);
-              }}
-              className="flex items-center gap-1 text-xs text-ink-muted hover:text-accent underline underline-offset-2 transition-colors"
+              onClick={clearChat}
+              className="p-1.5 rounded-lg text-ink-subtle hover:text-ink hover:bg-surface-hover transition-colors"
+              title={es ? "Nueva conversación" : "New conversation"}
+              aria-label={es ? "Nueva conversación" : "New conversation"}
             >
-              <RefreshCw size={11} aria-hidden="true" />
-              {ui.newQuery}
+              <RefreshCw size={13} />
             </button>
-          </>
-        ) : (
-          <>
-            {/* Hint */}
-            <p className="text-[11px] text-ink-subtle text-center pt-2">{ui.hint}</p>
+          )}
+          <div className="relative">
+            <button
+              onClick={() => setShowInfo((v) => !v)}
+              className={clsx(
+                "p-1.5 rounded-lg transition-colors",
+                showInfo
+                  ? "text-accent bg-accent-soft"
+                  : "text-ink-subtle hover:text-ink hover:bg-surface-hover",
+              )}
+              aria-label={es ? "Información sobre el modelo" : "Model information"}
+            >
+              <Info size={14} />
+            </button>
+            {showInfo && <InfoPopover locale={locale} onClose={() => setShowInfo(false)} />}
+          </div>
+        </div>
+      </div>
 
-            {/* Suggestion chips */}
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4" aria-live="polite">
+        {messages.length === 0 ? (
+          /* Empty state */
+          <div className="h-full flex flex-col">
+            <div className="flex flex-col items-center justify-center flex-1 text-center gap-3 pb-4">
+              <div className="w-11 h-11 rounded-full bg-accent-soft flex items-center justify-center ring-2 ring-accent/15">
+                <Sparkles size={20} className="text-accent" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-ink mb-1">
+                  {es ? "¿En qué puedo ayudarte?" : "How can I help you?"}
+                </p>
+                <p className="text-xs text-ink-subtle">
+                  {es
+                    ? "Pregunta sobre la situación actual en Lima"
+                    : "Ask about Lima's current situation"}
+                </p>
+              </div>
+            </div>
             <div className="space-y-1.5">
               {SUGGESTIONS.map((s) => {
                 const q = locale === "es" ? s.es : s.en;
                 return (
-                  <Button
+                  <button
                     key={s.es}
-                    variant="secondary"
-                    size="xs"
-                    onClick={() => { setQuery(q); submit(q); }}
+                    onClick={() => submit(q)}
                     disabled={loading}
-                    className="w-full justify-start text-left"
+                    className="w-full text-left text-xs text-ink-muted bg-surface-sunken hover:bg-surface-hover hover:text-ink border border-border rounded-xl px-3 py-2.5 transition-colors disabled:opacity-40 leading-snug"
                   >
                     {q}
-                  </Button>
+                  </button>
                 );
               })}
             </div>
-          </>
+          </div>
+        ) : (
+          /* Chat thread */
+          <div className="space-y-5">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={clsx(
+                  "flex gap-2.5",
+                  msg.role === "user" ? "flex-row-reverse" : "flex-row items-start",
+                )}
+              >
+                {msg.role === "assistant" && (
+                  <div className="w-6 h-6 rounded-full bg-accent-soft shrink-0 flex items-center justify-center mt-0.5 ring-1 ring-accent/20">
+                    <Bot size={11} className="text-accent" />
+                  </div>
+                )}
+                <div
+                  className={clsx(
+                    "max-w-[82%] rounded-2xl px-3.5 py-2.5",
+                    msg.role === "user"
+                      ? "bg-ink text-surface rounded-tr-sm text-sm leading-relaxed"
+                      : "bg-surface-sunken rounded-tl-sm",
+                  )}
+                >
+                  {msg.role === "user" ? (
+                    <p>{msg.content}</p>
+                  ) : (
+                    <div className="text-sm text-ink leading-relaxed">
+                      <MarkdownText text={msg.displayed ?? ""} />
+                      {(msg.displayed?.length ?? 0) < msg.content.length && (
+                        <span
+                          className="inline-block w-0.5 h-4 bg-accent ml-0.5 animate-pulse align-text-bottom"
+                          aria-hidden="true"
+                        />
+                      )}
+                      {msg.isDemo && (
+                        <p className="text-[10px] text-ink-subtle mt-2 opacity-60 border-t border-border pt-1.5">
+                          {es ? "Respuesta de demostración · sin datos en vivo" : "Demo response · no live data"}
+                        </p>
+                      )}
+                      {msg.isRedacted && (
+                        <p className="text-[10px] text-danger mt-2 opacity-80 border-t border-danger/20 pt-1.5">
+                          {es ? "Contenido sensible anonimizado" : "Sensitive content anonymized"}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {loading && <ThinkingBubble locale={locale} />}
+
+            <div ref={bottomRef} />
+          </div>
         )}
       </div>
 
-      {/* Input form */}
-      <form onSubmit={handleSubmit} className="p-3 border-t border-border">
-        <div className="flex gap-2">
+      {/* Input + disclaimer */}
+      <div className="border-t border-border px-4 pt-3 pb-3 shrink-0 bg-surface">
+        <form
+          onSubmit={(e) => { e.preventDefault(); submit(query); }}
+          className="flex gap-2 items-end"
+        >
           <textarea
+            ref={inputRef}
             rows={1}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -370,26 +465,23 @@ export function AskPanel() {
                 submit(query);
               }
             }}
-            placeholder={ui.placeholder}
-            aria-label={ui.placeholder}
+            placeholder={es ? "Escribe tu consulta…" : "Ask about the current situation…"}
             disabled={loading}
-            className="flex-1 bg-surface-sunken border border-border rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-ink-subtle focus:border-accent focus:outline-none resize-none disabled:opacity-50"
+            className="flex-1 bg-surface-sunken border border-border rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-ink-subtle focus:border-accent focus:outline-none resize-none disabled:opacity-50 max-h-28 overflow-y-auto"
           />
-          <Button
+          <button
             type="submit"
-            variant="primary"
-            size="sm"
             disabled={loading || !query.trim()}
-            aria-label={ui.send}
-            className="self-end"
+            className="h-9 w-9 rounded-xl bg-accent flex items-center justify-center shrink-0 hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed self-end"
+            aria-label={es ? "Enviar" : "Send"}
           >
-            {loading
-              ? <Loader2 size={15} className="animate-spin text-ink-muted" />
-              : <Send size={15} />
-            }
-          </Button>
-        </div>
-      </form>
+            <Send size={14} className="text-white translate-x-px" />
+          </button>
+        </form>
+        <p className="text-[10px] text-ink-subtle mt-2 leading-tight text-center">
+          ⚠ {disclaimer}
+        </p>
+      </div>
     </aside>
   );
 }

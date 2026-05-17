@@ -35,7 +35,7 @@ const NAV: NavItem[] = [
   { id: "map",       label: { es: "Mapa",      en: "Map"    }, shortcut: "M", Icon: MapIcon      },
   { id: "alerts",    label: { es: "Alertas",   en: "Alerts" }, shortcut: "A", Icon: Bell         },
   { id: "social",    label: { es: "Social",    en: "Social" }, shortcut: "S", Icon: Radio        },
-  { id: "dashboard", label: { es: "Datos",     en: "Data"   }, shortcut: "D", Icon: BarChart3    },
+  { id: "dashboard", label: { es: "Resumen",   en: "Summary"}, shortcut: "D", Icon: BarChart3    },
   { id: "ask",       label: { es: "Consultar", en: "Ask"    }, shortcut: "C", Icon: MessageSquare},
   { id: "log",       label: { es: "Registro",  en: "Log"    }, shortcut: "L", Icon: ClipboardList},
 ];

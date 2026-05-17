@@ -162,6 +162,9 @@ export default function MapView() {
     m.addControl(new maplibregl.ScaleControl(), "bottom-left");
 
     m.once("load", () => {
+      // Force recompute canvas size — prevents blank map when CSS settles after MapLibre init
+      m.resize();
+
       // ── Priority click handler ─────────────────────────────────────────
       // Order: points (social/huayco/infra) → flood polygon → hazard polygon
       //        → district (select only, no popup) → empty (dismiss popup)
@@ -639,7 +642,13 @@ export default function MapView() {
         paint: { "text-color": "#fff" } });
       m.addLayer({ id: "social-circle", type: "circle", source: "social-src",
         filter: ["!", ["has", "point_count"]], layout: { visibility: v },
-        paint: { "circle-radius": 5, "circle-color": labelColor, "circle-opacity": 0.85, "circle-stroke-color": "#0f172a", "circle-stroke-width": 1 } });
+        paint: {
+          "circle-radius": 7,
+          "circle-color": labelColor,
+          "circle-opacity": 0.9,
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 2,
+        } });
     };
     if (m.loaded()) setup(); else m.once("load", setup);
   }, [socialData, addOrUpdateSource]);
@@ -776,7 +785,7 @@ export default function MapView() {
   // ─── Layer visibility sync ────────────────────────────────────────────────
   useEffect(() => {
     const m = map.current;
-    if (!m || !m.loaded()) return;
+    if (!m || !m.isStyleLoaded()) return;
     const layerMap: Record<string, string[]> = {
       districts:      ["districts-fill", "districts-outline", "districts-label"],
       imerg:          ["imerg-fill"],

@@ -1,9 +1,22 @@
 "use client";
 
-import { ClipboardList, Download, X } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  CheckSquare,
+  ChevronRight,
+  ClipboardList,
+  Download,
+  MapPin,
+  MessageSquare,
+  Radio,
+  RefreshCw,
+  Truck,
+  X,
+  XCircle,
+} from "lucide-react";
 import { useUIStore } from "@/store/ui";
-import { useDecisionLog } from "@/lib/queries";
-import { useApiHealth } from "@/lib/queries";
+import { useDecisionLog, useApiHealth } from "@/lib/queries";
 import type { DecisionLogEntry } from "@/lib/api";
 import {
   PanelHeader,
@@ -14,25 +27,54 @@ import {
 } from "@/components/ui/primitives";
 import type { ComponentProps } from "react";
 
-// ─── Business logic helpers ───────────────────────────────────────────────────
+// ─── CSV helpers ──────────────────────────────────────────────────────────────
+
+function csvEscape(value: string): string {
+  if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  return value;
+}
 
 function downloadCsv(entries: DecisionLogEntry[]) {
-  const header = "id,logged_at,operator_id,action_type,alert_id,payload\n";
-  const rows = entries.map((e) =>
-    [e.id, e.logged_at, e.operator_id, e.action_type, e.alert_id ?? "", JSON.stringify(e.payload)].join(",")
-  ).join("\n");
-  const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
+  const COLS = ["id", "logged_at", "operator_id", "action_type", "alert_id", "session_id", "payload"];
+  const header = COLS.join(",") + "\n";
+  const rows = entries
+    .map((e) =>
+      [
+        e.id,
+        e.logged_at,
+        csvEscape(e.operator_id),
+        csvEscape(e.action_type),
+        e.alert_id ?? "",
+        csvEscape(e.session_id ?? ""),
+        csvEscape(JSON.stringify(e.payload)),
+      ].join(",")
+    )
+    .join("\n");
+  // UTF-8 BOM (﻿) ensures Excel opens accented characters correctly
+  const blob = new Blob(["﻿" + header + rows], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = `costa_resiliente_decision_log_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
 
-function timeStamp(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString("es-PE", {
+// ─── Display helpers ──────────────────────────────────────────────────────────
+
+function relativeTime(iso: string, locale: "es" | "en"): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return locale === "es" ? "hace un momento" : "just now";
+  if (diffMin < 60) return locale === "es" ? `hace ${diffMin} min` : `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return locale === "es" ? `hace ${diffHr}h` : `${diffHr}h ago`;
+  const diffDays = Math.floor(diffHr / 24);
+  return locale === "es" ? `hace ${diffDays}d` : `${diffDays}d ago`;
+}
+
+function absoluteTime(iso: string): string {
+  return new Date(iso).toLocaleString("es-PE", {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -40,55 +82,65 @@ function timeStamp(iso: string): string {
   });
 }
 
-const ACTION_LABELS: Record<string, { es: string; en: string }> = {
-  query:                  { es: "Consulta",            en: "Query" },
-  alert_acknowledge:      { es: "Reconoció alerta",    en: "Alert acknowledged" },
-  alert_escalate:         { es: "Escaló alerta",       en: "Alert escalated" },
-  alert_false_positive:   { es: "Falso positivo",      en: "False positive" },
-  alert_close:            { es: "Cerró alerta",        en: "Alert closed" },
-  map_pin:                { es: "Pin en mapa",         en: "Map pin" },
-  export:                 { es: "Exportó datos",       en: "Data exported" },
-  social_signal_received: { es: "Señal social (auto)", en: "Social signal (auto)" },
-  resource_dispatch:      { es: "Despacho recurso",    en: "Resource dispatched" },
-  protocol_step:          { es: "Paso protocolo",      en: "Protocol step" },
+const ACTION_META: Record<
+  string,
+  { es: string; en: string; icon: React.ElementType; variant: ComponentProps<typeof Pill>["variant"] }
+> = {
+  query:                  { es: "Consulta IA",         en: "AI query",          icon: MessageSquare, variant: "default"  },
+  alert_acknowledge:      { es: "Alerta reconocida",   en: "Alert acknowledged",icon: CheckCircle,   variant: "accent"   },
+  alert_escalate:         { es: "Alerta escalada",     en: "Alert escalated",   icon: AlertTriangle, variant: "danger"   },
+  alert_false_positive:   { es: "Falso positivo",      en: "False positive",    icon: XCircle,       variant: "default"  },
+  alert_close:            { es: "Alerta cerrada",      en: "Alert closed",      icon: CheckSquare,   variant: "accent"   },
+  map_pin:                { es: "Pin en mapa",         en: "Map pin",           icon: MapPin,        variant: "default"  },
+  export:                 { es: "Datos exportados",    en: "Data exported",     icon: Download,      variant: "default"  },
+  social_signal_received: { es: "Señal social (auto)", en: "Social signal",     icon: Radio,         variant: "default"  },
+  resource_dispatch:      { es: "Despacho recurso",    en: "Resource dispatch", icon: Truck,         variant: "warn"     },
+  protocol_step:          { es: "Paso de protocolo",   en: "Protocol step",     icon: ChevronRight,  variant: "default"  },
 };
 
-/** Map action_type to a Pill variant for visual encoding. */
-function pillVariantFor(actionType: string): ComponentProps<typeof Pill>["variant"] {
-  if (actionType === "alert_escalate") return "danger";
-  if (actionType === "resource_dispatch") return "warn";
-  if (actionType === "alert_acknowledge" || actionType === "alert_close") return "accent";
-  return "default";
+function payloadPreview(entry: DecisionLogEntry): string | null {
+  const p = entry.payload;
+  if (!p) return null;
+  if (typeof p.query === "string")         return p.query.slice(0, 80);
+  if (typeof p.note === "string")          return p.note.slice(0, 80);
+  if (typeof p.resource_name === "string") return p.resource_name.slice(0, 60);
+  if (typeof p.label === "string")         return p.label.slice(0, 60);
+  if (p.district && p.source)              return `${p.source} · ${p.district}`;
+  return null;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function DecisionLogPanel() {
   const { activePanel, setActivePanel, locale } = useUIStore();
-  const { data: entries = [], isLoading, isError } = useDecisionLog(100);
+  const { data: entries = [], isLoading, isError, dataUpdatedAt, refetch, isFetching } = useDecisionLog(100);
   const { data: health, isError: apiDown } = useApiHealth();
   const online = health?.status === "ok" && !apiDown;
 
   if (activePanel !== "log") return null;
 
-  const panelTitle   = locale === "es" ? "Registro" : "Decision Log";
-  const exportLabel  = locale === "es" ? "Exportar registro a CSV" : "Export log to CSV";
-  const loadingText  = locale === "es" ? "Cargando registro…" : "Loading log…";
-  const errorText    = locale === "es" ? "Error al cargar registro" : "Failed to load log";
-  const emptyTitle   = locale === "es" ? "Sin entradas aún" : "No entries yet";
-  const emptyBody    = locale === "es"
-    ? "El registro de decisiones aparecerá aquí. Cada consulta, reconocimiento y escalada queda registrada de forma inmutable para exportación EDAN-Perú."
-    : "Decision log entries will appear here. Every query, acknowledgement, and escalation is recorded immutably for EDAN-Peru export.";
-  const footerText   = locale === "es" ? "Registro append-only · Exportación EDAN-Perú" : "Append-only log · EDAN-Peru export";
+  const lastUpdateStr = dataUpdatedAt
+    ? relativeTime(new Date(dataUpdatedAt).toISOString(), locale)
+    : null;
+
+  const panelTitle  = locale === "es" ? "Registro" : "Decision Log";
+  const exportLabel = locale === "es" ? "Exportar CSV" : "Export CSV";
+  const loadingText = locale === "es" ? "Cargando registro…" : "Loading log…";
+  const errorText   = locale === "es" ? "Error al cargar el registro" : "Failed to load log";
+  const emptyTitle  = locale === "es" ? "Sin entradas aún" : "No entries yet";
+  const emptyBody   = locale === "es"
+    ? "El registro de decisiones aparecerá aquí. Cada consulta, reconocimiento y escalada queda registrada de forma inmutable para exportación."
+    : "Decision log entries will appear here. Every query, acknowledgement, and escalation is recorded immutably for export.";
+
+  const footerStatus = online
+    ? (locale === "es" ? "En vivo · API conectada" : "Live · API connected")
+    : (locale === "es" ? "Modo offline · datos locales" : "Offline · local data");
 
   return (
     <aside
       className={[
-        // Mobile: slide-up sheet
         "fixed bottom-14 left-0 right-0 h-[62vh] rounded-t-2xl",
-        // Desktop: fixed sidebar panel
         "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-2xl",
-        // Felt-style cream surface — NO glass/blur
         "bg-surface border-l border-border-strong shadow-panel z-20 flex flex-col panel-animate",
       ].join(" ")}
       aria-label={locale === "es" ? "Registro de decisiones" : "Decision log"}
@@ -103,15 +155,26 @@ export function DecisionLogPanel() {
         <ClipboardList size={15} className="text-accent shrink-0" aria-hidden="true" />
         <PanelTitle>{panelTitle}</PanelTitle>
 
-        {/* Export CSV — live API link when online, local CSV generation when offline */}
+        {/* Refresh */}
+        <button
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="text-ink-muted hover:text-ink transition-colors disabled:opacity-40 rounded focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          aria-label={locale === "es" ? "Actualizar" : "Refresh"}
+        >
+          <RefreshCw size={13} className={isFetching ? "animate-spin" : ""} />
+        </button>
+
+        {/* Export CSV */}
         {online ? (
           <a
             href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/alerts/decision-log/export`}
             download
-            className="ml-auto text-ink-muted hover:text-ink transition-colors flex items-center gap-1 text-xs rounded focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="text-ink-muted hover:text-ink transition-colors flex items-center gap-1 text-xs rounded focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             aria-label={exportLabel}
           >
-            <Download size={13} /> CSV
+            <Download size={13} />
+            <span className="hidden sm:inline">CSV</span>
           </a>
         ) : (
           <Button
@@ -119,9 +182,10 @@ export function DecisionLogPanel() {
             size="xs"
             onClick={() => downloadCsv(entries)}
             aria-label={exportLabel}
-            className="ml-auto gap-1"
+            className="gap-1"
           >
-            <Download size={13} /> CSV
+            <Download size={13} />
+            <span className="hidden sm:inline">CSV</span>
           </Button>
         )}
 
@@ -139,14 +203,14 @@ export function DecisionLogPanel() {
 
       {/* Log list */}
       <ul
-        className="flex-1 overflow-y-auto divide-y divide-border"
+        className="flex-1 overflow-y-auto"
         role="list"
-        aria-label={locale === "es" ? "Entradas del registro de decisiones" : "Decision log entries"}
+        aria-label={locale === "es" ? "Entradas del registro" : "Log entries"}
         aria-live="polite"
         aria-busy={isLoading}
       >
         {isLoading && (
-          <li className="px-4 py-8 text-xs text-ink-subtle text-center" aria-live="polite">
+          <li className="px-4 py-10 text-xs text-ink-subtle text-center">
             {loadingText}
           </li>
         )}
@@ -168,52 +232,52 @@ export function DecisionLogPanel() {
         )}
 
         {entries.map((entry) => {
-          const actionEntry = ACTION_LABELS[entry.action_type];
-          const label = actionEntry ? actionEntry[locale] : entry.action_type.replace(/_/g, " ");
-          const preview = entry.payload?.query
-            ? String(entry.payload.query).slice(0, 60)
-            : entry.payload?.note
-              ? String(entry.payload.note).slice(0, 60)
-              : entry.payload?.resource_name
-                ? String(entry.payload.resource_name)
-                : entry.payload?.label
-                  ? String(entry.payload.label).slice(0, 60)
-                  : entry.payload?.district && entry.payload?.source
-                    ? `${entry.payload.source} · ${entry.payload.district}`
-                    : null;
+          const meta = ACTION_META[entry.action_type];
+          const Icon = meta?.icon ?? ChevronRight;
+          const label = meta ? meta[locale] : entry.action_type.replace(/_/g, " ");
+          const variant = meta?.variant ?? "default";
+          const preview = payloadPreview(entry);
 
           return (
             <li
               key={entry.id}
-              className="px-4 py-3 border-b border-border hover:bg-surface-hover transition-colors"
+              className="px-4 py-3 border-b border-border last:border-b-0 hover:bg-surface-hover transition-colors"
             >
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-2.5">
+                {/* Action icon */}
+                <div className="mt-0.5 shrink-0 w-6 h-6 rounded-full bg-surface-sunken flex items-center justify-center">
+                  <Icon size={12} className="text-ink-muted" aria-hidden="true" />
+                </div>
+
                 <div className="flex-1 min-w-0">
-                  {/* Action label + pill */}
+                  {/* Action label + alert badge */}
                   <div className="flex items-center gap-1.5 mb-0.5">
-                    <p className="text-xs font-medium text-ink truncate">{label}</p>
-                    <Pill variant={pillVariantFor(entry.action_type)} className="shrink-0">
-                      {entry.action_type.replace(/_/g, " ")}
+                    <Pill variant={variant} className="shrink-0 text-[10px] px-1.5 py-0.5 leading-none">
+                      {label}
                     </Pill>
+                    {entry.alert_id && (
+                      <span className="text-[10px] font-mono text-ink-subtle shrink-0">
+                        #{entry.alert_id}
+                      </span>
+                    )}
                   </div>
 
                   {/* Payload preview */}
                   {preview && (
-                    <p className="text-xs text-ink-muted truncate">{preview}</p>
+                    <p className="text-xs text-ink-muted truncate mt-0.5">{preview}</p>
                   )}
 
-                  {/* Operator + timestamp */}
-                  <p className="text-xs font-mono tabular-nums text-ink-subtle mt-0.5">
-                    {entry.operator_id} · {timeStamp(entry.logged_at)}
+                  {/* Operator · relative time · absolute time */}
+                  <p className="text-[10px] font-mono tabular-nums text-ink-subtle mt-1 flex items-center gap-1">
+                    <span className="font-sans not-mono">{entry.operator_id}</span>
+                    <span aria-hidden="true">·</span>
+                    <span title={absoluteTime(entry.logged_at)}>
+                      {relativeTime(entry.logged_at, locale)}
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span className="opacity-60">{absoluteTime(entry.logged_at)}</span>
                   </p>
                 </div>
-
-                {/* Alert ID badge */}
-                {entry.alert_id && (
-                  <span className="shrink-0 text-xs font-mono tabular-nums text-ink-subtle">
-                    #{entry.alert_id}
-                  </span>
-                )}
               </div>
             </li>
           );
@@ -221,8 +285,23 @@ export function DecisionLogPanel() {
       </ul>
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-border text-xs text-ink-subtle text-center">
-        {footerText}
+      <div className="px-4 py-2.5 border-t border-border flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <span
+            className={[
+              "inline-block w-1.5 h-1.5 rounded-full",
+              online ? "bg-ok" : "bg-border-strong",
+            ].join(" ")}
+            aria-hidden="true"
+          />
+          <span className="text-[10px] text-ink-subtle">{footerStatus}</span>
+        </div>
+        <span className="text-[10px] text-ink-subtle tabular-nums">
+          {entries.length > 0 && `${entries.length} · `}
+          {lastUpdateStr
+            ? `${locale === "es" ? "act." : "upd."} ${lastUpdateStr}`
+            : locale === "es" ? "sin datos" : "no data"}
+        </span>
       </div>
     </aside>
   );

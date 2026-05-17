@@ -2,7 +2,8 @@
 
 import {
   BarChart3, Droplets, AlertTriangle, Users, History, Radio,
-  TrendingUp, Waves, Brain, CheckCircle2, Copy, Check,
+  TrendingUp, Waves, Brain, CheckCircle2, FileText, X,
+  Copy, Check, AlertOctagon, ArrowUpRight, Download,
 } from "lucide-react";
 import { useState } from "react";
 import { useUIStore } from "@/store/ui";
@@ -11,7 +12,7 @@ import {
   useFloodExposure, useFusion, useDecisionLog, useSocialSignals,
 } from "@/lib/queries";
 import { clsx } from "clsx";
-import type { AlertTrendDay, SocialBreakdown } from "@/lib/api";
+import type { Alert, AlertTrendDay, SocialBreakdown } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
 import {
@@ -148,118 +149,417 @@ function SocialPill({ item, locale }: { item: SocialBreakdown; locale: Locale })
   );
 }
 
-// ─── EDAN report generator ────────────────────────────────────────────────────
+// ─── EDAN report generation ───────────────────────────────────────────────────
+
+function buildReportId(now: Date) {
+  return `CR-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}-${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}`;
+}
+
+function downloadBlob(content: string, filename: string, type: string) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+interface ReportData {
+  reportId: string; nowStr: string; level: string;
+  active: Alert[]; critical: Alert[]; high: Alert[];
+  floodArea: number; popStr: string;
+  highRiskDistricts: string[]; moderateDistricts: string[];
+  locale: "es" | "en";
+}
+
+function buildMarkdown(d: ReportData): string {
+  const es = d.locale === "es";
+  const SEV: Record<string,string> = es
+    ? { critical:"CRÍTICO", high:"ALTO", medium:"MEDIO", low:"BAJO" }
+    : { critical:"CRITICAL", high:"HIGH", medium:"MEDIUM", low:"LOW" };
+  const TYPE: Record<string,string> = es
+    ? { flood:"Inundación SAR", huayco:"Huayco", social_cluster:"Señal social", weather:"Meteorológica" }
+    : { flood:"SAR Flood", huayco:"Mudslide", social_cluster:"Social signal", weather:"Weather" };
+  const rows = d.active.slice(0,12).map((a,i) =>
+    `${i+1}. **[${SEV[a.severity]??a.severity}]** ${TYPE[a.type]??a.type} — ${a.title}`
+  );
+  return (es ? [
+    `# Reporte de Situación — EDAN-Perú`,``,
+    `**ID:** ${d.reportId}  `,
+    `**Fecha/Hora:** ${d.nowStr} (Lima, Perú)  `,
+    `**Nivel SINAGERD:** ${d.level}  `,
+    `**Clasificación:** Para uso oficial`,``,`---`,``,
+    `## 1. Resumen Ejecutivo`,``,
+    `| Indicador | Valor |`,`|-----------|-------|`,
+    `| Alertas activas | ${d.active.length} (${d.critical.length} críticas, ${d.high.length} altas) |`,
+    `| Área inundada SAR | ${d.floodArea.toFixed(2)} km² |`,
+    `| Población en riesgo | ${d.popStr} habitantes |`,
+    `| Distritos riesgo alto | ${d.highRiskDistricts.join(", ")||"Ninguno"} |`,
+    `| Distritos riesgo moderado | ${d.moderateDistricts.join(", ")||"Ninguno"} |`,``,
+    `## 2. Alertas Activas`,``,
+    ...rows,
+    d.active.length > 12 ? `\n*...y ${d.active.length-12} alertas más*` : ``,``,
+    `## 3. Evaluación de Impacto`,``,
+    `- SAR Sentinel-1 detecta **${d.floodArea.toFixed(1)} km²** de área inundada`,
+    `- Población estimada en zona de riesgo: **${d.popStr} habitantes**`,
+    `- Distritos con nivel de riesgo alto: **${d.highRiskDistricts.length}**`,``,
+    `## 4. Fuentes de Datos`,``,
+    `| Fuente | Detalle | Actualización |`,`|--------|---------|---------------|`,
+    `| SAR | Sentinel-1 · Microsoft Planetary Computer | ~6 días |`,
+    `| Lluvia | NASA IMERG Early Run v07B | 30 min |`,
+    `| Hidrología | ANA Observatorio Chirilu · SENAMHI | 1 hora |`,
+    `| Social | Bluesky · RSS RPP/Andina · Reddit · Telegram | 5 min |`,
+    `| Peligros | CENEPRED SIGRID | Estático |`,``,`---`,``,
+    `*Para uso oficial · Formulario EDAN-Perú · SINAGERD*  `,
+    `*Sistema: Costa Resiliente · ${d.nowStr}*`,
+  ] : [
+    `# Situation Report — EDAN-Peru`,``,
+    `**ID:** ${d.reportId}  `,
+    `**Date/Time:** ${d.nowStr} (Lima, Peru)  `,
+    `**SINAGERD Level:** ${d.level}  `,
+    `**Classification:** For official use`,``,`---`,``,
+    `## 1. Executive Summary`,``,
+    `| Indicator | Value |`,`|-----------|-------|`,
+    `| Active alerts | ${d.active.length} (${d.critical.length} critical, ${d.high.length} high) |`,
+    `| SAR flooded area | ${d.floodArea.toFixed(2)} km² |`,
+    `| Population at risk | ${d.popStr} inhabitants |`,
+    `| High-risk districts | ${d.highRiskDistricts.join(", ")||"None"} |`,
+    `| Moderate-risk districts | ${d.moderateDistricts.join(", ")||"None"} |`,``,
+    `## 2. Active Alerts`,``,
+    ...rows,
+    d.active.length > 12 ? `\n*...and ${d.active.length-12} more alerts*` : ``,``,
+    `## 3. Impact Assessment`,``,
+    `- SAR Sentinel-1 detects **${d.floodArea.toFixed(1)} km²** of flooded area`,
+    `- Estimated population in risk zone: **${d.popStr} inhabitants**`,
+    `- Districts with high risk level: **${d.highRiskDistricts.length}**`,``,
+    `## 4. Data Sources`,``,
+    `| Source | Detail | Frequency |`,`|--------|--------|-----------|`,
+    `| SAR | Sentinel-1 · Microsoft Planetary Computer | ~6 days |`,
+    `| Rainfall | NASA IMERG Early Run v07B | 30 min |`,
+    `| Hydrology | ANA Observatorio Chirilu · SENAMHI | 1 hour |`,
+    `| Social | Bluesky · RSS RPP/Andina · Reddit · Telegram | 5 min |`,
+    `| Hazards | CENEPRED SIGRID | Static |`,``,`---`,``,
+    `*For official use · EDAN-Peru form · SINAGERD*  `,
+    `*System: Costa Resiliente · ${d.nowStr}*`,
+  ]).join("\n");
+}
+
+function buildReportHTML(d: ReportData): string {
+  const es = d.locale === "es";
+  const lc = d.level;
+  const lcColor = lc==="EMERGENCIA"?"#dc2626":lc==="ALERTA"?"#ea580c":lc==="AVISO"?"#ca8a04":"#16a34a";
+  const lcBg   = lc==="EMERGENCIA"?"#fef2f2":lc==="ALERTA"?"#fff7ed":lc==="AVISO"?"#fefce8":"#f0fdf4";
+  const lcLbl  = !es ? ({EMERGENCIA:"EMERGENCY",ALERTA:"ALERT",AVISO:"NOTICE",NORMAL:"NORMAL"}[lc]??lc) : lc;
+  const lcDesc = lc==="EMERGENCIA"
+    ? (es?`${d.critical.length} alerta(s) crítica(s). Respuesta inmediata requerida.`:`${d.critical.length} critical alert(s). Immediate response required.`)
+    : lc==="ALERTA"
+    ? (es?`${d.high.length} alerta(s) de alta severidad. Monitoreo intensificado.`:`${d.high.length} high severity alert(s). Intensified monitoring.`)
+    : (es?`${d.active.length} alerta(s) activa(s). Monitoreo en curso.`:`${d.active.length} active alert(s). Monitoring ongoing.`);
+  const SEV_C: Record<string,string> = {critical:"#dc2626",high:"#ea580c",medium:"#ca8a04",low:"#16a34a"};
+  const SEV_L: Record<string,string> = es
+    ? {critical:"CRÍTICO",high:"ALTO",medium:"MEDIO",low:"BAJO"}
+    : {critical:"CRITICAL",high:"HIGH",medium:"MEDIUM",low:"LOW"};
+  const TYPE_L: Record<string,string> = es
+    ? {flood:"Inundación SAR",huayco:"Huayco / Deslizamiento",social_cluster:"Señal social",weather:"Meteorológica"}
+    : {flood:"SAR Flood",huayco:"Mudslide / Huayco",social_cluster:"Social signal",weather:"Weather"};
+
+  const alertRows = d.active.slice(0,12).map(a => {
+    const sc = SEV_C[a.severity]??"#6b7280";
+    const sl = SEV_L[a.severity]??a.severity;
+    return `<tr>
+      <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;"><span style="background:${sc}18;color:${sc};font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;border:1px solid ${sc}30">${sl}</span></td>
+      <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#374151">${a.title}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;font-size:11px;color:#6b7280">${TYPE_L[a.type]??a.type}</td>
+    </tr>`;
+  }).join("");
+
+  const distRows = [
+    ...d.highRiskDistricts.map(n=>`<tr><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-size:12px">${n}</td><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9"><span style="background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">${es?"ALTO":"HIGH"}</span></td></tr>`),
+    ...d.moderateDistricts.map(n=>`<tr><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-size:12px">${n}</td><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9"><span style="background:#fffbeb;color:#d97706;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">${es?"MODERADO":"MODERATE"}</span></td></tr>`),
+  ].join("");
+
+  const srcRows = (es ? [
+    ["SAR / Inundación","Sentinel-1 · Microsoft Planetary Computer · ESA Copernicus","~6 días"],
+    ["Lluvia","NASA IMERG Early Run v07B · GPM","30 min"],
+    ["Hidrología","ANA Observatorio Chirilu · SENAMHI","1 hora"],
+    ["Social","Bluesky · RSS RPP/Andina · Reddit · Telegram · Reportes de campo","5 min"],
+    ["Peligros","CENEPRED SIGRID · Zonas de susceptibilidad","Estático"],
+    ["SINPAD","INDECI · Historial de emergencias 2003-2020","Histórico"],
+  ] : [
+    ["SAR / Flood","Sentinel-1 · Microsoft Planetary Computer · ESA Copernicus","~6 days"],
+    ["Rainfall","NASA IMERG Early Run v07B · GPM","30 min"],
+    ["Hydrology","ANA Observatorio Chirilu · SENAMHI","1 hour"],
+    ["Social","Bluesky · RSS RPP/Andina · Reddit · Telegram · Field reports","5 min"],
+    ["Hazards","CENEPRED SIGRID · Susceptibility zones","Static"],
+    ["SINPAD","INDECI · Emergency history 2003-2020","Historical"],
+  ]).map(([s,d2,f])=>`<tr><td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;font-weight:600;font-size:12px;color:#374151;width:130px">${s}</td><td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#4b5563">${d2}</td><td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;font-size:11px;color:#9ca3af;width:100px">${f}</td></tr>`).join("");
+
+  return `<!DOCTYPE html><html lang="${d.locale}">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${es?"Reporte EDAN-Perú":"EDAN-Peru Report"} — ${d.reportId}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f8fafc;color:#111827}
+.page{max-width:820px;margin:0 auto;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.1)}
+@media print{body{background:#fff}.no-print{display:none!important}.page{box-shadow:none;max-width:none;margin:0}}
+.hdr{background:#0f172a;color:#fff;padding:24px 32px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.hdr h1{font-size:16px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.hdr p{font-size:11px;color:#94a3b8;margin-top:3px}
+.hdr-r{text-align:right;flex-shrink:0}
+.banner{padding:14px 32px;background:${lcBg};border-bottom:3px solid ${lcColor};display:flex;align-items:center;gap:14px}
+.badge{background:${lcColor};color:#fff;font-size:12px;font-weight:800;letter-spacing:.1em;padding:5px 14px;border-radius:6px;white-space:nowrap}
+.banner-desc{font-size:13px;color:${lcColor};font-weight:600}
+.body{padding:28px 32px}
+.sec{margin-bottom:28px}
+.sec-ttl{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#64748b;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-bottom:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.mcard{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px}
+.mval{font-size:22px;font-weight:800;font-family:'Courier New',monospace;line-height:1;letter-spacing:-.02em}
+.mlbl{font-size:10px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+.msub{font-size:11px;color:#94a3b8;margin-top:5px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0}
+.impact-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:0}
+.icard{border-radius:8px;padding:16px}
+.icard-ttl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.icard p{font-size:12px;line-height:1.7}
+.ftr{background:#f1f5f9;padding:14px 32px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;font-size:11px;color:#64748b}
+.actions{padding:12px 32px;border-bottom:1px solid #e2e8f0;display:flex;gap:10px;align-items:center}
+.print-btn{background:#0f172a;color:#fff;border:none;padding:9px 18px;font-size:12px;font-weight:700;border-radius:6px;cursor:pointer;letter-spacing:.03em}
+.print-btn:hover{background:#1e293b}
+.hint{font-size:11px;color:#64748b}
+</style></head>
+<body><div class="page">
+<div class="actions no-print">
+  <button class="print-btn" onclick="window.print()">&#x1F5A8;&nbsp;&nbsp;${es?"Imprimir / Guardar como PDF":"Print / Save as PDF"}</button>
+  <span class="hint">${es?"Ctrl+P → Guardar como PDF":"Ctrl+P → Save as PDF"}</span>
+</div>
+<div class="hdr">
+  <div><h1>${es?"Reporte de Situación — EDAN-Perú":"Situation Report — EDAN-Peru"}</h1>
+  <p>SINAGERD · ${es?"Sistema Nacional de Gestión del Riesgo de Desastres":"National Disaster Risk Management System"}</p></div>
+  <div class="hdr-r">
+    <div style="font-family:'Courier New',monospace;font-size:12px;font-weight:700">${d.reportId}</div>
+    <div style="font-size:11px;color:#94a3b8;margin-top:3px">${d.nowStr}</div>
+    <div style="font-size:10px;color:#475569;margin-top:3px">Costa Resiliente</div>
+  </div>
+</div>
+<div class="banner">
+  <span class="badge">SINAGERD ${lcLbl}</span>
+  <span class="banner-desc">${lcDesc}</span>
+</div>
+<div class="body">
+  <div class="sec">
+    <div class="sec-ttl">${es?"1. Resumen Ejecutivo":"1. Executive Summary"}</div>
+    <div class="grid4">
+      <div class="mcard"><div class="mval" style="color:${d.active.length>0?"#dc2626":"#111827"}">${d.active.length}</div><div class="mlbl">${es?"Alertas activas":"Active alerts"}</div><div class="msub">${d.critical.length} ${es?"críticas":"critical"} · ${d.high.length} ${es?"altas":"high"}</div></div>
+      <div class="mcard"><div class="mval" style="color:#2563eb">${d.floodArea.toFixed(1)}<span style="font-size:13px;font-weight:400"> km²</span></div><div class="mlbl">${es?"Área inundada":"Flooded area"}</div><div class="msub">Sentinel-1</div></div>
+      <div class="mcard"><div class="mval">${d.popStr}</div><div class="mlbl">${es?"Pob. en riesgo":"Pop. at risk"}</div><div class="msub">${es?"habitantes":"inhabitants"}</div></div>
+      <div class="mcard"><div class="mval" style="color:${d.highRiskDistricts.length>0?"#dc2626":"#111827"}">${d.highRiskDistricts.length+d.moderateDistricts.length}</div><div class="mlbl">${es?"Distritos en alerta":"Districts on alert"}</div><div class="msub">${d.highRiskDistricts.length} ${es?"alto":"high"} · ${d.moderateDistricts.length} mod.</div></div>
+    </div>
+  </div>
+  ${d.active.length>0?`<div class="sec">
+    <div class="sec-ttl">${es?"2. Alertas Activas":"2. Active Alerts"} (${d.active.length})</div>
+    <table><thead><tr><th style="width:85px">${es?"Severidad":"Severity"}</th><th>${es?"Descripción":"Description"}</th><th style="width:150px">${es?"Tipo":"Type"}</th></tr></thead><tbody>${alertRows}</tbody></table>
+    ${d.active.length>12?`<p style="font-size:11px;color:#6b7280;margin-top:8px">...${es?"y":"and"} ${d.active.length-12} ${es?"alertas más":"more alerts"}</p>`:""}
+  </div>`:""}
+  ${distRows?`<div class="sec">
+    <div class="sec-ttl">${es?"3. Distritos en Riesgo":"3. Districts at Risk"}</div>
+    <table><thead><tr><th>${es?"Distrito":"District"}</th><th style="width:130px">${es?"Nivel de Riesgo":"Risk Level"}</th></tr></thead><tbody>${distRows}</tbody></table>
+  </div>`:""}
+  <div class="sec">
+    <div class="sec-ttl">${es?"4. Evaluación de Impacto Hidrometeorológico":"4. Hydrometeorological Impact Assessment"}</div>
+    <div class="impact-grid">
+      <div class="icard" style="background:#eff6ff;border:1px solid #bfdbfe"><div class="icard-ttl" style="color:#1d4ed8">SAR Sentinel-1</div><p style="color:#1e3a5f">${es?`Imágenes de radar de apertura sintética detectan <strong>${d.floodArea.toFixed(2)} km²</strong> de superficie inundada en la región de Lima. Cadencia de revisita ~6 días.`:`Synthetic aperture radar imagery detects <strong>${d.floodArea.toFixed(2)} km²</strong> of flooded surface in the Lima region. Revisit cadence ~6 days.`}</p></div>
+      <div class="icard" style="background:#f0fdf4;border:1px solid #bbf7d0"><div class="icard-ttl" style="color:#15803d">NASA IMERG</div><p style="color:#14532d">${es?`Precipitación acumulada basada en estimaciones satelitales IMERG Early Run v07B. Granularidad de 30 min. Actualizado cada 2 horas.`:`Accumulated precipitation from IMERG Early Run v07B satellite estimates. 30-min granularity. Updated every 2 hours.`}</p></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-ttl">${es?"5. Fuentes de Datos y Metodología":"5. Data Sources & Methodology"}</div>
+    <table><thead><tr><th style="width:130px">${es?"Fuente":"Source"}</th><th>${es?"Descripción":"Description"}</th><th style="width:100px">${es?"Actualización":"Frequency"}</th></tr></thead><tbody>${srcRows}</tbody></table>
+  </div>
+</div>
+<div class="ftr">
+  <div><strong style="color:#374151">${es?"Para uso oficial — EDAN-Perú / SINAGERD":"For official use — EDAN-Peru / SINAGERD"}</strong><div style="margin-top:2px">Costa Resiliente · Lima, Perú</div></div>
+  <div style="text-align:right"><strong style="font-family:'Courier New',monospace">${d.reportId}</strong><div style="margin-top:2px">${d.nowStr}</div></div>
+</div>
+</div></body></html>`;
+}
+
+// ─── EDAN report button + config modal ────────────────────────────────────────
+
+type ReportStep = "idle" | "config" | "generating" | "done";
 
 function EDANReportButton() {
   const { locale } = useUIStore();
-  const tr = useT(locale);
+  const [step, setStep] = useState<ReportStep>("idle");
+  const [wantPdf, setWantPdf] = useState(true);
+  const [wantMd, setWantMd] = useState(false);
   const [copied, setCopied] = useState(false);
   const { data: alerts = [] } = useAlerts();
   const { data: exposure } = useFloodExposure();
   const { data: summary } = useDistrictRiskSummary();
 
-  function buildReport(): string {
-    const locale_tag = locale === "en" ? "en-US" : "es-PE";
-    const now = new Date().toLocaleString(locale_tag, { timeZone: "America/Lima" });
-    const active = alerts.filter((a) => a.status === "active");
-    const critical = active.filter((a) => a.severity === "critical");
-    const high = active.filter((a) => a.severity === "high");
-    const floodArea = exposure?.districts.reduce((s, d) => s + d.overlap_km2, 0) ?? 0;
-    const affectedPop = exposure?.total_affected_population ?? 0;
-    const highRiskDistricts = summary?.features
-      .filter((f) => f.properties.risk_level === "alto")
-      .map((f) => f.properties.name).join(", ") ?? "—";
+  const now = new Date();
+  const nowStr = now.toLocaleString(locale === "en" ? "en-US" : "es-PE", { timeZone: "America/Lima" });
+  const active = alerts.filter((a) => a.status === "active");
+  const critical = active.filter((a) => a.severity === "critical");
+  const high = active.filter((a) => a.severity === "high");
+  const floodArea = exposure?.districts.reduce((s, d) => s + d.overlap_km2, 0) ?? 0;
+  const affectedPop = exposure?.total_affected_population ?? 0;
+  const highRiskDistricts = summary?.features.filter((f) => f.properties.risk_level === "alto").map((f) => f.properties.name) ?? [];
+  const moderateDistricts = summary?.features.filter((f) => f.properties.risk_level === "moderado").map((f) => f.properties.name) ?? [];
+  const level = critical.length > 0 ? "EMERGENCIA" : high.length > 1 ? "ALERTA" : active.length > 0 ? "AVISO" : "NORMAL";
+  const popStr = affectedPop > 1000 ? `~${(affectedPop / 1000).toFixed(1)}k` : String(affectedPop || "—");
+  const reportId = buildReportId(now);
 
-    const level = critical.length > 0 ? "EMERGENCIA" : high.length > 1 ? "ALERTA" : active.length > 0 ? "AVISO" : "NORMAL";
+  const reportData: ReportData = {
+    reportId, nowStr, level, active, critical, high,
+    floodArea, popStr, highRiskDistricts, moderateDistricts, locale,
+  };
 
-    const RULE = "═══════════════════════════════════════════";
-    const RULE_THIN = "─────────────────────────────────────────────";
-    const popFormatted = `${affectedPop > 1000 ? (affectedPop / 1000).toFixed(0) + "k" : affectedPop}`;
+  function handleGenerate() {
+    setStep("generating");
+    // window.open must be called synchronously from the click handler
+    let win: Window | null = null;
+    if (wantPdf) win = window.open("about:blank", "_blank");
 
-    const lines = locale === "en" ? [
-      RULE,
-      "SITUATION REPORT — COSTA RESILIENTE",
-      `Date / Time: ${now} (Lima, Peru)`,
-      `SINAGERD level: ${level}`,
-      "Generated by: Costa Resiliente platform",
-      RULE,
-      "",
-      "1. EXECUTIVE SUMMARY",
-      `   Active alerts:        ${active.length} (${critical.length} critical, ${high.length} high)`,
-      `   SAR flooded area:     ${floodArea.toFixed(1)} km²`,
-      `   Pop. at risk (est.):  ~${popFormatted} inhabitants`,
-      `   High-risk districts:  ${highRiskDistricts || "None"}`,
-      "",
-      "2. ACTIVE ALERTS",
-      ...active.slice(0, 5).map((a, i) =>
-        `   ${i + 1}. [${a.severity.toUpperCase()}] ${a.title}${a.description ? "\n      " + a.description : ""}`
-      ),
-      active.length > 5 ? `   ... and ${active.length - 5} more alerts` : "",
-      "",
-      "3. DATA SOURCES",
-      "   • SAR: Sentinel-1 (Microsoft Planetary Computer)",
-      "   • Rainfall: NASA IMERG Early Run v07B",
-      "   • Hydrology: ANA Observatorio Chirilu + SENAMHI",
-      "   • Social: Bluesky + RSS + Reddit + Telegram",
-      "",
-      RULE_THIN,
-      "FOR OFFICIAL USE — EDAN-PERÚ FORM",
-      "System: Costa Resiliente v1.0 (IEEE Response Quest 2026)",
-      RULE,
-    ] : [
-      RULE,
-      "REPORTE DE SITUACIÓN — COSTA RESILIENTE",
-      `Fecha/Hora: ${now} (Lima, Perú)`,
-      `Nivel SINAGERD: ${level}`,
-      "Generado por: Plataforma Costa Resiliente",
-      RULE,
-      "",
-      "1. RESUMEN EJECUTIVO",
-      `   Alertas activas:    ${active.length} (${critical.length} críticas, ${high.length} altas)`,
-      `   Área inundada SAR:  ${floodArea.toFixed(1)} km²`,
-      `   Pob. en riesgo est: ~${popFormatted} habitantes`,
-      `   Distritos riesgo alto: ${highRiskDistricts || "Ninguno"}`,
-      "",
-      "2. ALERTAS ACTIVAS",
-      ...active.slice(0, 5).map((a, i) =>
-        `   ${i + 1}. [${a.severity.toUpperCase()}] ${a.title}${a.description ? "\n      " + a.description : ""}`
-      ),
-      active.length > 5 ? `   ... y ${active.length - 5} alertas más` : "",
-      "",
-      "3. DATOS DE FUENTES",
-      "   • SAR: Sentinel-1 (Microsoft Planetary Computer)",
-      "   • Lluvia: NASA IMERG Early Run v07B",
-      "   • Hidrología: ANA Observatorio Chirilu + SENAMHI",
-      "   • Social: Bluesky + RSS + Reddit + Telegram",
-      "",
-      RULE_THIN,
-      "PARA USO OFICIAL — FORMULARIO EDAN-PERÚ",
-      "Sistema: Costa Resiliente v1.0 (IEEE Response Quest 2026)",
-      RULE,
-    ];
-
-    return lines.filter((l) => l !== "").join("\n");
+    // Build and inject HTML
+    if (win) {
+      const html = buildReportHTML(reportData);
+      win.document.write(html);
+      win.document.close();
+    }
+    if (wantMd) {
+      downloadBlob(buildMarkdown(reportData), `${reportId}.md`, "text/markdown;charset=utf-8");
+    }
+    setStep("done");
+    setTimeout(() => setStep("idle"), 2000);
   }
 
-  async function handleCopy() {
-    const report = buildReport();
-    await navigator.clipboard.writeText(report);
+  async function handleCopyText() {
+    await navigator.clipboard.writeText(buildMarkdown(reportData));
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }
 
+  if (step === "idle") {
+    return (
+      <button
+        onClick={() => setStep("config")}
+        className="text-xs text-ink-subtle hover:text-accent flex items-center gap-1.5 transition-colors"
+        aria-label={locale === "es" ? "Generar reporte EDAN-Perú" : "Generate EDAN-Peru report"}
+      >
+        <FileText size={13} />
+        {locale === "es" ? "Reporte EDAN" : "EDAN Report"}
+      </button>
+    );
+  }
+
+  if (step === "generating") {
+    return (
+      <span className="text-xs text-ink-subtle flex items-center gap-1.5 animate-pulse">
+        <FileText size={13} />
+        {locale === "es" ? "Generando…" : "Generating…"}
+      </span>
+    );
+  }
+
+  if (step === "done") {
+    return (
+      <span className="text-xs text-ok-muted flex items-center gap-1.5">
+        <Check size={13} />
+        {locale === "es" ? "Listo" : "Done"}
+      </span>
+    );
+  }
+
+  // step === "config"
+  const es = locale === "es";
+  const levelLabel = !es
+    ? ({ EMERGENCIA: "EMERGENCY", ALERTA: "ALERT", AVISO: "NOTICE", NORMAL: "NORMAL" }[level] ?? level)
+    : level;
+
   return (
-    <button
-      onClick={handleCopy}
-      className="text-xs text-ink-subtle hover:text-accent flex items-center gap-1.5 transition-colors"
-      aria-label={locale === "es" ? "Copiar reporte EDAN-Perú al portapapeles" : "Copy EDAN-Peru report to clipboard"}
-      title={locale === "es" ? "Generar reporte EDAN-Perú" : "Generate EDAN-Peru report"}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      role="dialog"
+      aria-modal="true"
+      onClick={(e) => { if (e.target === e.currentTarget) setStep("idle"); }}
     >
-      {copied
-        ? <Check size={13} className="text-accent" />
-        : <Copy size={13} />}
-      {copied ? tr("dashboard", "edanCopied") : tr("dashboard", "edan")}
-    </button>
+      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-sm border border-border-strong overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-surface-sunken">
+          <FileText size={15} className="text-ink-muted shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-ink">
+              {es ? "Generar Reporte EDAN-Perú" : "Generate EDAN-Peru Report"}
+            </p>
+            <p className="text-xs text-ink-subtle font-mono">{reportId} · {nowStr}</p>
+          </div>
+          <button onClick={() => setStep("idle")} className="p-1 rounded text-ink-subtle hover:text-ink hover:bg-surface-hover transition-colors shrink-0">
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Situation snapshot */}
+        <div className="px-5 pt-4 pb-0">
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-surface-sunken">
+            <span className={clsx(
+              "text-xs font-bold uppercase px-2 py-0.5 rounded shrink-0",
+              level === "EMERGENCIA" ? "bg-danger-soft text-danger"
+              : level === "ALERTA"   ? "bg-warn-soft text-warn-muted"
+              : level === "AVISO"    ? "bg-surface text-ink-muted border border-border"
+              :                        "bg-accent-soft text-accent",
+            )}>
+              {levelLabel}
+            </span>
+            <span className="text-xs text-ink-subtle">
+              {active.length} {es ? "alertas" : "alerts"} · {floodArea.toFixed(1)} km² SAR · {popStr} {es ? "hab." : "pop."}
+            </span>
+          </div>
+        </div>
+
+        {/* Format options */}
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-xs font-semibold text-ink">{es ? "Formato de exportación" : "Export format"}</p>
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input type="checkbox" checked={wantPdf} onChange={(e) => setWantPdf(e.target.checked)} className="mt-0.5 rounded accent-accent" />
+            <div>
+              <span className="text-xs text-ink font-medium">{es ? "PDF visual (nueva pestaña)" : "Visual PDF (new tab)"}</span>
+              <p className="text-2xs text-ink-subtle mt-0.5">{es ? "Reporte completo con métricas, tablas y secciones. Usa Ctrl+P → Guardar como PDF." : "Full report with metrics, tables, and sections. Use Ctrl+P → Save as PDF."}</p>
+            </div>
+          </label>
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input type="checkbox" checked={wantMd} onChange={(e) => setWantMd(e.target.checked)} className="mt-0.5 rounded accent-accent" />
+            <div>
+              <span className="text-xs text-ink font-medium">Markdown (.md)</span>
+              <p className="text-2xs text-ink-subtle mt-0.5">{es ? "Texto estructurado para sistemas digitales EDAN / SINAGERD." : "Structured text for EDAN / SINAGERD digital systems."}</p>
+            </div>
+          </label>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 px-5 py-4 border-t border-border bg-surface-sunken">
+          <button
+            onClick={handleGenerate}
+            disabled={!wantPdf && !wantMd}
+            className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-ink text-surface rounded-xl px-3 py-2.5 hover:bg-ink/90 transition-colors font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download size={13} />
+            {es ? "Generar reporte" : "Generate report"}
+          </button>
+          <button
+            onClick={handleCopyText}
+            className="flex items-center gap-1.5 text-xs bg-surface border border-border rounded-xl px-3 py-2.5 hover:bg-surface-hover transition-colors text-ink-muted hover:text-ink"
+            title={es ? "Copiar como texto" : "Copy as text"}
+          >
+            {copied ? <Check size={13} className="text-ok-muted" /> : <Copy size={13} />}
+          </button>
+          <button onClick={() => setStep("idle")} className="text-xs text-ink-subtle hover:text-ink transition-colors px-1">
+            {es ? "Cancelar" : "Cancel"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -905,18 +1205,49 @@ function ResourceStatus({ locale }: { locale: Locale }) {
 
 // ─── Incident timeline (city-wide) ───────────────────────────────────────────
 
-const TYPE_ICON_MAP: Record<string, string> = {
-  flood: "[SAR]", huayco: "[HUA]", social_cluster: "[SOC]",
+type EventKind = "alert" | "dispatch" | "protocol" | "action" | "social" | "field";
+
+interface EventItem {
+  id: string;
+  time: string;
+  kind: EventKind;
+  badge: string;
+  badgeCls: string;
+  dotCls: string;
+  text: string;
+  sub?: string;
+}
+
+const ALERT_TYPE_ES: Record<string, string> = {
+  flood: "Inundación", huayco: "Huayco", social_cluster: "Señal social", weather: "Meteorológica",
+};
+const ALERT_TYPE_EN: Record<string, string> = {
+  flood: "Flood", huayco: "Mudslide", social_cluster: "Social signal", weather: "Weather",
 };
 
-const LOG_ICON: Record<string, string> = {
-  social_signal_received: "RX",
-  resource_dispatch:      "OUT",
-  protocol_step:          "OK",
-  map_pin:                "PIN",
-  acknowledge:            "ACK",
-  escalate:               "ESC",
-  false_positive:         "FP",
+const LOG_ACTION_ES: Record<string, { badge: string; verb: string }> = {
+  alert_acknowledge:   { badge: "ACK",     verb: "Alerta reconocida" },
+  alert_escalate:      { badge: "ESC↑",    verb: "Escalado a INDECI" },
+  alert_false_positive:{ badge: "FP",      verb: "Falsa alarma marcada" },
+  alert_close:         { badge: "CIERRE",  verb: "Alerta cerrada" },
+  resource_dispatch:   { badge: "DESP",    verb: "Recursos despachados" },
+  protocol_step:       { badge: "PROT",    verb: "Paso de protocolo" },
+  field_report:        { badge: "CAMPO",   verb: "Reporte de campo" },
+  map_pin:             { badge: "PIN",     verb: "Marcador de campo" },
+};
+const LOG_ACTION_EN: Record<string, { badge: string; verb: string }> = {
+  alert_acknowledge:   { badge: "ACK",     verb: "Alert acknowledged" },
+  alert_escalate:      { badge: "ESC↑",    verb: "Escalated to INDECI" },
+  alert_false_positive:{ badge: "FP",      verb: "Marked false alarm" },
+  alert_close:         { badge: "CLOSE",   verb: "Alert closed" },
+  resource_dispatch:   { badge: "DISP",    verb: "Resources dispatched" },
+  protocol_step:       { badge: "PROT",    verb: "Protocol step" },
+  field_report:        { badge: "FIELD",   verb: "Field report" },
+  map_pin:             { badge: "PIN",     verb: "Field marker" },
+};
+
+const SOURCE_LABEL_SHORT: Record<string, string> = {
+  bluesky: "Bluesky", telegram: "TG", reddit: "Reddit", campo: "Campo", rss: "RSS",
 };
 
 function IncidentTimeline({ locale }: { locale: Locale }) {
@@ -924,48 +1255,80 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
   const { data: log = [] } = useDecisionLog(20);
   const { data: socialData } = useSocialSignals(6);
 
-  type EventItem = { id: string; time: string; text: string; dotCls: string };
-
   const events: EventItem[] = [];
+  const ATYPE = locale === "es" ? ALERT_TYPE_ES : ALERT_TYPE_EN;
+  const LACT = locale === "es" ? LOG_ACTION_ES : LOG_ACTION_EN;
 
   for (const a of alerts.slice(0, 4)) {
     events.push({
       id: `a-${a.id}`,
       time: a.created_at,
-      text: `${TYPE_ICON_MAP[a.type] ?? "[ALT]"} ${a.title}`,
-      dotCls:
-        a.severity === "critical" ? "bg-danger"
-        : a.severity === "high"   ? "bg-warn"
-        :                           "bg-warn/60",
+      kind: "alert",
+      badge: a.severity === "critical" ? (locale === "es" ? "CRIT" : "CRIT")
+           : a.severity === "high"     ? (locale === "es" ? "ALTO" : "HIGH")
+           :                             (locale === "es" ? "MED"  : "MED"),
+      badgeCls: a.severity === "critical" ? "bg-danger-soft text-danger"
+              : a.severity === "high"     ? "bg-warn-soft text-warn-muted"
+              :                             "bg-surface-sunken text-ink-muted border border-border",
+      dotCls: a.severity === "critical" ? "bg-danger" : a.severity === "high" ? "bg-warn" : "bg-warn/60",
+      text: a.title,
+      sub: ATYPE[a.type] ?? a.type,
     });
   }
 
   for (const entry of log.slice(0, 6)) {
-    const icon = LOG_ICON[entry.action_type] ?? "LOG";
+    const meta = LACT[entry.action_type] ?? { badge: "LOG", verb: entry.action_type.replace(/_/g, " ") };
     const payload = entry.payload as Record<string, unknown>;
-    const desc =
-      entry.action_type === "resource_dispatch"      ? `[${icon}] ${payload.resource_name ?? payload.resource}`
-      : entry.action_type === "social_signal_received" ? `[${icon}] ${payload.district}: ${payload.label}`
-      : entry.action_type === "protocol_step"          ? `[${icon}] ${payload.label}`
-      : `[${icon}] ${entry.action_type.replace(/_/g, " ")}`;
-    events.push({ id: `l-${entry.id}`, time: entry.logged_at, text: desc, dotCls: "bg-ink-subtle" });
+    let detail = "";
+    if (entry.action_type === "resource_dispatch") {
+      detail = String(payload.resource_name ?? payload.resource ?? "");
+    } else if (entry.action_type === "protocol_step") {
+      detail = String(payload.label ?? payload.step ?? "");
+    } else if (entry.action_type === "field_report") {
+      detail = String(payload.label_es ?? payload.label ?? "");
+      const dist = payload.district ? ` · ${payload.district}` : "";
+      detail += dist;
+    } else if (entry.action_type === "map_pin") {
+      detail = String(payload.district ?? payload.label ?? "");
+    }
+    events.push({
+      id: `l-${entry.id}`,
+      time: entry.logged_at,
+      kind: entry.action_type === "resource_dispatch" ? "dispatch"
+          : entry.action_type === "protocol_step"     ? "protocol"
+          : entry.action_type === "field_report"      ? "field"
+          :                                             "action",
+      badge: meta.badge,
+      badgeCls: entry.action_type === "resource_dispatch" ? "bg-accent-soft text-accent"
+              : entry.action_type === "field_report"      ? "bg-ok-soft text-ok-muted"
+              :                                             "bg-surface-sunken text-ink-muted border border-border",
+      dotCls: "bg-ink-subtle",
+      text: detail || meta.verb,
+      sub: detail ? meta.verb : entry.operator_id,
+    });
   }
 
-  for (const f of (socialData?.features ?? []).filter(
-    (f) => f.properties.triage_label === "needs_help" || f.properties.triage_label === "road_blocked",
-  ).slice(0, 3)) {
-    const src = f.properties.source ?? "?";
-    const txt = f.properties.text?.slice(0, 55) ?? f.properties.triage_label;
+  for (const f of (socialData?.features ?? [])
+    .filter((f) => f.properties.triage_label === "needs_help" || f.properties.triage_label === "road_blocked")
+    .slice(0, 3)) {
+    const src = SOURCE_LABEL_SHORT[f.properties.source ?? ""] ?? f.properties.source ?? "?";
+    const txt = (f.properties.text?.slice(0, 60) ?? (locale === "es" ? "Señal social" : "Social signal"));
     events.push({
       id: `s-${f.properties.id}`,
       time: f.properties.ingested_at,
-      text: `[SOC] ${src}: ${txt}`,
+      kind: "social",
+      badge: src,
+      badgeCls: "bg-costa-soft text-costa-400 border border-costa-400/20",
       dotCls: "bg-accent",
+      text: txt,
+      sub: locale === "es"
+        ? (f.properties.triage_label === "needs_help" ? "Ayuda urgente" : "Vía bloqueada")
+        : (f.properties.triage_label === "needs_help" ? "Urgent help" : "Road blocked"),
     });
   }
 
   events.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-  const top = events.slice(0, 9);
+  const top = events.slice(0, 10);
 
   if (top.length === 0) return null;
 
@@ -975,16 +1338,36 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
 
   return (
     <div>
-      <div className="flex items-center gap-1.5 mb-2">
+      <div className="flex items-center gap-1.5 mb-3">
         <History size={10} className="text-ink-subtle" aria-hidden="true" />
         <SectionLabel>{title}</SectionLabel>
       </div>
-      <ol className="space-y-1.5" aria-label={title}>
+      <ol className="relative space-y-0" aria-label={title}>
+        {/* Vertical connector line */}
+        <div className="absolute left-[5px] top-2 bottom-2 w-px bg-border-subtle" aria-hidden="true" />
         {top.map((ev) => (
-          <li key={ev.id} className="flex items-start gap-2">
-            <span className={clsx("w-2 h-2 rounded-full shrink-0 mt-1", ev.dotCls)} aria-hidden="true" />
-            <p className="text-xs text-ink leading-snug flex-1 min-w-0 truncate">{ev.text}</p>
-            <time className="text-2xs text-ink-subtle shrink-0 font-mono tabular-nums">{formatTime(ev.time)}</time>
+          <li key={ev.id} className="relative flex items-start gap-2.5 pb-3 last:pb-0">
+            <span className={clsx("w-2.5 h-2.5 rounded-full shrink-0 mt-0.5 z-10 ring-2 ring-surface", ev.dotCls)} aria-hidden="true" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start gap-1.5 flex-wrap">
+                <span className={clsx(
+                  "inline-flex items-center text-2xs font-bold uppercase rounded px-1.5 py-0.5 shrink-0 leading-none",
+                  ev.badgeCls,
+                )}>
+                  {ev.badge}
+                </span>
+                <p className="text-xs text-ink leading-snug flex-1 min-w-0 line-clamp-2">{ev.text}</p>
+              </div>
+              {ev.sub && (
+                <p className="text-2xs text-ink-subtle mt-0.5 ml-0">{ev.sub}</p>
+              )}
+            </div>
+            <time
+              className="text-2xs text-ink-subtle shrink-0 font-mono tabular-nums mt-0.5"
+              dateTime={ev.time}
+            >
+              {formatTime(ev.time)}
+            </time>
           </li>
         ))}
       </ol>
