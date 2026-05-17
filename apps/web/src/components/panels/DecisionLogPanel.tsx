@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Download } from "lucide-react";
+import { ClipboardList, Download, X } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useDecisionLog } from "@/lib/queries";
 import { useApiHealth } from "@/lib/queries";
@@ -31,17 +31,18 @@ function timeStamp(iso: string): string {
 }
 
 const ACTION_LABELS: Record<string, { es: string; en: string }> = {
-  query:               { es: "Consulta",          en: "Query" },
-  alert_acknowledge:   { es: "Reconoció alerta",  en: "Alert acknowledged" },
-  alert_escalate:      { es: "Escaló alerta",     en: "Alert escalated" },
-  alert_false_positive:{ es: "Falso positivo",    en: "False positive" },
-  alert_close:         { es: "Cerró alerta",      en: "Alert closed" },
-  map_pin:             { es: "Pin en mapa",       en: "Map pin" },
-  export:              { es: "Exportó datos",     en: "Data exported" },
+  query:                  { es: "Consulta",            en: "Query" },
+  alert_acknowledge:      { es: "Reconoció alerta",    en: "Alert acknowledged" },
+  alert_escalate:         { es: "Escaló alerta",       en: "Alert escalated" },
+  alert_false_positive:   { es: "Falso positivo",      en: "False positive" },
+  alert_close:            { es: "Cerró alerta",        en: "Alert closed" },
+  map_pin:                { es: "Pin en mapa",         en: "Map pin" },
+  export:                 { es: "Exportó datos",       en: "Data exported" },
+  social_signal_received: { es: "Señal social (auto)", en: "Social signal (auto)" },
 };
 
 export function DecisionLogPanel() {
-  const { activePanel, locale } = useUIStore();
+  const { activePanel, setActivePanel, locale } = useUIStore();
   const { data: entries = [], isLoading, isError } = useDecisionLog(100);
   const { data: health, isError: apiDown } = useApiHealth();
   const online = health?.status === "ok" && !apiDown;
@@ -62,7 +63,7 @@ export function DecisionLogPanel() {
       className={[
         "fixed bottom-14 left-0 right-0 h-[62vh] rounded-t-2xl",
         "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
-        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col",
+        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col panel-animate",
       ].join(" ")}
       aria-label={locale === "es" ? "Registro de decisiones" : "Decision log"}
     >
@@ -91,6 +92,13 @@ export function DecisionLogPanel() {
             <Download size={13} /> CSV
           </button>
         )}
+        <button
+          onClick={() => setActivePanel("map")}
+          className="text-slate-400 hover:text-white transition-colors rounded focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none"
+          aria-label={locale === "es" ? "Cerrar panel" : "Close panel"}
+        >
+          <X size={15} aria-hidden="true" />
+        </button>
       </div>
 
       <ul
@@ -116,7 +124,9 @@ export function DecisionLogPanel() {
             ? String(entry.payload.query).slice(0, 60)
             : entry.payload?.note
               ? String(entry.payload.note).slice(0, 60)
-              : null;
+              : entry.payload?.district && entry.payload?.source
+                ? `${entry.payload.source} · ${entry.payload.district}`
+                : null;
 
           return (
             <li key={entry.id} className="px-4 py-3">

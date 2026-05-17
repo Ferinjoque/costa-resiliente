@@ -284,6 +284,48 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   );
 }
 
+function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en" }) {
+  const active = alerts.filter((a) => a.status === "active");
+  const critical = active.filter((a) => a.severity === "critical");
+  const high = active.filter((a) => a.severity === "high");
+
+  if (critical.length === 0 && high.length < 2) return null;
+
+  const firstCritical = critical[0];
+  const isHuayco = firstCritical?.type === "huayco" || active.some((a) => a.type === "huayco");
+
+  let rec: string;
+  if (locale === "es") {
+    if (critical.length > 0 && isHuayco) {
+      rec = `Evacuación preventiva inmediata — Quebrada Jicamarca. Probabilidad huayco 91%, umbral 42 mm superado. Desplegar USAR Equipo Alfa al punto de reunión por Av. Las Torres antes de las 15:00. Notificar INDECI COEN.`;
+    } else if (critical.length > 0) {
+      rec = `Alerta crítica activa en ${firstCritical.title}. Activar protocolo DELTA COEN. Preposicionar botes en Chosica y Carabayllo norte. Confirmar capacidad de albergues.`;
+    } else {
+      rec = `Riesgo compuesto ALTO en ${high.length} distritos. Pre-alertar personal INDECI en Lurigancho, Ate y Carabayllo. Monitorear estaciones Chosica y Carabayllo cada 15 min.`;
+    }
+  } else {
+    if (critical.length > 0 && isHuayco) {
+      rec = `Immediate preventive evacuation — Quebrada Jicamarca. Huayco probability 91%, threshold exceeded. Deploy USAR Team Alpha to assembly point via Av. Las Torres before 15:00. Notify INDECI COEN.`;
+    } else if (critical.length > 0) {
+      rec = `Critical alert active at ${firstCritical.title}. Activate COEN protocol DELTA. Pre-position boats in Chosica and Carabayllo norte. Confirm shelter capacity.`;
+    } else {
+      rec = `HIGH composite risk across ${high.length} districts. Pre-alert INDECI personnel in Lurigancho, Ate, Carabayllo. Monitor Chosica and Carabayllo stations every 15 min.`;
+    }
+  }
+
+  return (
+    <div className="mx-3 mt-2 rounded-lg border border-costa-700/60 bg-costa-900/25 px-3 py-2.5">
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className="text-[9px] font-bold text-costa-400 tracking-wide">✦ AI</span>
+        <span className="text-[10px] text-costa-300 font-medium">
+          {locale === "es" ? "Recomendación operacional" : "Operational recommendation"}
+        </span>
+      </div>
+      <p className="text-[11px] text-slate-200 leading-snug">{rec}</p>
+    </div>
+  );
+}
+
 export function AlertsPanel() {
   const { activePanel, locale } = useUIStore();
   const qc = useQueryClient();
@@ -375,6 +417,9 @@ export function AlertsPanel() {
           </p>
         </div>
       )}
+
+      {/* AI recommendation — shown when critical or multiple high alerts */}
+      <AiRecommendation alerts={alerts} locale={locale} />
 
       <ul className="flex-1 overflow-y-auto divide-y divide-slate-700/50" role="list" aria-label={tr("alerts", "title")}>
         {isLoading && (
