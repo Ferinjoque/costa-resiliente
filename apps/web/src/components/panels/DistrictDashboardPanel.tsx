@@ -6,6 +6,15 @@ import { useDistrictDashboard, useDistrictRiskSummary, useAlerts, useFloodExposu
 import { clsx } from "clsx";
 import type { AlertTrendDay, SocialBreakdown } from "@/lib/api";
 
+// ANA alert thresholds per station code (meters)
+const STATION_THRESHOLDS: Record<string, number> = {
+  "ANA-CHOSICA":        2.0,
+  "ANA-CHACLACAYO":     1.5,
+  "ANA-PUENTE-ANGELES": 1.7,
+  "ANA-CARABAYLLO":     2.5,
+  "ANA-HUACHIPA":       1.8,
+};
+
 // ─── Sparkline SVG ────────────────────────────────────────────────────────────
 
 function Sparkline({
@@ -443,25 +452,42 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
         <div>
           <p className="text-[11px] text-slate-400 mb-1.5">Estaciones hidrométricas cercanas</p>
           <div className="space-y-1">
-            {data.stations.map((st) => (
-              <div
-                key={st.code}
-                className="flex items-center justify-between bg-surface-panel rounded-lg px-2.5 py-1.5"
-              >
-                <div>
-                  <p className="text-xs text-slate-200">{st.name}</p>
-                  <p className="text-[10px] text-slate-500">{st.river} · {st.source.toUpperCase()}</p>
-                </div>
-                <div className="text-right">
-                  {st.level_m != null && (
-                    <p className="text-xs text-blue-300 font-mono">{st.level_m.toFixed(2)} m</p>
+            {data.stations.map((st) => {
+              const threshold = STATION_THRESHOLDS[st.code] ?? null;
+              const overThreshold = threshold != null && st.level_m != null && st.level_m >= threshold;
+              return (
+                <div
+                  key={st.code}
+                  className={clsx(
+                    "flex items-center justify-between rounded-lg px-2.5 py-1.5",
+                    overThreshold
+                      ? "bg-orange-900/30 border border-orange-600/50"
+                      : "bg-surface-panel",
                   )}
-                  {st.flow_m3s != null && (
-                    <p className="text-[10px] text-slate-400 font-mono">{st.flow_m3s.toFixed(1)} m³/s</p>
-                  )}
+                >
+                  <div>
+                    <div className="flex items-center gap-1">
+                      {overThreshold && <AlertTriangle size={9} className="text-orange-400 shrink-0" />}
+                      <p className={clsx("text-xs", overThreshold ? "text-orange-200" : "text-slate-200")}>{st.name}</p>
+                    </div>
+                    <p className="text-[10px] text-slate-500">{st.river} · {st.source.toUpperCase()}</p>
+                    {overThreshold && threshold != null && (
+                      <p className="text-[9px] text-orange-400 mt-0.5">Umbral {threshold.toFixed(1)} m superado</p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    {st.level_m != null && (
+                      <p className={clsx("text-xs font-mono", overThreshold ? "text-orange-300" : "text-blue-300")}>
+                        {st.level_m.toFixed(2)} m
+                      </p>
+                    )}
+                    {st.flow_m3s != null && (
+                      <p className="text-[10px] text-slate-400 font-mono">{st.flow_m3s.toFixed(1)} m³/s</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
