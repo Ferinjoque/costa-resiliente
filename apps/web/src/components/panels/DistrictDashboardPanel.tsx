@@ -219,7 +219,7 @@ function CityOverview() {
             <AlertTriangle size={10} className="text-red-400" />
             <p className="text-[10px] text-slate-400">{tr("dashboard", "activeAlerts")}</p>
           </div>
-          <p className="text-xl font-bold text-red-300">{activeCount}</p>
+          <p className="font-display text-2xl font-bold text-severity-critical tracking-display-tight tabular-nums leading-none">{activeCount}</p>
           {criticalCount > 0 && (
             <p className="text-[10px] text-red-400">
               {criticalCount} {locale === "es" ? `crítica${criticalCount !== 1 ? "s" : ""}` : `critical`}
@@ -231,7 +231,9 @@ function CityOverview() {
             <Waves size={10} className="text-blue-400" />
             <p className="text-[10px] text-slate-400">{tr("dashboard", "floodArea")}</p>
           </div>
-          <p className="text-xl font-bold text-blue-300">{floodArea.toFixed(1)} km²</p>
+          <p className="font-display text-2xl font-bold text-costa-300 tracking-display-tight tabular-nums leading-none">
+            {floodArea.toFixed(1)}<span className="text-sm font-sans ml-1 text-slate-400">km²</span>
+          </p>
           {affectedPop > 0 && (
             <p className="text-[10px] text-blue-400">
               ~{affectedPop > 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : affectedPop} {tr("dashboard", "inhabitants")}
@@ -927,9 +929,11 @@ export function DistrictDashboardPanel() {
         <div className="w-8 h-1 rounded-full bg-slate-600" />
       </div>
 
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
-        <BarChart3 size={15} className="text-costa-500" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-white">{title}</h2>
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-line">
+        <BarChart3 size={15} className="text-costa-400" aria-hidden="true" />
+        <h2 className="font-display text-[15px] font-semibold text-slate-100 tracking-display-tight truncate">
+          {title}
+        </h2>
         {scenario.districtUbigeo && (
           <span className="text-[10px] text-slate-500">{scenario.districtUbigeo}</span>
         )}

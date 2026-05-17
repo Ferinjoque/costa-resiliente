@@ -508,9 +508,11 @@ export function AlertsPanel() {
         <div className="w-8 h-1 rounded-full bg-slate-600" />
       </div>
 
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
-        <Bell size={15} className="text-costa-500" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-white">{tr("alerts", "title")}</h2>
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-line">
+        <Bell size={15} className="text-costa-400" aria-hidden="true" />
+        <h2 className="font-display text-[15px] font-semibold text-slate-100 tracking-display-tight">
+          {tr("alerts", "title")}
+        </h2>
         {sseConnected && (
           <span className="flex items-center gap-1 text-[9px] text-green-400 font-mono">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 live-dot" aria-hidden="true" />
