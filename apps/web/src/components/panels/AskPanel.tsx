@@ -37,14 +37,24 @@ function MarkdownText({ text }: { text: string }) {
 // Keyword → demo response key mapping for fuzzy fallback
 const KEYWORD_ROUTES: Array<{ keys: string[]; demo: string }> = [
   { keys: ["alerta", "alert", "activ", "active alerts", "alertas activas"], demo: "¿Cuáles son las alertas activas ahora?" },
-  { keys: ["evacu", "prioridad", "priority", "evacuation", "primero", "first"], demo: "¿Qué distritos debo evacuar primero?" },
+  { keys: ["evacu", "prioridad", "priority", "evacuation", "primero", "first", "shelter", "albergue"], demo: "¿Qué distritos debo evacuar primero?" },
   { keys: ["jicamarca", "umbral", "threshold", "precipitación necesaria", "activar huayco"], demo: "¿Cuánta precipitación es necesaria para activar un huayco en Jicamarca?" },
   { keys: ["riesgo", "distrito", "risk", "district", "mayor riesgo", "which district", "highest risk"], demo: "¿Cuáles son los distritos en mayor riesgo ahora?" },
   { keys: ["huayco", "quebrada", "landslide", "desliz", "quebradas"], demo: "¿Qué quebradas tienen riesgo alto de huayco?" },
   { keys: ["lluvia", "rain", "rímac", "rimac", "precipit", "72h", "72 h", "rainfall", "cuánta lluvia", "acumulada"], demo: "¿Cuánta lluvia acumulada hubo en el Rímac en las últimas 72h?" },
   { keys: ["personas", "people", "población", "population", "afectad", "zona inundad", "cuántas personas"], demo: "¿Cuántas personas están en zona de inundación activa?" },
-  { keys: ["infraestructura", "infrastructure", "hospital", "escuela", "puente", "bridge", "critical infra"], demo: "¿Qué infraestructura crítica está en zona inundada?" },
-  { keys: ["nivel", "río", "river", "chosica", "caudal", "flow", "rimac level", "estación"], demo: "¿Cuál es el nivel del río Rímac en Chosica?" },
+  { keys: ["infraestructura", "infrastructure", "hospital", "escuela", "puente", "bridge", "critical infra", "vial", "road damage", "daños"], demo: "¿Qué daños hay en infraestructura vial?" },
+  { keys: ["nivel", "río", "river", "chosica", "caudal", "flow", "rimac level"], demo: "¿Cuál es el nivel del río Rímac en Chosica?" },
+  { keys: ["pronóstico", "forecast", "próximas", "next 24", "next hours", "pronostico"], demo: "¿Cuál es el pronóstico para las próximas 24 horas?" },
+  { keys: ["chillón", "chillon", "carabayllo río", "chillon river"], demo: "¿Cuál es el estado del río Chillón?" },
+  { keys: ["albergue", "shelter", "refugio", "evacuados", "displaced"], demo: "¿Dónde están los albergues más cercanos?" },
+  { keys: ["1998", "histor", "comparar", "compare", "1997", "pasado", "anterior"], demo: "¿Cómo se compara con El Niño de 1998?" },
+  { keys: ["social", "señales", "signals", "urgentes", "urgent", "bluesky", "telegram", "reddit"], demo: "¿Cuántas señales sociales urgentes hay ahora?" },
+  { keys: ["ruta", "route", "bloqueada", "blocked road", "carretera", "vía cerrada", "camino"], demo: "¿Qué rutas de evacuación están bloqueadas?" },
+  { keys: ["estación", "station", "hidrolog", "gage", "sensor", "todas las estacion", "all stations"], demo: "¿Qué estaciones hidrológicas están en alerta?" },
+  { keys: ["san juan", "sjl", "lurigancho distrito", "150133"], demo: "¿Cuál es el riesgo en San Juan de Lurigancho?" },
+  { keys: ["2017", "el niño costero", "evento 2017", "niño 2017", "que pasó", "what happened"], demo: "¿Qué pasó en el evento El Niño Costero 2017?" },
+  { keys: ["recursos", "resources", "personal", "efectivos", "equipos", "deployed", "deployment"], demo: "¿Cuántos recursos de respuesta están desplegados?" },
 ];
 
 function findDemoResponse(query: string): string | null {
@@ -61,9 +71,11 @@ const SUGGESTIONS: { es: string; en: string }[] = [
   { es: "¿Cuáles son las alertas activas ahora?", en: "What are the active alerts right now?" },
   { es: "¿Qué distritos debo evacuar primero?", en: "Which districts should I evacuate first?" },
   { es: "¿Cuáles son los distritos en mayor riesgo ahora?", en: "Which districts have the highest risk right now?" },
+  { es: "¿Cuál es el pronóstico para las próximas 24 horas?", en: "What is the forecast for the next 24 hours?" },
+  { es: "¿Qué rutas de evacuación están bloqueadas?", en: "Which evacuation routes are blocked?" },
+  { es: "¿Cuántas señales sociales urgentes hay ahora?", en: "How many urgent social signals are there now?" },
+  { es: "¿Qué estaciones hidrológicas están en alerta?", en: "Which hydrological stations are on alert?" },
   { es: "¿Cuántas personas están en zona de inundación activa?", en: "How many people are in active flood zones?" },
-  { es: "¿Qué infraestructura crítica está en zona inundada?", en: "What critical infrastructure is in flooded areas?" },
-  { es: "¿Cuál es el nivel del río Rímac en Chosica?", en: "What is the Rímac river level at Chosica?" },
 ];
 
 const UI: Record<"es" | "en", {
@@ -261,7 +273,7 @@ export function AskPanel() {
               {SUGGESTIONS.map((s) => (
                 <button
                   key={s.es}
-                  onClick={() => { setQuery(s.es); submit(s.es); }}
+                  onClick={() => { const q = locale === "es" ? s.es : s.en; setQuery(q); submit(q); }}
                   disabled={loading}
                   className="w-full text-left text-xs text-slate-300 bg-surface-panel hover:bg-costa-900/40 hover:text-costa-200 border border-slate-700 hover:border-costa-700/50 rounded-lg px-3 py-2 transition-colors disabled:opacity-40"
                 >
