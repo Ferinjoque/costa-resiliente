@@ -56,6 +56,8 @@ import {
   DEMO_IMERG,
   DEMO_FLOOD,
   DEMO_HUAYCO,
+  DEMO_INFRASTRUCTURE,
+  DEMO_HAZARD,
 } from "./demoData";
 
 /** When real API returns empty array, fall back to demo data so UI is never blank. */
@@ -172,7 +174,15 @@ export function useInfrastructure(
 ): UseQueryResult<InfraCollection> {
   return useQuery({
     queryKey: ["infrastructure", type],
-    queryFn: () => fetchInfrastructure(type),
+    queryFn: async () => {
+      try {
+        const data = await fetchInfrastructure(type);
+        const filtered = type ? data.features.filter((f) => f.properties.type === type) : data.features;
+        return filtered.length > 0 ? data : DEMO_INFRASTRUCTURE;
+      } catch {
+        return DEMO_INFRASTRUCTURE;
+      }
+    },
     staleTime: 60 * MIN,
     ...opts,
   });
@@ -184,7 +194,14 @@ export function useHazard(
 ): UseQueryResult<HazardCollection> {
   return useQuery({
     queryKey: ["hazard", hazardType],
-    queryFn: () => fetchHazard(hazardType),
+    queryFn: async () => {
+      try {
+        const data = await fetchHazard(hazardType);
+        return data.features.length > 0 ? data : DEMO_HAZARD;
+      } catch {
+        return DEMO_HAZARD;
+      }
+    },
     staleTime: 60 * MIN,
     ...opts,
   });
