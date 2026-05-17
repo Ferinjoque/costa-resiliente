@@ -100,7 +100,8 @@ export function SituationBrief() {
   return (
     <div
       className={clsx(
-        "absolute bottom-20 right-3 sm:bottom-8 sm:right-5 z-10",
+        // Mobile-only — desktop uses OperationalHUD as canonical situational surface
+        "absolute bottom-20 right-3 z-10 sm:hidden",
         "w-64 rounded-xl border shadow-xl backdrop-blur-md text-xs panel-animate",
         "bg-surface-base/88",
         cfg.border,
