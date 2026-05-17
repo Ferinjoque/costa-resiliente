@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Waves, Mountain, MessageSquare, X, BarChart3 } from "lucide-react";
+import { AlertTriangle, Waves, Mountain, MessageSquare, X, BarChart3, Users } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useFusion } from "@/lib/queries";
 import { clsx } from "clsx";
@@ -12,13 +12,14 @@ const RISK_COLOR: Record<string, string> = {
 };
 
 const RISK_BADGE: Record<string, string> = {
-  alto:     "bg-red-600 text-white",
-  moderado: "bg-amber-600 text-white",
-  bajo:     "bg-green-700 text-white",
+  alto:     "bg-severity-critical text-white",
+  moderado: "bg-severity-high text-white",
+  bajo:     "bg-severity-low text-white",
 };
 
-const RISK_ICON: Record<string, string> = {
-  alto: "🔴", moderado: "🟡", bajo: "🟢",
+// Severity dot color — replaces the emoji circle markers that read as decorative.
+const RISK_DOT: Record<string, string> = {
+  alto: "bg-severity-critical", moderado: "bg-severity-high", bajo: "bg-severity-low",
 };
 
 const T = {
@@ -89,8 +90,9 @@ export function FusionCallout() {
         </div>
         <div className="flex items-center gap-1.5">
           {data && (
-            <span className={clsx("text-[10px] font-bold px-1.5 py-0.5 rounded-full", badgeClass)}>
-              {RISK_ICON[riskKey]} {t.riskLabels[riskKey as keyof typeof t.riskLabels]}
+            <span className={clsx("font-display tracking-ops text-[11px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1", badgeClass)}>
+              <span className={clsx("inline-block w-1.5 h-1.5 rounded-full", RISK_DOT[riskKey])} aria-hidden="true" />
+              {t.riskLabels[riskKey as keyof typeof t.riskLabels]}
             </span>
           )}
           <button
@@ -113,7 +115,7 @@ export function FusionCallout() {
           <>
             {/* Population */}
             {data.district.population != null && (
-              <Row icon="👥" label={t.population} value={t.people(data.district.population)} />
+              <Row icon={<Users size={11} />} label={t.population} value={t.people(data.district.population)} />
             )}
 
             {/* Flood */}

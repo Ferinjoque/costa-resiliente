@@ -25,10 +25,13 @@ const SEV_COLOR: Record<string, string> = {
   low:      "text-blue-400",
 };
 
+// Compact ASCII tags replace inline emoji. Emoji rendering varies wildly by
+// OS/browser and reads as AI-template chrome — these short SINAGERD-style
+// labels are deterministic and scan as operational logging.
 const TYPE_ICON: Record<string, string> = {
-  flood:          "🌊",
-  huayco:         "⛰️",
-  social_cluster: "📡",
+  flood:          "[SAR]",
+  huayco:         "[HUA]",
+  social_cluster: "[SOC]",
 };
 
 function timeShort(iso: string): string {
@@ -48,7 +51,7 @@ export function LiveTicker() {
       .filter((a) => a.status === "active")
       .map((a) => ({
         id: `a-${a.id}`,
-        text: `${TYPE_ICON[a.type] ?? "⚠️"} ${a.title} · ${timeShort(a.created_at)}`,
+        text: `${TYPE_ICON[a.type] ?? "[ALT]"} ${a.title} · ${timeShort(a.created_at)}`,
         color: SEV_COLOR[a.severity] ?? "text-slate-300",
       }));
 
@@ -59,10 +62,10 @@ export function LiveTicker() {
         const src = f.properties.source ?? "?";
         const district = f.properties.district_name ?? "—";
         const label = f.properties.triage_label ?? "";
-        const emoji = label === "needs_help" ? "🆘" : "🚧";
+        const tag = label === "needs_help" ? "[SOS]" : "[BLK]";
         return {
           id: `s-${f.properties.id}`,
-          text: `${emoji} ${src} · ${district} · ${timeShort(f.properties.ingested_at)}`,
+          text: `${tag} ${src} · ${district} · ${timeShort(f.properties.ingested_at)}`,
           color: LABEL_COLOR[label] ?? "text-slate-300",
         };
       });
@@ -87,7 +90,9 @@ export function LiveTicker() {
         "bg-surface-base/85 backdrop-blur-sm border-t border-slate-700/70",
         "overflow-hidden",
       ].join(" ")}
-      role="marquee"
+      role="region"
+      aria-live="polite"
+      aria-atomic="false"
       aria-label={locale === "es" ? "Actividad en vivo" : "Live activity"}
     >
       {/* LIVE label — static left anchor */}

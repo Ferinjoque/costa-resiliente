@@ -163,7 +163,7 @@ export function SituationBrief() {
           className="flex-1 flex items-center justify-center gap-1 py-2 text-[10px] text-slate-300 hover:bg-surface-panel hover:text-white transition-colors"
           aria-label={locale === "es" ? "Abrir copiloto" : "Open copilot"}
         >
-          <span className="text-costa-400 text-[10px]">✦</span>
+          <span className="font-display text-costa-300 text-[10px] font-bold tracking-ops">AI</span>
           {locale === "es" ? "Copiloto" : "Copilot"}
           <ChevronRight size={9} className="opacity-40" />
         </button>

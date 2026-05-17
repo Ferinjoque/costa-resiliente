@@ -316,7 +316,7 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   return (
     <div className="mx-3 mt-2 rounded-lg border border-costa-700/60 bg-costa-900/25 px-3 py-2.5">
       <div className="flex items-center gap-1.5 mb-1">
-        <span className="text-[10px] font-bold text-costa-400 tracking-wide">✦ AI</span>
+        <span className="font-display text-[10px] font-bold text-costa-300 tracking-ops uppercase">AI</span>
         <span className="text-[10px] text-costa-300 font-medium">
           {locale === "es" ? "Recomendación operacional" : "Operational recommendation"}
         </span>
@@ -557,8 +557,18 @@ export function AlertsPanel() {
           <li className="px-4 py-8 text-xs text-red-400 text-center" role="alert">{tr("alerts", "error")}</li>
         )}
         {!isLoading && !isError && alerts.length === 0 && (
-          <li className="px-4 py-8 text-xs text-slate-400 text-center">
-            {tr("alerts", "noAlerts")}
+          <li className="px-4 py-10 text-center">
+            <div className="mx-auto mb-3 w-10 h-10 rounded-full border border-surface-line bg-surface-panel/60 flex items-center justify-center">
+              <CheckCircle size={16} className="text-severity-low" aria-hidden="true" />
+            </div>
+            <p className="font-display text-sm text-slate-200 tracking-display-tight mb-1">
+              {locale === "es" ? "Sin alertas activas" : "No active alerts"}
+            </p>
+            <p className="text-[11px] text-slate-500 leading-snug max-w-[220px] mx-auto">
+              {locale === "es"
+                ? "Los sensores y señales sociales se actualizan en segundo plano."
+                : "Sensors and social signals refresh in the background."}
+            </p>
           </li>
         )}
         {alerts.map((alert) => (
