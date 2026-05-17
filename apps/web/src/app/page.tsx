@@ -30,6 +30,31 @@ const MapView = dynamic(() => import("@/components/map/MapView"), {
 
 const FIRST_VISIT_KEY = "cr_visited_v1";
 
+const SHORTCUT_MAP: Record<string, "alerts" | "dashboard" | "ask" | "log" | "map"> = {
+  a: "alerts", á: "alerts",
+  d: "dashboard",
+  c: "ask",
+  l: "log",
+  m: "map",
+};
+
+function KeyboardNavigator() {
+  const { setActivePanel, setTutorialOpen } = useUIStore();
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
+      if (e.key === "Escape") { setActivePanel("map"); return; }
+      if (e.key === "?") { setTutorialOpen(true); return; }
+      const panel = SHORTCUT_MAP[e.key.toLowerCase()];
+      if (panel) setActivePanel(panel);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [setActivePanel, setTutorialOpen]);
+  return null;
+}
+
 function FirstRunTrigger() {
   const { setTutorialOpen, setScenario } = useUIStore();
 
@@ -91,6 +116,7 @@ export default function Home() {
         <TutorialOverlay />
         <ShareLoader />
         <FirstRunTrigger />
+        <KeyboardNavigator />
       </main>
     </div>
   );

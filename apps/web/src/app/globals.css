@@ -121,7 +121,7 @@ body {
 .cr-popup {
   padding: 10px 32px 10px 12px; /* right pad for close btn */
   min-width: 160px;
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-inter, system-ui, sans-serif);
   font-size: 12px;
   line-height: 1.6;
   color: #e2e8f0;
@@ -134,6 +134,10 @@ body {
   border-bottom: 1px solid #334155;
   padding-bottom: 4px;
 }
+.cr-title-critical { border-bottom-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
+.cr-title-high     { border-bottom-color: rgba(249, 115, 22, 0.4); color: #fdba74; }
+.cr-title-flood    { border-bottom-color: rgba(37, 99, 235, 0.4); color: #93c5fd; }
+.cr-title-station  { border-bottom-color: rgba(245, 158, 11, 0.4); color: #fcd34d; }
 .cr-row {
   display: flex;
   justify-content: space-between;
@@ -147,4 +151,34 @@ body {
   text-align: right;
   word-break: break-all;
   max-width: 160px;
+}
+.cr-val-alert { color: #f97316; font-weight: 700; }
+.cr-val-critical { color: #ef4444; font-weight: 700; }
+.cr-val-ok { color: #4ade80; }
+
+/* ─── Emergency state glow ──────────────────────────────────────────────────── */
+@keyframes emergency-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.0), inset 0 0 0 1px rgba(239, 68, 68, 0.4); }
+  50%       { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15), inset 0 0 0 1px rgba(239, 68, 68, 0.7); }
+}
+.emergency-glow {
+  animation: emergency-ring 2s ease-in-out infinite;
+}
+
+/* ─── Live data pulse ───────────────────────────────────────────────────────── */
+@keyframes live-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+.live-dot {
+  animation: live-dot 1.5s ease-in-out infinite;
+}
+
+/* ─── Panel slide-in animation ──────────────────────────────────────────────── */
+@keyframes panel-slide-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.panel-animate {
+  animation: panel-slide-in 0.2s ease-out;
 }

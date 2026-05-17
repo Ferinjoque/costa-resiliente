@@ -1,6 +1,19 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Costa Resiliente — Lima Metropolitana",
@@ -26,8 +39,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className="dark">
-      <body className="bg-surface-base text-white antialiased">
+    <html lang="es" className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
+      <body className="bg-surface-base text-white antialiased font-sans">
         {/* Skip-to-content — WCAG 2.4.1 Bypass Blocks */}
         <a
           href="#main-content"

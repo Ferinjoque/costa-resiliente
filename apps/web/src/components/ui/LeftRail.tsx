@@ -7,11 +7,11 @@ import { clsx } from "clsx";
 import type { Locale } from "@/store/ui";
 
 const NAV_ITEMS = [
-  { id: "map",       label: { es: "Mapa",      en: "Map" },      icon: Map },
-  { id: "alerts",    label: { es: "Alertas",   en: "Alerts" },   icon: Bell },
-  { id: "dashboard", label: { es: "Datos",     en: "Data" },     icon: BarChart3 },
-  { id: "ask",       label: { es: "Consultar", en: "Ask" },      icon: Search },
-  { id: "log",       label: { es: "Registro",  en: "Log" },      icon: ClipboardList },
+  { id: "map",       label: { es: "Mapa [M]",      en: "Map [M]" },      icon: Map },
+  { id: "alerts",    label: { es: "Alertas [A]",   en: "Alerts [A]" },   icon: Bell },
+  { id: "dashboard", label: { es: "Datos [D]",     en: "Data [D]" },     icon: BarChart3 },
+  { id: "ask",       label: { es: "Consultar [C]", en: "Ask [C]" },      icon: Search },
+  { id: "log",       label: { es: "Registro [L]",  en: "Log [L]" },      icon: ClipboardList },
 ] as const;
 
 type PanelId = (typeof NAV_ITEMS)[number]["id"] | "sources" | "share";
@@ -72,10 +72,19 @@ export function LeftRail() {
       >
         {/* Logo */}
         <div
-          className="mb-4 w-8 h-8 rounded bg-costa-500 flex items-center justify-center text-white font-bold text-xs select-none"
-          aria-hidden="true"
+          className="mb-4 w-8 h-8 rounded-lg bg-gradient-to-br from-costa-600 to-costa-900 flex items-center justify-center select-none ring-1 ring-costa-500/40"
+          aria-label="Costa Resiliente"
+          title="Costa Resiliente"
         >
-          CR
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            {/* Wave/flood icon */}
+            <path d="M2 11 C4 9, 6 13, 8 11 C10 9, 12 13, 14 11 C15.5 9.5, 16.5 11, 17 10.5" stroke="#7dd3fc" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+            <path d="M2 14 C4 12, 6 16, 8 14 C10 12, 12 16, 14 14 C15.5 12.5, 16.5 14, 17 13.5" stroke="#0ea5e9" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+            {/* Alert triangle */}
+            <path d="M9 2 L13.5 9 H4.5 L9 2Z" fill="rgba(239,68,68,0.15)" stroke="#ef4444" strokeWidth="1" strokeLinejoin="round"/>
+            <line x1="9" y1="5" x2="9" y2="7.2" stroke="#ef4444" strokeWidth="1" strokeLinecap="round"/>
+            <circle cx="9" cy="8.2" r="0.5" fill="#ef4444"/>
+          </svg>
         </div>
 
         {NAV_ITEMS.map(({ id, label, icon }) => (
