@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, CheckCircle, AlertTriangle, TrendingUp, Users, TrendingDown, XCircle, MoreHorizontal, MapPin, Send, X, type LucideIcon } from "lucide-react";
+import { Bell, CheckCircle, AlertTriangle, TrendingUp, Users, TrendingDown, XCircle, MoreHorizontal, MapPin, Send, X, ChevronDown, type LucideIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import { useAlerts, useFloodExposure } from "@/lib/queries";
 import { actOnAlert, alertsStreamUrl } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Alert } from "@/lib/api";
+import type { Alert, DecisionLogEntry } from "@/lib/api";
 import { timeAgo } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
@@ -326,6 +326,128 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   );
 }
 
+let _actionId = 700;
+
+function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en" }) {
+  const qc = useQueryClient();
+  const [dispatched, setDispatched] = useState<Set<string>>(new Set());
+  const active = alerts.filter((a) => a.status === "active");
+  const critical = active.filter((a) => a.severity === "critical");
+
+  if (critical.length === 0) return null;
+
+  const resources = [
+    { id: "bote",  es: "Bote Rescate", en: "Rescue Boat",   cls: "text-blue-300 border-blue-700/60 bg-blue-900/20" },
+    { id: "usar",  es: "USAR Alfa",    en: "USAR Alpha",    cls: "text-orange-300 border-orange-700/60 bg-orange-900/20" },
+    { id: "amb",   es: "Ambulancia",   en: "Ambulance",     cls: "text-red-300 border-red-700/60 bg-red-900/20" },
+    { id: "bomb",  es: "Bomberos",     en: "Fire Brigade",  cls: "text-yellow-300 border-yellow-700/60 bg-yellow-900/20" },
+  ];
+
+  function dispatch(id: string, label: string) {
+    if (dispatched.has(id)) return;
+    setDispatched((s) => new Set([...s, id]));
+    qc.setQueryData<DecisionLogEntry[]>(["decision-log", 100], (old) => {
+      if (!old) return old;
+      return [{ id: _actionId++, logged_at: new Date().toISOString(), operator_id: "operator-1",
+        action_type: "resource_dispatch", alert_id: critical[0]?.id ?? null,
+        payload: { resource: id, resource_name: label }, session_id: "demo" }, ...old].slice(0, 100);
+    });
+  }
+
+  return (
+    <div className="mx-3 mt-2">
+      <p className="text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">
+        {locale === "es" ? "Despacho rápido" : "Quick dispatch"}
+      </p>
+      <div className="flex gap-1.5 flex-wrap">
+        {resources.map((r) => (
+          <button key={r.id} onClick={() => dispatch(r.id, locale === "es" ? r.es : r.en)}
+            disabled={dispatched.has(r.id)}
+            className={clsx("text-[10px] px-2 py-1 rounded-md border transition-all font-medium",
+              dispatched.has(r.id)
+                ? "text-green-400 border-green-700/50 bg-green-900/20 cursor-default"
+                : r.cls + " hover:opacity-90"
+            )}
+          >
+            {dispatched.has(r.id) ? (locale === "es" ? "✓ Despachado" : "✓ Dispatched") : (locale === "es" ? r.es : r.en)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en" }) {
+  const qc = useQueryClient();
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [collapsed, setCollapsed] = useState(true);
+  const active = alerts.filter((a) => a.status === "active");
+  const critical = active.filter((a) => a.severity === "critical");
+
+  if (critical.length === 0) return null;
+
+  const isHuayco = active.some((a) => a.type === "huayco");
+
+  const steps = [
+    { id: "s1", es: "Notificar COEN/INDECI por radio",         en: "Notify COEN/INDECI via radio" },
+    { id: "s2", es: isHuayco ? "Evacuar Quebrada Jicamarca" : "Activar ruta de evacuación",
+                en: isHuayco ? "Evacuate Quebrada Jicamarca"  : "Activate evacuation route" },
+    { id: "s3", es: "Verificar albergues (capacidad/estado)",  en: "Verify shelters (capacity/status)" },
+    { id: "s4", es: "Preparar ficha EDAN para COER",           en: "Prepare EDAN form for COER" },
+  ];
+
+  function toggle(id: string, label: string) {
+    const next = new Set(checked);
+    if (next.has(id)) { next.delete(id); } else {
+      next.add(id);
+      qc.setQueryData<DecisionLogEntry[]>(["decision-log", 100], (old) => {
+        if (!old) return old;
+        return [{ id: _actionId++, logged_at: new Date().toISOString(), operator_id: "operator-1",
+          action_type: "protocol_step", alert_id: critical[0]?.id ?? null,
+          payload: { step: id, label }, session_id: "demo" }, ...old].slice(0, 100);
+      });
+    }
+    setChecked(next);
+  }
+
+  const done = steps.filter((s) => checked.has(s.id)).length;
+
+  return (
+    <div className="mx-3 mt-2 rounded-lg border border-slate-700/60 bg-slate-800/40">
+      <button onClick={() => setCollapsed((c) => !c)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-left"
+        aria-expanded={!collapsed}
+      >
+        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex-1">
+          {locale === "es" ? `Protocolo INDECI (${done}/${steps.length})` : `INDECI Protocol (${done}/${steps.length})`}
+        </span>
+        {done > 0 && done < steps.length && (
+          <span className="text-[9px] text-costa-400">{Math.round((done / steps.length) * 100)}%</span>
+        )}
+        {done === steps.length && <span className="text-[9px] text-green-400">✓ completo</span>}
+        <ChevronDown size={12} className={clsx("text-slate-500 transition-transform", !collapsed && "rotate-180")} />
+      </button>
+      {!collapsed && (
+        <div className="px-3 pb-2.5 flex flex-col gap-2">
+          {steps.map((step) => (
+            <label key={step.id} className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={checked.has(step.id)}
+                onChange={() => toggle(step.id, locale === "es" ? step.es : step.en)}
+                className="w-3.5 h-3.5 rounded border-slate-600 bg-surface-panel accent-costa-500"
+              />
+              <span className={clsx("text-[11px] leading-snug",
+                checked.has(step.id) ? "line-through text-slate-500" : "text-slate-200"
+              )}>
+                {locale === "es" ? step.es : step.en}
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AlertsPanel() {
   const { activePanel, locale } = useUIStore();
   const qc = useQueryClient();
@@ -420,6 +542,10 @@ export function AlertsPanel() {
 
       {/* AI recommendation — shown when critical or multiple high alerts */}
       <AiRecommendation alerts={alerts} locale={locale} />
+
+      {/* Quick resource dispatch + INDECI protocol checklist */}
+      <QuickDispatch alerts={alerts} locale={locale} />
+      <ResponseProtocol alerts={alerts} locale={locale} />
 
       <ul className="flex-1 overflow-y-auto divide-y divide-slate-700/50" role="list" aria-label={tr("alerts", "title")}>
         {isLoading && (
