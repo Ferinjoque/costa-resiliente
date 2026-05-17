@@ -173,6 +173,11 @@ export function ScenarioPanel() {
               </div>
             )}
 
+            {/* El Niño 2017 date scrubber */}
+            {scenario.isReplayMode && (
+              <ReplayDateScrubber locale={locale} />
+            )}
+
             <Divider />
 
             {/* Layer toggles */}
@@ -181,6 +186,55 @@ export function ScenarioPanel() {
         </div>
       )}
     </Panel>
+  );
+}
+
+const REPLAY_STEPS: { date: string; label: { es: string; en: string } }[] = [
+  { date: "2017-03-15", label: { es: "15 mar — Rímac", en: "Mar 15 — Rímac" } },
+  { date: "2017-03-18", label: { es: "18 mar — Chillón", en: "Mar 18 — Chillón" } },
+  { date: "2017-03-22", label: { es: "22 mar — Ate", en: "Mar 22 — Ate" } },
+  { date: "2017-03-27", label: { es: "27 mar — V.J.M.", en: "Mar 27 — V.J.M." } },
+  { date: "2017-04-02", label: { es: "2 abr — Chaclacayo", en: "Apr 2 — Chaclacayo" } },
+];
+
+function ReplayDateScrubber({ locale }: { locale: Locale }) {
+  const { scenario, setScenario } = useUIStore();
+  const activeIdx = REPLAY_STEPS.findIndex((s) => s.date === scenario.replayDate);
+  const currentIdx = activeIdx === -1 ? 0 : activeIdx;
+
+  return (
+    <div>
+      <SectionLabel className="mb-2">
+        {L(locale, "Fecha de replay — El Niño 2017", "Replay date — El Niño 2017")}
+      </SectionLabel>
+      <input
+        type="range"
+        min={0}
+        max={REPLAY_STEPS.length - 1}
+        value={currentIdx}
+        onChange={(e) => {
+          const idx = Number(e.target.value);
+          setScenario({ replayDate: REPLAY_STEPS[idx].date });
+        }}
+        className="w-full accent-cinnabar cursor-pointer"
+        aria-label={L(locale, "Seleccionar fecha de El Niño 2017", "Select El Niño 2017 date")}
+      />
+      <div className="flex justify-between mt-1">
+        <span className="text-2xs text-ink-subtle">
+          {REPLAY_STEPS[currentIdx].label[locale]}
+        </span>
+        <span className="text-2xs font-mono text-warn">
+          {scenario.replayDate ?? REPLAY_STEPS[0].date}
+        </span>
+      </div>
+      <p className="text-2xs text-ink-subtle mt-1">
+        {L(
+          locale,
+          "El mapa muestra las inundaciones SAR de esa fecha.",
+          "Map shows SAR flood polygons for that date.",
+        )}
+      </p>
+    </div>
   );
 }
 
