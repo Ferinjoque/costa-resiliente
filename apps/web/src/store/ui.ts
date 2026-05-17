@@ -6,10 +6,14 @@ export type Locale = "es" | "en";
 
 export interface LiveToast {
   id: string;
-  source: string;
-  label: string;
-  district: string;
   at: number;
+  // Social signal variant
+  source?: string;
+  label?: string;
+  district?: string;
+  // General action confirmation variant
+  message?: string;
+  variant?: "success" | "info" | "warn";
 }
 
 interface Scenario {
@@ -19,6 +23,7 @@ interface Scenario {
   timeWindowHours: number;
   isReplayMode: boolean;
   replayDate: string | null; // ISO date string "2017-03-15"
+  provinceFilter: string; // 'Lima' = Lima Metropolitana (default), '' = all
 }
 
 interface UIState {
@@ -68,6 +73,7 @@ export const useUIStore = create<UIState>((set) => ({
     timeWindowHours: 24,
     isReplayMode: false,
     replayDate: null,
+    provinceFilter: "Lima",
   },
   setScenario: (s) =>
     set((state) => ({ scenario: { ...state.scenario, ...s } })),

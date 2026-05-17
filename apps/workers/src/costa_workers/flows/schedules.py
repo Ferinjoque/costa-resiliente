@@ -1,25 +1,26 @@
-"""Prefect deployment schedules for all Costa Resiliente flows."""
+"""Prefect deployment schedules for all Costa Resiliente flows.
+
+Run this script to register all deployments and start the inline runner:
+  python -m costa_workers.flows.schedules
+
+The runner polls the Prefect server and executes flows in-process.
+No separate work pool is required — serve() handles both registration + execution.
+"""
 import os
 
 from prefect import flow, serve
 
-from costa_workers.ingest.sentinel1 import ingest_sentinel1_flow
-from costa_workers.ingest.imerg import ingest_imerg_flow
-from costa_workers.ingest.social import ingest_social_flow
-from costa_workers.ingest.ana_scraper import ingest_hydro_stations_flow
-from costa_workers.ingest.flood_pipeline import flood_segmentation_flow
-from costa_workers.ml.alert_generator import generate_alerts_flow
-
+logger_name = "costa_workers.flows.schedules"
 
 # ─── Thin wrappers for plain-async pipelines ─────────────────────────────────
 
 @flow(name="run-triage", log_prints=True)
 async def triage_flow() -> dict:
-    """Schedule wrapper: run LLM triage on untriaged social signals."""
+    """Run LLM triage on untriaged social signals."""
     from costa_workers.ml.triage import run_triage_pipeline
 
     return await run_triage_pipeline(
-        db_dsn=os.getenv("DATABASE_URL", "postgresql://costa:costa@postgres:5432/costa_resiliente"),
+        db_dsn=os.getenv("DATABASE_URL", f"postgresql://{os.getenv('POSTGRES_USER','costa')}:{os.getenv('POSTGRES_PASSWORD','change_me_in_production')}@{os.getenv('POSTGRES_HOST','postgres')}:{os.getenv('POSTGRES_PORT','5432')}/{os.getenv('POSTGRES_DB','costa_resiliente')}"),
         ollama_host=os.getenv("LLM_BASE_URL", "http://ollama:11434"),
         model=os.getenv("LLM_FAST_MODEL", "gemma2:2b"),
     )
@@ -27,16 +28,14 @@ async def triage_flow() -> dict:
 
 @flow(name="run-huayco-susceptibility", log_prints=True)
 async def huayco_flow() -> dict:
-    """Schedule wrapper: run XGBoost susceptibility for all quebradas."""
+    """Run XGBoost susceptibility for all quebradas."""
     from costa_workers.ml.huayco_model import HuaycoModel, run_huayco_susceptibility
 
-    db_dsn = os.getenv("DATABASE_URL", "postgresql://costa:costa@postgres:5432/costa_resiliente")
+    db_dsn = os.getenv("DATABASE_URL", f"postgresql://{os.getenv('POSTGRES_USER','costa')}:{os.getenv('POSTGRES_PASSWORD','change_me_in_production')}@{os.getenv('POSTGRES_HOST','postgres')}:{os.getenv('POSTGRES_PORT','5432')}/{os.getenv('POSTGRES_DB','costa_resiliente')}")
     model = HuaycoModel.load()
     results = await run_huayco_susceptibility(db_dsn=db_dsn, model=model)
     return {"quebradas_updated": len(results)}
 
-
-# ─── Deployment registry ──────────────────────────────────────────────────────
 
 @flow(name="index-protocols-rag", log_prints=True)
 async def rag_index_flow() -> dict:
@@ -45,8 +44,15 @@ async def rag_index_flow() -> dict:
     return await index_protocols()
 
 
-def deploy_all() -> None:
-    """Register all flows with Prefect server and start serving."""
+# ─── Main entry point ─────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    from costa_workers.ingest.sentinel1 import ingest_sentinel1_flow
+    from costa_workers.ingest.imerg import ingest_imerg_flow
+    from costa_workers.ingest.social import ingest_social_flow
+    from costa_workers.ingest.ana_scraper import ingest_hydro_stations_flow
+    from costa_workers.ingest.flood_pipeline import flood_segmentation_flow
+    from costa_workers.ml.alert_generator import generate_alerts_flow
 
     serve(
         # Satellite ingest — daily at 06:00 UTC (01:00 Lima)
@@ -63,13 +69,13 @@ def deploy_all() -> None:
             parameters={"lookback_hours": 25},
             tags=["ingest", "rainfall"],
         ),
-        # Hydro stations (ANA + SENAMHI) — every hour
+        # Hydro stations (ANA + SENAMHI) — every 30 minutes
         ingest_hydro_stations_flow.to_deployment(
-            name="hydro-stations-hourly",
-            interval=3600,
+            name="hydro-stations-30min",
+            interval=1800,
             tags=["ingest", "hydro"],
         ),
-        # Social signals (Bluesky + RSS) — every 15 minutes
+        # Social signals (Bluesky + RSS + Reddit + Telegram) — every 15 minutes
         ingest_social_flow.to_deployment(
             name="social-15min",
             interval=900,
@@ -99,14 +105,10 @@ def deploy_all() -> None:
             interval=300,
             tags=["ml", "alerts"],
         ),
-        # RAG protocol index — daily at 02:00 UTC (idempotent, skips unchanged chunks)
+        # RAG protocol index — daily at 02:00 UTC (idempotent)
         rag_index_flow.to_deployment(
             name="rag-index-daily",
             cron="0 2 * * *",
             tags=["rag", "ai"],
         ),
     )
-
-
-if __name__ == "__main__":
-    deploy_all()

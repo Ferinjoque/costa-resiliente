@@ -1,8 +1,8 @@
 """District and geographic reference endpoints."""
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,14 +21,41 @@ def _iso(dt: Any) -> str | None:
     return dt.isoformat() if hasattr(dt, "isoformat") else str(dt)
 
 
-@router.get("")
-async def list_districts(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
-    """
-    Return all 43 Lima Metropolitana districts as GeoJSON FeatureCollection.
-    Properties: ubigeo, name, province, region, area_km2, population.
-    """
+@router.get("/provinces")
+async def list_provinces(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
+    """Return unique provinces with district counts. Default scope is Lima Metropolitana."""
     result = await db.execute(
         text("""
+            SELECT province, region, COUNT(*) AS district_count
+            FROM geo.districts
+            GROUP BY province, region
+            ORDER BY district_count DESC
+        """)
+    )
+    rows = result.mappings().all()
+    return {
+        "provinces": [
+            {"province": r["province"], "region": r["region"], "district_count": int(r["district_count"])}
+            for r in rows
+        ],
+        "default_province": "Lima",
+    }
+
+
+@router.get("")
+async def list_districts(
+    province: Optional[str] = Query(None, description="Filter by province name. 'Lima' = Lima Metropolitana (43 distritos). Omit for all 159."),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Return Lima districts as GeoJSON FeatureCollection.
+    Default (no param): all 159. province=Lima → 43 Lima Metropolitana only.
+    Properties: ubigeo, name, province, region, area_km2, population.
+    """
+    where_clause = "WHERE province = :province" if province else ""
+    params = {"province": province} if province else {}
+    result = await db.execute(
+        text(f"""
             SELECT
                 ubigeo,
                 name,
@@ -38,8 +65,10 @@ async def list_districts(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
                 population,
                 ST_AsGeoJSON(geom)::json AS geometry
             FROM geo.districts
+            {where_clause}
             ORDER BY name
-        """)
+        """),
+        params,
     )
     rows = result.mappings().all()
 

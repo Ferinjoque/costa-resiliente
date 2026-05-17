@@ -15,10 +15,37 @@ services:
   prefect-worker:
     volumes:
       - ./apps/workers/src:/app/src:ro
+    environment:
+      PYTHONPATH: /app/src
+
+  # One-shot: register all deployments with Prefect server, then exit.
+  # Restart: "no" so it doesn't loop. Re-run: docker compose up prefect-deploy
+  prefect-deploy:
+    build:
+      context: apps/workers
+      dockerfile: Dockerfile
+    container_name: costa-prefect-deploy
+    restart: "no"
+    command: python -m costa_workers.flows.schedules
+    env_file: .env
+    environment:
+      PREFECT_API_URL: http://prefect-server:4200/api
+      POSTGRES_HOST: postgres
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+    networks:
+      - costa-net
+    volumes:
+      - ./apps/workers/src:/app/src:ro
+    depends_on:
+      prefect-server:
+        condition: service_healthy
 
   web:
     build:
       target: development
     volumes:
       - ./apps/web/src:/app/src:ro
+    environment:
+      WATCHPACK_POLLING: "true"
     command: npm run dev

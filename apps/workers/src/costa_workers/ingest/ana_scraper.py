@@ -34,7 +34,17 @@ from prefect import flow, task
 
 logger = logging.getLogger(__name__)
 
-DB_DSN = os.getenv("DATABASE_URL", "postgresql://costa:costa@localhost:5432/costa_resiliente")
+def _db_dsn() -> str:
+    if url := os.getenv("DATABASE_URL"):
+        return url
+    host = os.getenv("POSTGRES_HOST", "postgres")
+    port = os.getenv("POSTGRES_PORT", "5432")
+    db   = os.getenv("POSTGRES_DB", "costa_resiliente")
+    user = os.getenv("POSTGRES_USER", "costa")
+    pw   = os.getenv("POSTGRES_PASSWORD", "change_me_in_production")
+    return f"postgresql://{user}:{pw}@{host}:{port}/{db}"
+
+DB_DSN = _db_dsn()
 
 # ─── ANA SNIRH station codes (Rímac + Chillón + Lurín) ───────────────────────
 ANA_STATIONS: list[dict] = [

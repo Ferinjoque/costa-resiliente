@@ -16,6 +16,9 @@ import {
 import {
   fetchDistricts,
   fetchDistrictList,
+  fetchProvinces,
+  fetchScraperHealth,
+  type ScraperHealth,
   fetchImerg,
   fetchFlood,
   fetchHuayco,
@@ -89,13 +92,14 @@ export function useDistricts(
 }
 
 export function useDistrictList(
+  province?: string,
   opts?: Partial<UseQueryOptions<DistrictListItem[]>>
 ): UseQueryResult<DistrictListItem[]> {
   return useQuery({
-    queryKey: ["districts", "list"],
+    queryKey: ["districts", "list", province ?? "all"],
     queryFn: async () => {
       try {
-        const data = await fetchDistrictList();
+        const data = await fetchDistrictList(province);
         return data.length > 0 ? data : DEMO_DISTRICTS.features.map((f) => ({
           ubigeo: f.properties.ubigeo,
           name: f.properties.name,
@@ -109,6 +113,26 @@ export function useDistrictList(
     },
     staleTime: 60 * MIN,
     ...opts,
+  });
+}
+
+export function useProvinces(): UseQueryResult<{ provinces: Array<{province: string; region: string; district_count: number}>; default_province: string }> {
+  return useQuery({
+    queryKey: ["provinces"],
+    queryFn: async () => {
+      try {
+        return await fetchProvinces();
+      } catch {
+        return {
+          provinces: [
+            { province: "Lima", region: "Lima", district_count: 41 },
+            { province: "Lima Región", region: "Lima", district_count: 118 },
+          ],
+          default_province: "Lima",
+        };
+      }
+    },
+    staleTime: 60 * MIN,
   });
 }
 
@@ -226,6 +250,8 @@ export function useAlerts(
     },
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
+    // Keep previous data during refetch — prevents blank→data flash in SituationSummary
+    placeholderData: (prev) => prev,
     ...opts,
   });
 }
@@ -264,6 +290,8 @@ export function useFloodExposure(
       }
     },
     staleTime: 10 * MIN,
+    // Keep showing previous data while refetching — prevents banner flash.
+    placeholderData: (prev) => prev,
     ...opts,
   });
 }
@@ -324,7 +352,18 @@ export function useDistrictRiskSummary(
     },
     staleTime: 3 * MIN,
     refetchInterval: 5 * MIN,
+    placeholderData: (prev) => prev,
     ...opts,
+  });
+}
+
+export function useScraperHealth(): UseQueryResult<ScraperHealth> {
+  return useQuery({
+    queryKey: ["scraper-health"],
+    queryFn: fetchScraperHealth,
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
+    retry: 1,
   });
 }
 
