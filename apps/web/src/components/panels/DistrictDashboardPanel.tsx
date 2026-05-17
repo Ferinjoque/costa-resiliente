@@ -627,84 +627,143 @@ function EDANReportButton() {
 
 // ─── 72h Rainfall Forecast ────────────────────────────────────────────────────
 
-const RISK_STEP_COLOR: Record<ForecastStep["risk"], { bg: string; text: string; dot: string }> = {
-  bajo:     { bg: "bg-green-900/25",  text: "text-green-300",  dot: "bg-green-400" },
-  moderado: { bg: "bg-yellow-900/25", text: "text-yellow-300", dot: "bg-yellow-400" },
-  alto:     { bg: "bg-red-900/25",    text: "text-red-300",    dot: "bg-red-500" },
+const RISK_STEP_COLOR: Record<ForecastStep["risk"], { fill: string; stroke: string; badge: string; badgeBg: string }> = {
+  bajo:     { fill: "#22c55e", stroke: "#16a34a", badge: "text-green-300",  badgeBg: "bg-green-900/30" },
+  moderado: { fill: "#fbbf24", stroke: "#d97706", badge: "text-yellow-300", badgeBg: "bg-yellow-900/30" },
+  alto:     { fill: "#f97316", stroke: "#dc2626", badge: "text-red-300",    badgeBg: "bg-red-900/30" },
 };
+
+function ForecastChart({ steps }: { steps: ForecastStep[] }) {
+  const W = 220; const H = 48;
+  const values = steps.map((s) => s.rimac_mm);
+  const maxVal = Math.max(...values, HUAYCO_THRESHOLD_MM + 10);
+  const toY = (v: number) => H - (v / maxVal) * (H - 4) - 2;
+  const toX = (i: number) => (i / (steps.length - 1)) * W;
+
+  const pts = steps.map((s, i) => `${toX(i)},${toY(s.rimac_mm)}`).join(" ");
+  const threshY = toY(HUAYCO_THRESHOLD_MM);
+
+  const segments: { x1: number; y1: number; x2: number; y2: number; risk: ForecastStep["risk"] }[] = [];
+  for (let i = 0; i < steps.length - 1; i++) {
+    segments.push({
+      x1: toX(i), y1: toY(steps[i].rimac_mm),
+      x2: toX(i + 1), y2: toY(steps[i + 1].rimac_mm),
+      risk: steps[i + 1].risk,
+    });
+  }
+
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true" className="w-full">
+      {/* Threshold line */}
+      <line x1={0} y1={threshY} x2={W} y2={threshY} stroke="#f97316" strokeWidth={0.75} strokeDasharray="3,3" opacity={0.6} />
+      {/* Area fill */}
+      <polyline
+        points={`0,${H} ${pts} ${W},${H}`}
+        fill="#38bdf8"
+        fillOpacity={0.08}
+        stroke="none"
+      />
+      {/* Colored segments */}
+      {segments.map((seg, i) => (
+        <line
+          key={i}
+          x1={seg.x1} y1={seg.y1} x2={seg.x2} y2={seg.y2}
+          stroke={RISK_STEP_COLOR[seg.risk].stroke}
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
+      ))}
+      {/* Data points */}
+      {steps.map((s, i) => (
+        <circle
+          key={i}
+          cx={toX(i)} cy={toY(s.rimac_mm)}
+          r={2.5}
+          fill={RISK_STEP_COLOR[s.risk].fill}
+          stroke="transparent"
+          strokeWidth={1}
+        />
+      ))}
+    </svg>
+  );
+}
 
 function ForecastSection({ locale }: { locale: Locale }) {
   const steps = DEMO_FORECAST;
   const firstAlert = steps.find((s) => s.rimac_mm >= HUAYCO_THRESHOLD_MM);
 
   const label = {
-    title:     { es: "Pronóstico 72h",              en: "72h Forecast" },
-    source:    { es: "SENAMHI · modelo WRF",        en: "SENAMHI · WRF model" },
-    rimac:     { es: "Rímac",                       en: "Rímac" },
-    chilion:   { es: "Chillón",                     en: "Chillón" },
-    preAlert:  { es: "PRE-ALERTA: umbral huayco en", en: "PRE-ALERT: huayco threshold at" },
-    hours:     { es: "h",                           en: "h" },
-    probLabel: { es: "prob. huayco:",               en: "huayco prob.:" },
-    risk:      {
-      bajo:     { es: "BAJO",     en: "LOW" },
-      moderado: { es: "MOD",      en: "MOD" },
-      alto:     { es: "ALTO",     en: "HIGH" },
+    title:    { es: "Pronóstico 72h — Cuenca Rímac",  en: "72h Forecast — Rímac Watershed" },
+    source:   { es: "SENAMHI · WRF",                  en: "SENAMHI · WRF" },
+    preAlert: { es: "PRE-ALERTA",                     en: "PRE-ALERT" },
+    thresh:   { es: "Umbral huayco",                  en: "Huayco threshold" },
+    at:       { es: "en",                             en: "at" },
+    prob:     { es: "prob.",                          en: "prob." },
+    rim:      { es: "Rímac · mm acumulado",           en: "Rímac · accumulated mm" },
+    risk: {
+      bajo:     { es: "BAJO",  en: "LOW" },
+      moderado: { es: "MOD",   en: "MOD" },
+      alto:     { es: "ALTO",  en: "HIGH" },
     },
   } as const;
+  const L = (obj: { es: string; en: string }) => obj[locale];
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 bg-surface-panel rounded-xl px-3 py-2.5">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] text-slate-400 flex items-center gap-1">
-          <CloudRain size={10} aria-hidden="true" />
-          {label.title[locale]}
+        <p className="text-[11px] text-slate-300 font-medium flex items-center gap-1.5">
+          <CloudRain size={11} className="text-blue-400" aria-hidden="true" />
+          {L(label.title)}
         </p>
-        <p className="text-[9px] text-slate-500">{label.source[locale]}</p>
+        <p className="text-[9px] text-slate-500">{L(label.source)}</p>
       </div>
 
-      {/* Pre-alert banner */}
-      {firstAlert && (
-        <div className="mb-2 rounded-lg border border-orange-500/50 bg-orange-900/20 px-2.5 py-1.5 flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse shrink-0" aria-hidden="true" />
-          <p className="text-[10px] text-orange-300">
-            {label.preAlert[locale]} {firstAlert.hours}{label.hours[locale]}: {firstAlert.rimac_mm.toFixed(0)} mm
-            {" "}({(firstAlert.huayco_prob * 100).toFixed(0)}% {label.probLabel[locale].replace(":", "")})
-          </p>
+      {/* Sparkline chart */}
+      <div className="mb-2">
+        <ForecastChart steps={steps} />
+        <div className="flex justify-between px-0.5 mt-0.5">
+          {steps.map((s) => (
+            <span key={s.hours} className="text-[9px] text-slate-500">+{s.hours}h</span>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Forecast steps */}
-      <div className="grid grid-cols-5 gap-1">
+      {/* Step bars */}
+      <div className="grid grid-cols-5 gap-1 mb-2">
         {steps.map((step) => {
           const cfg = RISK_STEP_COLOR[step.risk];
-          const riskShort = label.risk[step.risk][locale];
           return (
-            <div
-              key={step.hours}
-              className={clsx("rounded-lg px-1.5 py-2 text-center", cfg.bg)}
-            >
-              <p className="text-[9px] text-slate-400 mb-1">{step.hours}{label.hours[locale]}</p>
-              <p className={clsx("text-[11px] font-semibold leading-none mb-0.5", cfg.text)}>
+            <div key={step.hours} className={clsx("rounded-md px-1 py-1 text-center", cfg.badgeBg)}>
+              <p className={clsx("text-[11px] font-bold leading-none", cfg.badge)}>
                 {step.rimac_mm.toFixed(0)}
               </p>
-              <p className="text-[8px] text-slate-500">mm</p>
-              <span
-                className={clsx("inline-block mt-1 text-[8px] font-bold px-1 rounded", cfg.text)}
-                style={{ background: "transparent" }}
-              >
-                {riskShort}
-              </span>
+              <p className="text-[8px] text-slate-500 mt-0.5">{L(label.risk[step.risk])}</p>
             </div>
           );
         })}
       </div>
 
-      {/* River labels */}
-      <div className="mt-1 flex gap-3 px-0.5">
-        <p className="text-[9px] text-slate-500">{label.rimac[locale]} (mm)</p>
-        <span className="text-[9px] text-slate-600">·</span>
-        <p className="text-[9px] text-slate-500">{label.chilion[locale]}: {steps[2].chilion_mm.toFixed(0)} / {steps[4].chilion_mm.toFixed(0)} mm</p>
+      {/* Legend row */}
+      <div className="flex items-center justify-between">
+        <p className="text-[9px] text-slate-500">{L(label.rim)}</p>
+        <div className="flex items-center gap-1">
+          <span className="inline-block w-3 border-t border-dashed border-orange-400" aria-hidden="true" />
+          <span className="text-[9px] text-orange-400">{L(label.thresh)} {HUAYCO_THRESHOLD_MM} mm</span>
+        </div>
       </div>
+
+      {/* Pre-alert banner */}
+      {firstAlert && (
+        <div className="mt-2 rounded-lg border border-orange-500/50 bg-orange-900/20 px-2.5 py-1.5 flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse shrink-0" aria-hidden="true" />
+          <p className="text-[10px] text-orange-300">
+            <span className="font-bold">{L(label.preAlert)}</span>
+            {" "}{L(label.thresh)} {L(label.at)} +{firstAlert.hours}h
+            {" "}— {firstAlert.rimac_mm.toFixed(0)} mm
+            {" "}({(firstAlert.huayco_prob * 100).toFixed(0)}% {L(label.prob)})
+          </p>
+        </div>
+      )}
     </div>
   );
 }
