@@ -105,6 +105,9 @@ export function AlertsPanel() {
       try {
         const fresh: Alert[] = JSON.parse(evt.data);
         qc.setQueryData(["alerts", undefined], fresh);
+        // Propagate to risk-summary so map color fills update on push
+        qc.invalidateQueries({ queryKey: ["district-risk-summary"] });
+        qc.invalidateQueries({ queryKey: ["flood-exposure"] });
       } catch {
         // malformed SSE frame — ignore
       }
