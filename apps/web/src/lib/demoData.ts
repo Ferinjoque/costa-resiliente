@@ -324,6 +324,37 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
       { station: "Chosica", river: "Rímac", level_m: 2.4, flow_m3s: 185, alert_threshold_m: 2.0, status: "alert" },
     ],
   },
+  "¿Cuáles son las alertas activas ahora?": {
+    answer: "Alertas activas en Lima Metropolitana (4 alertas, estado EMERGENCIA):\n\n1. 🔴 **CRÍTICO** — Riesgo huayco Quebrada Jicamarca (Lurigancho): prob. 0.91, precipitación 24h sobre umbral.\n2. 🟠 **ALTO** — Inundación activa Sector Huachipa (Ate): 1.8 km² SAR detectado.\n3. 🟠 **ALTO** — Inundación Carabayllo sector norte: Río Chillón nivel 3.1 m (umbral 2.5 m).\n4. 🟡 **MEDIO** — Río Rímac elevado en Chosica: nivel 2.4 m (umbral 2.0 m).\n\nAcción recomendada: activar protocolo EDAN para quebrada Jicamarca.",
+    intent: "flood_status",
+    confidence: 0.97,
+    query_plan: "active_alerts_summary",
+    sources: [
+      { id: 1, type: "huayco", severity: "critical", district: "Lurigancho", title: "Quebrada Jicamarca" },
+      { id: 2, type: "flood",  severity: "high",     district: "Ate",        title: "Sector Huachipa" },
+      { id: 3, type: "flood",  severity: "high",     district: "Carabayllo", title: "Río Chillón" },
+    ],
+  },
+  "¿Qué distritos debo evacuar primero?": {
+    answer: "Prioridad de evacuación basada en riesgo compuesto (SAR × IMERG × huayco × señales sociales):\n\n1. **Lurigancho-Chosica** — PRIORIDAD 1: quebrada Jicamarca con prob. huayco 0.91, 3 polígonos SAR activos, señales sociales urgentes.\n2. **Carabayllo norte** — PRIORIDAD 2: río Chillón sobre umbral, 2 asentamientos afectados.\n3. **Ate (sector Huachipa)** — PRIORIDAD 3: inundación contenida pero infraestructura vial comprometida.\n\nTotal estimado: ~52,000 personas en zonas de evacuación preventiva.\n\nFuente: Modelo de fusión Costa Resiliente + SINPAD 2003–2020.",
+    intent: "evacuation_priority",
+    confidence: 0.88,
+    query_plan: "evacuation_priority_composite_risk",
+    sources: [
+      { district: "Lurigancho",  priority: 1, pop_at_risk: 28400, reason: "huayco_critical" },
+      { district: "Carabayllo",  priority: 2, pop_at_risk: 14800, reason: "flood_high" },
+      { district: "Ate",         priority: 3, pop_at_risk: 8800,  reason: "flood_moderate" },
+    ],
+  },
+  "¿Cuánta precipitación es necesaria para activar un huayco en Jicamarca?": {
+    answer: "Umbral de activación de huayco — Quebrada Jicamarca:\n\n• **Umbral crítico 24h**: 42 mm/24h (calibrado con eventos SINPAD 2003–2020).\n• **Precipitación actual**: 63.4 mm/72h en cuenca alta del Rímac.\n• **Última 24h**: 28.2 mm (67% del umbral crítico).\n• **Probabilidad modelo XGBoost**: 0.91 — RIESGO CRÍTICO.\n• **Variables adicionales**: suelo saturado (3 días consecutivos de lluvia), pendiente 35°, litología friable.\n\nEl umbral fue superado a las 03:00 Lima del 15 de marzo.\n\nFuente: Modelo XGBoost entrenado en SINPAD × IMERG NASA × DEM SRTM.",
+    intent: "huayco_risk",
+    confidence: 0.93,
+    query_plan: "huayco_threshold_analysis",
+    sources: [
+      { quebrada: "Jicamarca", threshold_24h_mm: 42, current_24h_mm: 28.2, probability: 0.91, slope_deg: 35 },
+    ],
+  },
 };
 
 // ─── Critical infrastructure (OSM) ───────────────────────────────────────────
