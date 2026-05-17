@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Radio, MapPin, X, Filter, Send, PlusCircle } from "lucide-react";
+import { Radio, MapPin, X, Filter, Send, PlusCircle, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSocialSignals } from "@/lib/queries";
-import type { SocialSignalProperties, SocialSignalCollection, DecisionLogEntry } from "@/lib/api";
+import { useSocialSignals, useDistrictList } from "@/lib/queries";
+import { logDecision } from "@/lib/api";
+import type { SocialSignalProperties, SocialSignalCollection } from "@/lib/api";
 import {
   PanelHeader,
   PanelTitle,
@@ -23,6 +24,8 @@ const LABEL_ES: Record<string, string> = {
   road_blocked:          "Vía bloqueada",
   infrastructure_damage: "Daño infraestructura",
   weather_observation:   "Observación meteo",
+  false_alarm:           "Falsa alarma",
+  irrelevant:            "Irrelevante",
 };
 
 const LABEL_EN: Record<string, string> = {
@@ -30,9 +33,52 @@ const LABEL_EN: Record<string, string> = {
   road_blocked:          "Road blocked",
   infrastructure_damage: "Infrastructure damage",
   weather_observation:   "Weather observation",
+  false_alarm:           "False alarm",
+  irrelevant:            "Irrelevant",
 };
 
-// Map triage_label → Pill variant
+const SOURCE_LABEL: Record<string, string> = {
+  bluesky:  "Bluesky",
+  telegram: "Telegram",
+  reddit:   "Reddit",
+  campo:    "Campo",
+  rss:      "RSS",
+  rss_rpp:  "RSS RPP",
+};
+
+function formatSource(src: string): string {
+  const key = src.toLowerCase();
+  return SOURCE_LABEL[key] ?? src.charAt(0).toUpperCase() + src.slice(1);
+}
+
+function buildSourceUrl(source: string, sourceId?: string | null): string | null {
+  if (!sourceId) return null;
+  const s = source.toLowerCase();
+  if (s === "bluesky") {
+    // source_id is an AT-URI: at://did:.../app.bsky.feed.post/rkey
+    const parts = sourceId.split("/");
+    const rkey = parts.at(-1);
+    const did = parts[2];
+    if (did && rkey) return `https://bsky.app/profile/${did}/post/${rkey}`;
+  }
+  if (s === "reddit") return `https://reddit.com/${sourceId}`;
+  if (s === "rss" || s === "rss_rpp" || s === "rss_andina") return sourceId; // source_id is the article URL
+  if (s === "telegram") return sourceId; // source_id is the message link
+  return null;
+}
+
+// Urgency sort: needs_help first, then chronological desc
+const LABEL_PRIORITY: Record<string, number> = {
+  needs_help:            0,
+  road_blocked:          1,
+  infrastructure_damage: 2,
+  weather_observation:   3,
+};
+
+function labelPriority(label: string | null): number {
+  return LABEL_PRIORITY[label ?? ""] ?? 99;
+}
+
 function labelToPillVariant(label: string): "danger" | "warn" | "accent" | "default" {
   if (label === "needs_help") return "danger";
   if (label === "road_blocked") return "warn";
@@ -44,13 +90,32 @@ function timeAgoShort(iso: string): string {
   const s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return `${s}s`;
   if (s < 3600) return `${Math.round(s / 60)}m`;
-  return `${Math.round(s / 3600)}h`;
+  if (s < 86400) return `${Math.round(s / 3600)}h`;
+  return `${Math.round(s / 86400)}d`;
 }
 
 const ALL_LABELS = ["needs_help", "road_blocked", "infrastructure_damage", "weather_observation"] as const;
 type Label = typeof ALL_LABELS[number];
 
 let _fieldId = 9000;
+
+// ─── ConfidenceBadge ──────────────────────────────────────────────────────────
+
+function ConfidenceBadge({ value }: { value: number }) {
+  const pct = Math.round(value * 100);
+  const cls =
+    pct >= 80 ? "text-ok-muted" :
+    pct >= 60 ? "text-warn-muted" :
+    "text-ink-subtle";
+  return (
+    <span
+      className={clsx("text-xs font-mono shrink-0", cls)}
+      title={`Confianza del modelo de IA: ${pct}%`}
+    >
+      IA {pct}%
+    </span>
+  );
+}
 
 // ─── SignalRow ─────────────────────────────────────────────────────────────────
 
@@ -65,9 +130,12 @@ function SignalRow({
   onFly: () => void;
   isNew: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const label = props.triage_label ?? "unknown";
   const labelText = locale === "es" ? (LABEL_ES[label] ?? label) : (LABEL_EN[label] ?? label);
   const pillVariant = labelToPillVariant(label);
+  const hasLongText = (props.text?.length ?? 0) > 80;
+  const sourceUrl = buildSourceUrl(props.source ?? "", props.source_id);
 
   return (
     <li
@@ -76,26 +144,59 @@ function SignalRow({
         isNew && "border-l-2 border-l-accent",
       )}
     >
-      <div className="flex items-start gap-2.5">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap mb-1">
-            <Pill variant={pillVariant}>{labelText}</Pill>
-            <Pill variant="default">{props.source}</Pill>
+      <div className="flex-1 min-w-0">
+        {/* Label + source */}
+        <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+          <Pill variant={pillVariant}>{labelText}</Pill>
+          <Pill variant="default">{formatSource(props.source ?? "")}</Pill>
+        </div>
+
+        {/* Content */}
+        {props.text && (
+          <div className="mb-1.5">
+            <p className={clsx("text-sm text-ink leading-snug", !expanded && "line-clamp-2")}>
+              {props.text}
+            </p>
+            {hasLongText && (
+              <button
+                type="button"
+                onClick={() => setExpanded((o) => !o)}
+                className="text-xs text-accent hover:underline mt-0.5 flex items-center gap-0.5"
+              >
+                {expanded
+                  ? <><ChevronUp size={11} />{locale === "es" ? "Menos" : "Less"}</>
+                  : <><ChevronDown size={11} />{locale === "es" ? "Más" : "More"}</>
+                }
+              </button>
+            )}
           </div>
-          {props.text && (
-            <p className="text-sm text-ink leading-snug line-clamp-2">{props.text}</p>
+        )}
+
+        {/* Meta row */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {props.district_name && (
+            <span className="text-xs text-ink-muted font-medium truncate max-w-[130px]">
+              {props.district_name}
+            </span>
           )}
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <p className="text-xs text-ink-muted truncate flex-1">
-              {props.district_name ?? "—"}
-            </p>
-            <p className="text-xs text-ink-subtle font-mono shrink-0">
-              {timeAgoShort(props.ingested_at)}
-            </p>
-            {props.triage_confidence != null && (
-              <p className="text-xs text-ink-subtle shrink-0">
-                {Math.round(props.triage_confidence * 100)}%
-              </p>
+          <span className="text-xs text-ink-subtle font-mono shrink-0">
+            {timeAgoShort(props.ingested_at)}
+          </span>
+          {props.triage_confidence != null && (
+            <ConfidenceBadge value={props.triage_confidence} />
+          )}
+          <div className="ml-auto flex items-center gap-1 shrink-0">
+            {sourceUrl && (
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={locale === "es" ? "Ver fuente original" : "View original source"}
+                aria-label={locale === "es" ? "Ver fuente original" : "View original source"}
+                className="p-1 rounded text-ink-subtle hover:text-accent transition-colors"
+              >
+                <ExternalLink size={12} />
+              </a>
             )}
             <Button
               variant="ghost"
@@ -103,7 +204,7 @@ function SignalRow({
               onClick={onFly}
               title={locale === "es" ? "Ver en mapa" : "Show on map"}
               aria-label={locale === "es" ? "Ver en mapa" : "Show on map"}
-              className="shrink-0 p-1"
+              className="p-1"
             >
               <MapPin size={12} />
             </Button>
@@ -118,14 +219,22 @@ function SignalRow({
 
 function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => void }) {
   const qc = useQueryClient();
+  const { addToast } = useUIStore();
+  const { data: districtList } = useDistrictList();
   const [label, setLabel] = useState<Label>("needs_help");
   const [text, setText] = useState("");
+  const [districtUbigeo, setDistrictUbigeo] = useState("");
+  const [sending, setSending] = useState(false);
 
-  function submit() {
+  const selectedDistrict = districtList?.find((d) => d.ubigeo === districtUbigeo);
+
+  async function submit() {
     if (!text.trim()) return;
+    setSending(true);
     const now = new Date().toISOString();
-    const id = String(_fieldId++);
+    const id = ++_fieldId;
 
+    // Optimistic update to social feed
     qc.setQueryData<SocialSignalCollection>(["social-signals", 48, undefined], (old) => {
       if (!old) return old;
       const feature = {
@@ -137,7 +246,7 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
           triage_label: label,
           triage_confidence: 1.0,
           text: text.trim(),
-          district_name: "Lima Cercado",
+          district_name: selectedDistrict?.name ?? null,
           district_id: null,
           ingested_at: now,
         } as unknown as SocialSignalProperties,
@@ -145,28 +254,34 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
       return { ...old, features: [...old.features, feature] };
     });
 
-    qc.setQueryData<DecisionLogEntry[]>(["decision-log", 100], (old) => {
-      if (!old) return old;
-      return [
-        {
-          id: _fieldId,
-          logged_at: now,
-          operator_id: "operator-1",
-          action_type: "map_pin",
-          alert_id: null,
-          payload: { label: LABEL_ES[label] ?? label, district: "Lima Cercado", source: "campo" },
-          session_id: "demo",
-        },
-        ...old,
-      ].slice(0, 100);
+    // Write to decision log backend (best-effort)
+    await logDecision({
+      operator_id: "operator-1",
+      action_type: "field_report",
+      alert_id: null,
+      payload: {
+        label,
+        label_es: LABEL_ES[label] ?? label,
+        district: selectedDistrict?.name ?? null,
+        ubigeo: districtUbigeo || null,
+        text: text.trim(),
+        source: "campo",
+      },
+      session_id: "demo",
     });
 
+    setSending(false);
+    addToast({
+      message: locale === "es" ? "Reporte de campo enviado" : "Field report submitted",
+      variant: "success",
+    });
     setText("");
+    setDistrictUbigeo("");
     onClose();
   }
 
   return (
-    <div className="px-4 py-3 border-b border-border">
+    <div className="px-4 py-3 border-b border-border bg-surface-sunken">
       <SectionLabel className="mb-2">
         {locale === "es" ? "Reporte de campo" : "Field report"}
       </SectionLabel>
@@ -182,13 +297,30 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
               "text-xs px-2.5 py-1 rounded-full border transition-colors",
               label === l
                 ? "bg-ink text-surface border-ink"
-                : "bg-surface-sunken border-border text-ink-muted hover:border-border-strong hover:text-ink",
+                : "bg-surface border-border text-ink-muted hover:border-border-strong hover:text-ink",
             )}
           >
             {locale === "es" ? LABEL_ES[l] : LABEL_EN[l]}
           </button>
         ))}
       </div>
+
+      {/* District selector */}
+      {districtList && districtList.length > 0 && (
+        <select
+          value={districtUbigeo}
+          onChange={(e) => setDistrictUbigeo(e.target.value)}
+          className="w-full bg-surface border border-border rounded-xl text-xs text-ink px-3 py-1.5 mb-2 focus:outline-none focus:border-border-strong transition-colors"
+          aria-label={locale === "es" ? "Distrito" : "District"}
+        >
+          <option value="">
+            {locale === "es" ? "Seleccionar distrito (opcional)" : "Select district (optional)"}
+          </option>
+          {districtList.map((d) => (
+            <option key={d.ubigeo} value={d.ubigeo}>{d.name}</option>
+          ))}
+        </select>
+      )}
 
       {/* Text input */}
       <textarea
@@ -199,23 +331,31 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
             ? "Descripción del reporte de campo…"
             : "Field report description…"
         }
-        className="w-full bg-surface-sunken border border-border rounded-xl text-sm text-ink placeholder:text-ink-subtle px-3 py-2 resize-none focus:outline-none focus:border-border-strong transition-colors"
+        className="w-full bg-surface border border-border rounded-xl text-sm text-ink placeholder:text-ink-subtle px-3 py-2 resize-none focus:outline-none focus:border-border-strong transition-colors"
         rows={2}
       />
 
-      {/* Footer row */}
+      {/* Footer */}
       <div className="flex items-center justify-between mt-2">
         <span className="text-xs text-ink-subtle">{text.length}/140</span>
-        <Button
-          variant="primary"
-          size="xs"
-          onClick={submit}
-          disabled={!text.trim()}
-          aria-label={locale === "es" ? "Enviar reporte" : "Send report"}
-        >
-          <Send size={11} />
-          {locale === "es" ? "Enviar" : "Send"}
-        </Button>
+        <div className="flex gap-1.5">
+          <Button variant="ghost" size="xs" onClick={onClose}>
+            {locale === "es" ? "Cancelar" : "Cancel"}
+          </Button>
+          <Button
+            variant="primary"
+            size="xs"
+            onClick={submit}
+            disabled={!text.trim() || sending}
+            aria-label={locale === "es" ? "Enviar reporte" : "Send report"}
+          >
+            <Send size={11} />
+            {sending
+              ? (locale === "es" ? "Enviando…" : "Sending…")
+              : (locale === "es" ? "Enviar" : "Send")
+            }
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -232,29 +372,35 @@ export function SocialFeedPanel() {
 
   if (activePanel !== "social") return null;
 
-  const features = (signals?.features ?? []).slice().reverse();
-  const filtered = labelFilter === "all"
-    ? features
-    : features.filter((f) => f.properties.triage_label === labelFilter);
+  // Sort by urgency then reverse-chronological
+  const features = (signals?.features ?? []).slice().sort((a, b) => {
+    const pa = labelPriority(a.properties.triage_label);
+    const pb = labelPriority(b.properties.triage_label);
+    if (pa !== pb) return pa - pb;
+    return new Date(b.properties.ingested_at).getTime() - new Date(a.properties.ingested_at).getTime();
+  });
 
-  const newestId = features[0]?.properties.id;
+  const filtered =
+    labelFilter === "all"
+      ? features
+      : features.filter((f) => f.properties.triage_label === labelFilter);
 
-  const FILTER_LABELS: Array<{ value: Label | "all"; es: string; en: string }> = [
-    { value: "all",                   es: "Todos",          en: "All" },
-    { value: "needs_help",            es: "Ayuda",          en: "Help" },
-    { value: "road_blocked",          es: "Vía",            en: "Road" },
-    { value: "infrastructure_damage", es: "Infraestructura",en: "Infra" },
-    { value: "weather_observation",   es: "Meteo",          en: "Weather" },
+  const newestAt = features[0]?.properties.ingested_at;
+  const urgentCount = features.filter((f) => f.properties.triage_label === "needs_help").length;
+
+  const FILTER_TABS: Array<{ value: Label | "all"; es: string; en: string }> = [
+    { value: "all",                   es: "Todos",  en: "All"     },
+    { value: "needs_help",            es: "Ayuda",  en: "Help"    },
+    { value: "road_blocked",          es: "Vías",   en: "Roads"   },
+    { value: "infrastructure_damage", es: "Infra",  en: "Infra"   },
+    { value: "weather_observation",   es: "Meteo",  en: "Weather" },
   ];
 
   return (
     <aside
       className={[
-        /* mobile */
         "fixed bottom-14 left-0 right-0 h-[70vh] rounded-t-2xl",
-        /* desktop */
         "sm:absolute sm:top-0 sm:right-0 sm:h-full sm:w-[360px] sm:rounded-none sm:bottom-auto sm:left-auto",
-        /* common */
         "bg-surface border-t border-border-strong sm:border-t-0 sm:border-l shadow-panel z-20 flex flex-col panel-animate",
       ].join(" ")}
       aria-label={locale === "es" ? "Señales sociales en tiempo real" : "Real-time social signals"}
@@ -272,17 +418,19 @@ export function SocialFeedPanel() {
           {locale === "es" ? "Señales sociales" : "Social signals"}
         </PanelTitle>
 
-        {/* Live badge */}
-        <span className="flex items-center gap-1 text-xs text-ok-muted font-medium" aria-label="Live">
+        {urgentCount > 0 && (
+          <span
+            className="text-xs text-danger font-semibold bg-danger-soft px-1.5 py-0.5 rounded-full shrink-0"
+            title={locale === "es" ? "Señales de ayuda urgente" : "Urgent help signals"}
+          >
+            {urgentCount}
+          </span>
+        )}
+
+        <span className="flex items-center gap-1 text-xs text-ok-muted font-medium ml-auto" aria-label="Live">
           <span className="w-1.5 h-1.5 rounded-full bg-ok-muted animate-pulse" aria-hidden="true" />
           {locale === "es" ? "En vivo" : "Live"}
         </span>
-
-        {features.length > 0 && (
-          <span className="text-xs bg-surface-sunken text-ink-muted font-mono px-1.5 py-0.5 rounded-full">
-            {features.length}
-          </span>
-        )}
 
         <button
           onClick={() => setShowFilter((o) => !o)}
@@ -321,24 +469,37 @@ export function SocialFeedPanel() {
         </button>
       </PanelHeader>
 
-      {/* Filter pills */}
+      {/* Filter tabs */}
       {showFilter && (
         <div className="px-4 py-2.5 border-b border-border flex gap-1.5 flex-wrap">
-          {FILTER_LABELS.map(({ value, es, en }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setLabelFilter(value)}
-              className={clsx(
-                "text-xs px-2.5 py-1 rounded-full border transition-colors",
-                labelFilter === value
-                  ? "bg-ink text-surface border-ink"
-                  : "bg-surface-sunken border-border text-ink-muted hover:border-border-strong hover:text-ink",
-              )}
-            >
-              {locale === "es" ? es : en}
-            </button>
-          ))}
+          {FILTER_TABS.map(({ value, es, en }) => {
+            const count = value === "all"
+              ? features.length
+              : features.filter((f) => f.properties.triage_label === value).length;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setLabelFilter(value)}
+                className={clsx(
+                  "text-xs px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1",
+                  labelFilter === value
+                    ? "bg-ink text-surface border-ink"
+                    : "bg-surface-sunken border-border text-ink-muted hover:border-border-strong hover:text-ink",
+                )}
+              >
+                {locale === "es" ? es : en}
+                {count > 0 && (
+                  <span className={clsx(
+                    "font-mono text-[10px]",
+                    labelFilter === value ? "text-surface/70" : "text-ink-subtle",
+                  )}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -347,13 +508,20 @@ export function SocialFeedPanel() {
         <FieldReport locale={locale} onClose={() => setShowReport(false)} />
       )}
 
-      {/* Source legend row */}
+      {/* Source legend */}
       <div className="px-4 py-2 border-b border-border flex gap-1.5 flex-wrap items-center">
         {(["bluesky", "telegram", "reddit", "campo"] as const).map((src) => (
-          <Pill key={src} variant="default">{src}</Pill>
+          <Pill key={src} variant="default">{formatSource(src)}</Pill>
         ))}
-        <span className="text-xs text-ink-subtle ml-auto">
-          {locale === "es" ? "triaje IA · Presidio PII" : "AI triage · Presidio PII"}
+        <span
+          className="text-xs text-ink-subtle ml-auto cursor-help"
+          title={
+            locale === "es"
+              ? "Señales clasificadas automáticamente por IA. Datos personales anonimizados antes del almacenamiento."
+              : "Signals classified automatically by AI. Personal data anonymised before storage."
+          }
+        >
+          {locale === "es" ? "IA · anonimizado" : "AI · anonymised"}
         </span>
       </div>
 
@@ -365,7 +533,7 @@ export function SocialFeedPanel() {
         aria-live="polite"
       >
         {filtered.length === 0 && (
-          <li>
+          <li className="flex flex-col items-center">
             <EmptyState
               title={locale === "es" ? "Sin señales" : "No signals"}
               body={
@@ -375,6 +543,15 @@ export function SocialFeedPanel() {
               }
               icon={<Radio size={20} />}
             />
+            <Button
+              variant="primary"
+              size="xs"
+              onClick={() => setShowReport(true)}
+              className="mb-4"
+            >
+              <PlusCircle size={12} />
+              {locale === "es" ? "Añadir reporte de campo" : "Add field report"}
+            </Button>
           </li>
         )}
         {filtered.map((f) => (
@@ -382,14 +559,15 @@ export function SocialFeedPanel() {
             key={f.properties.id}
             props={f.properties}
             locale={locale}
-            isNew={f.properties.id === newestId}
+            isNew={f.properties.ingested_at === newestAt}
             onFly={() => {
-              const [lng, lat] = f.geometry.type === "Point"
-                ? (f.geometry.coordinates as [number, number])
-                : [null, null];
+              const [lng, lat] =
+                f.geometry.type === "Point"
+                  ? (f.geometry.coordinates as [number, number])
+                  : [null, null];
               if (lng != null && lat != null) {
                 setFlyToPoint([lng, lat]);
-                setActivePanel("map");
+                // intentionally NOT closing sidebar — map pans without leaving social view
               }
             }}
           />

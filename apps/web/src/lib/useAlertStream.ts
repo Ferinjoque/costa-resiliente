@@ -25,10 +25,14 @@ export function useAlertStream() {
 
     es.onmessage = (evt) => {
       try {
-        const fresh = JSON.parse(evt.data);
-        qc.setQueryData(["alerts", undefined], fresh);
+        JSON.parse(evt.data); // validate frame
+        // Invalidate so the full list (all statuses) refetches from the API.
+        // Never use setQueryData here — SSE only carries active alerts and
+        // would silently overwrite the panel's full history view.
+        qc.invalidateQueries({ queryKey: ["alerts"] });
         qc.invalidateQueries({ queryKey: ["district-risk-summary"] });
-        qc.invalidateQueries({ queryKey: ["flood-exposure"] });
+        // flood-exposure is derived from polygon geometry, not alert counts —
+        // no need to invalidate on every 10-second SSE heartbeat.
       } catch {
         // malformed frame — ignore
       }

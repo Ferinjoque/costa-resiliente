@@ -30,8 +30,19 @@ class AlertSummary(BaseModel):
     title: str
     description: Optional[str] = None
     district_id: Optional[int] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    source_refs: Optional[dict] = None
     created_at: datetime
     updated_at: datetime
+
+
+class LogEntry(BaseModel):
+    operator_id: str
+    action_type: str   # resource_dispatch | protocol_step | note
+    alert_id: Optional[int] = None
+    payload: dict
+    session_id: Optional[str] = None
 
 
 class AlertAction(BaseModel):
@@ -75,7 +86,9 @@ async def list_alerts(
     rows = await db.execute(
         text(f"""
             SELECT a.id, a.type, a.severity, a.status, a.title, a.description,
-                   a.district_id, a.created_at, a.updated_at
+                   a.district_id, a.created_at, a.updated_at,
+                   ST_Y(a.geom) AS lat, ST_X(a.geom) AS lng,
+                   a.source_refs
             FROM ops.alerts a
             WHERE {where}
             ORDER BY a.created_at DESC
@@ -83,7 +96,13 @@ async def list_alerts(
         """),
         params,
     )
-    return [AlertSummary(**dict(r._mapping)) for r in rows]
+    return [
+        AlertSummary(**{
+            **dict(r._mapping),
+            "source_refs": dict(r._mapping["source_refs"]) if r._mapping.get("source_refs") else None,
+        })
+        for r in rows
+    ]
 
 
 @router.post("/{alert_id}/action")
@@ -146,6 +165,29 @@ async def act_on_alert(
     await db.commit()
 
     return {"alert_id": alert_id, "new_status": new_status}
+
+
+# ─── Free-form decision log entry ────────────────────────────────────────────
+
+@router.post("/log")
+async def log_decision(entry: LogEntry, db: AsyncSession = Depends(get_db)) -> dict:
+    """Append a free-form entry to the decision log (dispatch, protocol step, note)."""
+    await db.execute(
+        text("""
+            INSERT INTO ops.decision_log
+                (operator_id, action_type, alert_id, payload, session_id)
+            VALUES (:op, :atype, :aid, CAST(:payload AS jsonb), :session)
+        """),
+        {
+            "op": entry.operator_id,
+            "atype": entry.action_type,
+            "aid": entry.alert_id,
+            "payload": json.dumps(entry.payload, ensure_ascii=False),
+            "session": entry.session_id,
+        },
+    )
+    await db.commit()
+    return {"ok": True}
 
 
 # ─── Decision log ─────────────────────────────────────────────────────────────

@@ -28,8 +28,8 @@ const RISK_ITEMS: { color: string; label: { es: string; en: string } }[] = [
 const SOCIAL_ITEMS: { color: string; label: { es: string; en: string } }[] = [
   { color: SOCIAL_LABEL_COLOR.needs_help,            label: { es: "Ayuda",           en: "Needs help" } },
   { color: SOCIAL_LABEL_COLOR.infrastructure_damage, label: { es: "Infraestructura", en: "Infrastructure" } },
-  { color: SOCIAL_LABEL_COLOR.road_blocked,          label: { es: "VÃ­a bloqueada",   en: "Road blocked" } },
-  { color: SOCIAL_LABEL_COLOR.weather_observation,   label: { es: "MeteorologÃ­a",    en: "Weather" } },
+  { color: SOCIAL_LABEL_COLOR.road_blocked,          label: { es: "Vía bloqueada",   en: "Road blocked" } },
+  { color: SOCIAL_LABEL_COLOR.weather_observation,   label: { es: "Meteorología",    en: "Weather" } },
 ];
 
 const HUAYCO_ITEMS: { color: string; label: { es: string; en: string } }[] = [
@@ -40,7 +40,7 @@ const HUAYCO_ITEMS: { color: string; label: { es: string; en: string } }[] = [
 ];
 
 const ALERT_ITEMS: { color: string; label: { es: string; en: string } }[] = [
-  { color: SEVERITY_COLOR.critical, label: { es: "CrÃ­tico (pulsante)", en: "Critical (pulsing)" } },
+  { color: SEVERITY_COLOR.critical, label: { es: "Crítico (pulsante)", en: "Critical (pulsing)" } },
   { color: SEVERITY_COLOR.high,     label: { es: "Alto",               en: "High" } },
   { color: SEVERITY_COLOR.medium,   label: { es: "Medio",              en: "Medium" } },
   { color: SEVERITY_COLOR.low,      label: { es: "Bajo",               en: "Low" } },
@@ -64,10 +64,10 @@ const LABELS = {
   legend:       { es: "Leyenda",                    en: "Legend" },
   riskLevel:    { es: "Nivel de riesgo",            en: "Risk level" },
   rainfall:     { es: "Lluvia acumulada (IMERG)",   en: "Accumulated rainfall (IMERG)" },
-  sarFlood:     { es: "InundaciÃ³n SAR",             en: "SAR flood" },
-  sarPolygon:   { es: "PolÃ­gono inundado",          en: "Flood polygon" },
-  huayco:       { es: "Riesgo huayco",              en: "Huayco risk" },
-  social:       { es: "SeÃ±ales sociales",           en: "Social signals" },
+  sarFlood:     { es: "Inundación SAR",              en: "SAR flood" },
+  sarPolygon:   { es: "Polígono inundado",           en: "Flood polygon" },
+  huayco:       { es: "Riesgo huayco",               en: "Huayco risk" },
+  social:       { es: "Señales sociales",            en: "Social signals" },
   stations:     { es: "Estaciones ANA",             en: "ANA stations" },
   opAlerts:     { es: "Alertas operacionales",      en: "Operational alerts" },
   infra:        { es: "Infraestructura",            en: "Infrastructure" },
