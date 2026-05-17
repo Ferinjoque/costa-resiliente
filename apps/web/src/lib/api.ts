@@ -484,6 +484,7 @@ export interface DistrictFusion {
   district: FusionDistrict;
   risk_level: "bajo" | "moderado" | "alto";
   prose_es: string;
+  prose_en?: string;
   flood: FusionFlood;
   huayco: FusionHuayco;
   social: FusionSocial;

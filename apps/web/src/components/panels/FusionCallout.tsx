@@ -158,7 +158,7 @@ export function FusionCallout() {
 
             {/* Prose summary */}
             <p className="text-[10px] leading-snug opacity-70 pt-1 border-t border-white/10">
-              {data.prose_es}
+              {locale === "en" && data.prose_en ? data.prose_en : data.prose_es}
             </p>
 
             {/* Open dashboard link */}
