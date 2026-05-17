@@ -57,7 +57,7 @@ class DecisionLogEntry(BaseModel):
 async def list_alerts(
     status: Optional[str] = Query(None),
     severity: Optional[str] = Query(None),
-    limit: int = Query(50, le=200),
+    limit: int = Query(50, ge=0, le=200),
     db: AsyncSession = Depends(get_db),
 ) -> list[AlertSummary]:
     """Return alerts from ops.alerts, newest first."""
@@ -133,7 +133,7 @@ async def act_on_alert(
         text("""
             INSERT INTO ops.decision_log
                 (operator_id, action_type, alert_id, payload, session_id)
-            VALUES (:op, :atype, :aid, :payload::jsonb, :session)
+            VALUES (:op, :atype, :aid, CAST(:payload AS jsonb), :session)
         """),
         {
             "op": action.operator_id,
@@ -193,7 +193,7 @@ async def alerts_stream(db: AsyncSession = Depends(get_db)) -> StreamingResponse
 @router.get("/decision-log", response_model=list[DecisionLogEntry])
 async def list_decision_log(
     operator_id: Optional[str] = Query(None),
-    limit: int = Query(100, le=500),
+    limit: int = Query(100, ge=0, le=500),
     db: AsyncSession = Depends(get_db),
 ) -> list[DecisionLogEntry]:
     """Return recent decision log entries, newest first."""
@@ -226,7 +226,7 @@ async def list_decision_log(
 @router.get("/decision-log/export")
 async def export_decision_log(
     operator_id: Optional[str] = Query(None),
-    limit: int = Query(500, le=2000),
+    limit: int = Query(500, ge=0, le=2000),
     db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     """
