@@ -227,7 +227,7 @@ export function AskPanel() {
               <div className="flex items-center justify-between mb-1">
                 <p className="text-[11px] text-costa-400">{ui.responseLabel}</p>
                 {isDemo && (
-                  <span className="text-[9px] bg-slate-700 text-slate-400 border border-slate-600 px-1 rounded">DEMO</span>
+                  <span className="text-[10px] bg-slate-700 text-slate-400 border border-slate-600 px-1 rounded">DEMO</span>
                 )}
               </div>
               <div className="text-sm text-slate-200 leading-relaxed">

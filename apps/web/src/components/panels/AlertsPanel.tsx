@@ -316,7 +316,7 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   return (
     <div className="mx-3 mt-2 rounded-lg border border-costa-700/60 bg-costa-900/25 px-3 py-2.5">
       <div className="flex items-center gap-1.5 mb-1">
-        <span className="text-[9px] font-bold text-costa-400 tracking-wide">✦ AI</span>
+        <span className="text-[10px] font-bold text-costa-400 tracking-wide">✦ AI</span>
         <span className="text-[10px] text-costa-300 font-medium">
           {locale === "es" ? "Recomendación operacional" : "Operational recommendation"}
         </span>
@@ -356,7 +356,7 @@ function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en
 
   return (
     <div className="mx-3 mt-2">
-      <p className="text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">
+      <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1.5">
         {locale === "es" ? "Despacho rápido" : "Quick dispatch"}
       </p>
       <div className="flex gap-1.5 flex-wrap">
@@ -418,13 +418,13 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
         className="w-full flex items-center gap-2 px-3 py-2 text-left"
         aria-expanded={!collapsed}
       >
-        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex-1">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex-1">
           {locale === "es" ? `Protocolo INDECI (${done}/${steps.length})` : `INDECI Protocol (${done}/${steps.length})`}
         </span>
         {done > 0 && done < steps.length && (
-          <span className="text-[9px] text-costa-400">{Math.round((done / steps.length) * 100)}%</span>
+          <span className="text-[10px] text-costa-400">{Math.round((done / steps.length) * 100)}%</span>
         )}
-        {done === steps.length && <span className="text-[9px] text-green-400">✓ completo</span>}
+        {done === steps.length && <span className="text-[10px] text-green-400">✓ completo</span>}
         <ChevronDown size={12} className={clsx("text-slate-500 transition-transform", !collapsed && "rotate-180")} />
       </button>
       {!collapsed && (
@@ -514,7 +514,7 @@ export function AlertsPanel() {
           {tr("alerts", "title")}
         </h2>
         {sseConnected && (
-          <span className="flex items-center gap-1 text-[9px] text-green-400 font-mono">
+          <span className="flex items-center gap-1 text-[10px] text-green-400 font-mono">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 live-dot" aria-hidden="true" />
             LIVE
           </span>

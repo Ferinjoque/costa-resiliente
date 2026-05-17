@@ -115,8 +115,8 @@ export function MapLegend() {
                 aria-hidden="true"
               />
               <div className="flex justify-between mt-0.5">
-                <span className="text-[9px] text-slate-400">0 mm</span>
-                <span className="text-[9px] text-slate-400">200+</span>
+                <span className="text-[10px] text-slate-400">0 mm</span>
+                <span className="text-[10px] text-slate-400">200+</span>
               </div>
             </Section>
           )}

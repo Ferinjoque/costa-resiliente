@@ -121,7 +121,7 @@ export function OperationalHUD() {
           {active.length}
         </span>
         {critical > 0 && (
-          <span className="ml-0.5 text-[9px] bg-red-800/60 text-red-300 px-1 rounded">
+          <span className="ml-0.5 text-[10px] bg-red-800/60 text-red-300 px-1 rounded">
             {critical} {locale === "es" ? "crít." : "crit."}
           </span>
         )}
@@ -167,7 +167,7 @@ export function OperationalHUD() {
         <span className="text-slate-500">Lima</span>
         <span className="text-slate-300 tabular-nums">{clock}</span>
         {!online && (
-          <span className="ml-1.5 text-[9px] bg-slate-700 text-slate-400 border border-slate-600 px-1 rounded" aria-label="API offline">
+          <span className="ml-1.5 text-[10px] bg-slate-700 text-slate-400 border border-slate-600 px-1 rounded" aria-label="API offline">
             DEMO
           </span>
         )}

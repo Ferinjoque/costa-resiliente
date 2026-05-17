@@ -210,53 +210,81 @@ function CityOverview() {
   const altoCount = summary?.features.filter((f) => f.properties.risk_level === "alto").length ?? 0;
   const moderadoCount = summary?.features.filter((f) => f.properties.risk_level === "moderado").length ?? 0;
 
+  // Bento layout: hero "active alerts" tile spans 3/5 columns; flood-area
+  // sits in the right 2/5. A thin footer strip carries the secondary
+  // high/moderate district counts in a single horizontal flow. Different
+  // visual weight per tile breaks the AI-template symmetric-grid tell.
   return (
     <div className="mb-4 space-y-2">
-      <p className="text-[10px] text-slate-500 uppercase tracking-wide">{tr("dashboard", "lima")}</p>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="bg-red-900/25 border border-red-700/40 rounded-lg px-3 py-2">
-          <div className="flex items-center gap-1 mb-0.5">
-            <AlertTriangle size={10} className="text-red-400" />
-            <p className="text-[10px] text-slate-400">{tr("dashboard", "activeAlerts")}</p>
+      <p className="font-display text-[11px] text-slate-500 uppercase tracking-ops">
+        {tr("dashboard", "lima")}
+      </p>
+      <div className="grid grid-cols-5 gap-2">
+        {/* Hero: active alerts (3 cols, taller) */}
+        <div className="col-span-3 row-span-2 bg-severity-critical/12 border border-severity-critical/35 rounded-xl px-4 py-3 flex flex-col justify-between min-h-[112px]">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle size={11} className="text-severity-critical" />
+            <p className="text-[11px] text-slate-300">{tr("dashboard", "activeAlerts")}</p>
           </div>
-          <p className="font-display text-2xl font-bold text-severity-critical tracking-display-tight tabular-nums leading-none">{activeCount}</p>
-          {criticalCount > 0 && (
-            <p className="text-[10px] text-red-400">
-              {criticalCount} {locale === "es" ? `crítica${criticalCount !== 1 ? "s" : ""}` : `critical`}
+          <div>
+            <p className="font-display text-5xl font-bold text-severity-critical tracking-display-tight tabular-nums leading-none">
+              {activeCount}
             </p>
-          )}
+            {criticalCount > 0 && (
+              <p className="text-[11px] text-severity-critical/90 mt-1.5">
+                {criticalCount} {locale === "es" ? `crítica${criticalCount !== 1 ? "s" : ""}` : `critical`}
+              </p>
+            )}
+          </div>
         </div>
-        <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg px-3 py-2">
-          <div className="flex items-center gap-1 mb-0.5">
-            <Waves size={10} className="text-blue-400" />
-            <p className="text-[10px] text-slate-400">{tr("dashboard", "floodArea")}</p>
+
+        {/* Right column tile 1: flood area */}
+        <div className="col-span-2 bg-costa-900/40 border border-costa-700/40 rounded-xl px-3 py-2">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Waves size={10} className="text-costa-300" />
+            <p className="text-[11px] text-slate-300">{tr("dashboard", "floodArea")}</p>
           </div>
           <p className="font-display text-2xl font-bold text-costa-300 tracking-display-tight tabular-nums leading-none">
-            {floodArea.toFixed(1)}<span className="text-sm font-sans ml-1 text-slate-400">km²</span>
+            {floodArea.toFixed(1)}
+            <span className="font-sans text-xs ml-1 text-slate-400">km²</span>
           </p>
-          {affectedPop > 0 && (
-            <p className="text-[10px] text-blue-400">
-              ~{affectedPop > 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : affectedPop} {tr("dashboard", "inhabitants")}
-            </p>
-          )}
         </div>
+
+        {/* Right column tile 2: affected population */}
+        <div className="col-span-2 bg-surface-panel/60 border border-surface-line rounded-xl px-3 py-2">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Users size={10} className="text-sand-300" />
+            <p className="text-[11px] text-slate-300">
+              {locale === "es" ? "Pob. en riesgo" : "Pop. at risk"}
+            </p>
+          </div>
+          <p className="font-display text-2xl font-bold text-sand-300 tracking-display-tight tabular-nums leading-none">
+            {affectedPop > 0
+              ? `~${affectedPop > 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : affectedPop}`
+              : "—"}
+          </p>
+        </div>
+
+        {/* Footer strip: district risk counts (spans all 5 cols) */}
         {(altoCount > 0 || moderadoCount > 0) && (
-          <div className="col-span-2 bg-surface-panel border border-slate-700/50 rounded-lg px-3 py-2 flex items-center gap-4">
-            <CheckCircle2 size={10} className="text-slate-500 shrink-0" aria-hidden="true" />
-            <div className="flex items-center gap-3 text-[11px]">
+          <div className="col-span-5 bg-surface-panel/40 border border-surface-line/70 rounded-xl px-3 py-2 flex items-center gap-4">
+            <CheckCircle2 size={11} className="text-slate-500 shrink-0" aria-hidden="true" />
+            <div className="flex items-center gap-4 text-[11px] flex-wrap">
               {altoCount > 0 && (
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-red-500 shrink-0" />
-                  <span className="text-slate-300">
-                    {altoCount} {locale === "es" ? "distr. riesgo alto" : "high-risk distr."}
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-severity-critical shrink-0" />
+                  <span className="text-slate-200">
+                    <span className="font-display font-semibold tabular-nums">{altoCount}</span>{" "}
+                    {locale === "es" ? "distr. riesgo alto" : "high-risk distr."}
                   </span>
                 </span>
               )}
               {moderadoCount > 0 && (
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-orange-400 shrink-0" />
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-severity-high shrink-0" />
                   <span className="text-slate-400">
-                    {moderadoCount} {locale === "es" ? "moderado" : "moderate"}
+                    <span className="font-display font-semibold tabular-nums">{moderadoCount}</span>{" "}
+                    {locale === "es" ? "moderado" : "moderate"}
                   </span>
                 </span>
               )}
@@ -376,7 +404,7 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
               {tr("dashboard", "multihazard")}
             </p>
-            <span className={clsx("ml-auto text-[9px] font-bold uppercase px-1 py-0.5 rounded", RISK_TEXT[fusion.risk_level])}>
+            <span className={clsx("ml-auto text-[10px] font-bold uppercase px-1 py-0.5 rounded", RISK_TEXT[fusion.risk_level])}>
               {fusion.risk_level.toUpperCase()}
             </span>
           </div>
@@ -395,7 +423,7 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
           <ul className="space-y-1">
             {activeAlerts.map((a) => (
               <li key={a.id} className="flex items-start gap-2 bg-surface-panel rounded-lg px-2.5 py-1.5">
-                <span className={clsx("mt-0.5 shrink-0 text-[9px] font-bold border rounded px-1 py-0.5", SEVERITY_BADGE[a.severity])}>
+                <span className={clsx("mt-0.5 shrink-0 text-[10px] font-bold border rounded px-1 py-0.5", SEVERITY_BADGE[a.severity])}>
                   {a.severity.slice(0, 4).toUpperCase()}
                 </span>
                 <p className="text-[11px] text-slate-200 leading-snug line-clamp-2">{a.title}</p>
@@ -501,7 +529,7 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
                     </div>
                     <p className="text-[10px] text-slate-500">{st.river} · {st.source.toUpperCase()}</p>
                     {overThreshold && threshold != null && (
-                      <p className="text-[9px] text-orange-400 mt-0.5">
+                      <p className="text-[10px] text-orange-400 mt-0.5">
                         {tr("dashboard", "threshold")} {threshold.toFixed(1)} m {tr("dashboard", "exceeded")}
                       </p>
                     )}
@@ -540,13 +568,15 @@ function MetricCard({
   color: string;
 }) {
   return (
-    <div className="bg-surface-panel rounded-lg px-3 py-2">
-      <div className="flex items-center gap-1 mb-1">
+    <div className="bg-surface-panel/60 border border-surface-line/60 rounded-xl px-3 py-2.5">
+      <div className="flex items-center gap-1.5 mb-1">
         <Icon size={11} className={color} aria-hidden="true" />
-        <p className="text-[10px] text-slate-400">{label}</p>
+        <p className="text-[11px] text-slate-400">{label}</p>
       </div>
-      <p className={clsx("text-lg font-semibold leading-tight", color)}>{value}</p>
-      <p className="text-[10px] text-slate-500 mt-0.5 leading-tight line-clamp-1">{sub}</p>
+      <p className={clsx("font-display text-xl font-semibold leading-none tracking-display-tight tabular-nums", color)}>
+        {value}
+      </p>
+      <p className="text-[11px] text-slate-500 mt-1.5 leading-tight line-clamp-1">{sub}</p>
     </div>
   );
 }
@@ -717,7 +747,7 @@ function ForecastSection({ locale }: { locale: Locale }) {
           <CloudRain size={11} className="text-blue-400" aria-hidden="true" />
           {L(label.title)}
         </p>
-        <p className="text-[9px] text-slate-500">{L(label.source)}</p>
+        <p className="text-[10px] text-slate-500">{L(label.source)}</p>
       </div>
 
       {/* Sparkline chart */}
@@ -725,7 +755,7 @@ function ForecastSection({ locale }: { locale: Locale }) {
         <ForecastChart steps={steps} />
         <div className="flex justify-between px-0.5 mt-0.5">
           {steps.map((s) => (
-            <span key={s.hours} className="text-[9px] text-slate-500">+{s.hours}h</span>
+            <span key={s.hours} className="text-[10px] text-slate-500">+{s.hours}h</span>
           ))}
         </div>
       </div>
@@ -747,10 +777,10 @@ function ForecastSection({ locale }: { locale: Locale }) {
 
       {/* Legend row */}
       <div className="flex items-center justify-between">
-        <p className="text-[9px] text-slate-500">{L(label.rim)}</p>
+        <p className="text-[10px] text-slate-500">{L(label.rim)}</p>
         <div className="flex items-center gap-1">
           <span className="inline-block w-3 border-t border-dashed border-orange-400" aria-hidden="true" />
-          <span className="text-[9px] text-orange-400">{L(label.thresh)} {HUAYCO_THRESHOLD_MM} mm</span>
+          <span className="text-[10px] text-orange-400">{L(label.thresh)} {HUAYCO_THRESHOLD_MM} mm</span>
         </div>
       </div>
 
@@ -792,7 +822,7 @@ function ResourceStatus({ locale }: { locale: Locale }) {
           <ShieldCheck size={11} className="text-costa-400" aria-hidden="true" />
           {L(label.title)}
         </p>
-        <p className="text-[9px] text-slate-500">{L(label.source)}</p>
+        <p className="text-[10px] text-slate-500">{L(label.source)}</p>
       </div>
       <div className="space-y-1.5">
         {DEMO_RESOURCES.map((r) => {
@@ -898,7 +928,7 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
             <span className={clsx("absolute -left-[17px] top-1.5 w-2 h-2 rounded-full shrink-0", ev.dot)} aria-hidden="true" />
             <div className="flex items-start gap-2">
               <p className="text-[10px] text-slate-300 leading-snug flex-1 min-w-0 truncate">{ev.text}</p>
-              <time className="text-[9px] text-slate-600 shrink-0 tabular-nums">{formatTime(ev.time)}</time>
+              <time className="text-[10px] text-slate-600 shrink-0 tabular-nums">{formatTime(ev.time)}</time>
             </div>
           </li>
         ))}

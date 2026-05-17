@@ -205,7 +205,7 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
         rows={2}
       />
       <div className="flex items-center justify-between mt-1.5">
-        <span className="text-[9px] text-slate-500">{text.length}/140</span>
+        <span className="text-[10px] text-slate-500">{text.length}/140</span>
         <button
           onClick={submit}
           disabled={!text.trim()}
@@ -265,7 +265,7 @@ export function SocialFeedPanel() {
           {locale === "es" ? "Señales sociales" : "Social signals"}
         </h2>
         {features.length > 0 && (
-          <span className="text-[9px] bg-costa-700 text-white px-1.5 rounded-full">
+          <span className="text-[10px] bg-costa-700 text-white px-1.5 rounded-full">
             {features.length}
           </span>
         )}
@@ -328,11 +328,11 @@ export function SocialFeedPanel() {
       {/* Source legend row */}
       <div className="px-3 py-1.5 border-b border-slate-700/50 flex gap-2 flex-wrap">
         {(["bluesky", "telegram", "reddit", "campo"] as const).map((src) => (
-          <span key={src} className={clsx("text-[9px] border rounded-full px-1.5 py-0.5", SOURCE_BADGE[src])}>
+          <span key={src} className={clsx("text-[10px] border rounded-full px-1.5 py-0.5", SOURCE_BADGE[src])}>
             {src}
           </span>
         ))}
-        <span className="text-[9px] text-slate-500 ml-auto">
+        <span className="text-[10px] text-slate-500 ml-auto">
           {locale === "es" ? "triaje IA · Presidio PII" : "AI triage · Presidio PII"}
         </span>
       </div>
