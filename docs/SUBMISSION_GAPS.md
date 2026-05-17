@@ -1,21 +1,64 @@
 # Submission Gaps — Costa Resiliente
 
 > Rubric-mapped gap analysis against IEEE Response Quest 2026 Phase 3 criteria.
-> Last updated: 2026-05-16 (Sprint 10 session).
+> Last updated: 2026-05-16 (Sprint 12 — Impeccable design pass).
 > Score scale: 1–5 per criterion. Total: 25.
 
 ---
 
 ## Score Summary
 
-| # | Criterion | Sprint 8 | Sprint 9 | Target | Remaining gap |
-|---|-----------|----------|----------|--------|---------------|
-| C1 | **Timeliness** | 4.3 | 4.3 | 5.0 | SSE alerts fully wired |
-| C2 | **Comprehensiveness** | 4.8 | 4.8 | 5.0 | — |
-| C3 | **Integration** | 4.8 | 5.0 ✅ | 5.0 | Fusion callout shipped |
-| C4 | **Usability** | 4.5 | 4.8 | 5.0 | WCAG Lighthouse pass on VPS |
-| C5 | **Scenario Fit** | 4.3 | 4.8 | 5.0 | El Niño replay + fusion |
-| | **Total** | **~22.7 / 25** | **~23.7 / 25** | **25 / 25** | VPS deploy unblocks all |
+| # | Criterion | S8 | S9 | S10 | S11 | **S12 (Impeccable)** | Target | Remaining gap |
+|---|-----------|----|----|-----|-----|----------------------|--------|---------------|
+| C1 | **Timeliness** | 4.3 | 4.3 | 4.3 | 4.3 | **4.3** | 5.0 | WebSocket push to map refresh |
+| C2 | **Comprehensiveness** | 4.8 | 4.8 | 4.8 | 4.8 | **4.8** | 5.0 | — |
+| C3 | **Integration** | 4.8 | 5.0 ✅ | 5.0 | 5.0 | **5.0** | 5.0 | — |
+| C4 | **Usability** | 4.5 | 4.8 | 4.9 | 4.9 | **5.0** ✅ | 5.0 | Lighthouse confirms on VPS |
+| C5 | **Scenario Fit** | 4.3 | 4.8 | 4.8 | 4.8 | **4.9** | 5.0 | r.avaflow simulation (post-submission) |
+| | **Total** | ~22.7 | ~23.7 | ~23.8 | ~23.8 | **~24.0 / 25** | 25 / 25 | VPS deploy unblocks final scoring |
+
+## Sprint 12 — Impeccable design pass (2026-05-16)
+
+Closes the long-running C4 Usability gap by intervening at the visual-
+system level rather than per-feature. See `apps/web/DESIGN.md` for the
+full system spec and `docs/IMPECCABLE_AUDIT.md` for the baseline audit.
+
+- Phase 1 — `/impeccable audit + critique`: scored UI at 5.8/10 with 9/9
+  AI-template markers detected.
+- Phase 2 — `/impeccable distill`: collapsed three overlapping situational
+  surfaces (HUD + SituationBrief + LiveTicker were all surfacing the same
+  SINAGERD level + alerts count). HUD now canonical on desktop;
+  SituationBrief is `sm:hidden` for desktop. DataFreshnessBar slimmed.
+- Phase 3 — `/impeccable typeset + colorize`: added Fraunces display
+  family alongside Inter + JetBrains Mono. Tailwind palette migrated to
+  OKLCH SINAGERD-aligned severity (cinnabar/ochre/mustard/sage) +
+  Pacific-coast `costa` ramp + new `sand` warm accent. CSS custom props
+  in globals.css aligned. Map popup chrome + emergency glow + critical
+  pulse all sourced from severity tokens.
+- Phase 4 — `/impeccable layout`: bento CityOverview (3×2 hero +
+  satellites + footer strip), display-family hero numerals, raised type
+  floor (`text-[9px]` → `text-[10px]` minimum), MetricCard refit.
+- Phase 5 — `/impeccable harden`: emoji UI icons replaced with
+  SINAGERD-style ASCII tag codes ([SAR], [HUA], [SOC], [SOS], [ACK], etc.)
+  rendered in the display family. Designed empty states for AlertsPanel +
+  TopRiskList. LiveTicker switched from `role=marquee` to
+  `role=region aria-live=polite`. Costa Resiliente monogram replaces the
+  prior gradient + icon-mashup logo.
+- Phase 6 — `/impeccable optimize`: TutorialOverlay / SharePanel /
+  DemoLiveSimulator switched to `next/dynamic`. ShareLoader wrapped in
+  Suspense. Production build green. First-load JS `/` = 153 kB.
+- Phase 7 — `/impeccable polish + delight`: new `MapRadar` component —
+  signature sweep anchored bottom-right of the map area, beam tint
+  follows highest active severity, respects reduced-motion, suppressed
+  when any non-map panel is active.
+- Phase 9 — `/impeccable document`: `apps/web/DESIGN.md` captures the
+  full visual system spec for future contributors.
+
+The pass leaves an audit score of ~8.6/10 against the same five
+dimensions (typography 9, color 9, layout 8, motion 8, hierarchy 9),
+and trims 7 of the 9 detected AI-template markers.
+
+## Sprint 9 Shipped (2026-05-16)
 
 ## Sprint 9 Shipped (2026-05-16)
 
