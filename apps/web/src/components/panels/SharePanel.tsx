@@ -77,7 +77,17 @@ export function SharePanel() {
       });
       setShareUrl(res.url);
     } catch {
-      setError(t.error);
+      // Backend unavailable — generate a self-contained URL
+      const state = btoa(JSON.stringify({
+        districtUbigeo: scenario.districtUbigeo,
+        districtName: scenario.districtName,
+        timeWindowHours: scenario.timeWindowHours,
+        isReplayMode: scenario.isReplayMode,
+        replayDate: scenario.replayDate,
+        activeLayers: [...activeLayers],
+      }));
+      const base = typeof window !== "undefined" ? window.location.origin + window.location.pathname : "";
+      setShareUrl(`${base}?state=${state}`);
     } finally {
       setLoading(false);
     }

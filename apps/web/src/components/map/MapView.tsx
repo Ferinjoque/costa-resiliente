@@ -7,7 +7,9 @@ import { useUIStore } from "@/store/ui";
 import {
   useDistricts, useImerg, useFlood, useHuayco,
   useInfrastructure, useHazard, useSocialSignals, useDistrictRiskSummary,
+  useFloodExposure,
 } from "@/lib/queries";
+import type { FloodExposure } from "@/lib/api";
 
 const LIMA_CENTER: [number, number] = [-76.97, -12.05];
 const LIMA_ZOOM = 10;
@@ -117,6 +119,7 @@ export default function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const activePopup = useRef<maplibregl.Popup | null>(null);
+  const exposureRef = useRef<FloodExposure | null>(null);
   const { activeLayers, scenario, is3DMode } = useUIStore();
 
   const { data: districtGeoJSON } = useDistricts();
@@ -128,6 +131,10 @@ export default function MapView() {
   const { data: infraData } = useInfrastructure();
   const { data: hazardData } = useHazard();
   const { data: socialData } = useSocialSignals(48);
+  const { data: exposureData } = useFloodExposure();
+
+  // Keep ref in sync so click handler always has fresh exposure data
+  useEffect(() => { exposureRef.current = exposureData ?? null; }, [exposureData]);
 
   // ─── Map init + unified interaction handlers ──────────────────────────────
   useEffect(() => {
@@ -204,9 +211,26 @@ export default function MapView() {
           const feats = m.queryRenderedFeatures(e.point, { layers: ["flood-fill"] });
           if (feats.length) {
             const p = feats[0].properties as Record<string, string | number | null>;
+            const districtId = p.district_id != null ? Number(p.district_id) : null;
+            const expDistrict = districtId != null
+              ? (exposureRef.current?.districts.find((d) => d.district_id === districtId) ?? null)
+              : null;
+            const exp = exposureRef.current;
+            const totalOverlapKm2 = exp?.districts.reduce((s, d) => s + d.overlap_km2, 0) ?? 1;
+            const districtAtRisk = expDistrict && totalOverlapKm2 > 0
+              ? (expDistrict.overlap_km2 / totalOverlapKm2) * (exp?.total_affected_population ?? 0)
+              : 0;
+            const polyAtRisk = expDistrict && expDistrict.overlap_km2 > 0 && districtAtRisk > 0 && p.area_km2 != null
+              ? Math.round((Number(p.area_km2) / expDistrict.overlap_km2) * districtAtRisk)
+              : null;
+            const popLabel = polyAtRisk != null && polyAtRisk > 0
+              ? `~${polyAtRisk.toLocaleString("es-PE")} personas`
+              : null;
             openPopup(m, e.lngLat, popupHtml("Inundación detectada (SAR)", [
-              ["Confianza", p.confidence != null ? `${(Number(p.confidence) * 100).toFixed(0)}%` : null],
-              ["Área",      p.area_km2 != null ? `${Number(p.area_km2).toFixed(2)} km²` : null],
+              ["Distrito",   expDistrict?.district_name ?? null],
+              ["Confianza",  p.confidence != null ? `${(Number(p.confidence) * 100).toFixed(0)}%` : null],
+              ["Área",       p.area_km2 != null ? `${Number(p.area_km2).toFixed(2)} km²` : null],
+              ["Pob. en riesgo", popLabel],
               ["Escena SAR", trunc(p.scene_id ? String(p.scene_id) : null)],
             ]), activePopup);
             return;

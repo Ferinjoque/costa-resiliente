@@ -37,6 +37,7 @@ function FirstRunTrigger() {
     if (typeof window === "undefined") return;
     // Don't auto-open if it's a shared scenario link
     if (window.location.search.includes("token=")) return;
+    if (window.location.search.includes("state=")) return;
     if (localStorage.getItem(FIRST_VISIT_KEY)) return;
     localStorage.setItem(FIRST_VISIT_KEY, "1");
     // Delay slightly so map finishes rendering

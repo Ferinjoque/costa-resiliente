@@ -16,37 +16,56 @@ export function ShareLoader() {
   const loaded = useRef(false);
   const { setScenario, toggleLayer, activeLayers, setShareMode } = useUIStore();
 
+  const stateParam = searchParams.get("state");
+
   useEffect(() => {
-    if (!token || loaded.current) return;
+    if (loaded.current) return;
+
+    // Client-side encoded state (no backend needed)
+    if (stateParam) {
+      loaded.current = true;
+      try {
+        const decoded = JSON.parse(atob(stateParam));
+        applyScenario(decoded);
+      } catch {
+        // malformed — ignore
+      }
+      return;
+    }
+
+    if (!token) return;
     loaded.current = true;
-
     fetchShareToken(token)
-      .then(({ scenario }) => {
-        setScenario({
-          districtUbigeo: scenario.districtUbigeo,
-          districtName: scenario.districtName,
-          timeWindowHours: scenario.timeWindowHours,
-          isReplayMode: scenario.isReplayMode,
-          replayDate: scenario.replayDate,
-        });
-
-        // Sync activeLayers: remove layers not in snapshot, add layers in snapshot
-        const target = new Set(scenario.activeLayers);
-        for (const key of activeLayers) {
-          if (!target.has(key)) toggleLayer(key);
-        }
-        for (const key of target) {
-          if (!activeLayers.has(key)) toggleLayer(key);
-        }
-
-        setShareMode(true);
-      })
-      .catch(() => {
-        // Invalid/expired token — ignore silently, continue in normal mode
-      });
+      .then(({ scenario }) => applyScenario(scenario))
+      .catch(() => {});
     // Only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function applyScenario(scenario: {
+    districtUbigeo?: string | null;
+    districtName?: string | null;
+    timeWindowHours?: number;
+    isReplayMode?: boolean;
+    replayDate?: string | null;
+    activeLayers?: string[];
+  }) {
+    setScenario({
+      districtUbigeo: scenario.districtUbigeo ?? null,
+      districtName: scenario.districtName ?? null,
+      timeWindowHours: scenario.timeWindowHours ?? 24,
+      isReplayMode: scenario.isReplayMode ?? false,
+      replayDate: scenario.replayDate ?? null,
+    });
+    const target = new Set(scenario.activeLayers ?? []);
+    for (const key of activeLayers) {
+      if (!target.has(key)) toggleLayer(key);
+    }
+    for (const key of target) {
+      if (!activeLayers.has(key)) toggleLayer(key);
+    }
+    setShareMode(true);
+  }
 
   return null;
 }

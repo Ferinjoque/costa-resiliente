@@ -7,6 +7,26 @@ import { DEMO_COPILOT_RESPONSES } from "@/lib/demoData";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+// Keyword → demo response key mapping for fuzzy fallback
+const KEYWORD_ROUTES: Array<{ keys: string[]; demo: string }> = [
+  { keys: ["riesgo", "distrito", "risk", "district", "mayor riesgo", "which district", "highest risk"], demo: "¿Cuáles son los distritos en mayor riesgo ahora?" },
+  { keys: ["huayco", "quebrada", "landslide", "desliz", "quebradas"], demo: "¿Qué quebradas tienen riesgo alto de huayco?" },
+  { keys: ["lluvia", "rain", "rímac", "rimac", "precipit", "72h", "72 h", "rainfall", "cuánta lluvia", "acumulada"], demo: "¿Cuánta lluvia acumulada hubo en el Rímac en las últimas 72h?" },
+  { keys: ["personas", "people", "población", "population", "afectad", "zona inundad", "cuántas personas"], demo: "¿Cuántas personas están en zona de inundación activa?" },
+  { keys: ["infraestructura", "infrastructure", "hospital", "escuela", "puente", "bridge", "critical infra"], demo: "¿Qué infraestructura crítica está en zona inundada?" },
+  { keys: ["nivel", "río", "river", "chosica", "caudal", "flow", "rimac level", "estación"], demo: "¿Cuál es el nivel del río Rímac en Chosica?" },
+];
+
+function findDemoResponse(query: string): string | null {
+  const q = query.toLowerCase();
+  const key = Object.keys(DEMO_COPILOT_RESPONSES).find((k) => k.toLowerCase() === q);
+  if (key) return key;
+  for (const { keys, demo } of KEYWORD_ROUTES) {
+    if (keys.some((kw) => q.includes(kw.toLowerCase()))) return demo;
+  }
+  return null;
+}
+
 const SUGGESTIONS: { es: string; en: string }[] = [
   { es: "¿Cuáles son los distritos en mayor riesgo ahora?", en: "Which districts have the highest risk right now?" },
   { es: "¿Qué quebradas tienen riesgo alto de huayco?", en: "Which quebradas have high huayco risk?" },
@@ -82,8 +102,9 @@ export function AskPanel() {
         if (Array.isArray(data.sources)) setDataRows(data.sources.slice(0, 5));
       }
     } catch {
-      // Try demo response first, fall back to error message
-      const demo = DEMO_COPILOT_RESPONSES[trimmed];
+      // Fuzzy match → demo response, fall back to generic error
+      const demoKey = findDemoResponse(trimmed);
+      const demo = demoKey ? DEMO_COPILOT_RESPONSES[demoKey] : null;
       if (demo) {
         setIsDemo(true);
         setAnswer(demo.answer);
