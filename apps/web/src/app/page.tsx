@@ -20,6 +20,7 @@ import { useUIStore } from "@/store/ui";
 import { DemoLiveSimulator } from "@/components/DemoLiveSimulator";
 import { ToastStack } from "@/components/ui/ToastStack";
 import { SocialFeedPanel } from "@/components/panels/SocialFeedPanel";
+import { SituationBrief } from "@/components/panels/SituationBrief";
 
 // MapView must be client-only (MapLibre GL uses window APIs)
 const MapView = dynamic(() => import("@/components/map/MapView"), {
@@ -125,6 +126,7 @@ export default function Home() {
         <SocialFeedPanel />
         <DistrictDashboardPanel />
         <FusionCallout />
+        <SituationBrief />
         <DataFreshnessBar />
         <TutorialOverlay />
         <ShareLoader />
