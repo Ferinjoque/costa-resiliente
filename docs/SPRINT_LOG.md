@@ -154,3 +154,53 @@ See `docs/SUBMISSION_GAPS.md` for full rubric-mapped gap analysis.
 | i18n Spanish/English toggle (`next-intl`) | C4 | 4h |
 | WCAG AA full Lighthouse pass | C4 | 2h |
 | Public VPS deployment (judges must access) | ALL | 1 day |
+
+---
+
+## Sprint 10 — EOC Operational UX (2026-05-16)
+
+**Status:** ✅ Complete
+
+### Completed in Sprint 10
+
+**AlertsPanel — operational workflows:**
+- `QuickDispatch` component: 4 one-click resource dispatch buttons (Rescue Boat, USAR Alpha, Ambulance, Fire Brigade); active only when critical alerts present; writes `resource_dispatch` entries to decision log cache
+- `ResponseProtocol` component: collapsible INDECI 4-step checklist (COEN notification → evacuation → shelter verification → EDAN form); each step writes `protocol_step` to decision log cache; progress % shown
+
+**SocialFeedPanel — field reporting:**
+- `FieldReport` component: collapsible form behind PlusCircle button; 4-label selector + 140-char textarea; on submit injects new "campo" (field) source signal into TanStack Query cache and logs `map_pin` to decision log — no API required in demo mode
+- Added `campo` (emerald) source badge to source legend and `SOURCE_BADGE` lookup
+
+**DemoLiveSimulator:**
+- Reduced first signal injection delay: 20 s → 4 s — live activity hits immediately on demo load; subsequent injections unchanged (28–45 s cadence)
+
+**DecisionLogPanel:**
+- Added `resource_dispatch` and `protocol_step` action labels with preview text showing dispatched resource name and protocol step label respectively
+
+**demoData.ts:**
+- 6 additional pre-seeded decision log entries (ids 13–18): USAR dispatch, Boat dispatch, COEN notification, social signal bluesky/needs_help, evacuation step, social signal telegram/road_blocked
+- 4 additional infrastructure POIs (ids 12–15): Coliseo Lurigancho shelter, IE San Luis Gonzaga shelter, Loza Deportiva Huachipa, Compañía Bomberos SJL
+
+**MapView.tsx:**
+- Social signal popups now include message text (first 80 chars) from signal properties
+- Infrastructure popups: emoji type icons (🏥 🏫 🌉 ⚡ 🚒 🏠) + district ID field
+- Infrastructure circle-color: added `fire_station` (#fb923c) and `shelter` (#34d399) colors
+
+**MapLegend:**
+- Added `INFRA_ITEMS` with all 5 infrastructure types (hospital, shelter, fire station, bridge, school)
+- Infrastructure section shown when `infrastructure` layer active
+
+**SharePanel:**
+- Fixed position overlap: moved from `sm:left-4` to `sm:right-4` to stop covering ScenarioPanel
+
+### Score estimate after Sprint 10
+| Criterion | Sprint 9 | Sprint 10 |
+|-----------|----------|-----------|
+| C1 Timeliness | 4.3 | 4.3 |
+| C2 Comprehensiveness | 4.8 | 4.8 |
+| C3 Integration | 5.0 | 5.0 |
+| C4 Usability | 4.8 | 4.9 |
+| C5 Scenario Fit | 4.8 | 4.8 |
+| **Total** | **~23.7** | **~23.8** |
+
+VPS deployment remains the primary blocker for full rubric scoring.
