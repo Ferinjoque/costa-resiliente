@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Waves, Mountain, MessageSquare, X } from "lucide-react";
+import { AlertTriangle, Waves, Mountain, MessageSquare, X, BarChart3 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useFusion } from "@/lib/queries";
 import { clsx } from "clsx";
@@ -57,7 +57,7 @@ const T = {
 };
 
 export function FusionCallout() {
-  const { scenario, setScenario, locale } = useUIStore();
+  const { scenario, setScenario, setActivePanel, locale } = useUIStore();
   const { data, isLoading } = useFusion(scenario.districtUbigeo);
   const t = T[locale];
 
@@ -74,7 +74,7 @@ export function FusionCallout() {
     <div
       className={clsx(
         "absolute bottom-6 left-2 sm:bottom-8 sm:left-4 z-20",
-        "w-72 rounded-xl border shadow-xl text-xs backdrop-blur-sm",
+        "w-72 rounded-xl border shadow-xl text-xs backdrop-blur-sm panel-animate",
         colorClass,
       )}
       role="status"
@@ -160,6 +160,16 @@ export function FusionCallout() {
             <p className="text-[10px] leading-snug opacity-70 pt-1 border-t border-white/10">
               {data.prose_es}
             </p>
+
+            {/* Open dashboard link */}
+            <button
+              onClick={() => setActivePanel("dashboard")}
+              className="mt-1 flex items-center gap-1 text-[10px] opacity-60 hover:opacity-100 transition-opacity underline underline-offset-2"
+              aria-label="Ver análisis detallado en el panel de datos"
+            >
+              <BarChart3 size={9} aria-hidden="true" />
+              {locale === "es" ? "Ver análisis completo" : "Full analysis"}
+            </button>
           </>
         )}
       </div>

@@ -279,17 +279,19 @@ export default function MapView() {
           }
         }
 
-        // 4. District — select/deselect, no popup
+        // 4. District — select/deselect + auto-open dashboard
         if (m.getLayer("districts-fill")) {
           const feats = m.queryRenderedFeatures(e.point, { layers: ["districts-fill"] });
           if (feats.length) {
             const p = feats[0].properties as { ubigeo: string; name: string };
-            const { setScenario, scenario: sc } = useUIStore.getState();
+            const { setScenario, setActivePanel, scenario: sc } = useUIStore.getState();
             const toggling = sc.districtUbigeo === p.ubigeo;
             setScenario({
               districtUbigeo: toggling ? null : p.ubigeo,
               districtName:   toggling ? null : p.name,
             });
+            // Auto-open dashboard so operator immediately sees district data
+            if (!toggling) setActivePanel("dashboard");
             activePopup.current?.remove();
             activePopup.current = null;
             return;
@@ -348,9 +350,24 @@ export default function MapView() {
   useEffect(() => { activePopup.current?.remove(); activePopup.current = null; },
     [scenario.timeWindowHours]);
   useEffect(() => { activePopup.current?.remove(); activePopup.current = null; },
-    [scenario.districtUbigeo]);
-  useEffect(() => { activePopup.current?.remove(); activePopup.current = null; },
     [scenario.isReplayMode]);
+
+  // ─── Fly to district when selected externally (dropdown, TopRiskList) ────────
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !scenario.districtUbigeo || !districtGeoJSON) return;
+    activePopup.current?.remove(); activePopup.current = null;
+    const feat = districtGeoJSON.features.find(
+      (f) => f.properties.ubigeo === scenario.districtUbigeo
+    );
+    if (!feat) return;
+    try {
+      const bounds = geomBounds(feat.geometry) as [[number, number], [number, number]];
+      m.fitBounds(bounds, { padding: 60, maxZoom: 13, duration: 700 });
+    } catch {
+      // ignore invalid bounds
+    }
+  }, [scenario.districtUbigeo, districtGeoJSON]);
 
   // ─── addOrUpdateSource helper ─────────────────────────────────────────────
   const addOrUpdateSource = useCallback((id: string, data: GeoJSON.GeoJSON) => {
