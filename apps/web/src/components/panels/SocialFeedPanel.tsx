@@ -89,8 +89,13 @@ function SignalRow({
               {props.source}
             </span>
           </div>
+          {props.text && (
+            <p className="text-[11px] text-slate-200 mt-1 leading-snug line-clamp-2">
+              {props.text}
+            </p>
+          )}
           <div className="flex items-center gap-1 mt-1">
-            <p className="text-[11px] text-slate-400 truncate flex-1">
+            <p className="text-[10px] text-slate-500 truncate flex-1">
               {props.district_name ?? "—"}
             </p>
             <p className="text-[10px] text-slate-500 shrink-0">{timeAgoShort(props.ingested_at)}</p>

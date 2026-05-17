@@ -290,6 +290,7 @@ export interface SocialSignalProperties {
   ingested_at: string;
   district_id: number | null;
   district_name: string | null;
+  text?: string;
 }
 
 export interface SocialSignalFeature {

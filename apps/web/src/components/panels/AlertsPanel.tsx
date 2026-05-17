@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, CheckCircle, AlertTriangle, TrendingUp, Users, TrendingDown, XCircle, MoreHorizontal, MapPin, type LucideIcon } from "lucide-react";
+import { Bell, CheckCircle, AlertTriangle, TrendingUp, Users, TrendingDown, XCircle, MoreHorizontal, MapPin, Send, X, type LucideIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import { useAlerts, useFloodExposure } from "@/lib/queries";
@@ -33,12 +33,118 @@ const ACTION_MAP: Record<string, string> = {
   close: "closed",
 };
 
+// ─── Escalation confirmation modal ───────────────────────────────────────────
+
+function EscalationModal({
+  alert,
+  locale,
+  onConfirm,
+  onCancel,
+}: {
+  alert: Alert;
+  locale: "es" | "en";
+  onConfirm: (note: string) => void;
+  onCancel: () => void;
+}) {
+  const SEVERITY_SINAGERD: Record<string, string> = {
+    critical: "EMERGENCIA", high: "ALERTA", medium: "AVISO", low: "AVISO",
+  };
+  const sinagerdLevel = SEVERITY_SINAGERD[alert.severity] ?? "ALERTA";
+  const sinagerdColor = sinagerdLevel === "EMERGENCIA"
+    ? "text-red-300 bg-red-900/30 border-red-600/50"
+    : "text-orange-300 bg-orange-900/30 border-orange-600/50";
+
+  const TYPE_ES: Record<string, string> = {
+    flood: "Inundación SAR", huayco: "Huayco / Deslizamiento", social_cluster: "Señal social urgente",
+  };
+  const TYPE_EN: Record<string, string> = {
+    flood: "SAR Flood", huayco: "Huayco / Landslide", social_cluster: "Urgent social signal",
+  };
+  const typeLabel = (locale === "es" ? TYPE_ES : TYPE_EN)[alert.type] ?? alert.type;
+
+  const defaultNote = locale === "es"
+    ? `Nivel SINAGERD: ${sinagerdLevel}\nEvento: ${alert.title}\nTipo: ${typeLabel}\nAcción requerida: Activar protocolo de evacuación preventiva y coordinar con INDECI COEN.\n\nNotas adicionales:`
+    : `SINAGERD Level: ${sinagerdLevel}\nEvent: ${alert.title}\nType: ${typeLabel}\nRequired action: Activate preventive evacuation protocol and coordinate with INDECI COEN.\n\nAdditional notes:`;
+
+  const [note, setNote] = useState(defaultNote);
+
+  const title = locale === "es" ? "Confirmar escalada" : "Confirm escalation";
+  const subtitle = locale === "es"
+    ? "Este evento será escalado al COEN/INDECI. El registro quedará en el log de decisiones."
+    : "This event will be escalated to COEN/INDECI. The record will be saved to the decision log.";
+  const confirmLabel = locale === "es" ? "Escalar ahora" : "Escalate now";
+  const cancelLabel = locale === "es" ? "Cancelar" : "Cancel";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} aria-hidden="true" />
+      <div className="relative w-full sm:max-w-md bg-surface-raised border border-slate-700 rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col z-10">
+        {/* Header */}
+        <div className="flex items-center gap-2 px-5 pt-4 pb-3 border-b border-slate-700">
+          <TrendingUp size={15} className="text-orange-400 shrink-0" aria-hidden="true" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white">{title}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">{subtitle}</p>
+          </div>
+          <button onClick={onCancel} className="text-slate-400 hover:text-white transition-colors" aria-label={cancelLabel}>
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Alert context */}
+        <div className="px-5 pt-3 pb-2">
+          <div className={clsx("flex items-center gap-2 rounded-lg border px-3 py-2 mb-3", sinagerdColor)}>
+            <span className="text-[10px] font-bold uppercase tracking-widest">{sinagerdLevel}</span>
+            <span className="text-[10px] opacity-60">·</span>
+            <span className="text-[11px] truncate">{alert.title}</span>
+          </div>
+
+          {/* Editable escalation report */}
+          <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wide">
+            {locale === "es" ? "Reporte de escalada (editable)" : "Escalation report (editable)"}
+          </label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={6}
+            className="w-full bg-surface-panel border border-slate-600 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono resize-none focus:outline-none focus:ring-1 focus:ring-orange-500/60"
+            aria-label={locale === "es" ? "Notas de escalada" : "Escalation notes"}
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 px-5 pb-4">
+          <button
+            onClick={onCancel}
+            className="flex-1 text-xs text-slate-400 border border-slate-600 hover:border-slate-500 rounded-lg py-2 transition-colors"
+          >
+            {cancelLabel}
+          </button>
+          <button
+            onClick={() => onConfirm(note)}
+            className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-orange-700 hover:bg-orange-600 text-white rounded-lg py-2 transition-colors font-medium"
+          >
+            <Send size={12} />
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   const qc = useQueryClient();
   const { setFlyToPoint, setActivePanel } = useUIStore();
   const Icon = TYPE_ICON[alert.type] ?? Bell;
   const tr = useT(locale);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showEscalation, setShowEscalation] = useState(false);
 
   function flyToAlert() {
     if (alert.lat == null || alert.lng == null) return;
@@ -126,7 +232,7 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
               {menuOpen && (
                 <div className="absolute right-0 top-6 z-30 bg-surface-raised border border-slate-600 rounded-lg shadow-xl w-40 py-1 animate-fade-in">
                   <button
-                    onClick={() => handleAction("escalate")}
+                    onClick={() => { setMenuOpen(false); setShowEscalation(true); }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-xs text-orange-300 hover:bg-orange-900/30 transition-colors"
                   >
                     <TrendingUp size={12} />
@@ -162,6 +268,18 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
              alert.status}</span>
         )}
       </div>
+      {showEscalation && (
+        <EscalationModal
+          alert={alert}
+          locale={locale}
+          onConfirm={async (note) => {
+            setShowEscalation(false);
+            await handleAction("escalate");
+            void note;
+          }}
+          onCancel={() => setShowEscalation(false)}
+        />
+      )}
     </li>
   );
 }
