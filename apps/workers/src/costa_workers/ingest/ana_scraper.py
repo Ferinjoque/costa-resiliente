@@ -266,12 +266,33 @@ async def upsert_observations(observations: list[dict], stations_meta: dict[str,
 
 # ─── Flow ──────────────────────────────────────────────────────────────────────
 
+async def _check_stale_stations(pool: "asyncpg.Pool", threshold_hours: int = 2) -> list[str]:
+    """Return station codes that have received no new observations in `threshold_hours` hours."""
+    import asyncpg  # noqa: F401 — ensure import inside async context
+    rows = await pool.fetch(
+        """
+        SELECT s.code
+        FROM hydro.stations s
+        LEFT JOIN hydro.station_observations so
+               ON so.station_id = s.id
+              AND so.time > NOW() - INTERVAL '1 hour' * $1
+        WHERE s.active = TRUE
+        GROUP BY s.code
+        HAVING COUNT(so.id) = 0
+        """,
+        threshold_hours,
+    )
+    return [r["code"] for r in rows]
+
+
 @flow(name="ingest-hydro-stations", log_prints=True)
 async def ingest_hydro_stations_flow() -> dict:
     """
     Fetch hydro observations from ANA SNIRH and SENAMHI, upsert to DB.
     Schedule: every 30 minutes.
     """
+    import asyncpg
+
     all_stations = ANA_STATIONS + SENAMHI_STATIONS
     stations_meta = {s["code"]: s for s in all_stations}
 
@@ -289,4 +310,22 @@ async def ingest_hydro_stations_flow() -> dict:
 
     total = await upsert_observations(all_observations, stations_meta)
     logger.info("Hydro ingest complete: %d observations stored", total)
-    return {"observations_stored": total, "stations_polled": len(all_stations)}
+
+    # Warn if any station has been silent for >2 hours (scraper fragility check)
+    try:
+        async with asyncpg.create_pool(DB_DSN, min_size=1, max_size=2) as pool:
+            stale = await _check_stale_stations(pool, threshold_hours=2)
+        if stale:
+            logger.warning(
+                "SCRAPER ALERT — %d station(s) have received no data for >2h: %s",
+                len(stale),
+                ", ".join(stale),
+            )
+    except Exception as exc:
+        logger.warning("Stale-station check failed (non-fatal): %s", exc)
+
+    return {
+        "observations_stored": total,
+        "stations_polled": len(all_stations),
+        "stale_stations": stale if "stale" in dir() else [],
+    }
