@@ -50,6 +50,7 @@ const LAYER_LABELS: Record<string, { es: string; en: string }> = {
   hazard:         { es: "Zonas de peligro", en: "Hazard Zones" },
   infrastructure: { es: "Infraestructura crítica", en: "Critical Infrastructure" },
   social:         { es: "Señales sociales", en: "Social Signals" },
+  stations:       { es: "Estaciones ANA", en: "ANA Stations" },
 };
 
 export function SharePanel() {

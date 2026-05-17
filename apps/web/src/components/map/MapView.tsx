@@ -7,7 +7,7 @@ import { useUIStore } from "@/store/ui";
 import {
   useDistricts, useImerg, useFlood, useHuayco,
   useInfrastructure, useHazard, useSocialSignals, useDistrictRiskSummary,
-  useFloodExposure,
+  useFloodExposure, useStations,
 } from "@/lib/queries";
 import type { FloodExposure } from "@/lib/api";
 
@@ -131,6 +131,7 @@ export default function MapView() {
   const { data: infraData } = useInfrastructure();
   const { data: hazardData } = useHazard();
   const { data: socialData } = useSocialSignals(48);
+  const { data: stationsData } = useStations();
   const { data: exposureData } = useFloodExposure();
 
   // Keep ref in sync so click handler always has fresh exposure data
@@ -160,6 +161,26 @@ export default function MapView() {
       // Order: points (social/huayco/infra) → flood polygon → hazard polygon
       //        → district (select only, no popup) → empty (dismiss popup)
       m.on("click", (e) => {
+        // 0. Hydro stations — highest priority (smallest target)
+        if (m.getLayer("stations-circle")) {
+          const feats = m.queryRenderedFeatures(e.point, { layers: ["stations-circle"] });
+          if (feats.length) {
+            const p = feats[0].properties as Record<string, string | number | null>;
+            const lvl = p.level_m != null ? Number(p.level_m) : null;
+            const thr = p.alert_threshold_m != null ? Number(p.alert_threshold_m) : null;
+            const overThr = lvl != null && thr != null && lvl >= thr;
+            openPopup(m, e.lngLat, popupHtml(`Estación ${String(p.name ?? "—")}`, [
+              ["Río",     p.river ? String(p.river) : null],
+              ["Fuente",  p.source ? String(p.source).toUpperCase() : null],
+              ["Nivel",   lvl != null ? `${lvl.toFixed(2)} m${overThr ? " ⚠ ALERTA" : ""}` : null],
+              ["Umbral",  thr != null ? `${thr.toFixed(1)} m` : null],
+              ["Caudal",  p.flow_m3s != null ? `${Number(p.flow_m3s).toFixed(1)} m³/s` : null],
+              ["Lluvia",  p.rain_mm != null ? `${Number(p.rain_mm).toFixed(1)} mm/h` : null],
+            ]), activePopup);
+            return;
+          }
+        }
+
         // 1. Point layers — small targets, highest priority
         const POINT_LAYERS = ["social-circle", "huayco-circle", "infra-circle"] as const;
         for (const lid of POINT_LAYERS) {
@@ -282,7 +303,7 @@ export default function MapView() {
       // ── Unified hover cursor ────────────────────────────────────────────
       m.on("mousemove", (e) => {
         const interactive = [
-          "social-circle", "huayco-circle", "infra-circle",
+          "social-circle", "huayco-circle", "infra-circle", "stations-circle",
           "flood-fill", "hazard-fill", "districts-fill",
         ].filter(l => m.getLayer(l));
         if (!interactive.length) { m.getCanvas().style.cursor = ""; return; }
@@ -558,6 +579,37 @@ export default function MapView() {
     if (m.loaded()) setup(); else m.once("load", setup);
   }, [hazardData, addOrUpdateSource]);
 
+  // ─── Hydro stations ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !stationsData) return;
+    const statusColor: maplibregl.ExpressionSpecification = [
+      "match", ["get", "status"],
+      "alert",   "#f97316",
+      "warning", "#fbbf24",
+      "normal",  "#22c55e",
+      "#94a3b8",
+    ];
+    const setup = () => {
+      addOrUpdateSource("stations-src", stationsData);
+      if (m.getLayer("stations-circle")) return;
+      m.addLayer({ id: "stations-circle", type: "circle", source: "stations-src",
+        layout: { visibility: vis("stations") },
+        paint: {
+          "circle-radius": 7, "circle-color": statusColor,
+          "circle-opacity": 0.9, "circle-stroke-color": "#0f172a", "circle-stroke-width": 1.5,
+        } });
+      m.addLayer({ id: "stations-label", type: "symbol", source: "stations-src", minzoom: 10,
+        layout: {
+          visibility: vis("stations"),
+          "text-field": ["get", "name"], "text-size": 9, "text-font": ["Open Sans Regular"],
+          "text-offset": [0, 1.2], "text-anchor": "top",
+        },
+        paint: { "text-color": "#e2e8f0", "text-halo-color": "#0f172a", "text-halo-width": 1 } });
+    };
+    if (m.loaded()) setup(); else m.once("load", setup);
+  }, [stationsData, addOrUpdateSource]);
+
   // ─── Layer visibility sync ────────────────────────────────────────────────
   useEffect(() => {
     const m = map.current;
@@ -570,6 +622,7 @@ export default function MapView() {
       hazard:         ["hazard-fill", "hazard-outline"],
       infrastructure: ["infra-circle"],
       social:         ["social-circle"],
+      stations:       ["stations-circle", "stations-label"],
     };
     for (const [key, ids] of Object.entries(layerMap)) {
       const v = activeLayers.has(key) ? "visible" : "none";

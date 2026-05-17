@@ -489,3 +489,33 @@ export interface DistrictFusion {
 export function fetchDistrictFusion(ubigeo: string): Promise<DistrictFusion> {
   return get<DistrictFusion>(`/api/v1/fusion/${encodeURIComponent(ubigeo)}`);
 }
+
+// ─── Hydro stations layer ─────────────────────────────────────────────────────
+
+export interface StationProperties {
+  id: number;
+  code: string;
+  name: string;
+  source: string;
+  river: string;
+  alert_threshold_m: number | null;
+  level_m: number | null;
+  flow_m3s: number | null;
+  rain_mm: number | null;
+  latest_time: string | null;
+  status: "normal" | "alert" | "warning" | "unknown";
+}
+
+export interface StationCollection {
+  type: "FeatureCollection";
+  retrieved_at: string;
+  features: Array<{
+    type: "Feature";
+    geometry: { type: "Point"; coordinates: [number, number] };
+    properties: StationProperties;
+  }>;
+}
+
+export function fetchStations(): Promise<StationCollection> {
+  return get<StationCollection>("/api/v1/layers/stations");
+}

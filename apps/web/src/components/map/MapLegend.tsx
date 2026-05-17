@@ -35,8 +35,9 @@ export function MapLegend() {
   const showSocial    = activeLayers.has("social");
   const showHuayco    = activeLayers.has("huayco");
   const showFlood     = activeLayers.has("flood");
+  const showStations  = activeLayers.has("stations");
 
-  if (!showRisk && !showRain && !showSocial && !showHuayco && !showFlood) return null;
+  if (!showRisk && !showRain && !showSocial && !showHuayco && !showFlood && !showStations) return null;
 
   return (
     <div
@@ -101,6 +102,14 @@ export function MapLegend() {
               {SOCIAL_ITEMS.map(({ color, label }) => (
                 <DotRow key={label} color={color} label={label} shape="circle" />
               ))}
+            </Section>
+          )}
+
+          {showStations && (
+            <Section label="Estaciones ANA">
+              <DotRow color="#f97316" label="Alerta (umbral superado)" shape="circle" />
+              <DotRow color="#fbbf24" label="Aviso (cerca umbral)" shape="circle" />
+              <DotRow color="#22c55e" label="Normal" shape="circle" />
             </Section>
           )}
         </div>

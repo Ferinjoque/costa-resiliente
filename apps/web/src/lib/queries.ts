@@ -28,6 +28,7 @@ import {
   fetchDistrictRiskSummary,
   fetchDistrictDashboard,
   fetchHealth,
+  fetchStations,
   type DistrictCollection,
   type DistrictListItem,
   type ImergCollection,
@@ -42,6 +43,7 @@ import {
   type DistrictFusion,
   type DistrictRiskSummary,
   type DistrictDashboard,
+  type StationCollection,
   fetchDistrictFusion,
 } from "./api";
 import {
@@ -58,6 +60,7 @@ import {
   DEMO_HUAYCO,
   DEMO_INFRASTRUCTURE,
   DEMO_HAZARD,
+  DEMO_STATIONS,
 } from "./demoData";
 
 /** When real API returns empty array, fall back to demo data so UI is never blank. */
@@ -351,6 +354,25 @@ export function useDistrictDashboard(
     enabled: !!ubigeo,
     staleTime: 2 * MIN,
     refetchInterval: 5 * MIN,
+    ...opts,
+  });
+}
+
+export function useStations(
+  opts?: Partial<UseQueryOptions<StationCollection>>
+): UseQueryResult<StationCollection> {
+  return useQuery({
+    queryKey: ["stations"],
+    queryFn: async () => {
+      try {
+        const data = await fetchStations();
+        return data.features.length > 0 ? data : DEMO_STATIONS;
+      } catch {
+        return DEMO_STATIONS;
+      }
+    },
+    staleTime: 2 * MIN,
+    refetchInterval: 2 * MIN,
     ...opts,
   });
 }

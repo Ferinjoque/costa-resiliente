@@ -205,6 +205,7 @@ function LayerToggles() {
     { id: "hazard", label: "Peligro Histórico" },
     { id: "infrastructure", label: "Infraestructura" },
     { id: "social", label: "Señales sociales" },
+    { id: "stations", label: "Estaciones ANA" },
   ];
 
   return (
