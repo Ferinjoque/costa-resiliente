@@ -111,7 +111,8 @@ services:
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: minio:9000
       STAC_API_URL: http://stac-api:8080
-      OLLAMA_HOST: http://ollama:11434
+      LLM_BASE_URL: http://ollama:11434
+      LLM_PROVIDER: ollama
     ports:
       - "8000:8000"
     networks:
@@ -194,6 +195,8 @@ services:
         condition: service_healthy
 
   # ── Ollama (local LLM serving) ─────────────────────────────────────────────
+  # CPU-only default. VPS sizing: CX32 (8GB RAM) fits qwen2.5:7b-instruct-q4_K_M (4.7GB).
+  # For GPU: uncomment deploy block and switch LLM_PRIMARY_MODEL to a full-precision variant.
   ollama:
     image: ollama/ollama:latest
     container_name: costa-ollama
@@ -204,7 +207,9 @@ services:
       - "11434:11434"
     networks:
       - costa-net
-    # Uncomment for GPU:
+    mem_limit: 6g        # leave headroom for rest of stack on 8GB VPS
+    memswap_limit: 6g    # no swap thrash
+    # Uncomment for GPU (Hetzner CX42 with add-on GPU or local dev):
     # deploy:
     #   resources:
     #     reservations:
@@ -218,6 +223,29 @@ services:
       timeout: 10s
       retries: 10
       start_period: 60s
+
+  # Pulls required models on first start, then exits.
+  # Re-run manually: docker compose run --rm ollama-init
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: costa-ollama-init
+    restart: "no"
+    volumes:
+      - ollama-models:/root/.ollama
+    networks:
+      - costa-net
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: >
+      /bin/sh -c "
+        ollama pull qwen2.5:7b-instruct-q4_K_M &&
+        ollama pull gemma2:2b &&
+        ollama pull nomic-embed-text &&
+        echo 'All models ready.'
+      "
 
   # ── Next.js Frontend ───────────────────────────────────────────────────────
   web:

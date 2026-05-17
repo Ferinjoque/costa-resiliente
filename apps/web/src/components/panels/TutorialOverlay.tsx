@@ -8,6 +8,7 @@ import {
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import type { Locale } from "@/store/ui";
+import { Button } from "@/components/ui/primitives";
 
 interface Step {
   id: string;
@@ -234,6 +235,7 @@ export function TutorialOverlay() {
   const prevLabel = locale === "es" ? "Anterior" : "Previous";
   const nextLabel = locale === "es" ? "Siguiente" : "Next";
   const finishLabel = locale === "es" ? "Finalizar" : "Finish";
+  const skipLabel = locale === "es" ? "Saltar" : "Skip";
   const stepOf = locale === "es"
     ? `Paso ${step + 1} de ${STEPS.length} · El Niño Costero 2017`
     : `Step ${step + 1} of ${STEPS.length} · El Niño Costero 2017`;
@@ -251,19 +253,20 @@ export function TutorialOverlay() {
       aria-modal="true"
       aria-label={locale === "es" ? "Tutorial El Niño 2017" : "El Niño 2017 Tutorial"}
     >
-      {/* Backdrop */}
+      {/* Backdrop — dark translucent, no blur */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50"
         onClick={handleClose}
         aria-hidden="true"
       />
 
-      {/* Card */}
-      <div className="relative w-full sm:max-w-md bg-surface-raised border border-slate-700 rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col z-10">
+      {/* Card — solid cream surface, no glass, no backdrop-blur */}
+      <div className="relative w-full sm:max-w-md bg-surface border border-border-strong rounded-t-2xl sm:rounded-2xl shadow-panel flex flex-col z-10">
+
         {/* Progress bar */}
-        <div className="h-1 bg-slate-700 rounded-t-2xl sm:rounded-t-2xl overflow-hidden">
+        <div className="h-1 bg-border rounded-t-2xl sm:rounded-t-2xl overflow-hidden">
           <div
-            className="h-full bg-severity-medium transition-all duration-300"
+            className="h-full bg-ink transition-all duration-300"
             style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
             aria-hidden="true"
           />
@@ -271,32 +274,35 @@ export function TutorialOverlay() {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <span className="text-[10px] text-slate-400">{stepOf}</span>
-          <button
+          <span className="text-[10px] text-ink-subtle">{stepOf}</span>
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={handleClose}
-            className="text-slate-400 hover:text-white transition-colors rounded focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none"
             aria-label={closeLbl}
           >
-            <X size={16} aria-hidden="true" />
-          </button>
+            <X size={14} aria-hidden="true" />
+          </Button>
         </div>
 
         {/* Content */}
         <div className="px-5 pb-2 flex-1">
           <div className="flex items-start gap-3 mb-3">
-            <div className={clsx("mt-0.5 shrink-0", current.iconColor)}>
-              <Icon size={22} aria-hidden="true" />
+            {/* Step icon container */}
+            <div className="mt-0.5 shrink-0 w-10 h-10 rounded-xl bg-surface-sunken flex items-center justify-center">
+              <Icon size={20} className={current.iconColor} aria-hidden="true" />
             </div>
-            <h2 className="text-base font-semibold text-white leading-snug">
+            <h2 className="text-base font-semibold text-ink leading-snug pt-1.5">
               {L(current.title)}
             </h2>
           </div>
-          <p className="text-sm text-slate-300 leading-relaxed">
+
+          <p className="text-sm text-ink-muted leading-relaxed">
             {L(current.body)}
           </p>
 
           {current.stat && (
-            <p className="mt-3 text-[11px] text-slate-400 leading-relaxed font-mono bg-slate-800/60 rounded-lg px-3 py-2">
+            <p className="mt-3 bg-surface-sunken border border-border text-xs text-ink-muted px-3 py-1.5 rounded-xl leading-relaxed font-mono">
               {L(current.stat)}
             </p>
           )}
@@ -310,16 +316,28 @@ export function TutorialOverlay() {
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between px-5 py-4 border-t border-slate-700">
-          <button
-            onClick={() => goTo(step - 1)}
-            disabled={isFirst}
-            className="flex items-center gap-1 text-xs text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none rounded"
-            aria-label={prevAriaLbl}
-          >
-            <ChevronLeft size={14} aria-hidden="true" />
-            {prevLabel}
-          </button>
+        <div className="flex items-center justify-between px-5 py-4 border-t border-border">
+
+          {/* Prev */}
+          {!isFirst ? (
+            <Button
+              variant="secondary"
+              size="xs"
+              onClick={() => goTo(step - 1)}
+              aria-label={prevAriaLbl}
+            >
+              <ChevronLeft size={13} aria-hidden="true" />
+              {prevLabel}
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={handleClose}
+            >
+              {skipLabel}
+            </Button>
+          )}
 
           {/* Step dots */}
           <div className="flex gap-1.5" role="tablist" aria-label={dotsAriaLbl}>
@@ -331,29 +349,35 @@ export function TutorialOverlay() {
                 aria-selected={i === step}
                 aria-label={dotAriaLbl(i)}
                 className={clsx(
-                  "w-1.5 h-1.5 rounded-full transition-all focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none",
-                  i === step ? "bg-severity-medium w-4" : "bg-slate-600 hover:bg-slate-400"
+                  "h-1.5 rounded-full transition-all focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none",
+                  i === step ? "bg-ink w-4" : "bg-border hover:bg-ink-subtle w-1.5"
                 )}
               />
             ))}
           </div>
 
+          {/* Next / Finish */}
           {isLast ? (
-            <button
-              onClick={() => { setScenario({ isReplayMode: false, replayDate: null }); handleClose(); }}
-              className="flex items-center gap-1 text-xs bg-severity-medium/90 hover:bg-severity-medium text-white px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-severity-medium focus-visible:outline-none"
+            <Button
+              variant="primary"
+              size="xs"
+              onClick={() => {
+                setScenario({ isReplayMode: false, replayDate: null });
+                handleClose();
+              }}
             >
               {finishLabel}
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
+              variant="primary"
+              size="xs"
               onClick={() => goTo(step + 1)}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none rounded"
               aria-label={nextAriaLbl}
             >
               {nextLabel}
-              <ChevronRight size={14} aria-hidden="true" />
-            </button>
+              <ChevronRight size={13} aria-hidden="true" />
+            </Button>
           )}
         </div>
       </div>

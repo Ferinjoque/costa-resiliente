@@ -7,6 +7,16 @@ import { useUIStore } from "@/store/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSocialSignals } from "@/lib/queries";
 import type { SocialSignalProperties, SocialSignalCollection, DecisionLogEntry } from "@/lib/api";
+import {
+  PanelHeader,
+  PanelTitle,
+  SectionLabel,
+  Button,
+  Pill,
+  EmptyState,
+} from "@/components/ui/primitives";
+
+// ─── Label maps ───────────────────────────────────────────────────────────────
 
 const LABEL_ES: Record<string, string> = {
   needs_help:            "Ayuda urgente",
@@ -22,26 +32,13 @@ const LABEL_EN: Record<string, string> = {
   weather_observation:   "Weather observation",
 };
 
-const LABEL_COLOR: Record<string, string> = {
-  needs_help:            "bg-severity-critical/40 text-severity-critical border-severity-critical/50",
-  road_blocked:          "bg-severity-medium/40 text-severity-medium border-severity-medium/50",
-  infrastructure_damage: "bg-severity-high/40 text-severity-high border-severity-high/50",
-  weather_observation:   "bg-costa-900/40 text-costa-300 border-costa-700/50",
-};
-
-const LABEL_DOT: Record<string, string> = {
-  needs_help:            "bg-severity-critical",
-  road_blocked:          "bg-severity-medium",
-  infrastructure_damage: "bg-severity-high",
-  weather_observation:   "bg-costa-400",
-};
-
-const SOURCE_BADGE: Record<string, string> = {
-  bluesky:  "text-costa-400 bg-costa-900/30 border-costa-700/50",
-  telegram: "text-costa-400 bg-costa-900/30 border-costa-700/50",
-  reddit:   "text-severity-high bg-severity-high/30 border-severity-high/50",
-  campo:    "text-severity-low bg-severity-low/30 border-severity-low/50",
-};
+// Map triage_label → Pill variant
+function labelToPillVariant(label: string): "danger" | "warn" | "accent" | "default" {
+  if (label === "needs_help") return "danger";
+  if (label === "road_blocked") return "warn";
+  if (label === "infrastructure_damage") return "accent";
+  return "default";
+}
 
 function timeAgoShort(iso: string): string {
   const s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
@@ -54,6 +51,8 @@ const ALL_LABELS = ["needs_help", "road_blocked", "infrastructure_damage", "weat
 type Label = typeof ALL_LABELS[number];
 
 let _fieldId = 9000;
+
+// ─── SignalRow ─────────────────────────────────────────────────────────────────
 
 function SignalRow({
   props,
@@ -68,60 +67,54 @@ function SignalRow({
 }) {
   const label = props.triage_label ?? "unknown";
   const labelText = locale === "es" ? (LABEL_ES[label] ?? label) : (LABEL_EN[label] ?? label);
-  const dotColor = LABEL_DOT[label] ?? "bg-slate-400";
-  const badgeCls = LABEL_COLOR[label] ?? "bg-slate-800 text-slate-300 border-slate-600";
-  const srcCls = SOURCE_BADGE[props.source] ?? "text-slate-400 bg-slate-800 border-slate-600";
+  const pillVariant = labelToPillVariant(label);
 
   return (
     <li
       className={clsx(
-        "px-3 py-2.5 border-b border-slate-700/50 last:border-0 transition-all",
-        isNew && "bg-costa-900/20 border-l-2 border-l-costa-500",
+        "border-b border-border-subtle last:border-0 px-4 py-3 hover:bg-surface-hover transition-colors",
+        isNew && "border-l-2 border-l-accent",
       )}
     >
-      <div className="flex items-start gap-2">
-        <span
-          className={clsx("mt-1 w-2 h-2 rounded-full shrink-0", dotColor)}
-          aria-hidden="true"
-        />
+      <div className="flex items-start gap-2.5">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className={clsx("text-[10px] border rounded-full px-1.5 py-0.5 font-medium", badgeCls)}>
-              {labelText}
-            </span>
-            <span className={clsx("text-[10px] border rounded-full px-1.5 py-0.5", srcCls)}>
-              {props.source}
-            </span>
+          <div className="flex items-center gap-1.5 flex-wrap mb-1">
+            <Pill variant={pillVariant}>{labelText}</Pill>
+            <Pill variant="default">{props.source}</Pill>
           </div>
           {props.text && (
-            <p className="text-[11px] text-slate-200 mt-1 leading-snug line-clamp-2">
-              {props.text}
-            </p>
+            <p className="text-sm text-ink leading-snug line-clamp-2">{props.text}</p>
           )}
-          <div className="flex items-center gap-1 mt-1">
-            <p className="text-[10px] text-slate-500 truncate flex-1">
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <p className="text-xs text-ink-muted truncate flex-1">
               {props.district_name ?? "—"}
             </p>
-            <p className="text-[10px] text-slate-500 shrink-0">{timeAgoShort(props.ingested_at)}</p>
+            <p className="text-xs text-ink-subtle font-mono shrink-0">
+              {timeAgoShort(props.ingested_at)}
+            </p>
             {props.triage_confidence != null && (
-              <p className="text-[10px] text-slate-500 shrink-0">
+              <p className="text-xs text-ink-subtle shrink-0">
                 {Math.round(props.triage_confidence * 100)}%
               </p>
             )}
-            <button
+            <Button
+              variant="ghost"
+              size="xs"
               onClick={onFly}
-              className="shrink-0 text-slate-600 hover:text-costa-400 transition-colors"
               title={locale === "es" ? "Ver en mapa" : "Show on map"}
               aria-label={locale === "es" ? "Ver en mapa" : "Show on map"}
+              className="shrink-0 p-1"
             >
-              <MapPin size={11} />
-            </button>
+              <MapPin size={12} />
+            </Button>
           </div>
         </div>
       </div>
     </li>
   );
 }
+
+// ─── FieldReport ──────────────────────────────────────────────────────────────
 
 function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => void }) {
   const qc = useQueryClient();
@@ -173,26 +166,31 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
   }
 
   return (
-    <div className="px-3 py-2.5 border-b border-slate-700 bg-slate-800/40">
-      <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide mb-2">
+    <div className="px-4 py-3 border-b border-border">
+      <SectionLabel className="mb-2">
         {locale === "es" ? "Reporte de campo" : "Field report"}
-      </p>
-      <div className="flex flex-wrap gap-1 mb-2">
+      </SectionLabel>
+
+      {/* Label selector */}
+      <div className="flex flex-wrap gap-1 mb-3">
         {ALL_LABELS.map((l) => (
           <button
             key={l}
+            type="button"
             onClick={() => setLabel(l)}
             className={clsx(
-              "text-[10px] px-2 py-0.5 rounded-full border transition-colors",
+              "text-xs px-2.5 py-1 rounded-full border transition-colors",
               label === l
-                ? "bg-costa-700 border-costa-600 text-white"
-                : "bg-surface-panel border-slate-600 text-slate-300 hover:border-costa-600",
+                ? "bg-ink text-surface border-ink"
+                : "bg-surface-sunken border-border text-ink-muted hover:border-border-strong hover:text-ink",
             )}
           >
             {locale === "es" ? LABEL_ES[l] : LABEL_EN[l]}
           </button>
         ))}
       </div>
+
+      {/* Text input */}
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value.slice(0, 140))}
@@ -201,24 +199,29 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
             ? "Descripción del reporte de campo…"
             : "Field report description…"
         }
-        className="w-full bg-slate-900/60 border border-slate-600 rounded-lg text-[11px] text-slate-200 placeholder-slate-500 p-2 resize-none focus:outline-none focus:border-costa-500 transition-colors"
+        className="w-full bg-surface-sunken border border-border rounded-xl text-sm text-ink placeholder:text-ink-subtle px-3 py-2 resize-none focus:outline-none focus:border-border-strong transition-colors"
         rows={2}
       />
-      <div className="flex items-center justify-between mt-1.5">
-        <span className="text-[10px] text-slate-500">{text.length}/140</span>
-        <button
+
+      {/* Footer row */}
+      <div className="flex items-center justify-between mt-2">
+        <span className="text-xs text-ink-subtle">{text.length}/140</span>
+        <Button
+          variant="primary"
+          size="xs"
           onClick={submit}
           disabled={!text.trim()}
-          className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg bg-costa-700 text-white hover:bg-costa-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           aria-label={locale === "es" ? "Enviar reporte" : "Send report"}
         >
-          <Send size={9} />
+          <Send size={11} />
           {locale === "es" ? "Enviar" : "Send"}
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
+
+// ─── SocialFeedPanel ──────────────────────────────────────────────────────────
 
 export function SocialFeedPanel() {
   const { activePanel, setActivePanel, locale, setFlyToPoint } = useUIStore();
@@ -237,81 +240,100 @@ export function SocialFeedPanel() {
   const newestId = features[0]?.properties.id;
 
   const FILTER_LABELS: Array<{ value: Label | "all"; es: string; en: string }> = [
-    { value: "all",                  es: "Todos",          en: "All" },
-    { value: "needs_help",           es: "Ayuda",          en: "Help" },
-    { value: "road_blocked",         es: "Vía",            en: "Road" },
-    { value: "infrastructure_damage",es: "Infraestructura",en: "Infra" },
-    { value: "weather_observation",  es: "Meteo",          en: "Weather" },
+    { value: "all",                   es: "Todos",          en: "All" },
+    { value: "needs_help",            es: "Ayuda",          en: "Help" },
+    { value: "road_blocked",          es: "Vía",            en: "Road" },
+    { value: "infrastructure_damage", es: "Infraestructura",en: "Infra" },
+    { value: "weather_observation",   es: "Meteo",          en: "Weather" },
   ];
 
   return (
     <aside
       className={[
-        "fixed bottom-14 left-0 right-0 h-[65vh] rounded-t-2xl",
-        "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
-        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col panel-animate",
+        /* mobile */
+        "fixed bottom-14 left-0 right-0 h-[70vh] rounded-t-2xl",
+        /* desktop */
+        "sm:absolute sm:top-0 sm:right-0 sm:h-full sm:w-[360px] sm:rounded-none sm:bottom-auto sm:left-auto",
+        /* common */
+        "bg-surface border-t border-border-strong sm:border-t-0 sm:border-l shadow-panel z-20 flex flex-col panel-animate",
       ].join(" ")}
       aria-label={locale === "es" ? "Señales sociales en tiempo real" : "Real-time social signals"}
       role="complementary"
     >
+      {/* Mobile drag handle */}
       <div className="sm:hidden flex justify-center pt-2 pb-1" aria-hidden="true">
-        <div className="w-8 h-1 rounded-full bg-slate-600" />
+        <div className="w-8 h-1 rounded-full bg-border-strong" />
       </div>
 
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
-        <Radio size={15} className="text-costa-500 animate-pulse" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-white">
+      <PanelHeader>
+        <Radio size={15} className="text-danger shrink-0" aria-hidden="true" />
+        <PanelTitle>
           {locale === "es" ? "Señales sociales" : "Social signals"}
-        </h2>
+        </PanelTitle>
+
+        {/* Live badge */}
+        <span className="flex items-center gap-1 text-xs text-ok-muted font-medium" aria-label="Live">
+          <span className="w-1.5 h-1.5 rounded-full bg-ok-muted animate-pulse" aria-hidden="true" />
+          {locale === "es" ? "En vivo" : "Live"}
+        </span>
+
         {features.length > 0 && (
-          <span className="text-[10px] bg-costa-700 text-white px-1.5 rounded-full">
+          <span className="text-xs bg-surface-sunken text-ink-muted font-mono px-1.5 py-0.5 rounded-full">
             {features.length}
           </span>
         )}
+
         <button
           onClick={() => setShowFilter((o) => !o)}
           className={clsx(
-            "ml-auto text-slate-400 hover:text-white transition-colors rounded",
-            showFilter && "text-costa-400",
+            "p-1 rounded transition-colors",
+            showFilter
+              ? "text-accent bg-accent-soft"
+              : "text-ink-muted hover:text-ink hover:bg-surface-hover",
           )}
           aria-label={locale === "es" ? "Filtrar por tipo" : "Filter by type"}
           aria-pressed={showFilter}
         >
           <Filter size={14} />
         </button>
+
         <button
           onClick={() => setShowReport((o) => !o)}
           className={clsx(
-            "text-slate-400 hover:text-severity-low transition-colors rounded",
-            showReport && "text-severity-low",
+            "p-1 rounded transition-colors",
+            showReport
+              ? "text-accent bg-accent-soft"
+              : "text-ink-muted hover:text-ink hover:bg-surface-hover",
           )}
           aria-label={locale === "es" ? "Añadir reporte de campo" : "Add field report"}
           aria-pressed={showReport}
         >
           <PlusCircle size={14} />
         </button>
+
         <button
           onClick={() => setActivePanel("map")}
-          className="text-slate-400 hover:text-white transition-colors rounded focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none"
+          className="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface-hover transition-colors focus-visible:outline-2 focus-visible:outline-accent"
           aria-label={locale === "es" ? "Cerrar panel" : "Close panel"}
         >
           <X size={15} />
         </button>
-      </div>
+      </PanelHeader>
 
       {/* Filter pills */}
       {showFilter && (
-        <div className="px-3 py-2 border-b border-slate-700 flex gap-1 flex-wrap">
+        <div className="px-4 py-2.5 border-b border-border flex gap-1.5 flex-wrap">
           {FILTER_LABELS.map(({ value, es, en }) => (
             <button
               key={value}
+              type="button"
               onClick={() => setLabelFilter(value)}
               className={clsx(
-                "text-[10px] px-2 py-0.5 rounded-full border transition-colors",
+                "text-xs px-2.5 py-1 rounded-full border transition-colors",
                 labelFilter === value
-                  ? "bg-costa-700 border-costa-600 text-white"
-                  : "bg-surface-panel border-slate-600 text-slate-300 hover:border-costa-600",
+                  ? "bg-ink text-surface border-ink"
+                  : "bg-surface-sunken border-border text-ink-muted hover:border-border-strong hover:text-ink",
               )}
             >
               {locale === "es" ? es : en}
@@ -326,13 +348,11 @@ export function SocialFeedPanel() {
       )}
 
       {/* Source legend row */}
-      <div className="px-3 py-1.5 border-b border-slate-700/50 flex gap-2 flex-wrap">
+      <div className="px-4 py-2 border-b border-border flex gap-1.5 flex-wrap items-center">
         {(["bluesky", "telegram", "reddit", "campo"] as const).map((src) => (
-          <span key={src} className={clsx("text-[10px] border rounded-full px-1.5 py-0.5", SOURCE_BADGE[src])}>
-            {src}
-          </span>
+          <Pill key={src} variant="default">{src}</Pill>
         ))}
-        <span className="text-[10px] text-slate-500 ml-auto">
+        <span className="text-xs text-ink-subtle ml-auto">
           {locale === "es" ? "triaje IA · Presidio PII" : "AI triage · Presidio PII"}
         </span>
       </div>
@@ -345,8 +365,16 @@ export function SocialFeedPanel() {
         aria-live="polite"
       >
         {filtered.length === 0 && (
-          <li className="px-4 py-8 text-xs text-slate-400 text-center">
-            {locale === "es" ? "Sin señales en el período seleccionado" : "No signals in selected period"}
+          <li>
+            <EmptyState
+              title={locale === "es" ? "Sin señales" : "No signals"}
+              body={
+                locale === "es"
+                  ? "No hay señales en el período seleccionado."
+                  : "No signals in the selected period."
+              }
+              icon={<Radio size={20} />}
+            />
           </li>
         )}
         {filtered.map((f) => (
@@ -369,7 +397,7 @@ export function SocialFeedPanel() {
       </ul>
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-slate-700 text-[10px] text-slate-500 text-center">
+      <div className="px-4 py-2 border-t border-border text-xs text-ink-subtle text-center font-mono">
         {dataUpdatedAt
           ? `${locale === "es" ? "Actualizado" : "Updated"} · ${timeAgoShort(new Date(dataUpdatedAt).toISOString())}`
           : (locale === "es" ? "Esperando señales…" : "Waiting for signals…")}

@@ -1,18 +1,31 @@
 "use client";
 
-import { BarChart3, Droplets, AlertTriangle, Users, History, Radio, TrendingUp, Waves, Mountain, Zap, Brain, CheckCircle2, Copy, Check, CloudRain, ShieldCheck } from "lucide-react";
+import {
+  BarChart3, Droplets, AlertTriangle, Users, History, Radio,
+  TrendingUp, Waves, Brain, CheckCircle2, Copy, Check,
+} from "lucide-react";
 import { useState } from "react";
 import { useUIStore } from "@/store/ui";
-import { useDistrictDashboard, useDistrictRiskSummary, useAlerts, useFloodExposure, useFusion, useDecisionLog, useSocialSignals } from "@/lib/queries";
+import {
+  useDistrictDashboard, useDistrictRiskSummary, useAlerts,
+  useFloodExposure, useFusion, useDecisionLog, useSocialSignals,
+} from "@/lib/queries";
 import { clsx } from "clsx";
 import type { AlertTrendDay, SocialBreakdown } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
-import { DEMO_FORECAST, HUAYCO_THRESHOLD_MM, DEMO_RESOURCES, type ForecastStep, type ResourceCategory } from "@/lib/demoData";
+import {
+  DEMO_FORECAST, HUAYCO_THRESHOLD_MM, DEMO_RESOURCES,
+  type ForecastStep, type ResourceCategory,
+} from "@/lib/demoData";
 import {
   SEVERITY_CRITICAL, SEVERITY_HIGH, SEVERITY_MEDIUM, SEVERITY_LOW,
   COSTA_300, COSTA_400,
 } from "@/lib/colors";
+import {
+  Panel, PanelHeader, PanelTitle, SectionLabel,
+  Button, Badge, Divider, EmptyState,
+} from "@/components/ui/primitives";
 
 // ANA alert thresholds per station code (meters)
 const STATION_THRESHOLDS: Record<string, number> = {
@@ -117,483 +130,21 @@ const LABEL_TEXT: Record<string, { es: string; en: string }> = {
   weather_observation:   { es: "Meteorología",    en: "Weather" },
 };
 
-const LABEL_COLOR: Record<string, string> = {
-  needs_help:            "bg-severity-critical/40 text-severity-critical border-severity-critical/50",
-  infrastructure_damage: "bg-severity-high/40 text-severity-high border-severity-high/50",
-  road_blocked:          "bg-severity-medium/40 text-severity-medium border-severity-medium/50",
-  weather_observation:   "bg-costa-900/40 text-costa-300 border-costa-700/50",
+const LABEL_PILL_CLS: Record<string, string> = {
+  needs_help:            "bg-danger-soft text-danger",
+  infrastructure_damage: "bg-warn-soft text-warn-muted",
+  road_blocked:          "bg-warn-soft text-warn-muted",
+  weather_observation:   "bg-accent-soft text-accent",
 };
 
 function SocialPill({ item, locale }: { item: SocialBreakdown; locale: Locale }) {
   const label = LABEL_TEXT[item.label]?.[locale] ?? item.label.replace(/_/g, " ");
-  const cls = LABEL_COLOR[item.label] ?? "bg-slate-800 text-slate-300 border-slate-600";
+  const cls = LABEL_PILL_CLS[item.label] ?? "bg-surface-sunken text-ink-muted";
   return (
-    <span className={clsx("inline-flex items-center gap-1 border rounded-full px-2 py-0.5 text-[11px]", cls)}>
+    <span className={clsx("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium", cls)}>
       {label}
       <span className="font-semibold">{item.count}</span>
     </span>
-  );
-}
-
-// ─── Auto-generated situation summary ────────────────────────────────────────
-
-function SituationSummary() {
-  const { locale } = useUIStore();
-  const { data: alerts = [] } = useAlerts();
-  const { data: exposure } = useFloodExposure();
-  const { data: summary } = useDistrictRiskSummary();
-
-  const activeAlerts = alerts.filter((a) => a.status === "active");
-  const criticalAlerts = activeAlerts.filter((a) => a.severity === "critical");
-  const highAlerts = activeAlerts.filter((a) => a.severity === "high");
-  const affectedPop = exposure?.total_affected_population ?? 0;
-  const highRiskDistricts = summary?.features.filter(
-    (f) => f.properties.risk_level === "alto",
-  ) ?? [];
-
-  if (!activeAlerts.length && !affectedPop) return null;
-
-  const sinagerdLevel =
-    criticalAlerts.length > 0 ? "EMERGENCIA"
-    : highAlerts.length > 2 || highRiskDistricts.length > 3 ? "ALERTA"
-    : activeAlerts.length > 0 ? "AVISO"
-    : null;
-
-  if (!sinagerdLevel) return null;
-
-  const levelLabel = locale === "es"
-    ? { EMERGENCIA: "EMERGENCIA", ALERTA: "ALERTA", AVISO: "AVISO" }[sinagerdLevel]
-    : { EMERGENCIA: "EMERGENCY", ALERTA: "ALERT", AVISO: "NOTICE" }[sinagerdLevel];
-
-  const levelColor =
-    sinagerdLevel === "EMERGENCIA" ? "border-severity-critical/60 bg-severity-critical/20 text-severity-critical"
-    : sinagerdLevel === "ALERTA" ? "border-severity-high/50 bg-severity-high/20 text-severity-high"
-    : "border-severity-medium/40 bg-severity-medium/15 text-severity-medium";
-
-  const topDistricts = highRiskDistricts.slice(0, 3).map((f) => f.properties.name);
-  const alertLabel = locale === "es"
-    ? `${activeAlerts.length} alerta${activeAlerts.length !== 1 ? "s" : ""} activa${activeAlerts.length !== 1 ? "s" : ""}`
-    : `${activeAlerts.length} active alert${activeAlerts.length !== 1 ? "s" : ""}`;
-
-  const lines: string[] = [];
-  if (activeAlerts.length) lines.push(alertLabel);
-  if (affectedPop > 0)
-    lines.push(`~${affectedPop > 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : affectedPop} ${locale === "es" ? "personas en zona inundada" : "people in flood zone"}`);
-  if (topDistricts.length)
-    lines.push(`${locale === "es" ? "Distritos prioritarios" : "Priority districts"}: ${topDistricts.join(", ")}`);
-
-  return (
-    <div className={clsx("mb-3 rounded-lg border px-3 py-2.5", levelColor)}>
-      <div className="flex items-center gap-1.5 mb-1">
-        <Zap size={10} aria-hidden="true" />
-        <p className="text-[10px] font-bold tracking-wide uppercase">
-          SINAGERD · {levelLabel}
-        </p>
-      </div>
-      <ul className="space-y-0.5">
-        {lines.map((line, i) => (
-          <li key={i} className="text-xs opacity-90">{line}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-// ─── Lima-wide overview metrics ───────────────────────────────────────────────
-
-function CityOverview() {
-  const { locale } = useUIStore();
-  const tr = useT(locale);
-  const { data: alerts = [] } = useAlerts();
-  const { data: exposure } = useFloodExposure();
-  const { data: summary } = useDistrictRiskSummary();
-  const activeCount = alerts.filter((a) => a.status === "active").length;
-  const criticalCount = alerts.filter((a) => a.severity === "critical" && a.status === "active").length;
-  const floodArea = exposure?.districts.reduce((sum, d) => sum + d.overlap_km2, 0) ?? 0;
-  const affectedPop = exposure?.total_affected_population ?? 0;
-  const altoCount = summary?.features.filter((f) => f.properties.risk_level === "alto").length ?? 0;
-  const moderadoCount = summary?.features.filter((f) => f.properties.risk_level === "moderado").length ?? 0;
-
-  // Bento layout: hero "active alerts" tile spans 3/5 columns; flood-area
-  // sits in the right 2/5. A thin footer strip carries the secondary
-  // high/moderate district counts in a single horizontal flow. Different
-  // visual weight per tile breaks the AI-template symmetric-grid tell.
-  return (
-    <div className="mb-4 space-y-2">
-      <p className="font-display text-[11px] text-slate-500 uppercase tracking-ops">
-        {tr("dashboard", "lima")}
-      </p>
-      <div className="grid grid-cols-5 gap-2">
-        {/* Hero: active alerts (3 cols, taller) */}
-        <div className="col-span-3 row-span-2 bg-severity-critical/12 border border-severity-critical/35 rounded-xl px-4 py-3 flex flex-col justify-between min-h-[112px]">
-          <div className="flex items-center gap-1.5">
-            <AlertTriangle size={11} className="text-severity-critical" />
-            <p className="text-[11px] text-slate-300">{tr("dashboard", "activeAlerts")}</p>
-          </div>
-          <div>
-            <p className="font-display text-5xl font-bold text-severity-critical tracking-display-tight tabular-nums leading-none">
-              {activeCount}
-            </p>
-            {criticalCount > 0 && (
-              <p className="text-[11px] text-severity-critical/90 mt-1.5">
-                {criticalCount} {locale === "es" ? `crítica${criticalCount !== 1 ? "s" : ""}` : `critical`}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Right column tile 1: flood area */}
-        <div className="col-span-2 bg-costa-900/40 border border-costa-700/40 rounded-xl px-3 py-2">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <Waves size={10} className="text-costa-300" />
-            <p className="text-[11px] text-slate-300">{tr("dashboard", "floodArea")}</p>
-          </div>
-          <p className="font-display text-2xl font-bold text-costa-300 tracking-display-tight tabular-nums leading-none">
-            {floodArea.toFixed(1)}
-            <span className="font-sans text-xs ml-1 text-slate-400">km²</span>
-          </p>
-        </div>
-
-        {/* Right column tile 2: affected population */}
-        <div className="col-span-2 bg-surface-panel/60 border border-surface-line rounded-xl px-3 py-2">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <Users size={10} className="text-sand-300" />
-            <p className="text-[11px] text-slate-300">
-              {locale === "es" ? "Pob. en riesgo" : "Pop. at risk"}
-            </p>
-          </div>
-          <p className="font-display text-2xl font-bold text-sand-300 tracking-display-tight tabular-nums leading-none">
-            {affectedPop > 0
-              ? `~${affectedPop > 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : affectedPop}`
-              : "—"}
-          </p>
-        </div>
-
-        {/* Footer strip: district risk counts (spans all 5 cols) */}
-        {(altoCount > 0 || moderadoCount > 0) && (
-          <div className="col-span-5 bg-surface-panel/40 border border-surface-line/70 rounded-xl px-3 py-2 flex items-center gap-4">
-            <CheckCircle2 size={11} className="text-slate-500 shrink-0" aria-hidden="true" />
-            <div className="flex items-center gap-4 text-[11px] flex-wrap">
-              {altoCount > 0 && (
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-severity-critical shrink-0" />
-                  <span className="text-slate-200">
-                    <span className="font-display font-semibold tabular-nums">{altoCount}</span>{" "}
-                    {locale === "es" ? "distr. riesgo alto" : "high-risk distr."}
-                  </span>
-                </span>
-              )}
-              {moderadoCount > 0 && (
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-severity-high shrink-0" />
-                  <span className="text-slate-400">
-                    <span className="font-display font-semibold tabular-nums">{moderadoCount}</span>{" "}
-                    {locale === "es" ? "moderado" : "moderate"}
-                  </span>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Top-risk district list ───────────────────────────────────────────────────
-
-function TopRiskList() {
-  const { locale } = useUIStore();
-  const tr = useT(locale);
-  const { data: summary } = useDistrictRiskSummary();
-  const { setScenario } = useUIStore();
-
-  const at_risk = summary?.features
-    .filter((f) => f.properties.risk_level !== "bajo")
-    .sort((a, b) => {
-      const order = { alto: 2, moderado: 1, bajo: 0 };
-      return order[b.properties.risk_level] - order[a.properties.risk_level];
-    })
-    .slice(0, 8) ?? [];
-
-  if (!at_risk.length) {
-    return (
-      <div className="text-center px-2 py-6">
-        <div className="mx-auto mb-2 w-9 h-9 rounded-full border border-surface-line bg-surface-panel/60 flex items-center justify-center">
-          <CheckCircle2 size={14} className="text-severity-low" aria-hidden="true" />
-        </div>
-        <p className="font-display text-sm text-slate-200 tracking-display-tight mb-0.5">
-          {locale === "es" ? "Sin distritos en alerta" : "No districts on alert"}
-        </p>
-        <p className="text-[11px] text-slate-500 max-w-[200px] mx-auto">
-          {tr("dashboard", "noDistricts")}
-        </p>
-      </div>
-    );
-  }
-
-  const RISK_DOT = { alto: "bg-severity-critical", moderado: "bg-severity-high", bajo: "bg-severity-low" };
-
-  return (
-    <ul className="space-y-1">
-      {at_risk.map((f) => (
-        <li key={f.properties.ubigeo}>
-          <button
-            onClick={() =>
-              setScenario({
-                districtUbigeo: f.properties.ubigeo,
-                districtName: f.properties.name,
-              })
-            }
-            className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg hover:bg-surface-panel transition-colors"
-          >
-            <span
-              className={clsx(
-                "h-2 w-2 rounded-full shrink-0",
-                RISK_DOT[f.properties.risk_level],
-              )}
-            />
-            <span className="text-xs text-slate-200 flex-1 truncate">{f.properties.name}</span>
-            {f.properties.active_alerts > 0 && (
-              <span className="text-[10px] bg-severity-critical/50 text-severity-critical px-1.5 rounded-full">
-                {f.properties.active_alerts} {tr("dashboard", "alertsBadge")}
-              </span>
-            )}
-            {f.properties.urgent_social_3h > 0 && (
-              <span className="text-[10px] bg-severity-high/50 text-severity-high px-1.5 rounded-full">
-                {f.properties.urgent_social_3h} {tr("dashboard", "signalsBadge")}
-              </span>
-            )}
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-// ─── District detail view ─────────────────────────────────────────────────────
-
-const SEVERITY_BADGE: Record<string, string> = {
-  critical: "bg-severity-critical/50 text-severity-critical border-severity-critical/50",
-  high:     "bg-severity-high/40 text-severity-high border-severity-high/50",
-  medium:   "bg-severity-medium/30 text-severity-medium border-severity-medium/40",
-  low:      "bg-costa-900/30 text-costa-300 border-costa-700/40",
-};
-
-function DistrictDetail({ ubigeo }: { ubigeo: string }) {
-  const { locale } = useUIStore();
-  const tr = useT(locale);
-  const { data, isLoading, isError } = useDistrictDashboard(ubigeo);
-  const { data: fusion } = useFusion(ubigeo);
-
-  if (isLoading)
-    return <p className="text-xs text-slate-400 px-1 py-4 text-center">{tr("dashboard", "loading")}</p>;
-  if (isError || !data)
-    return <p className="text-xs text-severity-critical px-1 py-4 text-center">{tr("dashboard", "errorLoad")}</p>;
-
-  const imergValues = data.imerg_trend_30d.map((d) => d.acc_24h_mm);
-  const maxImerg = Math.max(...imergValues, 0);
-  const latestImerg = imergValues.at(-1) ?? 0;
-  const activeAlerts = data.active_alerts.filter((a) => a.status === "active");
-
-  const RISK_BORDER: Record<string, string> = {
-    alto:     "border-severity-critical/50 bg-severity-critical/15",
-    moderado: "border-severity-high/40 bg-severity-high/10",
-    bajo:     "border-severity-low/30 bg-severity-low/10",
-  };
-  const RISK_TEXT: Record<string, string> = {
-    alto: "text-severity-critical", moderado: "text-severity-high", bajo: "text-severity-low",
-  };
-
-  const sarPolygonLabel = (n: number) =>
-    locale === "es"
-      ? `${n} ${n !== 1 ? tr("dashboard", "sarPolygonsPlural") : tr("dashboard", "sarPolygons")}`
-      : `${n} Sentinel-1 ${n !== 1 ? "polygons" : "polygon"}`;
-
-  return (
-    <div className="space-y-4">
-      {/* AI fusion prose */}
-      {fusion?.prose_es && (
-        <div className={clsx("rounded-lg border px-3 py-2.5", RISK_BORDER[fusion.risk_level] ?? "border-slate-700 bg-surface-panel")}>
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Brain size={10} className={RISK_TEXT[fusion.risk_level] ?? "text-slate-400"} aria-hidden="true" />
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-              {tr("dashboard", "multihazard")}
-            </p>
-            <span className={clsx("ml-auto text-[10px] font-bold uppercase px-1 py-0.5 rounded", RISK_TEXT[fusion.risk_level])}>
-              {fusion.risk_level.toUpperCase()}
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-300 leading-relaxed">
-            {locale === "en" && fusion.prose_en ? fusion.prose_en : fusion.prose_es}
-          </p>
-        </div>
-      )}
-
-      {/* Active alerts list */}
-      {activeAlerts.length > 0 && (
-        <div>
-          <p className="text-[11px] text-slate-400 mb-1.5 flex items-center gap-1">
-            <AlertTriangle size={10} /> {tr("dashboard", "activeAlerts")} ({activeAlerts.length})
-          </p>
-          <ul className="space-y-1">
-            {activeAlerts.map((a) => (
-              <li key={a.id} className="flex items-start gap-2 bg-surface-panel rounded-lg px-2.5 py-1.5">
-                <span className={clsx("mt-0.5 shrink-0 text-[10px] font-bold border rounded px-1 py-0.5", SEVERITY_BADGE[a.severity])}>
-                  {a.severity.slice(0, 4).toUpperCase()}
-                </span>
-                <p className="text-[11px] text-slate-200 leading-snug line-clamp-2">{a.title}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Metric cards */}
-      <div className="grid grid-cols-2 gap-2">
-        <MetricCard
-          icon={Droplets}
-          label={tr("dashboard", "rain24h")}
-          value={latestImerg > 0 ? `${latestImerg.toFixed(1)} mm` : "— mm"}
-          sub={maxImerg > 0 ? `${tr("dashboard", "maxLast30d")} ${maxImerg.toFixed(1)} mm` : tr("dashboard", "noRecentData")}
-          color="text-costa-400"
-        />
-        <MetricCard
-          icon={Users}
-          label={tr("dashboard", "people")}
-          value={data.district.population ? data.district.population.toLocaleString(locale === "es" ? "es-PE" : "en-US") : "—"}
-          sub={data.district.area_km2 ? `${data.district.area_km2.toFixed(1)} km²` : ""}
-          color="text-slate-300"
-        />
-        <MetricCard
-          icon={History}
-          label={tr("dashboard", "historical")}
-          value={String(data.sinpad_historical_events)}
-          sub={tr("dashboard", "sinpad")}
-          color="text-severity-medium"
-        />
-        {fusion?.flood.overlap_km2 != null && fusion.flood.overlap_km2 > 0 && (
-          <MetricCard
-            icon={Waves}
-            label={tr("dashboard", "sarFlooded")}
-            value={`${fusion.flood.overlap_km2.toFixed(1)} km²`}
-            sub={sarPolygonLabel(fusion.flood.active_polygon_count)}
-            color="text-costa-400"
-          />
-        )}
-      </div>
-
-      {/* IMERG 30-day sparkline */}
-      {imergValues.length > 1 && (
-        <div className="bg-surface-panel rounded-lg px-3 py-2">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-[11px] text-slate-400 flex items-center gap-1">
-              <TrendingUp size={10} /> {tr("dashboard", "rain30d")}
-            </p>
-            <p className="text-[10px] text-costa-400">{latestImerg.toFixed(1)} mm {tr("dashboard", "today")}</p>
-          </div>
-          <Sparkline values={imergValues} color={COSTA_300} />
-        </div>
-      )}
-
-      {/* Alerts 7-day bar chart */}
-      {data.alerts_trend_7d.length > 0 && (
-        <div className="bg-surface-panel rounded-lg px-3 py-2">
-          <p className="text-[11px] text-slate-400 mb-1 flex items-center gap-1">
-            <AlertTriangle size={10} /> {tr("dashboard", "alerts7d")}
-          </p>
-          <BarMini days={data.alerts_trend_7d} />
-        </div>
-      )}
-
-      {/* Social signals 24h */}
-      {data.social_24h.length > 0 && (
-        <div>
-          <p className="text-[11px] text-slate-400 mb-1.5 flex items-center gap-1">
-            <Radio size={10} /> {tr("dashboard", "social24h")}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {data.social_24h.map((s) => (
-              <SocialPill key={s.label} item={s} locale={locale} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Hydro stations */}
-      {data.stations.length > 0 && (
-        <div>
-          <p className="text-[11px] text-slate-400 mb-1.5">{tr("dashboard", "nearbyStations")}</p>
-          <div className="space-y-1">
-            {data.stations.map((st) => {
-              const threshold = STATION_THRESHOLDS[st.code] ?? null;
-              const overThreshold = threshold != null && st.level_m != null && st.level_m >= threshold;
-              return (
-                <div
-                  key={st.code}
-                  className={clsx(
-                    "flex items-center justify-between rounded-lg px-2.5 py-1.5",
-                    overThreshold
-                      ? "bg-severity-high/30 border border-severity-high/50"
-                      : "bg-surface-panel",
-                  )}
-                >
-                  <div>
-                    <div className="flex items-center gap-1">
-                      {overThreshold && <AlertTriangle size={9} className="text-severity-high shrink-0" />}
-                      <p className={clsx("text-xs", overThreshold ? "text-severity-high" : "text-slate-200")}>{st.name}</p>
-                    </div>
-                    <p className="text-[10px] text-slate-500">{st.river} · {st.source.toUpperCase()}</p>
-                    {overThreshold && threshold != null && (
-                      <p className="text-[10px] text-severity-high mt-0.5">
-                        {tr("dashboard", "threshold")} {threshold.toFixed(1)} m {tr("dashboard", "exceeded")}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    {st.level_m != null && (
-                      <p className={clsx("text-xs font-mono", overThreshold ? "text-severity-high" : "text-costa-300")}>
-                        {st.level_m.toFixed(2)} m
-                      </p>
-                    )}
-                    {st.flow_m3s != null && (
-                      <p className="text-[10px] text-slate-400 font-mono">{st.flow_m3s.toFixed(1)} m³/s</p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  color,
-}: {
-  icon: typeof AlertTriangle;
-  label: string;
-  value: string;
-  sub: string;
-  color: string;
-}) {
-  return (
-    <div className="bg-surface-panel/60 border border-surface-line/60 rounded-xl px-3 py-2.5">
-      <div className="flex items-center gap-1.5 mb-1">
-        <Icon size={11} className={color} aria-hidden="true" />
-        <p className="text-[11px] text-slate-400">{label}</p>
-      </div>
-      <p className={clsx("font-display text-xl font-semibold leading-none tracking-display-tight tabular-nums", color)}>
-        {value}
-      </p>
-      <p className="text-[11px] text-slate-500 mt-1.5 leading-tight line-clamp-1">{sub}</p>
-    </div>
   );
 }
 
@@ -621,9 +172,6 @@ function EDANReportButton() {
 
     const level = critical.length > 0 ? "EMERGENCIA" : high.length > 1 ? "ALERTA" : active.length > 0 ? "AVISO" : "NORMAL";
 
-    // SINAGERD level labels stay in Spanish — they are official terminology
-    // for INDECI/COEN and should not be translated. Surrounding form copy
-    // branches on locale so an English-speaking judge sees a parseable report.
     const RULE = "═══════════════════════════════════════════";
     const RULE_THIN = "─────────────────────────────────────────────";
     const popFormatted = `${affectedPop > 1000 ? (affectedPop / 1000).toFixed(0) + "k" : affectedPop}`;
@@ -703,22 +251,482 @@ function EDANReportButton() {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-costa-400 transition-colors ml-auto"
+      className="text-xs text-ink-subtle hover:text-accent flex items-center gap-1.5 transition-colors"
       aria-label={locale === "es" ? "Copiar reporte EDAN-Perú al portapapeles" : "Copy EDAN-Peru report to clipboard"}
       title={locale === "es" ? "Generar reporte EDAN-Perú" : "Generate EDAN-Peru report"}
     >
-      {copied ? <Check size={13} className="text-severity-low" /> : <Copy size={13} />}
+      {copied
+        ? <Check size={13} className="text-accent" />
+        : <Copy size={13} />}
       {copied ? tr("dashboard", "edanCopied") : tr("dashboard", "edan")}
     </button>
   );
 }
 
+// ─── Situation summary banner ─────────────────────────────────────────────────
+
+function SituationSummary() {
+  const { locale } = useUIStore();
+  const { data: alerts = [] } = useAlerts();
+  const { data: exposure } = useFloodExposure();
+  const { data: summary } = useDistrictRiskSummary();
+
+  const activeAlerts = alerts.filter((a) => a.status === "active");
+  const criticalAlerts = activeAlerts.filter((a) => a.severity === "critical");
+  const highAlerts = activeAlerts.filter((a) => a.severity === "high");
+  const affectedPop = exposure?.total_affected_population ?? 0;
+  const highRiskDistricts = summary?.features.filter(
+    (f) => f.properties.risk_level === "alto",
+  ) ?? [];
+
+  if (!activeAlerts.length && !affectedPop) return null;
+
+  const sinagerdLevel =
+    criticalAlerts.length > 0 ? "EMERGENCIA"
+    : highAlerts.length > 2 || highRiskDistricts.length > 3 ? "ALERTA"
+    : activeAlerts.length > 0 ? "AVISO"
+    : null;
+
+  if (!sinagerdLevel) return null;
+
+  const levelLabel = locale === "es"
+    ? { EMERGENCIA: "EMERGENCIA", ALERTA: "ALERTA", AVISO: "AVISO" }[sinagerdLevel]
+    : { EMERGENCIA: "EMERGENCY", ALERTA: "ALERT", AVISO: "NOTICE" }[sinagerdLevel];
+
+  const topDistricts = highRiskDistricts.slice(0, 3).map((f) => f.properties.name);
+  const alertLabel = locale === "es"
+    ? `${activeAlerts.length} alerta${activeAlerts.length !== 1 ? "s" : ""} activa${activeAlerts.length !== 1 ? "s" : ""}`
+    : `${activeAlerts.length} active alert${activeAlerts.length !== 1 ? "s" : ""}`;
+
+  const lines: string[] = [];
+  if (activeAlerts.length) lines.push(alertLabel);
+  if (affectedPop > 0)
+    lines.push(`~${affectedPop > 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : affectedPop} ${locale === "es" ? "personas en zona inundada" : "people in flood zone"}`);
+  if (topDistricts.length)
+    lines.push(`${locale === "es" ? "Distritos prioritarios" : "Priority districts"}: ${topDistricts.join(", ")}`);
+
+  const bannerCls =
+    sinagerdLevel === "EMERGENCIA"
+      ? "bg-danger-soft border border-danger/20"
+      : sinagerdLevel === "ALERTA"
+        ? "bg-warn-soft border border-warn/20"
+        : "bg-surface-sunken border border-border";
+
+  const levelCls =
+    sinagerdLevel === "EMERGENCIA" ? "text-danger font-semibold"
+    : sinagerdLevel === "ALERTA"   ? "text-warn-muted font-semibold"
+    :                                "text-ink-muted font-semibold";
+
+  return (
+    <div className={clsx("rounded-xl px-4 py-3", bannerCls)}>
+      <p className="text-2xs font-semibold tracking-caps uppercase text-ink-subtle mb-1">
+        SINAGERD · <span className={levelCls}>{levelLabel}</span>
+      </p>
+      <ul className="space-y-0.5">
+        {lines.map((line, i) => (
+          <li key={i} className="text-sm text-ink leading-snug">{line}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// ─── Lima-wide overview metrics ───────────────────────────────────────────────
+
+function CityOverview() {
+  const { locale } = useUIStore();
+  const tr = useT(locale);
+  const { data: alerts = [] } = useAlerts();
+  const { data: exposure } = useFloodExposure();
+  const { data: summary } = useDistrictRiskSummary();
+
+  const activeCount = alerts.filter((a) => a.status === "active").length;
+  const floodArea = exposure?.districts.reduce((sum, d) => sum + d.overlap_km2, 0) ?? 0;
+  const affectedPop = exposure?.total_affected_population ?? 0;
+  const altoCount = summary?.features.filter((f) => f.properties.risk_level === "alto").length ?? 0;
+  const moderadoCount = summary?.features.filter((f) => f.properties.risk_level === "moderado").length ?? 0;
+
+  return (
+    <section aria-label={tr("dashboard", "lima")}>
+      <SectionLabel className="mb-3">{tr("dashboard", "lima")}</SectionLabel>
+
+      <div className="grid grid-cols-2 gap-4 py-4">
+        {/* Active alerts */}
+        <div>
+          <p className={clsx(
+            "text-3xl font-bold font-mono tabular-nums leading-none",
+            activeCount > 0 ? "text-danger" : "text-ink",
+          )}>
+            {activeCount}
+          </p>
+          <p className="text-xs text-ink-muted mt-1">{tr("dashboard", "activeAlerts")}</p>
+        </div>
+
+        {/* Flood area */}
+        <div>
+          <p className="text-3xl font-bold font-mono tabular-nums leading-none text-accent">
+            {floodArea.toFixed(1)}
+            <span className="text-base font-normal text-ink-subtle ml-1">km²</span>
+          </p>
+          <p className="text-xs text-ink-muted mt-1">{tr("dashboard", "floodArea")}</p>
+        </div>
+
+        {/* Affected population */}
+        <div>
+          <p className="text-3xl font-bold font-mono tabular-nums leading-none text-ink">
+            {affectedPop > 0
+              ? affectedPop > 1000
+                ? `~${(affectedPop / 1000).toFixed(0)}k`
+                : String(affectedPop)
+              : "—"}
+          </p>
+          <p className="text-xs text-ink-muted mt-1">
+            {locale === "es" ? "Pob. en riesgo" : "Pop. at risk"}
+          </p>
+        </div>
+
+        {/* Risk district breakdown */}
+        {(altoCount > 0 || moderadoCount > 0) && (
+          <div>
+            <p className="text-3xl font-bold font-mono tabular-nums leading-none text-ink">
+              {altoCount + moderadoCount}
+            </p>
+            <p className="text-xs text-ink-muted mt-1">
+              {locale === "es" ? "distritos en alerta" : "districts on alert"}
+            </p>
+            <p className="text-xs mt-1">
+              {altoCount > 0 && (
+                <span className="text-danger font-medium">
+                  {altoCount} {locale === "es" ? "alto" : "high"}
+                </span>
+              )}
+              {altoCount > 0 && moderadoCount > 0 && (
+                <span className="text-ink-subtle"> · </span>
+              )}
+              {moderadoCount > 0 && (
+                <span className="text-warn-muted font-medium">
+                  {moderadoCount} {locale === "es" ? "moderado" : "moderate"}
+                </span>
+              )}
+            </p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ─── Top-risk district list ───────────────────────────────────────────────────
+
+function TopRiskList() {
+  const { locale } = useUIStore();
+  const tr = useT(locale);
+  const { data: summary } = useDistrictRiskSummary();
+  const { setScenario } = useUIStore();
+
+  const at_risk = summary?.features
+    .filter((f) => f.properties.risk_level !== "bajo")
+    .sort((a, b) => {
+      const order = { alto: 2, moderado: 1, bajo: 0 };
+      return order[b.properties.risk_level] - order[a.properties.risk_level];
+    })
+    .slice(0, 8) ?? [];
+
+  if (!at_risk.length) {
+    return (
+      <EmptyState
+        title={locale === "es" ? "Sin distritos en alerta" : "No districts on alert"}
+        body={tr("dashboard", "noDistricts")}
+        icon={<CheckCircle2 size={14} />}
+      />
+    );
+  }
+
+  const RISK_DOT: Record<string, string> = {
+    alto:     "bg-danger",
+    moderado: "bg-warn",
+    bajo:     "bg-ink-subtle",
+  };
+
+  return (
+    <ul className="space-y-0.5">
+      {at_risk.map((f) => (
+        <li key={f.properties.ubigeo}>
+          <button
+            onClick={() =>
+              setScenario({
+                districtUbigeo: f.properties.ubigeo,
+                districtName: f.properties.name,
+              })
+            }
+            className="w-full flex items-center gap-2.5 text-left px-2 py-1.5 rounded-lg hover:bg-surface-hover transition-colors"
+          >
+            <span
+              className={clsx("h-2 w-2 rounded-full shrink-0", RISK_DOT[f.properties.risk_level])}
+              aria-hidden="true"
+            />
+            <span className="text-sm text-ink flex-1 truncate">{f.properties.name}</span>
+            {f.properties.active_alerts > 0 && (
+              <Badge count={f.properties.active_alerts} variant="danger" />
+            )}
+            {f.properties.urgent_social_3h > 0 && (
+              <Badge count={f.properties.urgent_social_3h} variant="warn" />
+            )}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// ─── MetricCard — simple row layout ──────────────────────────────────────────
+
+function MetricCard({
+  label,
+  value,
+  sub,
+  valueCls,
+}: {
+  icon: typeof AlertTriangle;
+  label: string;
+  value: string;
+  sub: string;
+  color: string;
+  valueCls?: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between py-2 border-b border-border last:border-0">
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-ink-subtle">{label}</p>
+        {sub && <p className="text-xs text-ink-subtle mt-0.5 leading-tight line-clamp-1">{sub}</p>}
+      </div>
+      <p className={clsx("text-sm font-semibold tabular-nums shrink-0 ml-3", valueCls ?? "text-ink")}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+// ─── District detail view ─────────────────────────────────────────────────────
+
+const SEVERITY_BADGE_CLS: Record<string, string> = {
+  critical: "bg-danger-soft text-danger",
+  high:     "bg-warn-soft text-warn-muted",
+  medium:   "bg-warn-soft/60 text-warn-muted",
+  low:      "bg-accent-soft text-accent",
+};
+
+function DistrictDetail({ ubigeo }: { ubigeo: string }) {
+  const { locale } = useUIStore();
+  const tr = useT(locale);
+  const { data, isLoading, isError } = useDistrictDashboard(ubigeo);
+  const { data: fusion } = useFusion(ubigeo);
+
+  if (isLoading)
+    return <p className="text-xs text-ink-muted px-1 py-4 text-center">{tr("dashboard", "loading")}</p>;
+  if (isError || !data)
+    return <p className="text-xs text-danger px-1 py-4 text-center">{tr("dashboard", "errorLoad")}</p>;
+
+  const imergValues = data.imerg_trend_30d.map((d) => d.acc_24h_mm);
+  const maxImerg = Math.max(...imergValues, 0);
+  const latestImerg = imergValues.at(-1) ?? 0;
+  const activeAlerts = data.active_alerts.filter((a) => a.status === "active");
+
+  const FUSION_SUNKEN_CLS: Record<string, string> = {
+    alto:     "bg-danger-soft",
+    moderado: "bg-warn-soft",
+    bajo:     "bg-accent-soft",
+  };
+  const FUSION_RISK_CLS: Record<string, string> = {
+    alto: "text-danger", moderado: "text-warn-muted", bajo: "text-accent",
+  };
+
+  const sarPolygonLabel = (n: number) =>
+    locale === "es"
+      ? `${n} ${n !== 1 ? tr("dashboard", "sarPolygonsPlural") : tr("dashboard", "sarPolygons")}`
+      : `${n} Sentinel-1 ${n !== 1 ? "polygons" : "polygon"}`;
+
+  return (
+    <div className="space-y-4">
+      {/* AI fusion prose */}
+      {fusion?.prose_es && (
+        <div className={clsx(
+          "rounded-xl px-4 py-3",
+          FUSION_SUNKEN_CLS[fusion.risk_level] ?? "bg-surface-sunken",
+        )}>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Brain size={10} className={FUSION_RISK_CLS[fusion.risk_level] ?? "text-ink-muted"} aria-hidden="true" />
+            <p className="text-2xs font-semibold tracking-caps uppercase text-ink-subtle">
+              {tr("dashboard", "multihazard")}
+            </p>
+            <span className={clsx(
+              "ml-auto text-2xs font-bold uppercase",
+              FUSION_RISK_CLS[fusion.risk_level],
+            )}>
+              {fusion.risk_level.toUpperCase()}
+            </span>
+          </div>
+          <p className="text-xs text-ink leading-relaxed">
+            {locale === "en" && fusion.prose_en ? fusion.prose_en : fusion.prose_es}
+          </p>
+        </div>
+      )}
+
+      {/* Active alerts list */}
+      {activeAlerts.length > 0 && (
+        <div>
+          <p className="text-xs text-ink-muted mb-1.5 flex items-center gap-1">
+            <AlertTriangle size={10} aria-hidden="true" />
+            {tr("dashboard", "activeAlerts")} ({activeAlerts.length})
+          </p>
+          <ul className="space-y-1">
+            {activeAlerts.map((a) => (
+              <li key={a.id} className="flex items-start gap-2 bg-surface-sunken rounded-lg px-2.5 py-1.5">
+                <span className={clsx(
+                  "mt-0.5 shrink-0 text-2xs font-bold rounded px-1 py-0.5",
+                  SEVERITY_BADGE_CLS[a.severity],
+                )}>
+                  {a.severity.slice(0, 4).toUpperCase()}
+                </span>
+                <p className="text-xs text-ink leading-snug line-clamp-2">{a.title}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Metric rows */}
+      <div>
+        <MetricCard
+          icon={Droplets}
+          label={tr("dashboard", "rain24h")}
+          value={latestImerg > 0 ? `${latestImerg.toFixed(1)} mm` : "— mm"}
+          sub={maxImerg > 0 ? `${tr("dashboard", "maxLast30d")} ${maxImerg.toFixed(1)} mm` : tr("dashboard", "noRecentData")}
+          color="text-accent"
+          valueCls="text-accent"
+        />
+        <MetricCard
+          icon={Users}
+          label={tr("dashboard", "people")}
+          value={data.district.population ? data.district.population.toLocaleString(locale === "es" ? "es-PE" : "en-US") : "—"}
+          sub={data.district.area_km2 ? `${data.district.area_km2.toFixed(1)} km²` : ""}
+          color="text-ink"
+        />
+        <MetricCard
+          icon={History}
+          label={tr("dashboard", "historical")}
+          value={String(data.sinpad_historical_events)}
+          sub={tr("dashboard", "sinpad")}
+          color="text-warn-muted"
+          valueCls="text-warn-muted"
+        />
+        {fusion?.flood.overlap_km2 != null && fusion.flood.overlap_km2 > 0 && (
+          <MetricCard
+            icon={Waves}
+            label={tr("dashboard", "sarFlooded")}
+            value={`${fusion.flood.overlap_km2.toFixed(1)} km²`}
+            sub={sarPolygonLabel(fusion.flood.active_polygon_count)}
+            color="text-accent"
+            valueCls="text-accent"
+          />
+        )}
+      </div>
+
+      {/* IMERG 30-day sparkline */}
+      {imergValues.length > 1 && (
+        <div className="bg-surface-sunken rounded-xl px-3 py-2.5">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-xs text-ink-muted flex items-center gap-1">
+              <TrendingUp size={10} aria-hidden="true" /> {tr("dashboard", "rain30d")}
+            </p>
+            <p className="text-xs text-accent font-mono tabular-nums">{latestImerg.toFixed(1)} mm {tr("dashboard", "today")}</p>
+          </div>
+          <Sparkline values={imergValues} color={COSTA_300} />
+        </div>
+      )}
+
+      {/* Alerts 7-day bar chart */}
+      {data.alerts_trend_7d.length > 0 && (
+        <div className="bg-surface-sunken rounded-xl px-3 py-2.5">
+          <p className="text-xs text-ink-muted mb-1.5 flex items-center gap-1">
+            <AlertTriangle size={10} aria-hidden="true" /> {tr("dashboard", "alerts7d")}
+          </p>
+          <BarMini days={data.alerts_trend_7d} />
+        </div>
+      )}
+
+      {/* Social signals 24h */}
+      {data.social_24h.length > 0 && (
+        <div>
+          <p className="text-xs text-ink-muted mb-1.5 flex items-center gap-1">
+            <Radio size={10} aria-hidden="true" /> {tr("dashboard", "social24h")}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {data.social_24h.map((s) => (
+              <SocialPill key={s.label} item={s} locale={locale} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Hydro stations */}
+      {data.stations.length > 0 && (
+        <div>
+          <p className="text-xs text-ink-muted mb-1.5">{tr("dashboard", "nearbyStations")}</p>
+          <div className="space-y-1">
+            {data.stations.map((st) => {
+              const threshold = STATION_THRESHOLDS[st.code] ?? null;
+              const overThreshold = threshold != null && st.level_m != null && st.level_m >= threshold;
+              return (
+                <div
+                  key={st.code}
+                  className={clsx(
+                    "flex items-center justify-between rounded-xl px-3 py-2",
+                    overThreshold
+                      ? "bg-warn-soft border border-warn/20"
+                      : "bg-surface-sunken",
+                  )}
+                >
+                  <div>
+                    <div className="flex items-center gap-1">
+                      {overThreshold && <AlertTriangle size={9} className="text-warn-muted shrink-0" aria-hidden="true" />}
+                      <p className={clsx("text-xs font-medium", overThreshold ? "text-warn-muted" : "text-ink")}>
+                        {st.name}
+                      </p>
+                    </div>
+                    <p className="text-2xs text-ink-subtle mt-0.5">{st.river} · {st.source.toUpperCase()}</p>
+                    {overThreshold && threshold != null && (
+                      <p className="text-2xs text-warn-muted mt-0.5">
+                        {tr("dashboard", "threshold")} {threshold.toFixed(1)} m {tr("dashboard", "exceeded")}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    {st.level_m != null && (
+                      <p className={clsx("text-xs font-mono tabular-nums", overThreshold ? "text-warn-muted" : "text-accent")}>
+                        {st.level_m.toFixed(2)} m
+                      </p>
+                    )}
+                    {st.flow_m3s != null && (
+                      <p className="text-2xs text-ink-subtle font-mono tabular-nums">{st.flow_m3s.toFixed(1)} m³/s</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── 72h Rainfall Forecast ────────────────────────────────────────────────────
 
-const RISK_STEP_COLOR: Record<ForecastStep["risk"], { fill: string; stroke: string; badge: string; badgeBg: string }> = {
-  bajo:     { fill: SEVERITY_LOW,      stroke: SEVERITY_LOW,      badge: "text-severity-low",      badgeBg: "bg-severity-low/30" },
-  moderado: { fill: SEVERITY_MEDIUM,   stroke: SEVERITY_MEDIUM,   badge: "text-severity-medium",   badgeBg: "bg-severity-medium/30" },
-  alto:     { fill: SEVERITY_HIGH,     stroke: SEVERITY_CRITICAL, badge: "text-severity-critical", badgeBg: "bg-severity-critical/30" },
+const RISK_STEP_COLOR: Record<ForecastStep["risk"], { fill: string; stroke: string; valueCls: string }> = {
+  bajo:     { fill: SEVERITY_LOW,    stroke: SEVERITY_LOW,      valueCls: "text-accent" },
+  moderado: { fill: SEVERITY_MEDIUM, stroke: SEVERITY_MEDIUM,   valueCls: "text-warn-muted" },
+  alto:     { fill: SEVERITY_HIGH,   stroke: SEVERITY_CRITICAL, valueCls: "text-danger" },
 };
 
 function ForecastChart({ steps }: { steps: ForecastStep[] }) {
@@ -742,16 +750,13 @@ function ForecastChart({ steps }: { steps: ForecastStep[] }) {
 
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true" className="w-full">
-      {/* Threshold line */}
       <line x1={0} y1={threshY} x2={W} y2={threshY} stroke={SEVERITY_HIGH} strokeWidth={0.75} strokeDasharray="3,3" opacity={0.6} />
-      {/* Area fill */}
       <polyline
         points={`0,${H} ${pts} ${W},${H}`}
         fill={COSTA_300}
         fillOpacity={0.08}
         stroke="none"
       />
-      {/* Colored segments */}
       {segments.map((seg, i) => (
         <line
           key={i}
@@ -761,7 +766,6 @@ function ForecastChart({ steps }: { steps: ForecastStep[] }) {
           strokeLinecap="round"
         />
       ))}
-      {/* Data points */}
       {steps.map((s, i) => (
         <circle
           key={i}
@@ -797,71 +801,62 @@ function ForecastSection({ locale }: { locale: Locale }) {
   const L = (obj: { es: string; en: string }) => obj[locale];
 
   return (
-    <div className="mb-4 bg-surface-panel rounded-xl px-3 py-2.5">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] text-slate-300 font-medium flex items-center gap-1.5">
-          <CloudRain size={11} className="text-costa-400" aria-hidden="true" />
-          {L(label.title)}
-        </p>
-        <p className="text-[10px] text-slate-500">{L(label.source)}</p>
+    <section>
+      <Divider className="mb-4" />
+      <div className="flex items-baseline justify-between mb-3">
+        <SectionLabel>{L(label.title)}</SectionLabel>
+        <p className="font-mono text-2xs text-ink-subtle">{L(label.source)}</p>
       </div>
 
-      {/* Sparkline chart */}
-      <div className="mb-2">
+      <div className="mb-3">
         <ForecastChart steps={steps} />
-        <div className="flex justify-between px-0.5 mt-0.5">
+        <div className="flex justify-between px-0.5 mt-1">
           {steps.map((s) => (
-            <span key={s.hours} className="text-[10px] text-slate-500">+{s.hours}h</span>
+            <span key={s.hours} className="font-mono text-2xs text-ink-subtle tabular-nums">+{s.hours}h</span>
           ))}
         </div>
       </div>
 
-      {/* Step bars */}
-      <div className="grid grid-cols-5 gap-1 mb-2">
+      <div className="grid grid-cols-5 gap-2 mb-3">
         {steps.map((step) => {
           const cfg = RISK_STEP_COLOR[step.risk];
           return (
-            <div key={step.hours} className={clsx("rounded-md px-1 py-1 text-center", cfg.badgeBg)}>
-              <p className={clsx("text-[11px] font-bold leading-none", cfg.badge)}>
+            <div key={step.hours} className="text-center">
+              <p className={clsx("font-bold font-mono tabular-nums text-base leading-none", cfg.valueCls)}>
                 {step.rimac_mm.toFixed(0)}
               </p>
-              <p className="text-[8px] text-slate-500 mt-0.5">{L(label.risk[step.risk])}</p>
+              <p className="text-2xs text-ink-subtle mt-1">{L(label.risk[step.risk])}</p>
             </div>
           );
         })}
       </div>
 
-      {/* Legend row */}
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] text-slate-500">{L(label.rim)}</p>
-        <div className="flex items-center gap-1">
-          <span className="inline-block w-3 border-t border-dashed border-severity-high" aria-hidden="true" />
-          <span className="text-[10px] text-severity-high">{L(label.thresh)} {HUAYCO_THRESHOLD_MM} mm</span>
-        </div>
+      <div className="flex items-baseline justify-between">
+        <span className="text-2xs text-ink-subtle">{L(label.rim)}</span>
+        <span className="text-2xs text-danger">{L(label.thresh)} {HUAYCO_THRESHOLD_MM} mm</span>
       </div>
 
-      {/* Pre-alert banner */}
       {firstAlert && (
-        <div className="mt-2 rounded-lg border border-severity-high/50 bg-severity-high/20 px-2.5 py-1.5 flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-severity-high animate-pulse shrink-0" aria-hidden="true" />
-          <p className="text-[10px] text-severity-high">
-            <span className="font-bold">{L(label.preAlert)}</span>
-            {" "}{L(label.thresh)} {L(label.at)} +{firstAlert.hours}h
-            {" "}— {firstAlert.rimac_mm.toFixed(0)} mm
-            {" "}({(firstAlert.huayco_prob * 100).toFixed(0)}% {L(label.prob)})
+        <div className="mt-3 pl-3 border-l-2 border-danger">
+          <p className="text-2xs font-semibold tracking-caps uppercase text-danger mb-1">{L(label.preAlert)}</p>
+          <p className="text-xs text-ink leading-snug">
+            {L(label.thresh)} {L(label.at)} +{firstAlert.hours}h —{" "}
+            <span className="font-mono tabular-nums">{firstAlert.rimac_mm.toFixed(0)} mm</span>{" "}
+            ({(firstAlert.huayco_prob * 100).toFixed(0)}% {L(label.prob)})
           </p>
         </div>
       )}
-    </div>
+      <Divider className="mt-4" />
+    </section>
   );
 }
 
 // ─── Resource deployment status ───────────────────────────────────────────────
 
-const STATUS_STYLE: Record<ResourceCategory["status"], { dot: string; bar: string }> = {
-  ok:      { dot: "bg-severity-low",  bar: "bg-severity-low" },
-  partial: { dot: "bg-severity-medium", bar: "bg-severity-medium" },
-  deficit: { dot: "bg-severity-critical",    bar: "bg-severity-critical" },
+const STATUS_BAR_CLS: Record<ResourceCategory["status"], string> = {
+  ok:      "bg-accent",
+  partial: "bg-warn",
+  deficit: "bg-danger",
 };
 
 function ResourceStatus({ locale }: { locale: Locale }) {
@@ -872,52 +867,44 @@ function ResourceStatus({ locale }: { locale: Locale }) {
   const L = (obj: { es: string; en: string }) => obj[locale];
 
   return (
-    <div className="mb-4 bg-surface-panel rounded-xl px-3 py-2.5">
-      <div className="flex items-center justify-between mb-2.5">
-        <p className="text-[11px] text-slate-300 font-medium flex items-center gap-1.5">
-          <ShieldCheck size={11} className="text-costa-400" aria-hidden="true" />
-          {L(label.title)}
-        </p>
-        <p className="text-[10px] text-slate-500">{L(label.source)}</p>
+    <section>
+      <div className="flex items-baseline justify-between mb-3">
+        <SectionLabel>{L(label.title)}</SectionLabel>
+        <p className="font-mono text-2xs text-ink-subtle">{L(label.source)}</p>
       </div>
-      <div className="space-y-1.5">
+      <ul className="space-y-3">
         {DEMO_RESOURCES.map((r) => {
-          const cfg = STATUS_STYLE[r.status];
           const pct = Math.min((r.deployed / r.count) * 100, 100);
           return (
-            <div key={r.id} className="flex items-center gap-2">
-              <span
-                className="font-display text-[10px] font-bold tracking-ops leading-none w-7 text-center shrink-0 px-1 py-1 rounded bg-surface-line/70 text-slate-300"
-                aria-hidden="true"
-              >
+            <li key={r.id} className="grid grid-cols-[2rem_1fr_auto] items-center gap-2">
+              <span className="font-mono text-2xs text-ink-subtle tabular-nums" aria-hidden="true">
                 {r.icon}
               </span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[10px] text-slate-300 truncate">{L(r.label)}</span>
-                  <span className="text-[10px] font-mono text-slate-400 shrink-0 ml-1">
-                    {r.deployed}/{r.count} {L(r.unit)}
+              <div>
+                <div className="flex items-baseline justify-between mb-1">
+                  <span className="text-xs text-ink truncate">{L(r.label)}</span>
+                  <span className="font-mono text-2xs text-ink-subtle tabular-nums shrink-0 ml-2">
+                    {r.deployed}/{r.count}
                   </span>
                 </div>
-                <div className="h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-surface-sunken rounded-full overflow-hidden">
                   <div
-                    className={clsx("h-full rounded-full", cfg.bar)}
+                    className={clsx("h-full rounded-full transition-all", STATUS_BAR_CLS[r.status])}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
               </div>
-              <span className={clsx("h-1.5 w-1.5 rounded-full shrink-0", cfg.dot)} aria-hidden="true" />
-            </div>
+              <span className="text-2xs text-ink-subtle">{L(r.unit)}</span>
+            </li>
           );
         })}
-      </div>
-    </div>
+      </ul>
+    </section>
   );
 }
 
 // ─── Incident timeline (city-wide) ───────────────────────────────────────────
 
-// ASCII tags replace emoji for OS-portable operational logging.
 const TYPE_ICON_MAP: Record<string, string> = {
   flood: "[SAR]", huayco: "[HUA]", social_cluster: "[SOC]",
 };
@@ -937,7 +924,7 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
   const { data: log = [] } = useDecisionLog(20);
   const { data: socialData } = useSocialSignals(6);
 
-  type EventItem = { id: string; time: string; text: string; dot: string };
+  type EventItem = { id: string; time: string; text: string; dotCls: string };
 
   const events: EventItem[] = [];
 
@@ -946,7 +933,10 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
       id: `a-${a.id}`,
       time: a.created_at,
       text: `${TYPE_ICON_MAP[a.type] ?? "[ALT]"} ${a.title}`,
-      dot: a.severity === "critical" ? "bg-severity-critical" : a.severity === "high" ? "bg-severity-high" : "bg-severity-medium",
+      dotCls:
+        a.severity === "critical" ? "bg-danger"
+        : a.severity === "high"   ? "bg-warn"
+        :                           "bg-warn/60",
     });
   }
 
@@ -954,11 +944,11 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
     const icon = LOG_ICON[entry.action_type] ?? "LOG";
     const payload = entry.payload as Record<string, unknown>;
     const desc =
-      entry.action_type === "resource_dispatch" ? `[${icon}] ${payload.resource_name ?? payload.resource}`
+      entry.action_type === "resource_dispatch"      ? `[${icon}] ${payload.resource_name ?? payload.resource}`
       : entry.action_type === "social_signal_received" ? `[${icon}] ${payload.district}: ${payload.label}`
-      : entry.action_type === "protocol_step" ? `[${icon}] ${payload.label}`
+      : entry.action_type === "protocol_step"          ? `[${icon}] ${payload.label}`
       : `[${icon}] ${entry.action_type.replace(/_/g, " ")}`;
-    events.push({ id: `l-${entry.id}`, time: entry.logged_at, text: desc, dot: "bg-slate-500" });
+    events.push({ id: `l-${entry.id}`, time: entry.logged_at, text: desc, dotCls: "bg-ink-subtle" });
   }
 
   for (const f of (socialData?.features ?? []).filter(
@@ -966,7 +956,12 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
   ).slice(0, 3)) {
     const src = f.properties.source ?? "?";
     const txt = f.properties.text?.slice(0, 55) ?? f.properties.triage_label;
-    events.push({ id: `s-${f.properties.id}`, time: f.properties.ingested_at, text: `[SOC] ${src}: ${txt}`, dot: "bg-costa-400" });
+    events.push({
+      id: `s-${f.properties.id}`,
+      time: f.properties.ingested_at,
+      text: `[SOC] ${src}: ${txt}`,
+      dotCls: "bg-accent",
+    });
   }
 
   events.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
@@ -979,19 +974,17 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
     new Date(iso).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", timeZone: "America/Lima" });
 
   return (
-    <div className="mb-4">
-      <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1">
-        <History size={9} aria-hidden="true" />
-        {title}
-      </p>
-      <ol className="relative border-l border-slate-700/50 pl-3 space-y-1.5" aria-label={title}>
+    <div>
+      <div className="flex items-center gap-1.5 mb-2">
+        <History size={10} className="text-ink-subtle" aria-hidden="true" />
+        <SectionLabel>{title}</SectionLabel>
+      </div>
+      <ol className="space-y-1.5" aria-label={title}>
         {top.map((ev) => (
-          <li key={ev.id} className="relative">
-            <span className={clsx("absolute -left-[17px] top-1.5 w-2 h-2 rounded-full shrink-0", ev.dot)} aria-hidden="true" />
-            <div className="flex items-start gap-2">
-              <p className="text-[10px] text-slate-300 leading-snug flex-1 min-w-0 truncate">{ev.text}</p>
-              <time className="text-[10px] text-slate-600 shrink-0 tabular-nums">{formatTime(ev.time)}</time>
-            </div>
+          <li key={ev.id} className="flex items-start gap-2">
+            <span className={clsx("w-2 h-2 rounded-full shrink-0 mt-1", ev.dotCls)} aria-hidden="true" />
+            <p className="text-xs text-ink leading-snug flex-1 min-w-0 truncate">{ev.text}</p>
+            <time className="text-2xs text-ink-subtle shrink-0 font-mono tabular-nums">{formatTime(ev.time)}</time>
           </li>
         ))}
       </ol>
@@ -1010,43 +1003,54 @@ export function DistrictDashboardPanel() {
 
   return (
     <aside
-      className={[
-        "fixed bottom-14 left-0 right-0 h-[75vh] rounded-t-2xl",
-        "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
-        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col panel-animate",
-      ].join(" ")}
+      className={clsx(
+        // Mobile: sheet from bottom
+        "fixed bottom-14 left-0 right-0 h-[80vh] rounded-t-2xl",
+        "bg-surface border-t border-border-strong shadow-panel z-20",
+        // Desktop: flush right panel
+        "sm:absolute sm:top-0 sm:right-0 sm:bottom-auto sm:left-auto",
+        "sm:h-full sm:w-[400px] sm:rounded-none sm:border-t-0",
+        "sm:border-l sm:border-border-strong",
+        "flex flex-col panel-animate",
+      )}
       aria-label={tr("dashboard", "panelLabel")}
     >
-      <div className="sm:hidden flex justify-center pt-2 pb-1" aria-hidden="true">
-        <div className="w-8 h-1 rounded-full bg-slate-600" />
+      {/* Mobile drag handle */}
+      <div className="sm:hidden flex justify-center pt-2.5 pb-1" aria-hidden="true">
+        <div className="w-10 h-[3px] bg-border-strong rounded-full" />
       </div>
 
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-line">
-        <BarChart3 size={15} className="text-costa-400" aria-hidden="true" />
-        <h2 className="font-display text-[15px] font-semibold text-slate-100 tracking-display-tight truncate">
-          {title}
-        </h2>
+      {/* Header */}
+      <PanelHeader border className="px-5 pt-4 pb-3 gap-2">
+        <BarChart3 size={15} className="text-ink-muted shrink-0" aria-hidden="true" />
+        <PanelTitle>{title}</PanelTitle>
         {scenario.districtUbigeo && (
-          <span className="text-[10px] text-slate-500">{scenario.districtUbigeo}</span>
+          <span className="font-mono text-2xs text-ink-subtle tabular-nums shrink-0">
+            {scenario.districtUbigeo}
+          </span>
         )}
         <EDANReportButton />
-      </div>
+      </PanelHeader>
 
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
         {scenario.districtUbigeo ? (
           <DistrictDetail ubigeo={scenario.districtUbigeo} />
         ) : (
           <>
             <SituationSummary />
+            <Divider />
             <CityOverview />
+            <Divider />
             <IncidentTimeline locale={locale} />
             <ForecastSection locale={locale} />
             <ResourceStatus locale={locale} />
-            <p className="text-[11px] text-slate-400 mb-2 flex items-center gap-1">
-              <Mountain size={10} />
-              {tr("dashboard", "priorityDistricts")}
-            </p>
-            <TopRiskList />
+            <Divider />
+            <div>
+              <SectionLabel className="mb-3">
+                {tr("dashboard", "priorityDistricts")}
+              </SectionLabel>
+              <TopRiskList />
+            </div>
           </>
         )}
       </div>
