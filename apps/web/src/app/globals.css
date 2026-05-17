@@ -6,14 +6,26 @@
 @import "maplibre-gl/dist/maplibre-gl.css";
 
 :root {
-  --color-surface-base: #0f172a;
-  --color-surface-raised: #1e293b;
-  --color-surface-panel: #334155;
+  /* ── Surface (matches tailwind.config.ts surface.*) ────────────────────── */
+  --color-surface-ink:    oklch(14% 0.012 240);
+  --color-surface-base:   oklch(14% 0.012 240);
+  --color-surface-raised: oklch(19% 0.015 240);
+  --color-surface-panel:  oklch(24% 0.018 240);
+  --color-surface-line:   oklch(30% 0.015 240);
+  --color-surface-muted:  oklch(40% 0.012 240);
 
-  --color-severity-critical: #ef4444;
-  --color-severity-high: #f97316;
-  --color-severity-medium: #eab308;
-  --color-severity-low: #22c55e;
+  /* ── SINAGERD-aligned severity ─────────────────────────────────────────── */
+  --color-severity-critical: oklch(60% 0.20 28);
+  --color-severity-high:     oklch(70% 0.16 55);
+  --color-severity-medium:   oklch(80% 0.14 85);
+  --color-severity-low:      oklch(65% 0.11 155);
+
+  /* ── Costa (brand) ─────────────────────────────────────────────────────── */
+  --color-costa-300: oklch(75% 0.105 208);
+  --color-costa-400: oklch(65% 0.115 207);
+  --color-costa-500: oklch(55% 0.115 207);
+  --color-costa-700: oklch(36% 0.085 210);
+  --color-costa-900: oklch(20% 0.045 215);
 
   --sidebar-width: 280px;
   --alerts-panel-width: 360px;
@@ -30,8 +42,14 @@ body {
 
 /* Global focus-visible ring — WCAG 2.4.11 */
 :focus-visible {
-  outline: 2px solid #0ea5e9;
+  outline: 2px solid var(--color-costa-400);
   outline-offset: 2px;
+}
+
+/* Display family helper — apply via class to override font-sans inheritance */
+.font-display {
+  font-family: var(--font-display), Fraunces, Georgia, serif;
+  letter-spacing: -0.02em;
 }
 
 /* Map container fills its parent wrapper — z-0 keeps it below all UI panels */
@@ -89,22 +107,22 @@ body {
 .maplibregl-popup.cr-map-popup { z-index: 25; }
 
 .cr-map-popup .maplibregl-popup-content {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-surface-line);
   border-radius: 8px;
   padding: 0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 20px oklch(0% 0 0 / 0.55);
   overflow: hidden;
 }
 
 /* Tip triangle — match per anchor direction */
-.cr-map-popup.maplibregl-popup-anchor-top    .maplibregl-popup-tip { border-bottom-color: #1e293b; }
-.cr-map-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color:    #1e293b; }
-.cr-map-popup.maplibregl-popup-anchor-left   .maplibregl-popup-tip { border-right-color:  #1e293b; }
-.cr-map-popup.maplibregl-popup-anchor-right  .maplibregl-popup-tip { border-left-color:   #1e293b; }
-.cr-map-popup.maplibregl-popup-anchor-top-left    .maplibregl-popup-tip { border-bottom-color: #1e293b; }
-.cr-map-popup.maplibregl-popup-anchor-top-right   .maplibregl-popup-tip { border-bottom-color: #1e293b; }
-.cr-map-popup.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip { border-top-color:    #1e293b; }
+.cr-map-popup.maplibregl-popup-anchor-top    .maplibregl-popup-tip { border-bottom-color: var(--color-surface-raised); }
+.cr-map-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--color-surface-raised); }
+.cr-map-popup.maplibregl-popup-anchor-left   .maplibregl-popup-tip { border-right-color: var(--color-surface-raised); }
+.cr-map-popup.maplibregl-popup-anchor-right  .maplibregl-popup-tip { border-left-color:  var(--color-surface-raised); }
+.cr-map-popup.maplibregl-popup-anchor-top-left    .maplibregl-popup-tip { border-bottom-color: var(--color-surface-raised); }
+.cr-map-popup.maplibregl-popup-anchor-top-right   .maplibregl-popup-tip { border-bottom-color: var(--color-surface-raised); }
+.cr-map-popup.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip { border-top-color: var(--color-surface-raised); }
 .cr-map-popup.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color:   #1e293b; }
 
 /* Close button */
@@ -164,8 +182,8 @@ body {
 
 /* ─── Emergency state glow ──────────────────────────────────────────────────── */
 @keyframes emergency-ring {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.0), inset 0 0 0 1px rgba(239, 68, 68, 0.4); }
-  50%       { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15), inset 0 0 0 1px rgba(239, 68, 68, 0.7); }
+  0%, 100% { box-shadow: 0 0 0 0 oklch(60% 0.20 28 / 0), inset 0 0 0 1px oklch(60% 0.20 28 / 0.4); }
+  50%      { box-shadow: 0 0 0 3px oklch(60% 0.20 28 / 0.15), inset 0 0 0 1px oklch(60% 0.20 28 / 0.7); }
 }
 .emergency-glow {
   animation: emergency-ring 2s ease-in-out infinite;
@@ -246,8 +264,8 @@ body {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: rgba(220, 38, 38, 0.85);
-  border: 2px solid #dc2626;
+  background: oklch(60% 0.20 28 / 0.85);
+  border: 2px solid oklch(55% 0.21 28);
   position: relative;
   cursor: pointer;
 }
@@ -256,7 +274,7 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: rgba(220, 38, 38, 0.6);
+  background: oklch(60% 0.20 28 / 0.6);
   animation: cr-pulse-ring 1.8s ease-out infinite;
 }
 .cr-critical-pulse::after {
@@ -264,6 +282,6 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: rgba(220, 38, 38, 0.3);
+  background: oklch(60% 0.20 28 / 0.3);
   animation: cr-pulse-ring 1.8s ease-out 0.6s infinite;
 }

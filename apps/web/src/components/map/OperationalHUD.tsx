@@ -28,26 +28,28 @@ function deriveSinagerdLevel(
   return "NORMAL";
 }
 
+// SINAGERD level styling — uses the OKLCH severity tokens (anti-Tailwind-default).
+// Each level has a single anchor color; surface tints derive via alpha.
 const LEVEL_CONFIG: Record<SinagerdLevel, { dot: string; badge: string; text: string }> = {
   EMERGENCIA: {
-    dot: "bg-red-500 animate-pulse",
-    badge: "bg-red-900/50 border-red-500/70 text-red-300",
-    text: "text-red-300",
+    dot: "bg-severity-critical animate-pulse",
+    badge: "bg-severity-critical/15 border-severity-critical/60 text-severity-critical",
+    text: "text-severity-critical",
   },
   ALERTA: {
-    dot: "bg-orange-400 animate-pulse",
-    badge: "bg-orange-900/40 border-orange-500/60 text-orange-300",
-    text: "text-orange-300",
+    dot: "bg-severity-high animate-pulse",
+    badge: "bg-severity-high/12 border-severity-high/50 text-severity-high",
+    text: "text-severity-high",
   },
   AVISO: {
-    dot: "bg-yellow-400",
-    badge: "bg-yellow-900/30 border-yellow-600/50 text-yellow-300",
-    text: "text-yellow-300",
+    dot: "bg-severity-medium",
+    badge: "bg-severity-medium/10 border-severity-medium/45 text-severity-medium",
+    text: "text-severity-medium",
   },
   NORMAL: {
-    dot: "bg-green-400",
-    badge: "bg-green-900/20 border-green-700/40 text-green-400",
-    text: "text-green-400",
+    dot: "bg-severity-low",
+    badge: "bg-severity-low/10 border-severity-low/40 text-severity-low",
+    text: "text-severity-low",
   },
 };
 
@@ -58,8 +60,9 @@ export function OperationalHUD() {
   const { data: health, isError: apiDown } = useApiHealth();
   const { data: socialData } = useSocialSignals(48);
 
-  const [clock, setClock] = useState(limaTime);
+  const [clock, setClock] = useState("");
   useEffect(() => {
+    setClock(limaTime());
     const id = setInterval(() => setClock(limaTime()), 1000);
     return () => clearInterval(id);
   }, []);
@@ -98,15 +101,17 @@ export function OperationalHUD() {
       role="status"
       aria-label="Estado operacional SINAGERD"
     >
-      {/* SINAGERD level badge */}
+      {/* SINAGERD level badge — display family + ops tracking for editorial feel */}
       <div
         className={clsx(
-          "flex items-center gap-1.5 px-3 py-2 rounded-l-xl border-r border-slate-700/60",
+          "flex items-center gap-1.5 px-3 py-2 rounded-l-xl border-r border-surface-line/60",
           cfg.badge,
         )}
       >
         <span className={clsx("inline-block w-2 h-2 rounded-full shrink-0", cfg.dot)} aria-hidden="true" />
-        <span className="font-bold tracking-wider text-[11px]">{levelLabel}</span>
+        <span className="font-display font-bold tracking-ops text-[12px] leading-none">
+          {levelLabel}
+        </span>
       </div>
 
       {/* Metric: active alerts */}

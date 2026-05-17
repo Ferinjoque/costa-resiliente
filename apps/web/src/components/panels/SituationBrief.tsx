@@ -118,7 +118,7 @@ export function SituationBrief() {
             {locale === "es" ? "Situación actual" : "Current situation"}
           </span>
         </div>
-        <span className={clsx("text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0", cfg.badge)}>
+        <span className={clsx("font-display text-[11px] font-bold tracking-ops px-1.5 py-0.5 rounded-full shrink-0 leading-none", cfg.badge)}>
           {cfg.label[locale]}
         </span>
       </div>

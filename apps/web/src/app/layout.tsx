@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
 
@@ -13,6 +13,16 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
+});
+
+// Display family — used sparingly: SINAGERD level word, hero metrics, panel
+// section titles. Single weight preloaded (700) to keep LCP budget.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+  weight: ["600", "700"],
+  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {
@@ -39,8 +49,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="bg-surface-base text-white antialiased font-sans">
+    <html lang="es" className={`dark ${inter.variable} ${jetbrainsMono.variable} ${fraunces.variable}`}>
+      <body className="bg-surface-base text-slate-100 antialiased font-sans">
         {/* Skip-to-content — WCAG 2.4.1 Bypass Blocks */}
         <a
           href="#main-content"

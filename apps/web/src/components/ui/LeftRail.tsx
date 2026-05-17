@@ -77,21 +77,21 @@ export function LeftRail() {
         className="hidden sm:flex flex-col items-center bg-surface-raised border-r border-slate-700 w-14 py-3 gap-1 z-10 shrink-0"
         aria-label={locale === "es" ? "Navegación principal" : "Main navigation"}
       >
-        {/* Logo */}
+        {/* Monogram — replaces the prior stock gradient + icon-mashup logo.
+            CR set in the display serif on a flat dark surface for an editorial
+            mark; a single severity dot below stands in for the live-state cue. */}
         <div
-          className="mb-4 w-8 h-8 rounded-lg bg-gradient-to-br from-costa-600 to-costa-900 flex items-center justify-center select-none ring-1 ring-costa-500/40"
+          className="mb-4 w-9 h-9 rounded-lg bg-surface-raised border border-surface-line flex flex-col items-center justify-center select-none relative"
           aria-label="Costa Resiliente"
           title="Costa Resiliente"
         >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-            {/* Wave/flood icon */}
-            <path d="M2 11 C4 9, 6 13, 8 11 C10 9, 12 13, 14 11 C15.5 9.5, 16.5 11, 17 10.5" stroke="#7dd3fc" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-            <path d="M2 14 C4 12, 6 16, 8 14 C10 12, 12 16, 14 14 C15.5 12.5, 16.5 14, 17 13.5" stroke="#0ea5e9" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-            {/* Alert triangle */}
-            <path d="M9 2 L13.5 9 H4.5 L9 2Z" fill="rgba(239,68,68,0.15)" stroke="#ef4444" strokeWidth="1" strokeLinejoin="round"/>
-            <line x1="9" y1="5" x2="9" y2="7.2" stroke="#ef4444" strokeWidth="1" strokeLinecap="round"/>
-            <circle cx="9" cy="8.2" r="0.5" fill="#ef4444"/>
-          </svg>
+          <span className="font-display font-bold text-[15px] leading-none text-slate-100 tracking-display-tight">
+            <span className="text-costa-300">C</span>r
+          </span>
+          <span
+            className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-severity-critical"
+            aria-hidden="true"
+          />
         </div>
 
         {NAV_ITEMS.map(({ id, label, icon }) => (
