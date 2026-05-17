@@ -1047,61 +1047,15 @@ export type ResourceCategory = {
   status: "ok" | "partial" | "deficit";
 };
 
+// Two-letter SINAGERD-style tag codes replace the prior emoji set.
+// Render in the display family inside the panel for an operational feel.
 export const DEMO_RESOURCES: ResourceCategory[] = [
-  {
-    id: "personnel",
-    icon: "👷",
-    label: { es: "Personal INDECI", en: "INDECI Personnel" },
-    count: 240,
-    unit: { es: "efectivos", en: "field agents" },
-    deployed: 240,
-    status: "ok",
-  },
-  {
-    id: "helicopters",
-    icon: "🚁",
-    label: { es: "Helicópteros SAR", en: "SAR Helicopters" },
-    count: 3,
-    unit: { es: "activos", en: "active" },
-    deployed: 3,
-    status: "ok",
-  },
-  {
-    id: "ambulances",
-    icon: "🚑",
-    label: { es: "Ambulancias", en: "Ambulances" },
-    count: 6,
-    unit: { es: "desp.", en: "deployed" },
-    deployed: 6,
-    status: "ok",
-  },
-  {
-    id: "water",
-    icon: "🚰",
-    label: { es: "Cisternas agua", en: "Water Tankers" },
-    count: 18,
-    unit: { es: "operativas", en: "operational" },
-    deployed: 15,
-    status: "partial",
-  },
-  {
-    id: "rations",
-    icon: "🍱",
-    label: { es: "Raciones alim.", en: "Food Rations" },
-    count: 3200,
-    unit: { es: "disp.", en: "avail." },
-    deployed: 2400,
-    status: "deficit",
-  },
-  {
-    id: "shelters",
-    icon: "🏫",
-    label: { es: "Albergues cap.", en: "Shelter Capacity" },
-    count: 4800,
-    unit: { es: "cupos", en: "spaces" },
-    deployed: 1640,
-    status: "ok",
-  },
+  { id: "personnel",   icon: "PE", label: { es: "Personal INDECI",   en: "INDECI Personnel" }, count: 240,  unit: { es: "efectivos",  en: "field agents" }, deployed: 240,  status: "ok" },
+  { id: "helicopters", icon: "HE", label: { es: "Helicópteros SAR",  en: "SAR Helicopters"  }, count: 3,    unit: { es: "activos",    en: "active"       }, deployed: 3,    status: "ok" },
+  { id: "ambulances",  icon: "AM", label: { es: "Ambulancias",       en: "Ambulances"       }, count: 6,    unit: { es: "desp.",      en: "deployed"     }, deployed: 6,    status: "ok" },
+  { id: "water",       icon: "CA", label: { es: "Cisternas agua",    en: "Water Tankers"    }, count: 18,   unit: { es: "operativas", en: "operational"  }, deployed: 15,   status: "partial" },
+  { id: "rations",     icon: "RA", label: { es: "Raciones alim.",    en: "Food Rations"     }, count: 3200, unit: { es: "disp.",      en: "avail."       }, deployed: 2400, status: "deficit" },
+  { id: "shelters",    icon: "AL", label: { es: "Albergues cap.",    en: "Shelter Capacity" }, count: 4800, unit: { es: "cupos",      en: "spaces"       }, deployed: 1640, status: "ok" },
 ];
 
 // ─── 72h Rainfall Forecast (SENAMHI-derived, demo) ───────────────────────────

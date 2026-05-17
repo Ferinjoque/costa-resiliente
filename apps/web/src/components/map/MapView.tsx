@@ -260,10 +260,12 @@ export default function MapView() {
               ["Lluvia detonante 24h", p.trigger_rain_24h_mm != null ? `${p.trigger_rain_24h_mm} mm` : null],
             ]);
           } else if (lid === "infra-circle") {
+            // ASCII tag prefix instead of emoji — renders consistently across
+            // OS/browser combos and matches the SINAGERD-style chrome elsewhere.
             const TYPES: Record<string, string> = {
-              hospital: "🏥 Hospital", school: "🏫 Colegio",
-              bridge: "🌉 Puente", substation: "⚡ Subestación",
-              fire_station: "🚒 Compañía Bomberos", shelter: "🏠 Albergue",
+              hospital: "[H] Hospital",       school:       "[E] Colegio",
+              bridge:   "[B] Puente",         substation:   "[P] Subestación",
+              fire_station: "[F] Bomberos",   shelter:      "[A] Albergue",
             };
             html = popupHtml(String(p.name ?? "Infraestructura crítica"), [
               ["Tipo", p.type ? (TYPES[String(p.type)] ?? String(p.type)) : null],

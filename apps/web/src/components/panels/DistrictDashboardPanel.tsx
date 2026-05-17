@@ -313,7 +313,19 @@ function TopRiskList() {
     .slice(0, 8) ?? [];
 
   if (!at_risk.length) {
-    return <p className="text-xs text-slate-400 px-1">{tr("dashboard", "noDistricts")}</p>;
+    return (
+      <div className="text-center px-2 py-6">
+        <div className="mx-auto mb-2 w-9 h-9 rounded-full border border-surface-line bg-surface-panel/60 flex items-center justify-center">
+          <CheckCircle2 size={14} className="text-severity-low" aria-hidden="true" />
+        </div>
+        <p className="font-display text-sm text-slate-200 tracking-display-tight mb-0.5">
+          {locale === "es" ? "Sin distritos en alerta" : "No districts on alert"}
+        </p>
+        <p className="text-[11px] text-slate-500 max-w-[200px] mx-auto">
+          {tr("dashboard", "noDistricts")}
+        </p>
+      </div>
+    );
   }
 
   const RISK_DOT = { alto: "bg-red-500", moderado: "bg-orange-400", bajo: "bg-green-500" };
@@ -830,7 +842,12 @@ function ResourceStatus({ locale }: { locale: Locale }) {
           const pct = Math.min((r.deployed / r.count) * 100, 100);
           return (
             <div key={r.id} className="flex items-center gap-2">
-              <span className="text-[13px] leading-none w-5 text-center shrink-0" aria-hidden="true">{r.icon}</span>
+              <span
+                className="font-display text-[10px] font-bold tracking-ops leading-none w-7 text-center shrink-0 px-1 py-1 rounded bg-surface-line/70 text-slate-300"
+                aria-hidden="true"
+              >
+                {r.icon}
+              </span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-0.5">
                   <span className="text-[10px] text-slate-300 truncate">{L(r.label)}</span>
@@ -856,18 +873,19 @@ function ResourceStatus({ locale }: { locale: Locale }) {
 
 // ─── Incident timeline (city-wide) ───────────────────────────────────────────
 
+// ASCII tags replace emoji for OS-portable operational logging.
 const TYPE_ICON_MAP: Record<string, string> = {
-  flood: "🌊", huayco: "⛰️", social_cluster: "📡",
+  flood: "[SAR]", huayco: "[HUA]", social_cluster: "[SOC]",
 };
 
 const LOG_ICON: Record<string, string> = {
-  social_signal_received: "📨",
-  resource_dispatch:      "🚁",
-  protocol_step:          "✅",
-  map_pin:                "📍",
-  acknowledge:            "👁",
-  escalate:               "🔺",
-  false_positive:         "❌",
+  social_signal_received: "RX",
+  resource_dispatch:      "OUT",
+  protocol_step:          "OK",
+  map_pin:                "PIN",
+  acknowledge:            "ACK",
+  escalate:               "ESC",
+  false_positive:         "FP",
 };
 
 function IncidentTimeline({ locale }: { locale: Locale }) {
@@ -883,19 +901,19 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
     events.push({
       id: `a-${a.id}`,
       time: a.created_at,
-      text: `${TYPE_ICON_MAP[a.type] ?? "⚠️"} ${a.title}`,
-      dot: a.severity === "critical" ? "bg-red-500" : a.severity === "high" ? "bg-orange-400" : "bg-yellow-400",
+      text: `${TYPE_ICON_MAP[a.type] ?? "[ALT]"} ${a.title}`,
+      dot: a.severity === "critical" ? "bg-severity-critical" : a.severity === "high" ? "bg-severity-high" : "bg-severity-medium",
     });
   }
 
   for (const entry of log.slice(0, 6)) {
-    const icon = LOG_ICON[entry.action_type] ?? "📋";
+    const icon = LOG_ICON[entry.action_type] ?? "LOG";
     const payload = entry.payload as Record<string, unknown>;
     const desc =
-      entry.action_type === "resource_dispatch" ? `${icon} ${payload.resource_name ?? payload.resource}`
-      : entry.action_type === "social_signal_received" ? `${icon} ${payload.district}: ${payload.label}`
-      : entry.action_type === "protocol_step" ? `${icon} ${payload.label}`
-      : `${icon} ${entry.action_type.replace(/_/g, " ")}`;
+      entry.action_type === "resource_dispatch" ? `[${icon}] ${payload.resource_name ?? payload.resource}`
+      : entry.action_type === "social_signal_received" ? `[${icon}] ${payload.district}: ${payload.label}`
+      : entry.action_type === "protocol_step" ? `[${icon}] ${payload.label}`
+      : `[${icon}] ${entry.action_type.replace(/_/g, " ")}`;
     events.push({ id: `l-${entry.id}`, time: entry.logged_at, text: desc, dot: "bg-slate-500" });
   }
 
@@ -904,7 +922,7 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
   ).slice(0, 3)) {
     const src = f.properties.source ?? "?";
     const txt = f.properties.text?.slice(0, 55) ?? f.properties.triage_label;
-    events.push({ id: `s-${f.properties.id}`, time: f.properties.ingested_at, text: `📡 ${src}: ${txt}`, dot: "bg-blue-400" });
+    events.push({ id: `s-${f.properties.id}`, time: f.properties.ingested_at, text: `[SOC] ${src}: ${txt}`, dot: "bg-costa-400" });
   }
 
   events.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
