@@ -44,7 +44,7 @@ import {
   type DistrictDashboard,
   fetchDistrictFusion,
 } from "./api";
-import { DEMO_ALERTS, DEMO_EXPOSURE, DEMO_DECISION_LOG } from "./demoData";
+import { DEMO_ALERTS, DEMO_EXPOSURE, DEMO_DECISION_LOG, DEMO_DISTRICTS } from "./demoData";
 
 /** When real API returns empty array, fall back to demo data so UI is never blank. */
 function withDemoFallback<T>(real: T[], demo: T[]): T[] {
@@ -58,7 +58,14 @@ export function useDistricts(
 ): UseQueryResult<DistrictCollection> {
   return useQuery({
     queryKey: ["districts", "geojson"],
-    queryFn: fetchDistricts,
+    queryFn: async () => {
+      try {
+        const data = await fetchDistricts();
+        return data.features.length > 0 ? data : DEMO_DISTRICTS;
+      } catch {
+        return DEMO_DISTRICTS;
+      }
+    },
     staleTime: 60 * MIN,
     ...opts,
   });
@@ -69,7 +76,20 @@ export function useDistrictList(
 ): UseQueryResult<DistrictListItem[]> {
   return useQuery({
     queryKey: ["districts", "list"],
-    queryFn: fetchDistrictList,
+    queryFn: async () => {
+      try {
+        const data = await fetchDistrictList();
+        return data.length > 0 ? data : DEMO_DISTRICTS.features.map((f) => ({
+          ubigeo: f.properties.ubigeo,
+          name: f.properties.name,
+        }));
+      } catch {
+        return DEMO_DISTRICTS.features.map((f) => ({
+          ubigeo: f.properties.ubigeo,
+          name: f.properties.name,
+        }));
+      }
+    },
     staleTime: 60 * MIN,
     ...opts,
   });
