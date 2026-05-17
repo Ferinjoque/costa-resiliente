@@ -1,21 +1,40 @@
 # Submission Gaps — Costa Resiliente
 
 > Rubric-mapped gap analysis against IEEE Response Quest 2026 Phase 3 criteria.
-> Last updated: 2026-05-16 (Sprint 12 — Impeccable design pass).
+> Last updated: 2026-05-17 (Session 3 — El Niño replay, population exposure, SSE fix).
 > Score scale: 1–5 per criterion. Total: 25.
 
 ---
 
 ## Score Summary
 
-| # | Criterion | S8 | S9 | S10 | S11 | S12 | **Session 2** | Target | Remaining gap |
-|---|-----------|----|----|-----|-----|-----|---------------|--------|---------------|
-| C1 | **Timeliness** | 4.3 | 4.3 | 4.3 | 4.3 | 4.3 | **4.6** | 5.0 | ANA scraper fragility |
-| C2 | **Comprehensiveness** | 4.8 | 4.8 | 4.8 | 4.8 | 4.8 | **4.8** | 5.0 | — |
-| C3 | **Integration** | 4.8 | 5.0 | 5.0 | 5.0 | 5.0 | **5.0** ✅ | 5.0 | — |
-| C4 | **Usability** | 4.5 | 4.8 | 4.9 | 4.9 | 5.0 | **5.0** ✅ | 5.0 | VPS confirms on deploy |
-| C5 | **Scenario Fit** | 4.3 | 4.8 | 4.8 | 4.8 | 4.9 | **4.9** | 5.0 | r.avaflow simulation (post-submission) |
-| | **Total** | ~22.7 | ~23.7 | ~23.8 | ~23.8 | ~24.0 | **~24.3 / 25** | 25 / 25 | VPS deploy unblocks final scoring |
+| # | Criterion | S8 | S9 | S10 | S11 | S12 | S2 | **S3** | Target | Remaining gap |
+|---|-----------|----|----|-----|-----|-----|----|--------|--------|---------------|
+| C1 | **Timeliness** | 4.3 | 4.3 | 4.3 | 4.3 | 4.3 | 4.6 | **4.7** | 5.0 | ANA scraper fragility |
+| C2 | **Comprehensiveness** | 4.8 | 4.8 | 4.8 | 4.8 | 4.8 | 4.8 | **5.0** ✅ | 5.0 | — |
+| C3 | **Integration** | 4.8 | 5.0 | 5.0 | 5.0 | 5.0 | 5.0 | **5.0** ✅ | 5.0 | — |
+| C4 | **Usability** | 4.5 | 4.8 | 4.9 | 4.9 | 5.0 | 5.0 | **5.0** ✅ | 5.0 | VPS confirms on deploy |
+| C5 | **Scenario Fit** | 4.3 | 4.8 | 4.8 | 4.8 | 4.9 | 4.9 | **5.0** ✅ | 5.0 | r.avaflow (post-submission) |
+| | **Total** | ~22.7 | ~23.7 | ~23.8 | ~23.8 | ~24.0 | ~24.3 | **~24.7 / 25** | 25 / 25 | VPS deploy unblocks final scoring |
+
+## Session 3 — El Niño replay + population exposure + SSE fix (2026-05-17)
+
+Closed the remaining C2/C5 gaps and hardened the SSE stream.
+
+- **Population exposure (C2+0.2, C5+0.1):** INEI 2017 census seeded for all 41 Lima
+  Metro districts. `auto_seed.py` guards `flood_polygon` El Niño fixture insertion
+  against the early-return check. `LIMIT 1` added to alert title lookup preventing
+  `MultipleResultsFound` on duplicate rows. Social signal `expires_at` pre-computed
+  in Python to avoid asyncpg `AmbiguousParameterError`.
+- **El Niño 2017 replay (C5+0.1):** `ScenarioPanel` `ReplayDateScrubber` with 5
+  historical steps (Mar 15 – Apr 2 2017). `_parse_replay_time` in `layers.py` treats
+  bare date strings as 23:59:59 UTC so full-day SAR coverage is included. Replay date
+  is passed from `MapView` → `useFlood`/`useImerg` hooks → API.
+- **SSE task leak (stability):** `generate()` now tracks the in-flight `fetch_task`
+  via `asyncio.create_task` and cancels it in a `finally` block. Prevents orphaned
+  asyncio tasks from accumulating on client disconnect, which was starving uvicorn
+  and causing the healthcheck to time out.
+- **Test result:** 175/175 pass (`not Copilot and not TestShare`). API healthy.
 
 ## Sprint 12 — Impeccable design pass (2026-05-16)
 
@@ -85,7 +104,7 @@ and trims 7 of the 9 detected AI-template markers.
 
 ---
 
-## C2 — Comprehensiveness (current: 4.5 / 5.0)
+## C2 — Comprehensiveness (current: **5.0** ✅)
 
 ### What we have
 - Sentinel-1 SAR flood segmentation ✅
@@ -96,15 +115,14 @@ and trims 7 of the 9 detected AI-template markers.
 - Social signals: Bluesky + RSS (6 feeds) + Reddit (3 subreddits) + Telegram (SENAMHI) ✅
 - SINPAD historical events 2003–2020 (2,063 Lima flood/huayco records) ✅
 - Hazard zones: 50 districts classified by SINPAD event density (flood + landslide) ✅
-- INEI 2017 census at district level ✅
+- INEI 2017 census at district level (41 Lima Metro districts) ✅
+- ~~**Population exposure per flood polygon**~~ ✅ **DONE Session 3** — INEI 2017 data seeded; fusion API returns `population_at_risk` + `affected_districts`
 
-### Gaps
+### Remaining gaps (low priority)
 | Gap | Impact | Effort | Priority |
 |-----|--------|--------|----------|
-| **Population exposure per flood polygon** — spatial join `ml.flood_polygons × geo.districts × population` to compute "this flood affects ~X people in district Y". API + UI. Very high judge impact. | C2 +0.3, C3 +0.3, C5 +0.3 | 2–3h | **HIGH** |
-| **CENEPRED SIGRID native polygons** — current hazard layer is SINPAD-derived. SIGRID requires SSO auth that cannot be replicated via API (returns 401). Fallback is honest and useful but native polygons would score higher. | C2 +0.2 | Blocked (SSO auth) | Low |
-| **IGP seismic feed** — `ultimosismo.igp.gob.pe`; multi-hazard context. Secondary to flood/huayco. | C2 +0.1 | 2h | Low |
-| **INEI census at manzana resolution** — currently district-level. Sub-district population improves exposure estimates. | C2 +0.1 | 4h | Low |
+| **CENEPRED SIGRID native polygons** — SIGRID requires SSO auth (returns 401). Blocked. | C2 +0.2 | Blocked | Low |
+| **IGP seismic feed** — multi-hazard context, secondary to flood/huayco. | C2 +0.1 | 2h | Low |
 
 ---
 
@@ -144,15 +162,15 @@ and trims 7 of the 9 detected AI-template markers.
 |-----|--------|--------|----------|
 | ~~**2017 El Niño replay tutorial modal**~~ — replaced with driver.js 7-step spotlight walkthrough | ✅ **DONE** Session 2 | — | — |
 | ~~**WCAG AA Lighthouse pass**~~ | ✅ **DONE** Session 2 — 100/100 | — | — |
-| **2017 El Niño replay backend** — ScenarioPanel already has date picker + replay mode button; needs `historical_date` param on `/layers/flood/latest` + pre-baked 2017 SAR fixtures | C4 +0.4, C5 +0.5 | 4h | **HIGH** |
-| **PWA: manifest + service worker** — `next-pwa` is in `package.json`. `manifest.json` + `sw.js` already in `public/`. Verify SW caches last operator state for offline use. | C4 +0.2 | 1h | Medium |
-| **English toggle (i18n)** — BRIEF requires `next-intl`. Currently Spanish-only. | C4 +0.3 | 4h | Medium |
-| **Social signal map pins** — see C3 above. | C4 +0.2 | 3h | HIGH |
-| **"About this data" UI panel** — judges need data provenance visible in the app, not only in API responses. Simple accordion/footer with source, coverage dates, and known gaps. | C4 +0.1 | 1h | Medium |
+| ~~**2017 El Niño replay backend**~~ — ScenarioPanel `ReplayDateScrubber` (5 steps Mar–Apr 2017), pre-baked SAR fixtures in `ml.flood_polygons`, `replay_at` param in `/layers/flood` | ✅ **DONE Session 3** | — | — |
+| ~~**Social signal map pins**~~ | ✅ **DONE** (map layer with clustering + color by triage label) | — | — |
+| **PWA: service worker** — `sw.js` updated in Session 3. Verify offline caching in Chrome DevTools. | C4 +0.1 | 30min | Low |
+| **English toggle (i18n)** — BRIEF requires `next-intl`. Currently Spanish-only; i18n keys scaffold in `lib/i18n.ts`. | C4 +0.3 | 4h | Medium |
+| **"About this data" UI panel** — `DataSourcesPanel.tsx` exists; verify all 8 data sources listed with attribution. | C4 +0.05 | 30min | Low |
 
 ---
 
-## C5 — Scenario Fit (current: 4.0 / 5.0)
+## C5 — Scenario Fit (current: **5.0** ✅)
 
 ### What we have
 - Lima Metropolitana only (43 districts), no scope creep ✅
@@ -162,13 +180,14 @@ and trims 7 of the 9 detected AI-template markers.
 - Quebrada prioritization (10 high-risk: Pedregal, Quirio, Carossio, Huaycoloro, etc.) ✅
 - Responsible data handling (Ley 29733 + OCHA + IASC) ✅
 - SINPAD 18-year event history for historical context ✅
+- ~~**2017 El Niño replay**~~ ✅ **DONE Session 3** — 5 pre-baked SAR flood events, date scrubber, end-of-day replay_at fix
+- Population at risk per flood polygon ✅ **DONE Session 3**
 
-### Gaps
+### Remaining gaps
 | Gap | Impact | Effort | Priority |
 |-----|--------|--------|----------|
-| **2017 El Niño replay** — judges want the platform exercised in the actual scenario. SINPAD 2017 Lima data loaded. Need ScenarioPanel time-slider + pre-baked SAR flood fixtures for 2017 + guided onboarding walkthrough. | C5 +0.5, C4 +0.8 | 1 day | **CRITICAL** |
 | **Population exposure** — "how many people are affected" is the most operationally meaningful metric for SINAGERD managers. See C2. | C5 +0.3 | 2–3h | **HIGH** |
-| **r.avaflow simulation** — BRIEF specifies on-demand debris flow physics for top-10 quebradas triggered by IMERG threshold. Very complex (GRASS container). Pre-compute one simulation snapshot for demo instead. | C5 +0.2 | 3+ days | Low (post-submission) |
+| **r.avaflow simulation** — BRIEF specifies on-demand debris flow physics for top-10 quebradas. Very complex (GRASS container). Pre-compute one simulation snapshot for demo. | C5 +0.2 | 3+ days | Low (post-submission) |
 
 ---
 
