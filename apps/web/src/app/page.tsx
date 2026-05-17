@@ -83,6 +83,14 @@ function FirstRunTrigger() {
 export default function Home() {
   return (
     <div className="flex h-screen w-screen overflow-hidden">
+      {/* Skip-nav link — WCAG 2.4.1 bypass blocks */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-costa-700 focus:text-white focus:px-3 focus:py-1 focus:rounded focus:text-sm"
+      >
+        Saltar al contenido principal
+      </a>
+
       {/* Left navigation rail */}
       <LeftRail />
 
