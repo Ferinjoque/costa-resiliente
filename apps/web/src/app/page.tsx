@@ -33,12 +33,13 @@ const MapView = dynamic(() => import("@/components/map/MapView"), {
 
 const FIRST_VISIT_KEY = "cr_visited_v1";
 
-const SHORTCUT_MAP: Record<string, "alerts" | "dashboard" | "ask" | "log" | "map"> = {
+const SHORTCUT_MAP: Record<string, "alerts" | "dashboard" | "ask" | "log" | "map" | "social"> = {
   a: "alerts", á: "alerts",
   d: "dashboard",
   c: "ask",
   l: "log",
   m: "map",
+  s: "social",
 };
 
 function KeyboardNavigator() {

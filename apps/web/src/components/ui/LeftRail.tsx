@@ -9,7 +9,7 @@ import type { Locale } from "@/store/ui";
 const NAV_ITEMS = [
   { id: "map",       label: { es: "Mapa [M]",      en: "Map [M]" },      icon: Map },
   { id: "alerts",    label: { es: "Alertas [A]",   en: "Alerts [A]" },   icon: Bell },
-  { id: "social",    label: { es: "Social",         en: "Social" },       icon: Radio },
+  { id: "social",    label: { es: "Social [S]",     en: "Social [S]" },   icon: Radio },
   { id: "dashboard", label: { es: "Datos [D]",     en: "Data [D]" },     icon: BarChart3 },
   { id: "ask",       label: { es: "Consultar [C]", en: "Ask [C]" },      icon: Search },
   { id: "log",       label: { es: "Registro [L]",  en: "Log [L]" },      icon: ClipboardList },
