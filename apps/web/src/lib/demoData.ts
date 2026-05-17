@@ -18,6 +18,7 @@ import type {
   HuaycoCollection,
   InfraCollection,
   HazardCollection,
+  StationCollection,
 } from "@/lib/api";
 
 /**
@@ -526,6 +527,87 @@ export const DEMO_FUSIONS: Record<string, DistrictFusion> = {
     huayco: { highest_risk_level: "alto", highest_probability: 0.74, quebrada_name: "Pedregal", computed_at: hoursAgo(3) },
     social: { total_signals_3h: 4, urgent_signals_3h: 3 },
   },
+};
+
+// ─── ANA/SENAMHI hydro stations (map layer) ──────────────────────────────────
+
+export const DEMO_STATIONS: StationCollection = {
+  type: "FeatureCollection",
+  retrieved_at: new Date(NOW).toISOString(),
+  features: [
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.699, -11.923] },
+      properties: {
+        id: 1, code: "ANA-CHOSICA", name: "Chosica",
+        source: "ANA", river: "Rímac",
+        alert_threshold_m: 2.0,
+        level_m: 2.4, flow_m3s: 185, rain_mm: 8.2,
+        latest_time: hoursAgo(0.25),
+        status: "alert",
+      },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.763, -11.979] },
+      properties: {
+        id: 2, code: "ANA-CHACLACAYO", name: "Chaclacayo",
+        source: "ANA", river: "Rímac",
+        alert_threshold_m: 1.5,
+        level_m: 1.8, flow_m3s: 142, rain_mm: 6.1,
+        latest_time: hoursAgo(0.25),
+        status: "alert",
+      },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.929, -12.003] },
+      properties: {
+        id: 3, code: "ANA-PUENTE-ANGELES", name: "Puente Los Ángeles",
+        source: "ANA", river: "Rímac",
+        alert_threshold_m: 1.7,
+        level_m: 1.9, flow_m3s: 130, rain_mm: 5.5,
+        latest_time: hoursAgo(0.5),
+        status: "alert",
+      },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-77.095, -11.852] },
+      properties: {
+        id: 4, code: "ANA-CARABAYLLO", name: "Carabayllo",
+        source: "ANA", river: "Chillón",
+        alert_threshold_m: 2.5,
+        level_m: 3.1, flow_m3s: 220, rain_mm: 11.3,
+        latest_time: hoursAgo(0.3),
+        status: "alert",
+      },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.620, -11.860] },
+      properties: {
+        id: 5, code: "SENAMHI-MATUCANA", name: "Matucana",
+        source: "SENAMHI", river: "Rímac",
+        alert_threshold_m: 2.8,
+        level_m: 1.9, flow_m3s: 95, rain_mm: 18.4,
+        latest_time: hoursAgo(1.0),
+        status: "warning",
+      },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-77.130, -12.100] },
+      properties: {
+        id: 6, code: "ANA-VILLA-MARIA", name: "Lurín (Villa María)",
+        source: "ANA", river: "Lurín",
+        alert_threshold_m: 1.5,
+        level_m: 0.6, flow_m3s: 12, rain_mm: 2.1,
+        latest_time: hoursAgo(0.5),
+        status: "normal",
+      },
+    },
+  ],
 };
 
 export const DEMO_DECISION_LOG: DecisionLogEntry[] = [
