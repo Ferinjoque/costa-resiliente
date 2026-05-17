@@ -54,7 +54,7 @@ export const useUIStore = create<UIState>((set) => ({
   setScenario: (s) =>
     set((state) => ({ scenario: { ...state.scenario, ...s } })),
 
-  activeLayers: new Set(["districts", "imerg", "flood", "huayco", "social", "infrastructure"]),
+  activeLayers: new Set(["districts", "imerg", "flood", "huayco", "hazard", "social", "infrastructure", "stations"]),
   toggleLayer: (layer) =>
     set((state) => {
       const next = new Set(state.activeLayers);
