@@ -40,6 +40,14 @@ const STATION_ITEMS: { color: string; label: { es: string; en: string } }[] = [
   { color: "#22c55e", label: { es: "Normal",                   en: "Normal" } },
 ];
 
+const INFRA_ITEMS: { color: string; label: { es: string; en: string } }[] = [
+  { color: "#f43f5e", label: { es: "Hospital",    en: "Hospital" } },
+  { color: "#34d399", label: { es: "Albergue",    en: "Shelter" } },
+  { color: "#fb923c", label: { es: "Bomberos",    en: "Fire station" } },
+  { color: "#a78bfa", label: { es: "Puente",      en: "Bridge" } },
+  { color: "#f59e0b", label: { es: "Colegio",     en: "School" } },
+];
+
 const LABELS = {
   legend:       { es: "Leyenda",                    en: "Legend" },
   riskLevel:    { es: "Nivel de riesgo",            en: "Risk level" },
@@ -66,8 +74,9 @@ export function MapLegend() {
   const showHuayco   = activeLayers.has("huayco");
   const showFlood    = activeLayers.has("flood");
   const showStations = activeLayers.has("stations");
+  const showInfra    = activeLayers.has("infrastructure");
 
-  if (!showRisk && !showRain && !showSocial && !showHuayco && !showFlood && !showStations) return null;
+  if (!showRisk && !showRain && !showSocial && !showHuayco && !showFlood && !showStations && !showInfra) return null;
 
   return (
     <div
@@ -137,6 +146,14 @@ export function MapLegend() {
           {showStations && (
             <Section label={L("stations", locale)}>
               {STATION_ITEMS.map(({ color, label }) => (
+                <DotRow key={label.es} color={color} label={label[locale]} shape="circle" />
+              ))}
+            </Section>
+          )}
+
+          {showInfra && (
+            <Section label={locale === "es" ? "Infraestructura" : "Infrastructure"}>
+              {INFRA_ITEMS.map(({ color, label }) => (
                 <DotRow key={label.es} color={color} label={label[locale]} shape="circle" />
               ))}
             </Section>

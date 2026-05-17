@@ -241,11 +241,14 @@ export default function MapView() {
               false_alarm:           "Falsa alarma",
               irrelevant:            "Irrelevante",
             };
+            const signalText = p.text ? String(p.text) : null;
+            const labelEs = p.triage_label ? (LABEL_ES[String(p.triage_label)] ?? String(p.triage_label)) : null;
             html = popupHtml("Señal social", [
-              ["Tipo", p.triage_label ? (LABEL_ES[String(p.triage_label)] ?? String(p.triage_label)) : null],
+              ["Tipo", labelEs],
               ["Confianza", p.triage_confidence != null ? `${(Number(p.triage_confidence) * 100).toFixed(0)}%` : null],
               ["Fuente", p.source ? String(p.source) : null],
               ["Distrito", p.district_name ? String(p.district_name) : null],
+              ...(signalText ? [["Mensaje", signalText.slice(0, 80) + (signalText.length > 80 ? "…" : "")] as [string, string]] : []),
             ]);
           } else if (lid === "huayco-circle") {
             const RISK: Record<string, string> = {
@@ -258,11 +261,13 @@ export default function MapView() {
             ]);
           } else if (lid === "infra-circle") {
             const TYPES: Record<string, string> = {
-              hospital: "Hospital", school: "Colegio",
-              bridge: "Puente", substation: "Subestación eléctrica",
+              hospital: "🏥 Hospital", school: "🏫 Colegio",
+              bridge: "🌉 Puente", substation: "⚡ Subestación",
+              fire_station: "🚒 Compañía Bomberos", shelter: "🏠 Albergue",
             };
             html = popupHtml(String(p.name ?? "Infraestructura crítica"), [
               ["Tipo", p.type ? (TYPES[String(p.type)] ?? String(p.type)) : null],
+              ["Distrito", p.district_id != null ? `ID ${p.district_id}` : null],
             ]);
           }
 
@@ -593,7 +598,8 @@ export default function MapView() {
           "circle-color": [
             "match", ["get", "type"],
             "hospital", "#f43f5e", "school", "#f59e0b",
-            "bridge", "#a78bfa", "substation", "#fbbf24", "#64748b",
+            "bridge", "#a78bfa", "substation", "#fbbf24",
+            "fire_station", "#fb923c", "shelter", "#34d399", "#64748b",
           ],
           "circle-opacity": 0.9,
           "circle-stroke-color": "#0f172a",
