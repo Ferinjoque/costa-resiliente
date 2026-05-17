@@ -105,9 +105,11 @@ export function SharePanel() {
     .map((k) => LAYER_LABELS[k]?.[locale] ?? k)
     .join(", ");
 
+  const { setActivePanel } = useUIStore();
+
   return (
     <div
-      className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20 w-80 bg-surface-raised border border-slate-700 rounded-xl shadow-xl p-4 flex flex-col gap-3"
+      className="fixed bottom-14 left-0 right-0 sm:absolute sm:top-4 sm:right-4 sm:bottom-auto sm:left-auto sm:w-80 z-20 bg-surface-raised border border-slate-700 rounded-t-2xl sm:rounded-xl shadow-xl p-4 flex flex-col gap-3 panel-animate"
       role="dialog"
       aria-label={t.title}
     >
@@ -116,6 +118,13 @@ export function SharePanel() {
           <Link2 size={16} className="text-costa-400" aria-hidden="true" />
           <span className="text-sm font-semibold text-slate-100">{t.title}</span>
         </div>
+        <button
+          onClick={() => setActivePanel("map")}
+          className="text-slate-400 hover:text-white transition-colors rounded focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none"
+          aria-label={locale === "es" ? "Cerrar panel" : "Close panel"}
+        >
+          <X size={15} aria-hidden="true" />
+        </button>
       </div>
 
       <p className="text-xs text-slate-400 leading-relaxed">{t.desc}</p>
