@@ -6,6 +6,9 @@ import { useApiHealth } from "@/lib/queries";
 import { useUIStore } from "@/store/ui";
 import type { SocialSignalCollection, Alert, DecisionLogEntry } from "@/lib/api";
 
+// Primary crisis centroid: Lurigancho-Chosica Quebrada Jicamarca area
+const CRISIS_CENTER: [number, number] = [-76.855, -11.968];
+
 interface IncomingSignal {
   coords: [number, number];
   source: string;
@@ -37,11 +40,24 @@ let _logId = 500;
 export function DemoLiveSimulator() {
   const { data: health, isError } = useApiHealth();
   const queryClient = useQueryClient();
-  const { addToast } = useUIStore();
+  const { addToast, setFlyToPoint } = useUIStore();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const indexRef = useRef(0);
+  const zoomedRef = useRef(false);
 
   const isDemo = !health || health.status !== "ok" || isError;
+
+  // Fly to the primary crisis area shortly after page loads so the flood
+  // zone is immediately visible without needing to interact.
+  useEffect(() => {
+    if (!isDemo || zoomedRef.current) return;
+    const t = setTimeout(() => {
+      if (zoomedRef.current) return;
+      zoomedRef.current = true;
+      setFlyToPoint(CRISIS_CENTER);
+    }, 1_500);
+    return () => clearTimeout(t);
+  }, [isDemo, setFlyToPoint]);
 
   useEffect(() => {
     if (!isDemo) return;

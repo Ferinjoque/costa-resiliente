@@ -3,7 +3,7 @@
 import { BarChart3, Droplets, AlertTriangle, Users, History, Radio, TrendingUp, Waves, Mountain, Zap, Brain, CheckCircle2, Copy, Check, CloudRain, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useUIStore } from "@/store/ui";
-import { useDistrictDashboard, useDistrictRiskSummary, useAlerts, useFloodExposure, useFusion } from "@/lib/queries";
+import { useDistrictDashboard, useDistrictRiskSummary, useAlerts, useFloodExposure, useFusion, useDecisionLog, useSocialSignals } from "@/lib/queries";
 import { clsx } from "clsx";
 import type { AlertTrendDay, SocialBreakdown } from "@/lib/api";
 import { useT } from "@/lib/i18n";
@@ -822,6 +822,89 @@ function ResourceStatus({ locale }: { locale: Locale }) {
   );
 }
 
+// ─── Incident timeline (city-wide) ───────────────────────────────────────────
+
+const TYPE_ICON_MAP: Record<string, string> = {
+  flood: "🌊", huayco: "⛰️", social_cluster: "📡",
+};
+
+const LOG_ICON: Record<string, string> = {
+  social_signal_received: "📨",
+  resource_dispatch:      "🚁",
+  protocol_step:          "✅",
+  map_pin:                "📍",
+  acknowledge:            "👁",
+  escalate:               "🔺",
+  false_positive:         "❌",
+};
+
+function IncidentTimeline({ locale }: { locale: Locale }) {
+  const { data: alerts = [] } = useAlerts();
+  const { data: log = [] } = useDecisionLog(20);
+  const { data: socialData } = useSocialSignals(6);
+
+  type EventItem = { id: string; time: string; text: string; dot: string };
+
+  const events: EventItem[] = [];
+
+  for (const a of alerts.slice(0, 4)) {
+    events.push({
+      id: `a-${a.id}`,
+      time: a.created_at,
+      text: `${TYPE_ICON_MAP[a.type] ?? "⚠️"} ${a.title}`,
+      dot: a.severity === "critical" ? "bg-red-500" : a.severity === "high" ? "bg-orange-400" : "bg-yellow-400",
+    });
+  }
+
+  for (const entry of log.slice(0, 6)) {
+    const icon = LOG_ICON[entry.action_type] ?? "📋";
+    const payload = entry.payload as Record<string, unknown>;
+    const desc =
+      entry.action_type === "resource_dispatch" ? `${icon} ${payload.resource_name ?? payload.resource}`
+      : entry.action_type === "social_signal_received" ? `${icon} ${payload.district}: ${payload.label}`
+      : entry.action_type === "protocol_step" ? `${icon} ${payload.label}`
+      : `${icon} ${entry.action_type.replace(/_/g, " ")}`;
+    events.push({ id: `l-${entry.id}`, time: entry.logged_at, text: desc, dot: "bg-slate-500" });
+  }
+
+  for (const f of (socialData?.features ?? []).filter(
+    (f) => f.properties.triage_label === "needs_help" || f.properties.triage_label === "road_blocked",
+  ).slice(0, 3)) {
+    const src = f.properties.source ?? "?";
+    const txt = f.properties.text?.slice(0, 55) ?? f.properties.triage_label;
+    events.push({ id: `s-${f.properties.id}`, time: f.properties.ingested_at, text: `📡 ${src}: ${txt}`, dot: "bg-blue-400" });
+  }
+
+  events.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+  const top = events.slice(0, 9);
+
+  if (top.length === 0) return null;
+
+  const title = locale === "es" ? "Cronología del incidente" : "Incident timeline";
+  const formatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", timeZone: "America/Lima" });
+
+  return (
+    <div className="mb-4">
+      <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+        <History size={9} aria-hidden="true" />
+        {title}
+      </p>
+      <ol className="relative border-l border-slate-700/50 pl-3 space-y-1.5" aria-label={title}>
+        {top.map((ev) => (
+          <li key={ev.id} className="relative">
+            <span className={clsx("absolute -left-[17px] top-1.5 w-2 h-2 rounded-full shrink-0", ev.dot)} aria-hidden="true" />
+            <div className="flex items-start gap-2">
+              <p className="text-[10px] text-slate-300 leading-snug flex-1 min-w-0 truncate">{ev.text}</p>
+              <time className="text-[9px] text-slate-600 shrink-0 tabular-nums">{formatTime(ev.time)}</time>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
 export function DistrictDashboardPanel() {
@@ -860,6 +943,7 @@ export function DistrictDashboardPanel() {
           <>
             <SituationSummary />
             <CityOverview />
+            <IncidentTimeline locale={locale} />
             <ForecastSection locale={locale} />
             <ResourceStatus locale={locale} />
             <p className="text-[11px] text-slate-400 mb-2 flex items-center gap-1">
