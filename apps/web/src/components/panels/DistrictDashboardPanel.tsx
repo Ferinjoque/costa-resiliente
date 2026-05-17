@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Droplets, AlertTriangle, Users, History, Radio, TrendingUp, Waves, Mountain, Zap, Brain, CheckCircle2, Copy, Check, CloudRain } from "lucide-react";
+import { BarChart3, Droplets, AlertTriangle, Users, History, Radio, TrendingUp, Waves, Mountain, Zap, Brain, CheckCircle2, Copy, Check, CloudRain, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useUIStore } from "@/store/ui";
 import { useDistrictDashboard, useDistrictRiskSummary, useAlerts, useFloodExposure, useFusion } from "@/lib/queries";
@@ -8,7 +8,7 @@ import { clsx } from "clsx";
 import type { AlertTrendDay, SocialBreakdown } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
-import { DEMO_FORECAST, HUAYCO_THRESHOLD_MM, type ForecastStep } from "@/lib/demoData";
+import { DEMO_FORECAST, HUAYCO_THRESHOLD_MM, DEMO_RESOURCES, type ForecastStep, type ResourceCategory } from "@/lib/demoData";
 
 // ANA alert thresholds per station code (meters)
 const STATION_THRESHOLDS: Record<string, number> = {
@@ -768,6 +768,60 @@ function ForecastSection({ locale }: { locale: Locale }) {
   );
 }
 
+// ─── Resource deployment status ───────────────────────────────────────────────
+
+const STATUS_STYLE: Record<ResourceCategory["status"], { dot: string; bar: string }> = {
+  ok:      { dot: "bg-green-400",  bar: "bg-green-500" },
+  partial: { dot: "bg-yellow-400", bar: "bg-yellow-500" },
+  deficit: { dot: "bg-red-400",    bar: "bg-red-500" },
+};
+
+function ResourceStatus({ locale }: { locale: Locale }) {
+  const label = {
+    title:  { es: "Recursos desplegados", en: "Deployed Resources" },
+    source: { es: "INDECI COEN",          en: "INDECI COEN" },
+  } as const;
+  const L = (obj: { es: string; en: string }) => obj[locale];
+
+  return (
+    <div className="mb-4 bg-surface-panel rounded-xl px-3 py-2.5">
+      <div className="flex items-center justify-between mb-2.5">
+        <p className="text-[11px] text-slate-300 font-medium flex items-center gap-1.5">
+          <ShieldCheck size={11} className="text-costa-400" aria-hidden="true" />
+          {L(label.title)}
+        </p>
+        <p className="text-[9px] text-slate-500">{L(label.source)}</p>
+      </div>
+      <div className="space-y-1.5">
+        {DEMO_RESOURCES.map((r) => {
+          const cfg = STATUS_STYLE[r.status];
+          const pct = Math.min((r.deployed / r.count) * 100, 100);
+          return (
+            <div key={r.id} className="flex items-center gap-2">
+              <span className="text-[13px] leading-none w-5 text-center shrink-0" aria-hidden="true">{r.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[10px] text-slate-300 truncate">{L(r.label)}</span>
+                  <span className="text-[10px] font-mono text-slate-400 shrink-0 ml-1">
+                    {r.deployed}/{r.count} {L(r.unit)}
+                  </span>
+                </div>
+                <div className="h-1 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className={clsx("h-full rounded-full", cfg.bar)}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+              <span className={clsx("h-1.5 w-1.5 rounded-full shrink-0", cfg.dot)} aria-hidden="true" />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
 export function DistrictDashboardPanel() {
@@ -807,6 +861,7 @@ export function DistrictDashboardPanel() {
             <SituationSummary />
             <CityOverview />
             <ForecastSection locale={locale} />
+            <ResourceStatus locale={locale} />
             <p className="text-[11px] text-slate-400 mb-2 flex items-center gap-1">
               <Mountain size={10} />
               {tr("dashboard", "priorityDistricts")}
