@@ -42,20 +42,49 @@ export interface DistrictCollection {
 export interface DistrictListItem {
   ubigeo: string;
   name: string;
+  province?: string;
 }
 
-/** Returns full GeoJSON FeatureCollection of all 43 districts. */
-export async function fetchDistricts(): Promise<DistrictCollection> {
-  return get<DistrictCollection>("/api/v1/districts");
+/** Returns full GeoJSON FeatureCollection of districts. province='Lima' = Lima Metropolitana only. */
+export async function fetchDistricts(province?: string): Promise<DistrictCollection> {
+  const url = province
+    ? `/api/v1/districts?province=${encodeURIComponent(province)}`
+    : "/api/v1/districts";
+  return get<DistrictCollection>(url);
 }
 
 /** Derives a flat list (ubigeo + name) from the same endpoint. */
-export async function fetchDistrictList(): Promise<DistrictListItem[]> {
-  const fc = await fetchDistricts();
+export async function fetchDistrictList(province?: string): Promise<DistrictListItem[]> {
+  const fc = await fetchDistricts(province);
   return fc.features.map((f) => ({
     ubigeo: f.properties.ubigeo,
     name: f.properties.name,
+    province: f.properties.province,
   }));
+}
+
+/** Returns distinct provinces with district counts. */
+export async function fetchProvinces(): Promise<{ provinces: Array<{province: string; region: string; district_count: number}>; default_province: string }> {
+  return get("/api/v1/districts/provinces");
+}
+
+export interface ScraperSourceHealth {
+  label: string;
+  schedule: string;
+  count: number;
+  last_seen_at: string | null;
+  status: "ok" | "stale" | "offline" | "error";
+  error?: string;
+}
+
+export interface ScraperHealth {
+  retrieved_at: string;
+  overall_status: "ok" | "stale" | "offline";
+  sources: Record<string, ScraperSourceHealth>;
+}
+
+export async function fetchScraperHealth(): Promise<ScraperHealth> {
+  return get<ScraperHealth>("/api/v1/health/scraper");
 }
 
 // ─── IMERG ────────────────────────────────────────────────────────────────────
@@ -213,6 +242,7 @@ export interface Alert {
   district_id: number | null;
   lat?: number | null;
   lng?: number | null;
+  source_refs?: { source?: string; label?: string; url?: string | null } | null;
   created_at: string;
   updated_at: string;
   status: string;
@@ -236,6 +266,24 @@ export async function actOnAlert(
   });
   if (!res.ok) throw new Error(`actOnAlert → ${res.status}`);
   return res.json();
+}
+
+export async function logDecision(entry: {
+  operator_id: string;
+  action_type: string;
+  alert_id?: number | null;
+  payload: Record<string, unknown>;
+  session_id?: string | null;
+}): Promise<void> {
+  try {
+    await fetch(`${BASE}/api/v1/alerts/log`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(entry),
+    });
+  } catch {
+    // best-effort — decision log failures don't block operator actions
+  }
 }
 
 // ─── Decision log ─────────────────────────────────────────────────────────────
@@ -285,6 +333,7 @@ export function fetchFloodExposure(): Promise<FloodExposure> {
 export interface SocialSignalProperties {
   id: number;
   source: string;
+  source_id?: string | null;
   triage_label: string | null;
   triage_confidence: number | null;
   ingested_at: string;
