@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   Bell,
   CheckCircle,
@@ -18,7 +18,7 @@ import {
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import { useAlerts, useFloodExposure } from "@/lib/queries";
-import { actOnAlert, alertsStreamUrl } from "@/lib/api";
+import { actOnAlert } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Alert, DecisionLogEntry } from "@/lib/api";
 import { timeAgo } from "@/lib/utils";
@@ -623,45 +623,10 @@ function ResponseProtocol({
 // ─── AlertsPanel ─────────────────────────────────────────────────────────────
 
 export function AlertsPanel() {
-  const { activePanel, locale } = useUIStore();
-  const qc = useQueryClient();
+  const { activePanel, locale, alertStreamConnected: sseConnected } = useUIStore();
   const { data: alerts = [], isLoading, isError, dataUpdatedAt } = useAlerts();
   const { data: exposure } = useFloodExposure();
-  const sseRef = useRef<EventSource | null>(null);
-  const [sseConnected, setSseConnected] = useState(false);
   const tr = useT(locale);
-
-  // SSE: subscribe to live alert push
-  useEffect(() => {
-    if (sseRef.current) return;
-    const es = new EventSource(alertsStreamUrl());
-    sseRef.current = es;
-
-    es.onopen = () => setSseConnected(true);
-
-    es.onmessage = (evt) => {
-      try {
-        const fresh: Alert[] = JSON.parse(evt.data);
-        qc.setQueryData(["alerts", undefined], fresh);
-        // Propagate to risk-summary so map color fills update on push
-        qc.invalidateQueries({ queryKey: ["district-risk-summary"] });
-        qc.invalidateQueries({ queryKey: ["flood-exposure"] });
-      } catch {
-        // malformed SSE frame — ignore
-      }
-    };
-
-    es.onerror = () => {
-      setSseConnected(false);
-      es.close();
-      sseRef.current = null;
-    };
-
-    return () => {
-      es.close();
-      sseRef.current = null;
-    };
-  }, [qc]);
 
   if (activePanel !== "alerts") return null;
 
