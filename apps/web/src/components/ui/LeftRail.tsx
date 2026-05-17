@@ -1,18 +1,18 @@
 "use client";
 
-import { Map, Bell, Search, ClipboardList, Info, Languages, Link2, BarChart3, Radio } from "lucide-react";
+import { Map, Bell, Search, ClipboardList, Info, Languages, Link2, BarChart3, Radio, HelpCircle } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useAlerts, useSocialSignals } from "@/lib/queries";
 import { clsx } from "clsx";
 import type { Locale } from "@/store/ui";
 
 const NAV_ITEMS = [
-  { id: "map",       label: { es: "Mapa [M]",      en: "Map [M]" },      icon: Map },
-  { id: "alerts",    label: { es: "Alertas [A]",   en: "Alerts [A]" },   icon: Bell },
-  { id: "social",    label: { es: "Social [S]",     en: "Social [S]" },   icon: Radio },
-  { id: "dashboard", label: { es: "Datos [D]",     en: "Data [D]" },     icon: BarChart3 },
-  { id: "ask",       label: { es: "Consultar [C]", en: "Ask [C]" },      icon: Search },
-  { id: "log",       label: { es: "Registro [L]",  en: "Log [L]" },      icon: ClipboardList },
+  { id: "map",       label: { es: "Mapa [M]",      en: "Map [M]" },      short: { es: "Mapa",      en: "Map" },     icon: Map },
+  { id: "alerts",    label: { es: "Alertas [A]",   en: "Alerts [A]" },   short: { es: "Alertas",   en: "Alerts" },  icon: Bell },
+  { id: "social",    label: { es: "Social [S]",    en: "Social [S]" },   short: { es: "Social",    en: "Social" },  icon: Radio },
+  { id: "dashboard", label: { es: "Datos [D]",     en: "Data [D]" },     short: { es: "Datos",     en: "Data" },    icon: BarChart3 },
+  { id: "ask",       label: { es: "Consultar [C]", en: "Ask [C]" },      short: { es: "Consultar", en: "Ask" },     icon: Search },
+  { id: "log",       label: { es: "Registro [L]",  en: "Log [L]" },      short: { es: "Registro",  en: "Log" },     icon: ClipboardList },
 ] as const;
 
 type PanelId = (typeof NAV_ITEMS)[number]["id"] | "sources" | "share";
@@ -20,6 +20,7 @@ type PanelId = (typeof NAV_ITEMS)[number]["id"] | "sources" | "share";
 function NavButton({
   id,
   label,
+  mobileLabel,
   icon: Icon,
   active,
   onClick,
@@ -28,6 +29,7 @@ function NavButton({
 }: {
   id: string;
   label: string;
+  mobileLabel?: string;
   icon: typeof Map;
   active: boolean;
   onClick: () => void;
@@ -51,13 +53,13 @@ function NavButton({
       )}
     >
       <Icon size={mobile ? 20 : 18} aria-hidden="true" />
-      {mobile && <span className="leading-none">{label}</span>}
+      {mobile && <span className="leading-none">{mobileLabel ?? label}</span>}
     </button>
   );
 }
 
 export function LeftRail() {
-  const { activePanel, setActivePanel, locale, setLocale } = useUIStore();
+  const { activePanel, setActivePanel, locale, setLocale, setTutorialOpen } = useUIStore();
   const { data: alerts = [] } = useAlerts();
   const { data: socialData } = useSocialSignals(48);
   const activeAlertCount = alerts.filter((a) => a.status === "active").length;
@@ -121,6 +123,16 @@ export function LeftRail() {
         ))}
 
         <div className="mt-auto flex flex-col gap-1">
+          {/* Tutorial */}
+          <button
+            onClick={() => setTutorialOpen(true)}
+            aria-label={locale === "es" ? "Abrir tutorial (tecla ?)" : "Open tutorial (key ?)"}
+            title={locale === "es" ? "Tutorial (?)" : "Tutorial (?)"}
+            className="w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-surface-panel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-costa-500"
+          >
+            <HelpCircle size={18} aria-hidden="true" />
+          </button>
+
           {/* Share */}
           <button
             onClick={() => handleNav("share")}
@@ -168,11 +180,12 @@ export function LeftRail() {
         className="sm:hidden fixed bottom-0 left-0 right-0 h-14 bg-surface-raised border-t border-slate-700 flex items-stretch z-30 safe-area-inset-bottom"
         aria-label={locale === "es" ? "Navegación principal" : "Main navigation"}
       >
-        {NAV_ITEMS.map(({ id, label, icon }) => (
+        {NAV_ITEMS.map(({ id, label, short, icon }) => (
           <div key={id} className="relative flex-1 h-full">
             <NavButton
               id={id}
               label={label[locale]}
+              mobileLabel={short[locale]}
               icon={icon}
               active={activePanel === id}
               onClick={() => handleNav(id)}
