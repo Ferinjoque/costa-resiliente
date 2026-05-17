@@ -12,7 +12,6 @@ import { DataSourcesPanel } from "@/components/panels/DataSourcesPanel";
 import { MapLegend } from "@/components/map/MapLegend";
 import { OperationalHUD } from "@/components/map/OperationalHUD";
 import { LiveTicker } from "@/components/map/LiveTicker";
-import { MapRadar } from "@/components/map/MapRadar";
 import { ShareLoader } from "@/components/panels/ShareLoader";
 import { FusionCallout } from "@/components/panels/FusionCallout";
 import { DistrictDashboardPanel } from "@/components/panels/DistrictDashboardPanel";
@@ -21,17 +20,15 @@ import { ToastStack } from "@/components/ui/ToastStack";
 import { SocialFeedPanel } from "@/components/panels/SocialFeedPanel";
 import { SituationBrief } from "@/components/panels/SituationBrief";
 
-// MapView must be client-only (MapLibre GL uses window APIs)
+// Deferred: keeps initial map paint < 2s
 const MapView = dynamic(() => import("@/components/map/MapView"), {
   ssr: false,
   loading: () => (
-    <div className="flex-1 bg-surface-base flex items-center justify-center">
-      <span className="text-slate-400 text-sm">Cargando mapa…</span>
+    <div className="flex h-full w-full items-center justify-center bg-canvas">
+      <span className="text-ink-subtle text-sm">Cargando mapa…</span>
     </div>
   ),
 });
-
-// Non-critical chrome — deferred so the initial map paint owns the LCP budget.
 const TutorialOverlay = dynamic(
   () => import("@/components/panels/TutorialOverlay").then((m) => m.TutorialOverlay),
   { ssr: false },
@@ -61,7 +58,8 @@ function KeyboardNavigator() {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (e.key === "Escape") { setActivePanel("map"); return; }
       if (e.key === "?") { setTutorialOpen(true); return; }
       const panel = SHORTCUT_MAP[e.key.toLowerCase()];
@@ -75,63 +73,56 @@ function KeyboardNavigator() {
 
 function FirstRunTrigger() {
   const { setTutorialOpen, setScenario } = useUIStore();
-
   useEffect(() => {
     if (typeof window === "undefined") return;
-    // Don't auto-open if it's a shared scenario link
-    if (window.location.search.includes("token=")) return;
-    if (window.location.search.includes("state=")) return;
+    if (window.location.search.includes("token=") || window.location.search.includes("state=")) return;
     if (localStorage.getItem(FIRST_VISIT_KEY)) return;
     localStorage.setItem(FIRST_VISIT_KEY, "1");
-    // Delay slightly so map finishes rendering
     const t = setTimeout(() => {
       setScenario({ isReplayMode: true, replayDate: "2017-03-15" });
       setTutorialOpen(true);
     }, 1500);
     return () => clearTimeout(t);
   }, [setTutorialOpen, setScenario]);
-
   return null;
 }
 
 export default function Home() {
   return (
     <div className="flex h-screen w-screen overflow-hidden">
-      {/* Skip-nav link — WCAG 2.4.1 bypass blocks */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-costa-700 focus:text-white focus:px-3 focus:py-1 focus:rounded focus:text-sm"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-surface focus:text-ink focus:px-4 focus:py-2 focus:rounded-xl focus:text-sm focus:font-medium focus:shadow-panel focus:outline-none"
       >
         Skip to main content
       </a>
 
-      {/* Left navigation rail */}
+      {/* Light sidebar */}
       <LeftRail />
 
-      {/* Main content area — pb-14 reserves space for mobile bottom nav */}
+      {/* Map canvas area */}
       <main
         id="main-content"
-        className="relative flex-1 overflow-hidden pb-14 sm:pb-0"
+        className="relative flex-1 overflow-hidden pb-14 sm:pb-0 bg-canvas"
         aria-label="Mapa y paneles operacionales"
       >
-        {/* Map layer — sits at z-0, fills main */}
+        {/* Fullscreen map */}
         <div className="absolute inset-0 z-0">
-          <Suspense
-            fallback={
-              <div className="flex h-full w-full items-center justify-center bg-surface-base">
-                <span className="text-slate-400 text-sm">Cargando mapa…</span>
-              </div>
-            }
-          >
+          <Suspense fallback={
+            <div className="flex h-full w-full items-center justify-center bg-canvas">
+              <span className="text-ink-subtle text-sm">Cargando mapa…</span>
+            </div>
+          }>
             <MapView />
           </Suspense>
+          {/* Map overlays — all solid surfaces, no blur */}
           <MapLegend />
           <OperationalHUD />
           <LiveTicker />
-          <MapRadar />
+          <DataFreshnessBar />
         </div>
 
-        {/* UI layer — panels and controls always above the map */}
+        {/* Panels — solid surface drawers */}
         <ScenarioPanel />
         <AlertsPanel />
         <AskPanel />
@@ -142,10 +133,7 @@ export default function Home() {
         <DistrictDashboardPanel />
         <FusionCallout />
         <SituationBrief />
-        <DataFreshnessBar />
         <TutorialOverlay />
-        {/* ShareLoader reads ?share=/?state= via useSearchParams — must be
-            wrapped in Suspense for static export. Renders nothing visible. */}
         <Suspense fallback={null}>
           <ShareLoader />
         </Suspense>

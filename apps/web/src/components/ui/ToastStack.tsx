@@ -29,21 +29,21 @@ function Toast({ id, source, label, district }: { id: string; source: string; la
 
   return (
     <div
-      className="flex items-start gap-2 bg-surface-raised border border-slate-600 rounded-xl px-3 py-2 shadow-2xl w-64 text-xs animate-slide-in-right"
+      className="flex items-start gap-2 bg-surface border border-border rounded-xl px-3 py-2 shadow-2xl w-64 text-xs animate-slide-in-right"
       role="status"
       aria-live="polite"
     >
       <Radio size={13} className="text-costa-400 mt-0.5 shrink-0 animate-pulse" aria-hidden="true" />
       <div className="flex-1 min-w-0">
-        <p className="text-white font-medium leading-snug truncate">{labelText}</p>
-        <p className="text-slate-400 mt-0.5 truncate">
-          <span className={SOURCE_COLOR[source] ?? "text-slate-400"}>{source}</span>
+        <p className="text-paper font-medium leading-snug truncate">{labelText}</p>
+        <p className="text-ink-subtle mt-0.5 truncate">
+          <span className={SOURCE_COLOR[source] ?? "text-ink-subtle"}>{source}</span>
           {" · "}{district}
         </p>
       </div>
       <button
         onClick={() => removeToast(id)}
-        className="shrink-0 text-slate-500 hover:text-white transition-colors mt-0.5"
+        className="shrink-0 text-ink-subtle hover:text-paper transition-colors mt-0.5"
         aria-label="Cerrar notificación"
       >
         <X size={11} />

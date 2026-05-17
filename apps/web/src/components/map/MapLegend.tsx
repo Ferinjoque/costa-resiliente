@@ -28,8 +28,8 @@ const RISK_ITEMS: { color: string; label: { es: string; en: string } }[] = [
 const SOCIAL_ITEMS: { color: string; label: { es: string; en: string } }[] = [
   { color: SOCIAL_LABEL_COLOR.needs_help,            label: { es: "Ayuda",           en: "Needs help" } },
   { color: SOCIAL_LABEL_COLOR.infrastructure_damage, label: { es: "Infraestructura", en: "Infrastructure" } },
-  { color: SOCIAL_LABEL_COLOR.road_blocked,          label: { es: "Vía bloqueada",   en: "Road blocked" } },
-  { color: SOCIAL_LABEL_COLOR.weather_observation,   label: { es: "Meteorología",    en: "Weather" } },
+  { color: SOCIAL_LABEL_COLOR.road_blocked,          label: { es: "VÃ­a bloqueada",   en: "Road blocked" } },
+  { color: SOCIAL_LABEL_COLOR.weather_observation,   label: { es: "MeteorologÃ­a",    en: "Weather" } },
 ];
 
 const HUAYCO_ITEMS: { color: string; label: { es: string; en: string } }[] = [
@@ -40,7 +40,7 @@ const HUAYCO_ITEMS: { color: string; label: { es: string; en: string } }[] = [
 ];
 
 const ALERT_ITEMS: { color: string; label: { es: string; en: string } }[] = [
-  { color: SEVERITY_COLOR.critical, label: { es: "Crítico (pulsante)", en: "Critical (pulsing)" } },
+  { color: SEVERITY_COLOR.critical, label: { es: "CrÃ­tico (pulsante)", en: "Critical (pulsing)" } },
   { color: SEVERITY_COLOR.high,     label: { es: "Alto",               en: "High" } },
   { color: SEVERITY_COLOR.medium,   label: { es: "Medio",              en: "Medium" } },
   { color: SEVERITY_COLOR.low,      label: { es: "Bajo",               en: "Low" } },
@@ -64,10 +64,10 @@ const LABELS = {
   legend:       { es: "Leyenda",                    en: "Legend" },
   riskLevel:    { es: "Nivel de riesgo",            en: "Risk level" },
   rainfall:     { es: "Lluvia acumulada (IMERG)",   en: "Accumulated rainfall (IMERG)" },
-  sarFlood:     { es: "Inundación SAR",             en: "SAR flood" },
-  sarPolygon:   { es: "Polígono inundado",          en: "Flood polygon" },
+  sarFlood:     { es: "InundaciÃ³n SAR",             en: "SAR flood" },
+  sarPolygon:   { es: "PolÃ­gono inundado",          en: "Flood polygon" },
   huayco:       { es: "Riesgo huayco",              en: "Huayco risk" },
-  social:       { es: "Señales sociales",           en: "Social signals" },
+  social:       { es: "SeÃ±ales sociales",           en: "Social signals" },
   stations:     { es: "Estaciones ANA",             en: "ANA stations" },
   opAlerts:     { es: "Alertas operacionales",      en: "Operational alerts" },
   infra:        { es: "Infraestructura",            en: "Infrastructure" },
@@ -92,26 +92,31 @@ export function MapLegend() {
   if (!showRisk && !showRain && !showSocial && !showHuayco && !showFlood && !showStations && !showInfra) return null;
 
   return (
+    // Sits just above the MapLibre navigation control (+/-) at bottom-right.
+    // Nav control: margin-bottom 40px + ~65px height → top at ~105px from bottom.
+    // We sit at bottom-[116px] right-4, clear of both the nav control and ticker.
     <div
-      className="absolute bottom-20 left-2 z-10 sm:bottom-16 sm:left-4"
+      className="absolute bottom-[180px] right-4 z-10"
       aria-label={L("legend", locale)}
     >
       <button
         onClick={() => setOpen((o) => !o)}
         className={[
-          "flex items-center gap-1.5 text-xs rounded-lg px-2.5 py-1.5 shadow-lg transition-colors",
-          "bg-surface-raised/90 backdrop-blur-sm border border-slate-700",
-          open ? "text-white" : "text-slate-300 hover:text-white",
+          "flex items-center gap-1.5 text-xs font-medium rounded-xl px-3 py-1.5 transition-colors",
+          "bg-surface border border-border-strong shadow-card",
+          open ? "text-ink" : "text-ink-muted hover:text-ink",
         ].join(" ")}
         aria-expanded={open}
         aria-label={L("legend", locale)}
       >
-        <Layers size={12} aria-hidden="true" />
+        <Layers size={13} aria-hidden="true" />
         {L("legend", locale)}
       </button>
 
       {open && (
-        <div className="mt-1.5 bg-surface-raised/95 backdrop-blur-sm border border-slate-700 rounded-xl p-3 shadow-xl space-y-3 w-44">
+        // Opens upward-left from the button — away from the bottom edge and
+        // clear of the right edge. Scrollable so tall layer lists don't overflow.
+        <div className="absolute bottom-full mb-2 right-0 bg-surface border border-border-strong rounded-2xl p-4 shadow-panel space-y-3 w-52 max-h-[70vh] overflow-y-auto">
           {showRisk && (
             <Section label={L("riskLevel", locale)}>
               {RISK_ITEMS.map(({ color, label }) => (
@@ -128,8 +133,8 @@ export function MapLegend() {
                 aria-hidden="true"
               />
               <div className="flex justify-between mt-0.5">
-                <span className="text-[10px] text-slate-400">0 mm</span>
-                <span className="text-[10px] text-slate-400">200+</span>
+                <span className="text-2xs text-ink-subtle">0 mm</span>
+                <span className="text-2xs text-ink-subtle">200+</span>
               </div>
             </Section>
           )}
@@ -186,7 +191,7 @@ export function MapLegend() {
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide mb-1.5">
+      <p className="text-2xs font-semibold text-ink-subtle uppercase tracking-caps mb-1.5">
         {label}
       </p>
       <div className="space-y-1">{children}</div>
@@ -202,7 +207,7 @@ function DotRow({ color, label, shape }: { color: string; label: string; shape: 
         style={{ width: 10, height: 10, backgroundColor: color, opacity: 0.9, flexShrink: 0 }}
         aria-hidden="true"
       />
-      <span className="text-[11px] text-slate-300 leading-none">{label}</span>
+      <span className="text-xs text-ink-muted leading-none">{label}</span>
     </div>
   );
 }

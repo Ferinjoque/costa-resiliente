@@ -1,26 +1,9 @@
 "use client";
 
-import { AlertTriangle, Waves, Mountain, MessageSquare, X, BarChart3, Users } from "lucide-react";
+import { X } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useFusion } from "@/lib/queries";
-import { clsx } from "clsx";
-
-const RISK_COLOR: Record<string, string> = {
-  alto:     "border-severity-critical/50 bg-severity-critical/20 text-severity-critical",
-  moderado: "border-severity-medium/50 bg-severity-medium/20 text-severity-medium",
-  bajo:     "border-severity-low/40 bg-severity-low/15 text-severity-low",
-};
-
-const RISK_BADGE: Record<string, string> = {
-  alto:     "bg-severity-critical text-white",
-  moderado: "bg-severity-high text-white",
-  bajo:     "bg-severity-low text-white",
-};
-
-// Severity dot color — replaces the emoji circle markers that read as decorative.
-const RISK_DOT: Record<string, string> = {
-  alto: "bg-severity-critical", moderado: "bg-severity-high", bajo: "bg-severity-low",
-};
+import { Button, Pill, Divider } from "@/components/ui/primitives";
 
 const T = {
   es: {
@@ -38,6 +21,8 @@ const T = {
     people: (n: number) => `~${n.toLocaleString("es-PE")} hab.`,
     riskLabels: { alto: "ALTO", moderado: "MODERADO", bajo: "BAJO" },
     huaycoLevels: { low: "Bajo", moderate: "Moderado", high: "Alto", very_high: "Muy alto" },
+    fullAnalysis: "Análisis completo",
+    close: "Cerrar",
   },
   en: {
     title: "Risk analysis",
@@ -54,8 +39,16 @@ const T = {
     people: (n: number) => `~${n.toLocaleString("en-US")} pop.`,
     riskLabels: { alto: "HIGH", moderado: "MODERATE", bajo: "LOW" },
     huaycoLevels: { low: "Low", moderate: "Moderate", high: "High", very_high: "Very high" },
+    fullAnalysis: "Full analysis",
+    close: "Close",
   },
 };
+
+function riskPillVariant(riskKey: string): "danger" | "warn" | "ok" {
+  if (riskKey === "alto") return "danger";
+  if (riskKey === "moderado") return "warn";
+  return "ok";
+}
 
 export function FusionCallout() {
   const { scenario, setScenario, setActivePanel, locale } = useUIStore();
@@ -68,59 +61,52 @@ export function FusionCallout() {
     setScenario({ districtUbigeo: null, districtName: null });
 
   const riskKey = data?.risk_level ?? "bajo";
-  const colorClass = RISK_COLOR[riskKey] ?? RISK_COLOR.bajo;
-  const badgeClass = RISK_BADGE[riskKey] ?? RISK_BADGE.bajo;
 
   return (
-    <div
-      className={clsx(
-        "absolute bottom-6 left-2 sm:bottom-8 sm:left-4 z-20",
-        "w-72 rounded-xl border shadow-xl text-xs backdrop-blur-sm panel-animate",
-        colorClass,
-      )}
+    <aside
+      className="absolute bottom-12 left-4 z-20 w-[280px] bg-surface border border-border-strong rounded-2xl shadow-panel overflow-hidden panel-animate"
       role="status"
       aria-live="polite"
       aria-label={t.title}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5 border-b border-white/10">
-        <div className="flex items-center gap-2 font-semibold text-[13px]">
-          <AlertTriangle size={13} aria-hidden="true" />
-          <span>{scenario.districtName ?? "Distrito"}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {data && (
-            <span className={clsx("font-display tracking-ops text-[11px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1", badgeClass)}>
-              <span className={clsx("inline-block w-1.5 h-1.5 rounded-full", RISK_DOT[riskKey])} aria-hidden="true" />
-              {t.riskLabels[riskKey as keyof typeof t.riskLabels]}
-            </span>
-          )}
-          <button
-            onClick={dismiss}
-            aria-label="Cerrar"
-            className="p-0.5 rounded opacity-60 hover:opacity-100 transition-opacity"
-          >
-            <X size={12} />
-          </button>
-        </div>
-      </div>
+      <header className="flex items-center gap-2 px-4 py-3 border-b border-border">
+        <span className="text-sm font-semibold text-ink truncate flex-1">
+          {scenario.districtName ?? "Distrito"}
+        </span>
+        {data && (
+          <Pill variant={riskPillVariant(riskKey)}>
+            {t.riskLabels[riskKey as keyof typeof t.riskLabels]}
+          </Pill>
+        )}
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={dismiss}
+          aria-label={t.close}
+          className="shrink-0 -mr-1"
+        >
+          <X size={12} />
+        </Button>
+      </header>
 
       {/* Body */}
-      <div className="px-3 py-2.5 flex flex-col gap-2">
+      <div className="px-4 py-3">
         {isLoading && (
-          <span className="text-slate-400">{t.loading}</span>
+          <p className="text-xs text-ink-muted">{t.loading}</p>
         )}
 
         {data && (
           <>
-            {/* Population */}
+            {/* Data rows — section 1: population */}
             {data.district.population != null && (
-              <Row icon={<Users size={11} />} label={t.population} value={t.people(data.district.population)} />
+              <FRow label={t.population} value={t.people(data.district.population)} />
             )}
 
-            {/* Flood */}
-            <Row
-              icon={<Waves size={11} />}
+            <Divider className="my-2" />
+
+            {/* Data rows — section 2: hazards */}
+            <FRow
               label={t.flood}
               value={
                 data.flood.active_polygon_count > 0
@@ -129,10 +115,7 @@ export function FusionCallout() {
               }
               dim={data.flood.active_polygon_count === 0}
             />
-
-            {/* Huayco */}
-            <Row
-              icon={<Mountain size={11} />}
+            <FRow
               label={t.huayco}
               value={
                 data.huayco.highest_risk_level
@@ -145,10 +128,7 @@ export function FusionCallout() {
               }
               dim={!data.huayco.highest_risk_level}
             />
-
-            {/* Social */}
-            <Row
-              icon={<MessageSquare size={11} />}
+            <FRow
               label={t.social}
               value={
                 data.social.total_signals_3h > 0
@@ -158,43 +138,41 @@ export function FusionCallout() {
               dim={data.social.total_signals_3h === 0}
             />
 
-            {/* Prose summary */}
-            <p className="text-[10px] leading-snug opacity-70 pt-1 border-t border-white/10">
+            <Divider className="my-2" />
+
+            {/* Prose */}
+            <p className="text-xs text-ink-muted leading-relaxed italic">
               {locale === "en" && data.prose_en ? data.prose_en : data.prose_es}
             </p>
 
-            {/* Open dashboard link */}
+            {/* Full analysis link */}
             <button
               onClick={() => setActivePanel("dashboard")}
-              className="mt-1 flex items-center gap-1 text-[10px] opacity-60 hover:opacity-100 transition-opacity underline underline-offset-2"
-              aria-label="Ver análisis detallado en el panel de datos"
+              className="mt-2 text-xs text-accent hover:underline"
+              aria-label={locale === "es" ? "Ver análisis detallado en el panel de datos" : "Open detailed analysis panel"}
             >
-              <BarChart3 size={9} aria-hidden="true" />
-              {locale === "es" ? "Ver análisis completo" : "Full analysis"}
+              {t.fullAnalysis} →
             </button>
           </>
         )}
       </div>
-    </div>
+    </aside>
   );
 }
 
-function Row({
-  icon,
+function FRow({
   label,
   value,
   dim = false,
 }: {
-  icon: React.ReactNode;
   label: string;
   value: string;
   dim?: boolean;
 }) {
   return (
-    <div className={clsx("flex items-start gap-2", dim && "opacity-50")}>
-      <span className="shrink-0 mt-px opacity-70">{icon}</span>
-      <span className="text-current/70 shrink-0">{label}:</span>
-      <span className="font-medium break-words">{value}</span>
+    <div className={`flex items-baseline gap-2 py-0.5 ${dim ? "opacity-50" : ""}`}>
+      <span className="text-xs text-ink-subtle w-24 shrink-0">{label}</span>
+      <span className="text-sm text-ink font-medium tabular-nums leading-snug">{value}</span>
     </div>
   );
 }

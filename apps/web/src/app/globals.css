@@ -1,287 +1,267 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* MapLibre GL */
 @import "maplibre-gl/dist/maplibre-gl.css";
 
+/* ─── Design tokens ──────────────────────────────────────────────────────── */
 :root {
-  /* ── Surface (matches tailwind.config.ts surface.*) ────────────────────── */
-  --color-surface-ink:    oklch(14% 0.012 240);
-  --color-surface-base:   oklch(14% 0.012 240);
-  --color-surface-raised: oklch(19% 0.015 240);
-  --color-surface-panel:  oklch(24% 0.018 240);
-  --color-surface-line:   oklch(30% 0.015 240);
-  --color-surface-muted:  oklch(40% 0.012 240);
+  /* Canvas */
+  --canvas:          oklch(13%  0.005 240);
+  --canvas-deep:     oklch(9%   0.004 240);
 
-  /* ── SINAGERD-aligned severity ─────────────────────────────────────────── */
-  --color-severity-critical: oklch(60% 0.20 28);
-  --color-severity-high:     oklch(70% 0.16 55);
-  --color-severity-medium:   oklch(80% 0.14 85);
-  --color-severity-low:      oklch(65% 0.11 155);
+  /* Surface (light cream) */
+  --surface:         oklch(97.5% 0.006 80);
+  --surface-raised:  oklch(100%  0     0  );
+  --surface-sunken:  oklch(94%   0.008 80 );
+  --surface-hover:   oklch(92%   0.008 80 );
 
-  /* ── Costa (brand) ─────────────────────────────────────────────────────── */
-  --color-costa-300: oklch(75% 0.105 208);
-  --color-costa-400: oklch(65% 0.115 207);
-  --color-costa-500: oklch(55% 0.115 207);
-  --color-costa-700: oklch(36% 0.085 210);
-  --color-costa-900: oklch(20% 0.045 215);
+  /* Ink (text on light) */
+  --ink:             oklch(14%  0.008 240);
+  --ink-muted:       oklch(40%  0.006 240);
+  --ink-subtle:      oklch(60%  0.005 240);
+  --ink-inverse:     oklch(97%  0.006 80);
 
-  --sidebar-width: 280px;
-  --alerts-panel-width: 360px;
+  /* Border */
+  --border:          oklch(88%  0.007 80);
+  --border-strong:   oklch(78%  0.009 80);
+  --border-subtle:   oklch(93%  0.006 80);
+
+  /* Accent (coastal teal) */
+  --accent:          oklch(47%  0.12  210);
+  --accent-hover:    oklch(40%  0.14  210);
+  --accent-soft:     oklch(93%  0.04  210);
+  --accent-muted:    oklch(65%  0.09  210);
+
+  /* Danger / Warning / OK */
+  --danger:          oklch(58%  0.20  28);
+  --danger-soft:     oklch(96%  0.04  28);
+  --warn:            oklch(73%  0.13  78);
+  --warn-soft:       oklch(96%  0.04  78);
+  --ok:              oklch(62%  0.10  152);
+  --ok-soft:         oklch(95%  0.04  152);
+
+  /* Shadows */
+  --shadow-panel: 0 1px 2px oklch(14% 0.008 240 / 0.06),
+                  0 4px 12px oklch(14% 0.008 240 / 0.08),
+                  0 12px 32px oklch(14% 0.008 240 / 0.06);
+  --shadow-card:  0 1px 2px oklch(14% 0.008 240 / 0.05),
+                  0 2px 8px oklch(14% 0.008 240 / 0.06);
 }
 
-/* Operational dark mode — no white flash */
-html,
-body {
-  background-color: var(--color-surface-base);
-  color: white;
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  background: var(--canvas);
+  color: var(--ink);
   height: 100%;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Global focus-visible ring — WCAG 2.4.11 */
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Focus ring — single-pixel, accent colored */
 :focus-visible {
-  outline: 2px solid var(--color-costa-400);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
+  border-radius: 4px;
 }
 
-/* Display family helper — apply via class to override font-sans inheritance */
-.font-display {
-  font-family: var(--font-display), Fraunces, Georgia, serif;
-  letter-spacing: -0.02em;
-}
-
-/* Map container fills its parent wrapper — z-0 keeps it below all UI panels */
-.map-container {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-}
-
-/* Prevent MapLibre controls from leaking above our panels */
-.maplibregl-map {
+/* ─── Map ────────────────────────────────────────────────────────────────── */
+.map-container, .maplibregl-map {
   position: absolute !important;
   inset: 0;
   width: 100% !important;
   height: 100% !important;
 }
 
-/* Severity dot indicator */
-.severity-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.severity-dot[data-severity="critical"] { background-color: var(--color-severity-critical); }
-.severity-dot[data-severity="high"]     { background-color: var(--color-severity-high); }
-.severity-dot[data-severity="medium"]   { background-color: var(--color-severity-medium); }
-.severity-dot[data-severity="low"]      { background-color: var(--color-severity-low); }
-
-/* Scrollbar styling for dark panels */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--color-surface-raised); }
-::-webkit-scrollbar-thumb { background: var(--color-surface-panel); border-radius: 2px; }
-
-/* Mobile: safe area insets for notched devices */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .panel-safe-bottom {
-    bottom: max(1rem, env(safe-area-inset-bottom));
-  }
-}
-
-/* Tap targets are at least 44×44 on touch devices */
-@media (pointer: coarse) {
-  button, [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
-    touch-action: manipulation;
-  }
-}
-
-/* ─── MapLibre popup — dark operational theme ──────────────────────────────── */
+/* MapLibre popup — matches the light panel system */
 .maplibregl-popup.cr-map-popup { z-index: 25; }
-
 .cr-map-popup .maplibregl-popup-content {
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-surface-line);
-  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
   padding: 0;
-  box-shadow: 0 4px 20px oklch(0% 0 0 / 0.55);
+  box-shadow: var(--shadow-panel);
   overflow: hidden;
 }
+.cr-map-popup.maplibregl-popup-anchor-top    .maplibregl-popup-tip { border-bottom-color: var(--surface); }
+.cr-map-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color:    var(--surface); }
+.cr-map-popup.maplibregl-popup-anchor-left   .maplibregl-popup-tip { border-right-color:  var(--surface); }
+.cr-map-popup.maplibregl-popup-anchor-right  .maplibregl-popup-tip { border-left-color:   var(--surface); }
+.cr-map-popup.maplibregl-popup-anchor-top-left    .maplibregl-popup-tip { border-bottom-color: var(--surface); }
+.cr-map-popup.maplibregl-popup-anchor-top-right   .maplibregl-popup-tip { border-bottom-color: var(--surface); }
+.cr-map-popup.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip { border-top-color:    var(--surface); }
+.cr-map-popup.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color:   var(--surface); }
 
-/* Tip triangle — match per anchor direction */
-.cr-map-popup.maplibregl-popup-anchor-top    .maplibregl-popup-tip { border-bottom-color: var(--color-surface-raised); }
-.cr-map-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--color-surface-raised); }
-.cr-map-popup.maplibregl-popup-anchor-left   .maplibregl-popup-tip { border-right-color: var(--color-surface-raised); }
-.cr-map-popup.maplibregl-popup-anchor-right  .maplibregl-popup-tip { border-left-color:  var(--color-surface-raised); }
-.cr-map-popup.maplibregl-popup-anchor-top-left    .maplibregl-popup-tip { border-bottom-color: var(--color-surface-raised); }
-.cr-map-popup.maplibregl-popup-anchor-top-right   .maplibregl-popup-tip { border-bottom-color: var(--color-surface-raised); }
-.cr-map-popup.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip { border-top-color: var(--color-surface-raised); }
-.cr-map-popup.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color:   #1e293b; }
-
-/* Close button */
 .cr-map-popup .maplibregl-popup-close-button {
-  color: #64748b;
-  font-size: 18px;
-  line-height: 1;
-  padding: 4px 8px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  border-radius: 0 8px 0 0;
-  position: absolute;
-  top: 0;
-  right: 0;
+  position: absolute; top: 6px; right: 8px;
+  font-size: 16px; line-height: 1; padding: 2px;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--ink-subtle); border-radius: 4px;
 }
-.cr-map-popup .maplibregl-popup-close-button:hover { color: #e2e8f0; }
+.cr-map-popup .maplibregl-popup-close-button:hover { color: var(--ink); }
 
-/* Popup content */
 .cr-popup {
-  padding: 10px 32px 10px 12px; /* right pad for close btn */
-  min-width: 160px;
+  padding: 12px 32px 12px 14px;
   font-family: var(--font-inter, system-ui, sans-serif);
   font-size: 12px;
-  line-height: 1.6;
-  color: #e2e8f0;
+  line-height: 1.55;
+  color: var(--ink-muted);
 }
 .cr-title {
-  font-weight: 600;
   font-size: 13px;
-  color: #f1f5f9;
-  margin-bottom: 6px;
-  border-bottom: 1px solid #334155;
-  padding-bottom: 4px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
 }
-.cr-title-critical { border-bottom-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
-.cr-title-high     { border-bottom-color: rgba(249, 115, 22, 0.4); color: #fdba74; }
-.cr-title-flood    { border-bottom-color: rgba(37, 99, 235, 0.4); color: #93c5fd; }
-.cr-title-station  { border-bottom-color: rgba(245, 158, 11, 0.4); color: #fcd34d; }
-.cr-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.cr-key { color: #94a3b8; flex-shrink: 0; }
-.cr-val {
-  color: #e2e8f0;
-  font-weight: 500;
-  text-align: right;
-  word-break: break-all;
-  max-width: 160px;
-}
-.cr-val-alert { color: #f97316; font-weight: 700; }
-.cr-val-critical { color: #ef4444; font-weight: 700; }
-.cr-val-ok { color: #4ade80; }
+.cr-title-critical { color: var(--danger); border-bottom-color: var(--danger-soft); }
+.cr-title-flood    { color: var(--accent); border-bottom-color: var(--accent-soft); }
+.cr-title-station  { color: var(--warn);   border-bottom-color: var(--warn-soft);   }
+.cr-row            { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.cr-key            { color: var(--ink-subtle); font-size: 11px; }
+.cr-val            { color: var(--ink); font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
+.cr-val-alert      { color: var(--danger); font-weight: 600; }
+.cr-val-ok         { color: var(--ok); }
 
-/* ─── Emergency state glow ──────────────────────────────────────────────────── */
-@keyframes emergency-ring {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(60% 0.20 28 / 0), inset 0 0 0 1px oklch(60% 0.20 28 / 0.4); }
-  50%      { box-shadow: 0 0 0 3px oklch(60% 0.20 28 / 0.15), inset 0 0 0 1px oklch(60% 0.20 28 / 0.7); }
-}
-.emergency-glow {
-  animation: emergency-ring 2s ease-in-out infinite;
-}
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
 
-/* ─── Live data pulse ───────────────────────────────────────────────────────── */
-@keyframes live-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.4; transform: scale(0.75); }
-}
-.live-dot {
-  animation: live-dot 1.5s ease-in-out infinite;
-}
-
-/* ─── Panel slide-in animation ──────────────────────────────────────────────── */
-@keyframes panel-slide-in {
-  from { opacity: 0; transform: translateX(12px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
+/* ─── Felt-panel animation ───────────────────────────────────────────────── */
 .panel-animate {
-  animation: panel-slide-in 0.2s ease-out;
+  animation: panel-in 0.22s cubic-bezier(0.2, 0.9, 0.4, 1);
 }
 
-/* ─── Toast slide-in ────────────────────────────────────────────────────────── */
-@keyframes slide-in-right {
-  from { opacity: 0; transform: translateX(20px); }
+@keyframes panel-in {
+  from { opacity: 0; transform: translateX(8px); }
   to   { opacity: 1; transform: translateX(0); }
 }
-.animate-slide-in-right {
-  animation: slide-in-right 0.18s ease-out;
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-/* ─── WCAG 2.3.3 / prefers-reduced-motion ──────────────────────────────────── */
+/* ─── Ticker ─────────────────────────────────────────────────────────────── */
+.ticker-track {
+  animation: ticker 50s linear infinite;
+  will-change: transform;
+}
+.ticker-track:hover { animation-play-state: paused; }
+
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ─── Live dot ───────────────────────────────────────────────────────────── */
+.live-dot { animation: live-dot 2.4s ease-in-out infinite; }
+@keyframes live-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ─── Map marker pulse ───────────────────────────────────────────────────── */
+.cr-critical-pulse {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--danger);
+  position: relative; cursor: pointer;
+}
+.cr-critical-pulse::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--danger);
+  animation: pulse-ring 2s ease-out infinite;
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.85); opacity: 0.9; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+/* ─── Slide-in-right (toasts) ────────────────────────────────────────────── */
+.animate-slide-in-right {
+  animation: slide-in-right 0.22s cubic-bezier(0.2, 0.9, 0.4, 1);
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ─── Mobile safe area ───────────────────────────────────────────────────── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-bottom { bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+}
+@media (pointer: coarse) {
+  button, [role="button"] { min-height: 44px; touch-action: manipulation; }
+}
+
+/* ─── Reduced motion ─────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  .panel-animate {
-    animation: none;
-  }
-  .emergency-glow {
-    animation: none;
-    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.6);
-  }
-  .live-dot {
-    animation: none;
-    opacity: 1;
-  }
-  .animate-slide-in-right {
-    animation: none;
-  }
 }
 
-/* ─── LiveTicker scrolling marquee ─────────────────────────────────────────── */
-@keyframes ticker-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+/* ─── MapLibre control positioning ──────────────────────────────────────── */
+/* Push bottom controls above the LiveTicker (h-9 = 36px) so they don't     */
+/* overlap. Push top-right controls below the HUD bar (~56px).               */
+.maplibregl-ctrl-bottom-right,
+.maplibregl-ctrl-bottom-left {
+  margin-bottom: 40px;
 }
-.ticker-track {
-  animation: ticker-scroll 40s linear infinite;
-  will-change: transform;
+/* Navigation (+/-) compact style to match the Felt chrome */
+.maplibregl-ctrl-group {
+  border-radius: 10px !important;
+  box-shadow: 0 1px 2px oklch(14% 0.008 240 / 0.06),
+              0 2px 8px oklch(14% 0.008 240 / 0.06) !important;
+  border: 1px solid oklch(88% 0.007 80) !important;
+  overflow: hidden;
 }
-.ticker-track:hover {
-  animation-play-state: paused;
+.maplibregl-ctrl-group button {
+  background: oklch(97.5% 0.006 80) !important;
+  color: oklch(14% 0.008 240) !important;
+  width: 32px !important;
+  height: 32px !important;
+}
+.maplibregl-ctrl-group button:hover {
+  background: oklch(92% 0.008 80) !important;
+}
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid oklch(88% 0.007 80) !important;
+}
+/* Attribution chip */
+.maplibregl-ctrl-attrib {
+  background: oklch(97.5% 0.006 80 / 0.9) !important;
+  border-radius: 8px !important;
+  font-size: 10px !important;
+  color: oklch(40% 0.006 240) !important;
+}
+.maplibregl-ctrl-scale {
+  background: oklch(97.5% 0.006 80 / 0.85) !important;
+  border-color: oklch(78% 0.009 80) !important;
+  color: oklch(40% 0.006 240) !important;
+  font-size: 10px !important;
+  border-radius: 6px !important;
 }
 
-/* ─── Critical alert pulsing marker ────────────────────────────────────────── */
-@keyframes cr-pulse-ring {
-  0%   { transform: scale(0.8); opacity: 0.9; }
-  70%  { transform: scale(2.2); opacity: 0; }
-  100% { transform: scale(0.8); opacity: 0; }
+/* ─── Legacy compat — components still transitioning ────────────────────── */
+.editorial-cap {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
 }
-.cr-critical-pulse {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: oklch(60% 0.20 28 / 0.85);
-  border: 2px solid oklch(55% 0.21 28);
-  position: relative;
-  cursor: pointer;
-}
-.cr-critical-pulse::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: oklch(60% 0.20 28 / 0.6);
-  animation: cr-pulse-ring 1.8s ease-out infinite;
-}
-.cr-critical-pulse::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: oklch(60% 0.20 28 / 0.3);
-  animation: cr-pulse-ring 1.8s ease-out 0.6s infinite;
-}
+.font-display { font-family: var(--font-display, Fraunces, Georgia, serif); }

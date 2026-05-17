@@ -39,7 +39,9 @@ export function MapRadar() {
         // Bottom-right, above the LiveTicker strip; mobile-hidden so it never
         // crowds the 375px viewport. AlertsPanel/Dashboard cannot occupy this
         // space because MapRadar only renders when activePanel === "map".
-        "hidden sm:block absolute bottom-12 right-5 z-10 pointer-events-none",
+        // Sits above the LiveTicker (36px) and NavControl (~65px).
+        // Right-side clear zone starts at ~120px from bottom.
+        "hidden sm:block absolute bottom-32 right-5 z-10 pointer-events-none",
         "opacity-65 hover:opacity-100 transition-opacity",
       )}
       aria-hidden="true"

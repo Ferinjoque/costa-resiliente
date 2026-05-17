@@ -1,9 +1,15 @@
 "use client";
 
-import { Search, Send, Loader2, Sparkles, RefreshCw, Database } from "lucide-react";
+import { MessageSquare, Send, Loader2, Sparkles, RefreshCw, Database } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useUIStore } from "@/store/ui";
 import { DEMO_COPILOT_RESPONSES } from "@/lib/demoData";
+import {
+  Panel,
+  PanelHeader,
+  PanelTitle,
+  Button,
+} from "@/components/ui/primitives";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -14,7 +20,7 @@ function MarkdownLine({ text }: { text: string }) {
     <>
       {parts.map((part, i) =>
         part.startsWith("**") && part.endsWith("**")
-          ? <strong key={i} className="font-semibold text-white">{part.slice(2, -2)}</strong>
+          ? <strong key={i} className="font-semibold text-ink">{part.slice(2, -2)}</strong>
           : <span key={i}>{part}</span>
       )}
     </>
@@ -86,7 +92,7 @@ const UI: Record<"es" | "en", {
 }> = {
   es: {
     title: "Copiloto",
-    model: "Gemma 3",
+    model: "Qwen 2.5",
     placeholder: "Consulta en español…",
     queryLabel: "Consulta",
     responseLabel: "Respuesta",
@@ -96,7 +102,7 @@ const UI: Record<"es" | "en", {
   },
   en: {
     title: "Copilot",
-    model: "Gemma 3",
+    model: "Qwen 2.5",
     placeholder: "Ask about the current situation…",
     queryLabel: "Query",
     responseLabel: "Response",
@@ -116,6 +122,7 @@ export function AskPanel() {
   const [dataRows, setDataRows] = useState<Array<Record<string, unknown>>>([]);
   const [lastQuery, setLastQuery] = useState<string | null>(null);
   const [isDemo, setIsDemo] = useState(false);
+  const [isRedacted, setIsRedacted] = useState(false);
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const ui = UI[locale];
 
@@ -150,23 +157,32 @@ export function AskPanel() {
     setDataRows([]);
     setLastQuery(trimmed);
     setIsDemo(false);
+    setIsRedacted(false);
     try {
       const res = await fetch(`${BASE}/api/v1/copilot/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: trimmed, operator_id: "demo" }),
-        signal: AbortSignal.timeout(10_000),
+        signal: AbortSignal.timeout(55_000),  // 55s — model inference can take 30–45s on CPU
       });
+      if (res.status === 400) {
+        const err = await res.json();
+        setAnswer(err.detail ?? (locale === "es" ? "Consulta no permitida." : "Query not allowed."));
+        return;
+      }
       const data = await res.json();
       setAnswer(data.answer ?? (locale === "es" ? "Sin respuesta." : "No response."));
-      if (data.intent && data.confidence) {
-        setSources([
-          { label: locale === "es" ? "Intención" : "Intent", value: data.intent.replace(/_/g, " ") },
-          { label: locale === "es" ? "Confianza" : "Confidence", value: `${(data.confidence * 100).toFixed(0)}%` },
-          ...(data.query_plan ? [{ label: locale === "es" ? "Plan" : "Plan", value: data.query_plan.replace(/_/g, " ") }] : []),
-        ]);
-        if (Array.isArray(data.sources)) setDataRows(data.sources.slice(0, 5));
+      setIsRedacted(!!data.redacted);
+      // Build metadata chips from new agentic response shape
+      const chips: { label: string; value: string }[] = [];
+      if (data.confidence != null)
+        chips.push({ label: locale === "es" ? "Confianza" : "Confidence", value: `${(data.confidence * 100).toFixed(0)}%` });
+      if (Array.isArray(data.tool_calls) && data.tool_calls.length > 0) {
+        const toolNames = data.tool_calls.map((t: { tool: string }) => t.tool.replace(/_/g, " ")).join(", ");
+        chips.push({ label: locale === "es" ? "Herramientas" : "Tools", value: toolNames });
       }
+      setSources(chips);
+      if (Array.isArray(data.sources)) setDataRows(data.sources.slice(0, 5));
     } catch {
       // Fuzzy match → demo response, fall back to generic error
       const demoKey = findDemoResponse(trimmed);
@@ -198,61 +214,97 @@ export function AskPanel() {
   return (
     <aside
       className={[
+        // Mobile: slide-up sheet
         "fixed bottom-14 left-0 right-0 h-[62vh] rounded-t-2xl",
-        "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-xl",
-        "bg-surface-raised border border-slate-700 shadow-xl z-20 flex flex-col panel-animate",
+        // Desktop: fixed sidebar panel
+        "sm:absolute sm:top-4 sm:right-4 sm:bottom-4 sm:left-auto sm:h-auto sm:w-80 sm:max-w-sm sm:rounded-2xl",
+        // Felt-style cream surface — NO glass/blur
+        "bg-surface border-l border-border-strong shadow-panel z-20 flex flex-col panel-animate",
       ].join(" ")}
       aria-label={ui.title}
     >
+      {/* Mobile drag handle */}
       <div className="sm:hidden flex justify-center pt-2 pb-1" aria-hidden="true">
-        <div className="w-8 h-1 rounded-full bg-slate-600" />
+        <div className="w-8 h-1 rounded-full bg-border-strong" />
       </div>
 
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
-        <Search size={15} className="text-costa-500" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-white">{ui.title}</h2>
-        <span className="ml-auto text-[10px] text-costa-400 flex items-center gap-1">
+      {/* Header */}
+      <PanelHeader>
+        <MessageSquare size={15} className="text-accent shrink-0" aria-hidden="true" />
+        <PanelTitle>{ui.title}</PanelTitle>
+        <span className="text-[10px] text-ink-subtle flex items-center gap-1 shrink-0">
           <Sparkles size={10} aria-hidden="true" /> {ui.model}
         </span>
-      </div>
+      </PanelHeader>
 
+      {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3" aria-live="polite" aria-atomic="true">
         {answer ? (
           <>
-            <div className="bg-surface-panel/60 rounded-lg px-3 py-2">
-              <p className="text-[11px] text-slate-400 mb-1">{ui.queryLabel}</p>
-              <p className="text-xs text-slate-200 leading-snug">{lastQuery}</p>
+            {/* Echo of the submitted query */}
+            <div className="bg-surface-sunken rounded-xl px-3 py-2">
+              <p className="text-[11px] text-ink-subtle mb-1">{ui.queryLabel}</p>
+              <p className="text-xs text-ink leading-snug">{lastQuery}</p>
             </div>
-            <div className="bg-costa-900/30 border border-costa-700/40 rounded-lg px-3 py-2" role="region" aria-label={ui.responseLabel}>
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-[11px] text-costa-400">{ui.responseLabel}</p>
-                {isDemo && (
-                  <span className="text-[10px] bg-slate-700 text-slate-400 border border-slate-600 px-1 rounded">DEMO</span>
-                )}
+
+            {/* Copilot response */}
+            <div
+              className="bg-surface-sunken rounded-xl px-4 py-3"
+              role="region"
+              aria-label={ui.responseLabel}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[11px] text-ink-muted">{ui.responseLabel}</p>
+                <div className="flex items-center gap-1">
+                  {isRedacted && (
+                    <span className="text-[10px] bg-danger/10 border border-danger/30 text-danger px-1.5 py-0.5 rounded-md font-mono">
+                      {locale === "es" ? "SANITIZADO" : "SANITIZED"}
+                    </span>
+                  )}
+                  {isDemo && (
+                    <span className="text-[10px] bg-surface border border-border text-ink-subtle px-1.5 py-0.5 rounded-md font-mono">
+                      DEMO
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="text-sm text-slate-200 leading-relaxed">
+              <div className="text-sm text-ink leading-relaxed">
                 <MarkdownText text={displayedAnswer ?? ""} />
                 {displayedAnswer !== null && displayedAnswer.length < (answer?.length ?? 0) && (
-                  <span className="inline-block w-0.5 h-4 bg-costa-400 ml-0.5 animate-pulse align-text-bottom" aria-hidden="true" />
+                  <span
+                    className="inline-block w-0.5 h-4 bg-accent ml-0.5 animate-pulse align-text-bottom"
+                    aria-hidden="true"
+                  />
                 )}
               </div>
+
+              {/* Metadata chips */}
               {sources.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-costa-700/30 flex flex-wrap gap-1.5">
+                <div className="mt-2.5 pt-2 border-t border-border flex flex-wrap gap-1.5">
                   {sources.map((s) => (
-                    <span key={s.label} className="text-[10px] bg-surface-panel rounded px-1.5 py-0.5 text-slate-400">
-                      {s.label}: <span className="text-slate-300">{s.value}</span>
+                    <span
+                      key={s.label}
+                      className="text-[10px] bg-surface border border-border rounded-md px-1.5 py-0.5 text-ink-muted"
+                    >
+                      {s.label}: <span className="text-ink">{s.value}</span>
                     </span>
                   ))}
                 </div>
               )}
+
+              {/* Source data rows */}
               {dataRows.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-costa-700/30">
-                  <p className="text-[10px] text-slate-500 mb-1 flex items-center gap-1">
-                    <Database size={9} aria-hidden="true" /> {locale === "es" ? "Datos de origen (PostGIS)" : "Source data (PostGIS)"}
+                <div className="mt-2.5 pt-2 border-t border-border">
+                  <p className="text-[10px] text-ink-subtle mb-1 flex items-center gap-1">
+                    <Database size={9} aria-hidden="true" />
+                    {locale === "es" ? "Datos de origen (PostGIS)" : "Source data (PostGIS)"}
                   </p>
                   <div className="space-y-1">
                     {dataRows.map((row, i) => (
-                      <div key={i} className="text-[10px] bg-surface-panel/50 rounded px-2 py-1 text-slate-400 font-mono truncate">
+                      <div
+                        key={i}
+                        className="text-[10px] bg-surface border border-border rounded-lg px-2 py-1 text-ink-muted font-mono truncate"
+                      >
                         {Object.entries(row).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(" · ")}
                       </div>
                     ))}
@@ -260,9 +312,19 @@ export function AskPanel() {
                 </div>
               )}
             </div>
+
+            {/* New query link */}
             <button
-              onClick={() => { setAnswer(null); setDisplayedAnswer(null); setSources([]); setDataRows([]); setQuery(""); setIsDemo(false); }}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-costa-400 underline underline-offset-2 transition-colors"
+              onClick={() => {
+                setAnswer(null);
+                setDisplayedAnswer(null);
+                setSources([]);
+                setDataRows([]);
+                setQuery("");
+                setIsDemo(false);
+                setIsRedacted(false);
+              }}
+              className="flex items-center gap-1 text-xs text-ink-muted hover:text-accent underline underline-offset-2 transition-colors"
             >
               <RefreshCw size={11} aria-hidden="true" />
               {ui.newQuery}
@@ -270,19 +332,24 @@ export function AskPanel() {
           </>
         ) : (
           <>
-            <p className="text-[11px] text-slate-500 text-center pt-2">{ui.hint}</p>
+            {/* Hint */}
+            <p className="text-[11px] text-ink-subtle text-center pt-2">{ui.hint}</p>
+
+            {/* Suggestion chips */}
             <div className="space-y-1.5">
               {SUGGESTIONS.map((s) => {
                 const q = locale === "es" ? s.es : s.en;
                 return (
-                  <button
+                  <Button
                     key={s.es}
+                    variant="secondary"
+                    size="xs"
                     onClick={() => { setQuery(q); submit(q); }}
                     disabled={loading}
-                    className="w-full text-left text-xs text-slate-300 bg-surface-panel hover:bg-costa-900/40 hover:text-costa-200 border border-slate-700 hover:border-costa-700/50 rounded-lg px-3 py-2 transition-colors disabled:opacity-40"
+                    className="w-full justify-start text-left"
                   >
                     {q}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -290,25 +357,37 @@ export function AskPanel() {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="p-3 border-t border-slate-700">
+      {/* Input form */}
+      <form onSubmit={handleSubmit} className="p-3 border-t border-border">
         <div className="flex gap-2">
-          <input
-            type="text"
+          <textarea
+            rows={1}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                submit(query);
+              }
+            }}
             placeholder={ui.placeholder}
             aria-label={ui.placeholder}
             disabled={loading}
-            className="flex-1 bg-surface-panel border border-slate-600 text-white text-sm rounded-lg px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-costa-500 focus-visible:ring-2 focus-visible:ring-costa-500 disabled:opacity-50"
+            className="flex-1 bg-surface-sunken border border-border rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-ink-subtle focus:border-accent focus:outline-none resize-none disabled:opacity-50"
           />
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            size="sm"
             disabled={loading || !query.trim()}
-            className="bg-costa-700 hover:bg-costa-500 disabled:opacity-40 text-white rounded-lg px-3 py-2 transition-colors"
             aria-label={ui.send}
+            className="self-end"
           >
-            {loading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-          </button>
+            {loading
+              ? <Loader2 size={15} className="animate-spin text-ink-muted" />
+              : <Send size={15} />
+            }
+          </Button>
         </div>
       </form>
     </aside>

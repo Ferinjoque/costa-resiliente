@@ -155,8 +155,10 @@ export default function MapView() {
     });
     map.current = m;
 
-    m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    m.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+    // Navigation: moved to bottom-right (below MapRadar, clear of the HUD top-right pills).
+    // Attribution: bottom-left alongside scale so it clears the MapRadar widget.
+    m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    m.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
     m.addControl(new maplibregl.ScaleControl(), "bottom-left");
 
     m.once("load", () => {

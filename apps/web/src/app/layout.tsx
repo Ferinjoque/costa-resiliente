@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0f172a",
+  themeColor: "#100f10",
 };
 
 export default function RootLayout({
@@ -49,11 +49,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`dark ${inter.variable} ${jetbrainsMono.variable} ${fraunces.variable}`}>
-      <body className="bg-surface-base text-slate-100 antialiased font-sans">
+      <body className="bg-canvas text-ink antialiased font-sans">
         {/* Skip-to-content — WCAG 2.4.1 Bypass Blocks */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-costa-500 focus:px-4 focus:py-2 focus:text-white focus:text-sm focus:font-medium focus:outline-none"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-paper focus:text-ink focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:outline-none"
         >
           Saltar al contenido principal
         </a>
