@@ -6,9 +6,9 @@ import { useFusion } from "@/lib/queries";
 import { clsx } from "clsx";
 
 const RISK_COLOR: Record<string, string> = {
-  alto:     "border-red-500/50 bg-red-900/20 text-red-200",
-  moderado: "border-amber-500/50 bg-amber-900/20 text-amber-200",
-  bajo:     "border-green-600/40 bg-green-900/15 text-green-200",
+  alto:     "border-severity-critical/50 bg-severity-critical/20 text-severity-critical",
+  moderado: "border-severity-medium/50 bg-severity-medium/20 text-severity-medium",
+  bajo:     "border-severity-low/40 bg-severity-low/15 text-severity-low",
 };
 
 const RISK_BADGE: Record<string, string> = {

@@ -61,7 +61,7 @@ export function ScenarioPanel() {
           <Target size={15} className="text-costa-500" />
           {L(locale, "Escenario", "Scenario")}
           {scenario.isReplayMode && (
-            <span className="text-[10px] bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-normal">
+            <span className="text-[10px] bg-severity-medium text-white px-1.5 py-0.5 rounded-full font-normal">
               REPLAY 2017
             </span>
           )}
@@ -76,7 +76,7 @@ export function ScenarioPanel() {
       {isScenarioPanelOpen && (
         <div id="scenario-body" className="px-4 pb-4 space-y-3 border-t border-slate-700 pt-3">
           {isShareMode && (
-            <div className="flex items-center gap-2 text-xs text-amber-300 bg-amber-900/30 border border-amber-700/40 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2 text-xs text-severity-medium bg-severity-medium/30 border border-severity-medium/40 rounded-lg px-3 py-2">
               <Lock size={12} aria-hidden="true" />
               <span>{L(locale, "Vista de solo lectura", "Read-only view")}</span>
             </div>
@@ -96,8 +96,8 @@ export function ScenarioPanel() {
               className={clsx(
                 "flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-colors font-medium",
                 scenario.isReplayMode
-                  ? "bg-amber-600 text-white hover:bg-amber-700"
-                  : "bg-surface-panel text-amber-400 border border-amber-600/50 hover:bg-amber-600/10"
+                  ? "bg-severity-medium text-white hover:bg-severity-medium"
+                  : "bg-surface-panel text-severity-medium border border-severity-medium/50 hover:bg-severity-medium/10"
               )}
               aria-pressed={scenario.isReplayMode}
             >
@@ -121,7 +121,7 @@ export function ScenarioPanel() {
           {/* Replay date slider */}
           {scenario.isReplayMode && (
             <div>
-              <label className="block text-xs text-amber-300 mb-1" htmlFor="replay-slider">
+              <label className="block text-xs text-severity-medium mb-1" htmlFor="replay-slider">
                 {L(locale, "Fecha del replay", "Replay date")}
               </label>
               <input
@@ -131,7 +131,7 @@ export function ScenarioPanel() {
                 max={REPLAY_MAX}
                 value={scenario.replayDate ?? REPLAY_DEFAULT}
                 onChange={(e) => setScenario({ replayDate: e.target.value })}
-                className="w-full bg-surface-panel border border-amber-600/50 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500"
+                className="w-full bg-surface-panel border border-severity-medium/50 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-severity-medium focus-visible:ring-2 focus-visible:ring-severity-medium"
                 aria-label={L(locale, "Seleccionar fecha del replay El Niño 2017", "Select El Niño 2017 replay date")}
               />
               <p className="text-[10px] text-slate-400 mt-1">

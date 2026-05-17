@@ -28,7 +28,7 @@ const STEPS: Step[] = [
   {
     id: "intro",
     icon: PlayCircle,
-    iconColor: "text-amber-400",
+    iconColor: "text-severity-medium",
     title: {
       es: "El Niño Costero 2017 — Lima Metropolitana",
       en: "El Niño Costero 2017 — Lima Metropolitan Area",
@@ -49,7 +49,7 @@ const STEPS: Step[] = [
   {
     id: "rain",
     icon: Droplets,
-    iconColor: "text-blue-400",
+    iconColor: "text-costa-400",
     title: {
       es: "1 — Lluvia acumulada (IMERG 72h)",
       en: "1 — Accumulated Rainfall (IMERG 72h)",
@@ -70,7 +70,7 @@ const STEPS: Step[] = [
   {
     id: "flood",
     icon: AlertTriangle,
-    iconColor: "text-red-400",
+    iconColor: "text-severity-critical",
     title: {
       es: "2 — Inundaciones detectadas por SAR",
       en: "2 — SAR-Detected Floods",
@@ -91,7 +91,7 @@ const STEPS: Step[] = [
   {
     id: "hazard",
     icon: MapPin,
-    iconColor: "text-orange-400",
+    iconColor: "text-severity-high",
     title: {
       es: "3 — Zonas de peligro histórico (SINPAD)",
       en: "3 — Historical Hazard Zones (SINPAD)",
@@ -111,7 +111,7 @@ const STEPS: Step[] = [
   {
     id: "exposure",
     icon: Users,
-    iconColor: "text-purple-400",
+    iconColor: "text-sand-300",
     title: {
       es: "4 — Exposición poblacional (INEI 2017)",
       en: "4 — Population Exposure (INEI 2017)",
@@ -150,7 +150,7 @@ const STEPS: Step[] = [
   {
     id: "social",
     icon: Radio,
-    iconColor: "text-orange-400",
+    iconColor: "text-severity-high",
     title: {
       es: "6 — Señales sociales en tiempo real",
       en: "6 — Real-Time Social Signals",
@@ -263,7 +263,7 @@ export function TutorialOverlay() {
         {/* Progress bar */}
         <div className="h-1 bg-slate-700 rounded-t-2xl sm:rounded-t-2xl overflow-hidden">
           <div
-            className="h-full bg-amber-500 transition-all duration-300"
+            className="h-full bg-severity-medium transition-all duration-300"
             style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
             aria-hidden="true"
           />
@@ -332,7 +332,7 @@ export function TutorialOverlay() {
                 aria-label={dotAriaLbl(i)}
                 className={clsx(
                   "w-1.5 h-1.5 rounded-full transition-all focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none",
-                  i === step ? "bg-amber-400 w-4" : "bg-slate-600 hover:bg-slate-400"
+                  i === step ? "bg-severity-medium w-4" : "bg-slate-600 hover:bg-slate-400"
                 )}
               />
             ))}
@@ -341,7 +341,7 @@ export function TutorialOverlay() {
           {isLast ? (
             <button
               onClick={() => { setScenario({ isReplayMode: false, replayDate: null }); handleClose(); }}
-              className="flex items-center gap-1 text-xs bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+              className="flex items-center gap-1 text-xs bg-severity-medium/90 hover:bg-severity-medium text-white px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-severity-medium focus-visible:outline-none"
             >
               {finishLabel}
             </button>

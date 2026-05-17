@@ -23,24 +23,24 @@ const LABEL_EN: Record<string, string> = {
 };
 
 const LABEL_COLOR: Record<string, string> = {
-  needs_help:            "bg-red-900/40 text-red-300 border-red-700/50",
-  road_blocked:          "bg-yellow-900/40 text-yellow-300 border-yellow-700/50",
-  infrastructure_damage: "bg-orange-900/40 text-orange-300 border-orange-700/50",
-  weather_observation:   "bg-blue-900/40 text-blue-300 border-blue-700/50",
+  needs_help:            "bg-severity-critical/40 text-severity-critical border-severity-critical/50",
+  road_blocked:          "bg-severity-medium/40 text-severity-medium border-severity-medium/50",
+  infrastructure_damage: "bg-severity-high/40 text-severity-high border-severity-high/50",
+  weather_observation:   "bg-costa-900/40 text-costa-300 border-costa-700/50",
 };
 
 const LABEL_DOT: Record<string, string> = {
-  needs_help:            "bg-red-500",
-  road_blocked:          "bg-yellow-400",
-  infrastructure_damage: "bg-orange-400",
-  weather_observation:   "bg-blue-400",
+  needs_help:            "bg-severity-critical",
+  road_blocked:          "bg-severity-medium",
+  infrastructure_damage: "bg-severity-high",
+  weather_observation:   "bg-costa-400",
 };
 
 const SOURCE_BADGE: Record<string, string> = {
-  bluesky:  "text-sky-400 bg-sky-900/30 border-sky-700/50",
-  telegram: "text-blue-400 bg-blue-900/30 border-blue-700/50",
-  reddit:   "text-orange-400 bg-orange-900/30 border-orange-700/50",
-  campo:    "text-emerald-400 bg-emerald-900/30 border-emerald-700/50",
+  bluesky:  "text-costa-400 bg-costa-900/30 border-costa-700/50",
+  telegram: "text-costa-400 bg-costa-900/30 border-costa-700/50",
+  reddit:   "text-severity-high bg-severity-high/30 border-severity-high/50",
+  campo:    "text-severity-low bg-severity-low/30 border-severity-low/50",
 };
 
 function timeAgoShort(iso: string): string {
@@ -283,8 +283,8 @@ export function SocialFeedPanel() {
         <button
           onClick={() => setShowReport((o) => !o)}
           className={clsx(
-            "text-slate-400 hover:text-emerald-400 transition-colors rounded",
-            showReport && "text-emerald-400",
+            "text-slate-400 hover:text-severity-low transition-colors rounded",
+            showReport && "text-severity-low",
           )}
           aria-label={locale === "es" ? "Añadir reporte de campo" : "Add field report"}
           aria-pressed={showReport}

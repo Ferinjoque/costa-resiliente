@@ -12,17 +12,17 @@ interface TickerItem {
 }
 
 const LABEL_COLOR: Record<string, string> = {
-  needs_help:            "text-red-400",
-  road_blocked:          "text-yellow-400",
-  infrastructure_damage: "text-orange-400",
-  weather_observation:   "text-blue-400",
+  needs_help:            "text-severity-critical",
+  road_blocked:          "text-severity-medium",
+  infrastructure_damage: "text-severity-high",
+  weather_observation:   "text-costa-400",
 };
 
 const SEV_COLOR: Record<string, string> = {
-  critical: "text-red-400",
-  high:     "text-orange-400",
-  medium:   "text-yellow-400",
-  low:      "text-blue-400",
+  critical: "text-severity-critical",
+  high:     "text-severity-high",
+  medium:   "text-severity-medium",
+  low:      "text-costa-400",
 };
 
 // Compact ASCII tags replace inline emoji. Emoji rendering varies wildly by
@@ -97,8 +97,8 @@ export function LiveTicker() {
     >
       {/* LIVE label — static left anchor */}
       <div className="shrink-0 flex items-center gap-1.5 pl-3 pr-2 border-r border-slate-700/70 h-full bg-surface-base/90">
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" aria-hidden="true" />
-        <span className="text-[10px] font-bold tracking-wider text-red-400">{label}</span>
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-severity-critical animate-pulse" aria-hidden="true" />
+        <span className="text-[10px] font-bold tracking-wider text-severity-critical">{label}</span>
       </div>
 
       {/* Scrolling track */}

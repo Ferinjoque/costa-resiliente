@@ -4,48 +4,60 @@ import { useState } from "react";
 import { Layers } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import type { Locale } from "@/store/ui";
+import {
+  RISK_COLOR,
+  HUAYCO_COLOR,
+  SEVERITY_COLOR,
+  SOCIAL_LABEL_COLOR,
+  STATION_COLOR,
+  INFRA_COLOR,
+  RAIN_STOPS,
+  COSTA_500,
+} from "@/lib/colors";
+
+// All swatch arrays source colors from src/lib/colors.ts so the legend stays
+// 1:1 with the canonical OKLCH token set. Adding a category here means adding
+// it to colors.ts first, never the reverse.
 
 const RISK_ITEMS: { color: string; label: { es: string; en: string } }[] = [
-  { color: "#dc2626", label: { es: "Riesgo alto",     en: "High risk" } },
-  { color: "#f97316", label: { es: "Riesgo moderado", en: "Moderate risk" } },
-  { color: "#22c55e", label: { es: "Riesgo bajo",     en: "Low risk" } },
+  { color: RISK_COLOR.alto,     label: { es: "Riesgo alto",     en: "High risk" } },
+  { color: RISK_COLOR.moderado, label: { es: "Riesgo moderado", en: "Moderate risk" } },
+  { color: RISK_COLOR.bajo,     label: { es: "Riesgo bajo",     en: "Low risk" } },
 ];
 
-const RAIN_STOPS = ["#1e3a5f", "#2563eb", "#38bdf8", "#fbbf24", "#f97316", "#dc2626"];
-
 const SOCIAL_ITEMS: { color: string; label: { es: string; en: string } }[] = [
-  { color: "#ef4444", label: { es: "Ayuda",           en: "Needs help" } },
-  { color: "#f97316", label: { es: "Infraestructura", en: "Infrastructure" } },
-  { color: "#f59e0b", label: { es: "Vía bloqueada",   en: "Road blocked" } },
-  { color: "#38bdf8", label: { es: "Meteorología",    en: "Weather" } },
+  { color: SOCIAL_LABEL_COLOR.needs_help,            label: { es: "Ayuda",           en: "Needs help" } },
+  { color: SOCIAL_LABEL_COLOR.infrastructure_damage, label: { es: "Infraestructura", en: "Infrastructure" } },
+  { color: SOCIAL_LABEL_COLOR.road_blocked,          label: { es: "Vía bloqueada",   en: "Road blocked" } },
+  { color: SOCIAL_LABEL_COLOR.weather_observation,   label: { es: "Meteorología",    en: "Weather" } },
 ];
 
 const HUAYCO_ITEMS: { color: string; label: { es: string; en: string } }[] = [
-  { color: "#dc2626", label: { es: "Muy alto",  en: "Very high" } },
-  { color: "#f97316", label: { es: "Alto",      en: "High" } },
-  { color: "#f59e0b", label: { es: "Moderado",  en: "Moderate" } },
-  { color: "#22c55e", label: { es: "Bajo",      en: "Low" } },
+  { color: HUAYCO_COLOR.very_high, label: { es: "Muy alto", en: "Very high" } },
+  { color: HUAYCO_COLOR.high,      label: { es: "Alto",     en: "High" } },
+  { color: HUAYCO_COLOR.moderate,  label: { es: "Moderado", en: "Moderate" } },
+  { color: HUAYCO_COLOR.low,       label: { es: "Bajo",     en: "Low" } },
 ];
 
 const ALERT_ITEMS: { color: string; label: { es: string; en: string } }[] = [
-  { color: "#dc2626", label: { es: "Crítico (pulsante)", en: "Critical (pulsing)" } },
-  { color: "#f97316", label: { es: "Alto",               en: "High" } },
-  { color: "#f59e0b", label: { es: "Medio",              en: "Medium" } },
-  { color: "#22c55e", label: { es: "Bajo",               en: "Low" } },
+  { color: SEVERITY_COLOR.critical, label: { es: "Crítico (pulsante)", en: "Critical (pulsing)" } },
+  { color: SEVERITY_COLOR.high,     label: { es: "Alto",               en: "High" } },
+  { color: SEVERITY_COLOR.medium,   label: { es: "Medio",              en: "Medium" } },
+  { color: SEVERITY_COLOR.low,      label: { es: "Bajo",               en: "Low" } },
 ];
 
 const STATION_ITEMS: { color: string; label: { es: string; en: string } }[] = [
-  { color: "#f97316", label: { es: "Alerta (umbral superado)", en: "Alert (threshold exceeded)" } },
-  { color: "#fbbf24", label: { es: "Aviso (cerca umbral)",     en: "Warning (near threshold)" } },
-  { color: "#22c55e", label: { es: "Normal",                   en: "Normal" } },
+  { color: STATION_COLOR.alert,  label: { es: "Alerta (umbral superado)", en: "Alert (threshold exceeded)" } },
+  { color: STATION_COLOR.warn,   label: { es: "Aviso (cerca umbral)",     en: "Warning (near threshold)" } },
+  { color: STATION_COLOR.normal, label: { es: "Normal",                   en: "Normal" } },
 ];
 
 const INFRA_ITEMS: { color: string; label: { es: string; en: string } }[] = [
-  { color: "#f43f5e", label: { es: "Hospital",    en: "Hospital" } },
-  { color: "#34d399", label: { es: "Albergue",    en: "Shelter" } },
-  { color: "#fb923c", label: { es: "Bomberos",    en: "Fire station" } },
-  { color: "#a78bfa", label: { es: "Puente",      en: "Bridge" } },
-  { color: "#f59e0b", label: { es: "Colegio",     en: "School" } },
+  { color: INFRA_COLOR.hospital,     label: { es: "Hospital", en: "Hospital" } },
+  { color: INFRA_COLOR.shelter,      label: { es: "Albergue", en: "Shelter" } },
+  { color: INFRA_COLOR.fire_station, label: { es: "Bomberos", en: "Fire station" } },
+  { color: INFRA_COLOR.bridge,       label: { es: "Puente",   en: "Bridge" } },
+  { color: INFRA_COLOR.school,       label: { es: "Colegio",  en: "School" } },
 ];
 
 const LABELS = {
@@ -58,6 +70,7 @@ const LABELS = {
   social:       { es: "Señales sociales",           en: "Social signals" },
   stations:     { es: "Estaciones ANA",             en: "ANA stations" },
   opAlerts:     { es: "Alertas operacionales",      en: "Operational alerts" },
+  infra:        { es: "Infraestructura",            en: "Infrastructure" },
 };
 
 function L(key: keyof typeof LABELS, locale: Locale): string {
@@ -123,7 +136,7 @@ export function MapLegend() {
 
           {showFlood && (
             <Section label={L("sarFlood", locale)}>
-              <DotRow color="#2563eb" label={L("sarPolygon", locale)} shape="square" />
+              <DotRow color={COSTA_500} label={L("sarPolygon", locale)} shape="square" />
             </Section>
           )}
 
@@ -152,7 +165,7 @@ export function MapLegend() {
           )}
 
           {showInfra && (
-            <Section label={locale === "es" ? "Infraestructura" : "Infrastructure"}>
+            <Section label={L("infra", locale)}>
               {INFRA_ITEMS.map(({ color, label }) => (
                 <DotRow key={label.es} color={color} label={label[locale]} shape="circle" />
               ))}
@@ -186,7 +199,7 @@ function DotRow({ color, label, shape }: { color: string; label: string; shape: 
     <div className="flex items-center gap-2">
       <span
         className={shape === "circle" ? "rounded-full" : "rounded-sm"}
-        style={{ width: 10, height: 10, backgroundColor: color, opacity: 0.85, flexShrink: 0 }}
+        style={{ width: 10, height: 10, backgroundColor: color, opacity: 0.9, flexShrink: 0 }}
         aria-hidden="true"
       />
       <span className="text-[11px] text-slate-300 leading-none">{label}</span>

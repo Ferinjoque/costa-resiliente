@@ -12,9 +12,9 @@ const LABEL_ES: Record<string, string> = {
 };
 
 const SOURCE_COLOR: Record<string, string> = {
-  bluesky:  "text-sky-400",
-  telegram: "text-blue-400",
-  reddit:   "text-orange-400",
+  bluesky:  "text-costa-400",
+  telegram: "text-costa-400",
+  reddit:   "text-severity-high",
 };
 
 function Toast({ id, source, label, district }: { id: string; source: string; label: string; district: string }) {
