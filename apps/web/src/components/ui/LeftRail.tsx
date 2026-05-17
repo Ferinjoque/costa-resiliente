@@ -1,14 +1,15 @@
 "use client";
 
-import { Map, Bell, Search, ClipboardList, Info, Languages, Link2, BarChart3 } from "lucide-react";
+import { Map, Bell, Search, ClipboardList, Info, Languages, Link2, BarChart3, Radio } from "lucide-react";
 import { useUIStore } from "@/store/ui";
-import { useAlerts } from "@/lib/queries";
+import { useAlerts, useSocialSignals } from "@/lib/queries";
 import { clsx } from "clsx";
 import type { Locale } from "@/store/ui";
 
 const NAV_ITEMS = [
   { id: "map",       label: { es: "Mapa [M]",      en: "Map [M]" },      icon: Map },
   { id: "alerts",    label: { es: "Alertas [A]",   en: "Alerts [A]" },   icon: Bell },
+  { id: "social",    label: { es: "Social",         en: "Social" },       icon: Radio },
   { id: "dashboard", label: { es: "Datos [D]",     en: "Data [D]" },     icon: BarChart3 },
   { id: "ask",       label: { es: "Consultar [C]", en: "Ask [C]" },      icon: Search },
   { id: "log",       label: { es: "Registro [L]",  en: "Log [L]" },      icon: ClipboardList },
@@ -58,7 +59,11 @@ function NavButton({
 export function LeftRail() {
   const { activePanel, setActivePanel, locale, setLocale } = useUIStore();
   const { data: alerts = [] } = useAlerts();
+  const { data: socialData } = useSocialSignals(48);
   const activeAlertCount = alerts.filter((a) => a.status === "active").length;
+  const urgentSocialCount = (socialData?.features ?? []).filter(
+    (f) => f.properties.triage_label === "needs_help" || f.properties.triage_label === "road_blocked",
+  ).length;
 
   const handleNav = (id: PanelId) => setActivePanel(id);
   const toggleLocale = () => setLocale(locale === "es" ? "en" : "es");
@@ -102,6 +107,14 @@ export function LeftRail() {
                 aria-label={`${activeAlertCount} ${locale === "es" ? "alertas activas" : "active alerts"}`}
               >
                 {activeAlertCount > 9 ? "9+" : activeAlertCount}
+              </span>
+            )}
+            {id === "social" && urgentSocialCount > 0 && (
+              <span
+                className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-orange-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 pointer-events-none"
+                aria-label={`${urgentSocialCount} ${locale === "es" ? "señales urgentes" : "urgent signals"}`}
+              >
+                {urgentSocialCount > 9 ? "9+" : urgentSocialCount}
               </span>
             )}
           </div>

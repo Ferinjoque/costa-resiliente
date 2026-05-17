@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type PanelId = "map" | "alerts" | "ask" | "log" | "sources" | "share" | "dashboard";
+type PanelId = "map" | "alerts" | "ask" | "log" | "sources" | "share" | "dashboard" | "social";
 
 export type Locale = "es" | "en";
 
