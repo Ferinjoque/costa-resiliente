@@ -1,10 +1,10 @@
 "use client";
 
-import { BarChart3, Droplets, AlertTriangle, Users, History, Radio, TrendingUp, Waves, Mountain, Zap } from "lucide-react";
+import { BarChart3, Droplets, AlertTriangle, Users, History, Radio, TrendingUp, Waves, Mountain, Zap, Brain, CheckCircle2 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
-import { useDistrictDashboard, useDistrictRiskSummary, useAlerts, useFloodExposure } from "@/lib/queries";
+import { useDistrictDashboard, useDistrictRiskSummary, useAlerts, useFloodExposure, useFusion } from "@/lib/queries";
 import { clsx } from "clsx";
-import type { ImergTrendDay, AlertTrendDay, SocialBreakdown } from "@/lib/api";
+import type { AlertTrendDay, SocialBreakdown } from "@/lib/api";
 
 // ─── Sparkline SVG ────────────────────────────────────────────────────────────
 
@@ -183,10 +183,13 @@ function SituationSummary() {
 function CityOverview() {
   const { data: alerts = [] } = useAlerts();
   const { data: exposure } = useFloodExposure();
+  const { data: summary } = useDistrictRiskSummary();
   const activeCount = alerts.filter((a) => a.status === "active").length;
   const criticalCount = alerts.filter((a) => a.severity === "critical" && a.status === "active").length;
   const floodArea = exposure?.districts.reduce((sum, d) => sum + d.overlap_km2, 0) ?? 0;
   const affectedPop = exposure?.total_affected_population ?? 0;
+  const altoCount = summary?.features.filter((f) => f.properties.risk_level === "alto").length ?? 0;
+  const moderadoCount = summary?.features.filter((f) => f.properties.risk_level === "moderado").length ?? 0;
 
   return (
     <div className="mb-4 space-y-2">
@@ -214,6 +217,25 @@ function CityOverview() {
             </p>
           )}
         </div>
+        {(altoCount > 0 || moderadoCount > 0) && (
+          <div className="col-span-2 bg-surface-panel border border-slate-700/50 rounded-lg px-3 py-2 flex items-center gap-4">
+            <CheckCircle2 size={10} className="text-slate-500 shrink-0" aria-hidden="true" />
+            <div className="flex items-center gap-3 text-[11px]">
+              {altoCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-red-500 shrink-0" />
+                  <span className="text-slate-300">{altoCount} distr. riesgo alto</span>
+                </span>
+              )}
+              {moderadoCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-orange-400 shrink-0" />
+                  <span className="text-slate-400">{moderadoCount} moderado</span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -278,8 +300,16 @@ function TopRiskList() {
 
 // ─── District detail view ─────────────────────────────────────────────────────
 
+const SEVERITY_BADGE: Record<string, string> = {
+  critical: "bg-red-900/50 text-red-300 border-red-700/50",
+  high:     "bg-orange-900/40 text-orange-300 border-orange-700/50",
+  medium:   "bg-yellow-900/30 text-yellow-300 border-yellow-700/40",
+  low:      "bg-blue-900/30 text-blue-300 border-blue-700/40",
+};
+
 function DistrictDetail({ ubigeo }: { ubigeo: string }) {
   const { data, isLoading, isError } = useDistrictDashboard(ubigeo);
+  const { data: fusion } = useFusion(ubigeo);
 
   if (isLoading)
     return <p className="text-xs text-slate-400 px-1 py-4 text-center">Cargando datos…</p>;
@@ -289,18 +319,56 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
   const imergValues = data.imerg_trend_30d.map((d) => d.acc_24h_mm);
   const maxImerg = Math.max(...imergValues, 0);
   const latestImerg = imergValues.at(-1) ?? 0;
+  const activeAlerts = data.active_alerts.filter((a) => a.status === "active");
+
+  const RISK_BORDER: Record<string, string> = {
+    alto: "border-red-500/50 bg-red-900/15",
+    moderado: "border-orange-500/40 bg-orange-900/10",
+    bajo: "border-green-700/30 bg-green-900/10",
+  };
+  const RISK_TEXT: Record<string, string> = {
+    alto: "text-red-300", moderado: "text-orange-300", bajo: "text-green-400",
+  };
 
   return (
     <div className="space-y-4">
+      {/* AI fusion prose */}
+      {fusion?.prose_es && (
+        <div className={clsx("rounded-lg border px-3 py-2.5", RISK_BORDER[fusion.risk_level] ?? "border-slate-700 bg-surface-panel")}>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Brain size={10} className={RISK_TEXT[fusion.risk_level] ?? "text-slate-400"} aria-hidden="true" />
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+              Análisis multiriesgo
+            </p>
+            <span className={clsx("ml-auto text-[9px] font-bold uppercase px-1 py-0.5 rounded", RISK_TEXT[fusion.risk_level])}>
+              {fusion.risk_level.toUpperCase()}
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-300 leading-relaxed">{fusion.prose_es}</p>
+        </div>
+      )}
+
+      {/* Active alerts list */}
+      {activeAlerts.length > 0 && (
+        <div>
+          <p className="text-[11px] text-slate-400 mb-1.5 flex items-center gap-1">
+            <AlertTriangle size={10} /> Alertas activas ({activeAlerts.length})
+          </p>
+          <ul className="space-y-1">
+            {activeAlerts.map((a) => (
+              <li key={a.id} className="flex items-start gap-2 bg-surface-panel rounded-lg px-2.5 py-1.5">
+                <span className={clsx("mt-0.5 shrink-0 text-[9px] font-bold border rounded px-1 py-0.5", SEVERITY_BADGE[a.severity])}>
+                  {a.severity.slice(0, 4).toUpperCase()}
+                </span>
+                <p className="text-[11px] text-slate-200 leading-snug line-clamp-2">{a.title}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Metric cards */}
       <div className="grid grid-cols-2 gap-2">
-        <MetricCard
-          icon={AlertTriangle}
-          label="Alertas activas"
-          value={String(data.active_alerts.length)}
-          sub={data.active_alerts[0]?.title.slice(0, 32) + (data.active_alerts[0]?.title.length > 32 ? "…" : "") || "Sin alertas"}
-          color="text-red-400"
-        />
         <MetricCard
           icon={Droplets}
           label="Lluvia 24h (IMERG)"
@@ -322,6 +390,15 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
           sub="SINPAD 2003–2020"
           color="text-amber-400"
         />
+        {fusion?.flood.overlap_km2 != null && fusion.flood.overlap_km2 > 0 && (
+          <MetricCard
+            icon={Waves}
+            label="SAR inundado"
+            value={`${fusion.flood.overlap_km2.toFixed(1)} km²`}
+            sub={`${fusion.flood.active_polygon_count} polígono${fusion.flood.active_polygon_count !== 1 ? "s" : ""} Sentinel-1`}
+            color="text-cyan-400"
+          />
+        )}
       </div>
 
       {/* IMERG 30-day sparkline */}
