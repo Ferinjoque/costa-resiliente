@@ -16,6 +16,8 @@ import type {
   ImergCollection,
   FloodCollection,
   HuaycoCollection,
+  InfraCollection,
+  HazardCollection,
 } from "@/lib/api";
 
 /**
@@ -321,6 +323,62 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
       { station: "Chosica", river: "Rímac", level_m: 2.4, flow_m3s: 185, alert_threshold_m: 2.0, status: "alert" },
     ],
   },
+};
+
+// ─── Critical infrastructure (OSM) ───────────────────────────────────────────
+
+export const DEMO_INFRASTRUCTURE: InfraCollection = {
+  type: "FeatureCollection",
+  source: "OpenStreetMap (demo)",
+  retrieved_at: new Date(NOW).toISOString(),
+  features: [
+    { type: "Feature", geometry: { type: "Point", coordinates: [-76.868, -11.983] }, properties: { id: 1, osm_id: "way/123456", type: "hospital",    name: "Hospital Huachipa",           district_id: 1 } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-76.830, -11.970] }, properties: { id: 2, osm_id: "way/234567", type: "hospital",    name: "Centro de Salud Ñaña",        district_id: 1 } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-77.048, -11.882] }, properties: { id: 3, osm_id: "way/345678", type: "hospital",    name: "Posta Pedregal",              district_id: 6 } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-77.032, -12.045] }, properties: { id: 4, osm_id: "way/456789", type: "hospital",    name: "Hospital Casimiro Ulloa",     district_id: null } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-76.860, -11.978] }, properties: { id: 5, osm_id: "way/567890", type: "school",      name: "IE 1228 Leoncio Prado",      district_id: 1 } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-76.845, -11.968] }, properties: { id: 6, osm_id: "way/678901", type: "school",      name: "IE 1230 Sulpicio García",    district_id: 1 } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-77.053, -11.875] }, properties: { id: 7, osm_id: "way/789012", type: "school",      name: "IE 2085 San Agustín",        district_id: 6 } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-76.870, -11.972] }, properties: { id: 8, osm_id: "way/890123", type: "bridge",      name: "Puente Huachipa",            district_id: 1 } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-76.825, -11.962] }, properties: { id: 9, osm_id: "way/901234", type: "bridge",      name: "Puente Ñaña",                district_id: 1 } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-77.042, -11.891] }, properties: { id: 10, osm_id: "way/012345", type: "substation", name: "Subestación Carabayllo Norte", district_id: 6 } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-77.018, -11.865] }, properties: { id: 11, osm_id: "way/112233", type: "fire_station", name: "Compañía de Bomberos Carabayllo", district_id: 6 } },
+  ],
+};
+
+// ─── Historical hazard zones (SINPAD-derived) ─────────────────────────────────
+
+export const DEMO_HAZARD: HazardCollection = {
+  type: "FeatureCollection",
+  source: "SINPAD 2003-2020 (demo — densidad histórica eventos)",
+  retrieved_at: new Date(NOW).toISOString(),
+  features: [
+    {
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [[[-76.880, -11.960], [-76.840, -11.960], [-76.840, -11.995], [-76.880, -11.995], [-76.880, -11.960]]] },
+      properties: { id: 1, name: "Zona riesgo inundación Lurigancho-Chosica", hazard_type: "flood", level: "alto",     source_layer: "sinpad_density_2017", loaded_at: hoursAgo(48) },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [[[-77.060, -11.865], [-77.030, -11.865], [-77.030, -11.900], [-77.060, -11.900], [-77.060, -11.865]]] },
+      properties: { id: 2, name: "Zona riesgo huayco Carabayllo", hazard_type: "huayco", level: "alto",     source_layer: "sinpad_density_2017", loaded_at: hoursAgo(48) },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [[[-76.975, -11.990], [-76.950, -11.990], [-76.950, -12.020], [-76.975, -12.020], [-76.975, -11.990]]] },
+      properties: { id: 3, name: "Zona riesgo inundación Ate-Huachipa", hazard_type: "flood", level: "alto",     source_layer: "sinpad_density_2017", loaded_at: hoursAgo(48) },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [[[-77.115, -11.875], [-77.085, -11.875], [-77.085, -11.900], [-77.115, -11.900], [-77.115, -11.875]]] },
+      properties: { id: 4, name: "Zona riesgo inundación Puente Piedra", hazard_type: "flood", level: "moderado", source_layer: "sinpad_density_2017", loaded_at: hoursAgo(48) },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [[[-76.930, -11.930], [-76.900, -11.930], [-76.900, -11.960], [-76.930, -11.960], [-76.930, -11.930]]] },
+      properties: { id: 5, name: "Zona riesgo huayco San Juan de Lurigancho", hazard_type: "huayco", level: "moderado", source_layer: "sinpad_density_2017", loaded_at: hoursAgo(48) },
+    },
+  ],
 };
 
 // ─── Social signal pins (map layer) ──────────────────────────────────────────
