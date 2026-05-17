@@ -16,13 +16,12 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 // Display family — used sparingly: SINAGERD level word, hero metrics, panel
-// section titles. Single weight preloaded (700) to keep LCP budget.
+// section titles. Two static weights to keep LCP budget tight.
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
   weight: ["600", "700"],
-  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {

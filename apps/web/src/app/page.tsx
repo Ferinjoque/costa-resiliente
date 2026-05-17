@@ -9,16 +9,13 @@ import { AskPanel } from "@/components/panels/AskPanel";
 import { DecisionLogPanel } from "@/components/panels/DecisionLogPanel";
 import { DataFreshnessBar } from "@/components/ui/DataFreshnessBar";
 import { DataSourcesPanel } from "@/components/panels/DataSourcesPanel";
-import { TutorialOverlay } from "@/components/panels/TutorialOverlay";
 import { MapLegend } from "@/components/map/MapLegend";
 import { OperationalHUD } from "@/components/map/OperationalHUD";
 import { LiveTicker } from "@/components/map/LiveTicker";
-import { SharePanel } from "@/components/panels/SharePanel";
 import { ShareLoader } from "@/components/panels/ShareLoader";
 import { FusionCallout } from "@/components/panels/FusionCallout";
 import { DistrictDashboardPanel } from "@/components/panels/DistrictDashboardPanel";
 import { useUIStore } from "@/store/ui";
-import { DemoLiveSimulator } from "@/components/DemoLiveSimulator";
 import { ToastStack } from "@/components/ui/ToastStack";
 import { SocialFeedPanel } from "@/components/panels/SocialFeedPanel";
 import { SituationBrief } from "@/components/panels/SituationBrief";
@@ -32,6 +29,20 @@ const MapView = dynamic(() => import("@/components/map/MapView"), {
     </div>
   ),
 });
+
+// Non-critical chrome — deferred so the initial map paint owns the LCP budget.
+const TutorialOverlay = dynamic(
+  () => import("@/components/panels/TutorialOverlay").then((m) => m.TutorialOverlay),
+  { ssr: false },
+);
+const SharePanel = dynamic(
+  () => import("@/components/panels/SharePanel").then((m) => m.SharePanel),
+  { ssr: false },
+);
+const DemoLiveSimulator = dynamic(
+  () => import("@/components/DemoLiveSimulator").then((m) => m.DemoLiveSimulator),
+  { ssr: false },
+);
 
 const FIRST_VISIT_KEY = "cr_visited_v1";
 
@@ -131,7 +142,11 @@ export default function Home() {
         <SituationBrief />
         <DataFreshnessBar />
         <TutorialOverlay />
-        <ShareLoader />
+        {/* ShareLoader reads ?share=/?state= via useSearchParams — must be
+            wrapped in Suspense for static export. Renders nothing visible. */}
+        <Suspense fallback={null}>
+          <ShareLoader />
+        </Suspense>
         <FirstRunTrigger />
         <KeyboardNavigator />
         <DemoLiveSimulator />
