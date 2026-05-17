@@ -559,8 +559,12 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         _infra = (await conn.execute(text("SELECT COUNT(*) FROM geo.infrastructure"))).scalar_one()
         _hazard = (await conn.execute(text("SELECT COUNT(*) FROM geo.hazard_zones"))).scalar_one()
 
-        if flood_count > 0 and _qbr > 0 and _infra > 0 and _hazard > 0:
-            logger.info("auto_seed: all tables populated (%d flood rows) — skipping", flood_count)
+        _elnino = (await conn.execute(
+            text("SELECT COUNT(*) FROM ml.flood_polygons WHERE scene_id LIKE 'elnino2017%'")
+        )).scalar_one()
+
+        if flood_count > 0 and _qbr > 0 and _infra > 0 and _hazard > 0 and _elnino >= len(_ELNINO_FLOODS):
+            logger.info("auto_seed: all tables populated (%d flood rows, %d elnino) — skipping", flood_count, _elnino)
             return
 
         logger.info(
@@ -591,6 +595,27 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                     },
                 )
             logger.info("auto_seed: inserted %d simplified districts", len(_DEMO_DISTRICTS))
+
+        # ── 2b. Fill INEI 2017 populations for Lima Metro districts ──────────
+        # This runs unconditionally so a fresh DB always gets population data.
+        lima_pop_map = {
+            "150101": 271814, "150102": 62928,  "150103": 630086, "150104": 29764,
+            "150105": 68569,  "150106": 333045, "150107": 43694,  "150108": 325547,
+            "150109": 49462,  "150110": 520450, "150111": 191365, "150112": 216764,
+            "150113": 71589,  "150114": 171646, "150115": 164931, "150116": 49651,
+            "150117": 388534, "150118": 213386, "150119": 89415,  "150120": 54667,
+            "150122": 81619,  "150123": 129653, "150124": 16771,  "150125": 76114,
+            "150126": 362285, "150127": 7619,   "150128": 8295,   "150129": 163423,
+            "150130": 7842,   "150131": 111928, "150132": 54206,  "150133": 1038495,
+            "150135": 57598,  "150136": 700178, "150137": 135669, "150138": 228422,
+            "150139": 2176,   "150140": 18751,  "150141": 338509, "150142": 89283,
+            "150143": 393254, "150144": 398433,
+        }
+        for ubigeo, pop in lima_pop_map.items():
+            await conn.execute(
+                text("UPDATE geo.districts SET population = :pop WHERE ubigeo = :ubigeo AND (population IS NULL OR population = 0)"),
+                {"ubigeo": ubigeo, "pop": pop},
+            )
 
         # ── 3. Watersheds (FK required for IMERG) ────────────────────────────
         ws_count = (
@@ -721,7 +746,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
 
             existing = (
                 await conn.execute(
-                    text("SELECT id FROM ops.alerts WHERE title = :title"),
+                    text("SELECT id FROM ops.alerts WHERE title = :title LIMIT 1"),
                     {"title": a["title"]},
                 )
             ).scalar_one_or_none()
@@ -789,7 +814,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                         VALUES (:src, :h, :content, :t, :t,
                                 :label, :conf, 'gemma4-demo', :t,
                                 ST_SetSRID(ST_MakePoint(:lon,:lat), 4326),
-                                :district_id, :t + INTERVAL '7 days')
+                                :district_id, :expires_at)
                     """),
                     {
                         "src": s["source"],
@@ -801,6 +826,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                         "lon": s["lon"],
                         "lat": s["lat"],
                         "district_id": district_id,
+                        "expires_at": t + timedelta(days=7),
                     },
                 )
             except Exception as exc:
