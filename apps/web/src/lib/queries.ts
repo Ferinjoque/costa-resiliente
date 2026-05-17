@@ -44,7 +44,19 @@ import {
   type DistrictDashboard,
   fetchDistrictFusion,
 } from "./api";
-import { DEMO_ALERTS, DEMO_EXPOSURE, DEMO_DECISION_LOG, DEMO_DISTRICTS } from "./demoData";
+import {
+  DEMO_ALERTS,
+  DEMO_EXPOSURE,
+  DEMO_DECISION_LOG,
+  DEMO_DISTRICTS,
+  DEMO_SOCIAL_SIGNALS,
+  DEMO_DISTRICT_RISK_SUMMARY,
+  DEMO_DASHBOARDS,
+  DEMO_FUSIONS,
+  DEMO_IMERG,
+  DEMO_FLOOD,
+  DEMO_HUAYCO,
+} from "./demoData";
 
 /** When real API returns empty array, fall back to demo data so UI is never blank. */
 function withDemoFallback<T>(real: T[], demo: T[]): T[] {
@@ -102,7 +114,14 @@ export function useImerg(
 ): UseQueryResult<ImergCollection> {
   return useQuery({
     queryKey: ["imerg", hours, replayDate ?? null],
-    queryFn: () => fetchImerg(hours, replayDate),
+    queryFn: async () => {
+      try {
+        const data = await fetchImerg(hours, replayDate);
+        return data.features.length > 0 ? data : DEMO_IMERG;
+      } catch {
+        return DEMO_IMERG;
+      }
+    },
     staleTime: replayDate ? 60 * MIN : 2 * MIN,
     refetchInterval: replayDate ? false : 2 * MIN,
     ...opts,
@@ -115,7 +134,14 @@ export function useFlood(
 ): UseQueryResult<FloodCollection> {
   return useQuery({
     queryKey: ["flood", replayDate ?? null],
-    queryFn: () => fetchFlood(replayDate),
+    queryFn: async () => {
+      try {
+        const data = await fetchFlood(replayDate);
+        return data.features.length > 0 ? data : DEMO_FLOOD;
+      } catch {
+        return DEMO_FLOOD;
+      }
+    },
     staleTime: replayDate ? 60 * MIN : 10 * MIN,
     refetchInterval: replayDate ? false : undefined,
     ...opts,
@@ -127,7 +153,14 @@ export function useHuayco(
 ): UseQueryResult<HuaycoCollection> {
   return useQuery({
     queryKey: ["huayco"],
-    queryFn: fetchHuayco,
+    queryFn: async () => {
+      try {
+        const data = await fetchHuayco();
+        return data.features.length > 0 ? data : DEMO_HUAYCO;
+      } catch {
+        return DEMO_HUAYCO;
+      }
+    },
     staleTime: 10 * MIN,
     ...opts,
   });
@@ -222,7 +255,14 @@ export function useSocialSignals(
 ): UseQueryResult<SocialSignalCollection> {
   return useQuery({
     queryKey: ["social-signals", hours, label],
-    queryFn: () => fetchSocialSignals(hours, label),
+    queryFn: async () => {
+      try {
+        const data = await fetchSocialSignals(hours, label);
+        return data.features.length > 0 ? data : DEMO_SOCIAL_SIGNALS;
+      } catch {
+        return DEMO_SOCIAL_SIGNALS;
+      }
+    },
     staleTime: 5 * MIN,
     refetchInterval: 5 * MIN,
     ...opts,
@@ -235,7 +275,13 @@ export function useFusion(
 ): UseQueryResult<DistrictFusion> {
   return useQuery({
     queryKey: ["fusion", ubigeo],
-    queryFn: () => fetchDistrictFusion(ubigeo!),
+    queryFn: async () => {
+      try {
+        return await fetchDistrictFusion(ubigeo!);
+      } catch {
+        return DEMO_FUSIONS[ubigeo!] ?? DEMO_FUSIONS["150118"];
+      }
+    },
     enabled: !!ubigeo,
     staleTime: 3 * MIN,
     refetchInterval: 3 * MIN,
@@ -248,7 +294,14 @@ export function useDistrictRiskSummary(
 ): UseQueryResult<DistrictRiskSummary> {
   return useQuery({
     queryKey: ["district-risk-summary"],
-    queryFn: fetchDistrictRiskSummary,
+    queryFn: async () => {
+      try {
+        const data = await fetchDistrictRiskSummary();
+        return data.features.length > 0 ? data : DEMO_DISTRICT_RISK_SUMMARY;
+      } catch {
+        return DEMO_DISTRICT_RISK_SUMMARY;
+      }
+    },
     staleTime: 3 * MIN,
     refetchInterval: 5 * MIN,
     ...opts,
@@ -271,7 +324,13 @@ export function useDistrictDashboard(
 ): UseQueryResult<DistrictDashboard> {
   return useQuery({
     queryKey: ["district-dashboard", ubigeo],
-    queryFn: () => fetchDistrictDashboard(ubigeo!),
+    queryFn: async () => {
+      try {
+        return await fetchDistrictDashboard(ubigeo!);
+      } catch {
+        return DEMO_DASHBOARDS[ubigeo!] ?? DEMO_DASHBOARDS["150118"];
+      }
+    },
     enabled: !!ubigeo,
     staleTime: 2 * MIN,
     refetchInterval: 5 * MIN,
