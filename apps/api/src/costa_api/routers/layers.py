@@ -22,13 +22,19 @@ def _iso(dt: Any) -> str | None:
 
 
 def _parse_replay_time(at: Optional[str]) -> datetime:
-    """Parse ISO date string for replay; return UTC now if absent."""
+    """Parse ISO date string for replay; return UTC now if absent.
+    Date-only strings (YYYY-MM-DD) are treated as end-of-day so all data
+    ingested on that date is included in the replay view.
+    """
     if not at:
         return datetime.now(timezone.utc)
     try:
         dt = datetime.fromisoformat(at)
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
+        # Promote bare date to 23:59:59 so the full day is visible
+        if dt.hour == 0 and dt.minute == 0 and dt.second == 0:
+            dt = dt.replace(hour=23, minute=59, second=59)
         return dt
     except ValueError:
         return datetime.now(timezone.utc)
