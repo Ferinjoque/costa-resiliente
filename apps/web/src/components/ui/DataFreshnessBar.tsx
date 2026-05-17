@@ -57,8 +57,8 @@ export function DataFreshnessBar() {
         </span>
       </span>
 
-      {/* Data freshness items — show in live mode */}
-      {online && items.map(({ label, at }) => (
+      {/* Data freshness items — show in live mode and demo mode */}
+      {items.map(({ label, at }) => (
         <span key={label} className="flex items-center gap-1">
           <span className="text-slate-600" aria-hidden="true">·</span>
           <span className="text-slate-500">{label}</span>
@@ -70,7 +70,7 @@ export function DataFreshnessBar() {
       {isDemo && !isReplay && (
         <span className="flex items-center gap-1 text-slate-500">
           <span className="text-slate-700" aria-hidden="true">·</span>
-          <span>{locale === "en" ? "El Niño 2017 sample data" : "Datos muestra El Niño 2017"}</span>
+          <span>{locale === "en" ? "El Niño 2017 scenario" : "Escenario El Niño 2017"}</span>
         </span>
       )}
     </div>

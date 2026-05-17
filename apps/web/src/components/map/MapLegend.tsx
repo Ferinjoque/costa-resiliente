@@ -26,6 +26,13 @@ const HUAYCO_ITEMS = [
   { color: "#22c55e", label: "Bajo" },
 ];
 
+const ALERT_ITEMS = [
+  { color: "#dc2626", label: "Crítico (pulsante)" },
+  { color: "#f97316", label: "Alto" },
+  { color: "#f59e0b", label: "Medio" },
+  { color: "#22c55e", label: "Bajo" },
+];
+
 export function MapLegend() {
   const [open, setOpen] = useState(false);
   const { activeLayers } = useUIStore();
@@ -112,6 +119,12 @@ export function MapLegend() {
               <DotRow color="#22c55e" label="Normal" shape="circle" />
             </Section>
           )}
+
+          <Section label="Alertas operacionales">
+            {ALERT_ITEMS.map(({ color, label }) => (
+              <DotRow key={label} color={color} label={label} shape="circle" />
+            ))}
+          </Section>
         </div>
       )}
     </div>
