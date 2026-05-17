@@ -28,6 +28,12 @@ body {
   overflow: hidden;
 }
 
+/* Global focus-visible ring — WCAG 2.4.11 */
+:focus-visible {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 2px;
+}
+
 /* Map container fills its parent wrapper — z-0 keeps it below all UI panels */
 .map-container {
   position: absolute;
