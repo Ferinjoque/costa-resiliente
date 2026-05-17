@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, CheckCircle, AlertTriangle, TrendingUp, Users, TrendingDown, XCircle, MoreHorizontal, type LucideIcon } from "lucide-react";
+import { Bell, CheckCircle, AlertTriangle, TrendingUp, Users, TrendingDown, XCircle, MoreHorizontal, MapPin, type LucideIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import { useAlerts, useFloodExposure } from "@/lib/queries";
@@ -35,9 +35,16 @@ const ACTION_MAP: Record<string, string> = {
 
 function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   const qc = useQueryClient();
+  const { setFlyToPoint, setActivePanel } = useUIStore();
   const Icon = TYPE_ICON[alert.type] ?? Bell;
   const tr = useT(locale);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  function flyToAlert() {
+    if (alert.lat == null || alert.lng == null) return;
+    setFlyToPoint([alert.lng, alert.lat]);
+    setActivePanel("map");
+  }
 
   async function handleAction(action: "acknowledge" | "escalate" | "false_positive" | "close") {
     const newStatus = ACTION_MAP[action];
@@ -73,7 +80,19 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
           aria-label={`Severidad: ${alert.severity}`}
         />
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-white leading-snug">{alert.title}</p>
+          <div className="flex items-start gap-1.5">
+            <p className="text-sm text-white leading-snug flex-1">{alert.title}</p>
+            {alert.lat != null && alert.lng != null && (
+              <button
+                onClick={flyToAlert}
+                className="shrink-0 mt-0.5 text-slate-500 hover:text-costa-400 transition-colors"
+                title={locale === "es" ? "Ver en mapa" : "Show on map"}
+                aria-label={locale === "es" ? "Ver en mapa" : "Show on map"}
+              >
+                <MapPin size={12} />
+              </button>
+            )}
+          </div>
           {alert.description && (
             <p className="text-[11px] text-slate-400 mt-0.5 leading-snug line-clamp-2">{alert.description}</p>
           )}
