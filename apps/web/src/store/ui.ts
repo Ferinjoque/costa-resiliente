@@ -37,6 +37,9 @@ interface UIState {
   isTutorialOpen: boolean;
   setTutorialOpen: (open: boolean) => void;
 
+  alertStreamConnected: boolean;
+  setAlertStreamConnected: (on: boolean) => void;
+
   isShareMode: boolean;
   setShareMode: (on: boolean) => void;
 
@@ -83,6 +86,9 @@ export const useUIStore = create<UIState>((set) => ({
 
   isTutorialOpen: false,
   setTutorialOpen: (open) => set({ isTutorialOpen: open }),
+
+  alertStreamConnected: false,
+  setAlertStreamConnected: (on) => set({ alertStreamConnected: on }),
 
   isShareMode: false,
   setShareMode: (on) => set({ isShareMode: on }),

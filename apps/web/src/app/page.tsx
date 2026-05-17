@@ -16,6 +16,7 @@ import { ShareLoader } from "@/components/panels/ShareLoader";
 import { FusionCallout } from "@/components/panels/FusionCallout";
 import { DistrictDashboardPanel } from "@/components/panels/DistrictDashboardPanel";
 import { useUIStore } from "@/store/ui";
+import { useAlertStream } from "@/lib/useAlertStream";
 import { ToastStack } from "@/components/ui/ToastStack";
 import { SocialFeedPanel } from "@/components/panels/SocialFeedPanel";
 import { SituationBrief } from "@/components/panels/SituationBrief";
@@ -68,6 +69,11 @@ function KeyboardNavigator() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [setActivePanel, setTutorialOpen]);
+  return null;
+}
+
+function AlertStreamMount() {
+  useAlertStream();
   return null;
 }
 
@@ -137,6 +143,7 @@ export default function Home() {
         <Suspense fallback={null}>
           <ShareLoader />
         </Suspense>
+        <AlertStreamMount />
         <FirstRunTrigger />
         <KeyboardNavigator />
         <DemoLiveSimulator />
