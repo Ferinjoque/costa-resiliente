@@ -29,6 +29,11 @@ export const metadata: Metadata = {
   description:
     "Plataforma de conciencia situacional en tiempo real para inundaciones y huaycos — Lima Metropolitana",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon-192.png",
+    other: [{ rel: "icon", type: "image/png", url: "/icon-192.png" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
