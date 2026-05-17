@@ -58,7 +58,14 @@ async def list_districts(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
         }
         for row in rows
     ]
-    return {"type": "FeatureCollection", "features": features}
+    now = _now_iso()
+    return {
+        "type": "FeatureCollection",
+        "count": len(features),
+        "retrieved_at": now,
+        "data_updated_at": now,
+        "features": features,
+    }
 
 
 @router.get("/risk-summary")
@@ -333,12 +340,13 @@ async def get_district_watersheds(
     """Return watersheds that intersect a given district."""
     result = await db.execute(
         text("""
-            SELECT DISTINCT
+            SELECT DISTINCT ON (w.id)
                 w.id, w.name, w.river, w.area_km2,
                 ST_AsGeoJSON(w.geom)::json AS geometry
             FROM geo.watersheds w
-            JOIN geo.districts d ON ST_Intersects(d.geom, w.geom)
+            JOIN geo.districts d ON ST_Intersects(ST_MakeValid(d.geom), ST_MakeValid(w.geom))
             WHERE d.ubigeo = :ubigeo
+            ORDER BY w.id
         """),
         {"ubigeo": ubigeo},
     )

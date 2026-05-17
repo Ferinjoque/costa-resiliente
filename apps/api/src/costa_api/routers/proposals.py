@@ -109,15 +109,19 @@ async def approve_proposal(
     alert_result = await db.execute(
         text("""
             INSERT INTO ops.alerts
-                (alert_type, severity, status, title, summary, district_ubigeo, source_refs)
-            VALUES (:atype, :sev, 'active', :title, :summary, :ubigeo, CAST(:refs AS jsonb))
+                (type, severity, status, title, description, district_id, source_refs)
+            VALUES (
+                :atype, :sev, 'active', :title, :desc,
+                (SELECT id FROM geo.districts WHERE ubigeo = :ubigeo),
+                CAST(:refs AS jsonb)
+            )
             RETURNING id
         """),
         {
             "atype": p["alert_type"],
             "sev": p["severity"],
             "title": p["title"],
-            "summary": p["summary"],
+            "desc": p["summary"],
             "ubigeo": p["district_ubigeo"],
             "refs": refs_json,
         },

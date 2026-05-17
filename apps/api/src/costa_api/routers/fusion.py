@@ -143,8 +143,8 @@ async def district_fusion(
             FROM ml.huayco_susceptibility hs
             JOIN geo.quebradas q ON q.id = hs.quebrada_id
             JOIN geo.watersheds w ON w.id = q.watershed_id
-            WHERE ST_Intersects(w.geom, (
-                SELECT geom FROM geo.districts WHERE id = :district_id
+            WHERE ST_Intersects(ST_MakeValid(w.geom), (
+                SELECT ST_MakeValid(geom) FROM geo.districts WHERE id = :district_id
             ))
             ORDER BY hs.probability DESC NULLS LAST
             LIMIT 1
