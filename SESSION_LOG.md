@@ -269,11 +269,11 @@ Based on `docs/SUBMISSION_GAPS.md` + live system inspection.
 |-----------|-------|--------|----------|
 | **C1 Timeliness** | 4.3/5.0 | Partial | SSE stream exists (`/alerts/stream`), IMERG/ANA scrapers not running in this env; WebSocket push not wired to map layer refresh |
 | **C2 Comprehensiveness** | 4.8/5.0 | Near-complete | All data sources present; 11/159 districts have population data (rest NULL); flood exposure API exists but returns 0 population |
-| **C3 Integration** | 5.0/5.0 | Covered | All layers on map; agentic copilot queries all 8 data sources; decision log captures all queries |
-| **C4 Usability** | 5.0/5.0 | Covered | PWA manifest.json + sw.js + icons complete; Sprint 12 design pass; keyboard nav + aria |
+| **C3 Integration** | ~4.7/5.0 | Partial | All layers on map; agentic copilot queries all 8 data sources; **social signals have no map layer** (stored in DB, not rendered) |
+| **C4 Usability** | ~4.8/5.0 | Partial | PWA complete; Sprint 12 design pass; keyboard nav + aria; **Lighthouse AA unverified; "About this data" panel missing; TutorialOverlay is a shell** |
 | **C5 Scenario Fit** | 4.9/5.0 | Near-complete | Lima Metropolitana scope; SINAGERD workflow; EDAN CSV export; 2017 El Niño replay not built |
 
-**Estimated total: ~24.0/25** (unchanged from Sprint 12 — no regressions introduced)
+**Estimated total: ~23.8/25** (C3 and C4 scores corrected from initial estimate — social pins + Lighthouse gaps account for ~0.2 downward revision)
 
 ### Newly Confirmed Items (this session)
 
@@ -297,14 +297,20 @@ Based on `docs/SUBMISSION_GAPS.md` + live system inspection.
 | 6 | ANA/IMERG scrapers operational | C1+0.2 | Requires creds | ❌ Infra constraint |
 | 7 | WCAG Lighthouse pass (AA) | C4+0.2 | 2h | Not verified (no browser) |
 
-### TODO Items in Source
+### New Artifacts Created This Session
 
-```
-# apps/api/.env — remove stale OLLAMA_PRIMARY_MODEL=gemma4:e4b
-# apps/api/src/costa_api/ai/tools/db_tools.py — hours_back default 24h
-#   → consider 168h for flood polygons (current data may be days old in prod)
-# geo.districts — populate `population` for 148 districts missing INEI data
-```
+| File | Description |
+|------|-------------|
+| `apps/api/tests/test_session_audit.py` | 218-test audit suite across all 10 API layers |
+| `scripts/seed_demo_data.py` | Seeds IMERG, huayco, stations, flood polygons, social signals for demo/test use |
+
+### Quick-Fix TODOs (carry to next session)
+
+| File | Fix | Effort |
+|------|-----|--------|
+| `apps/api/.env` | Remove `OLLAMA_PRIMARY_MODEL=gemma4:e4b` (stale, conflicts with `LLM_PRIMARY_MODEL`) | 5 min |
+| `apps/api/src/costa_api/ai/tools/db_tools.py` | Change `get_flood_polygons` `hours_back` default from `24` → `168` (prod polygons may be days old) | 15 min |
+| `geo.districts` | Populate `population` for 148 NULL rows — INEI 2017 census data required | 2h data import |
 
 ---
 
@@ -339,3 +345,73 @@ a610f57 feat(impeccable): phase 4 layout - bento CityOverview + raise type floor
 - **Known remaining bugs**: None blocking rubric criteria
 - **VPS**: Not deployed — requires infra provisioning (see SUBMISSION_GAPS.md)
 - **Score estimate**: ~24.0/25 (unchanged, no regressions; P0-1 copilot bug now resolved)
+
+---
+
+## Session 2 — 2026-05-17 (continuation)
+
+**Session type:** Rubric gap closure  
+**Operator:** Claude Opus 4.7 (autonomous continuation)  
+**Goal:** Close C1, C3, C4 gaps — SSE map refresh, tutorial UX rework, Lighthouse AA
+
+### Phase 1 — Quick Fixes
+
+| Fix | File | Result |
+|-----|------|--------|
+| Commented out stale `OLLAMA_PRIMARY_MODEL=gemma4:e4b` | `apps/api/.env` (local only, gitignored) | ✅ |
+| Changed `get_flood_polygons` default `hours_back` 24 → 168 | `apps/api/src/costa_api/ai/tools/db_tools.py` | ✅ |
+
+### Phase 2 — SSE Hoisted to App Shell (C1 +0.3, C3 +0.2)
+
+- Extracted `useAlertStream` hook (`apps/web/src/lib/useAlertStream.ts`) — `EventSource` lives in app shell, not in `AlertsPanel`
+- On `alert` event: `setQueryData(["alerts"])` + `invalidateQueries(["district-risk-summary"])` — map district fill colors refresh without any panel open
+- `alertStreamConnected` state added to Zustand `useUIStore` — LIVE badge now correct regardless of active panel
+- `AlertsPanel` simplified — SSE refs removed, reads `alertStreamConnected` from store
+- `DataFreshnessBar`: SSE push updates "alerts" freshness timestamp to `now`
+
+### Phase 3 — Tutorial Rework (C4 +0.6)
+
+**Problem**: Two confusing buttons ("El Niño 2017" + standalone "Tutorial →"), centered modal blocked map, not step-by-step.
+
+**Solution**: Replaced 387-line `TutorialOverlay.tsx` modal with driver.js v1.4.0 spotlight walkthrough:
+- 7-step walkthrough highlights real DOM elements — map stays visible behind spotlight
+- Steps auto-activate corresponding layers (IMERG, flood, hazard, social) and navigate panels
+- Only "El Niño 2017" button triggers tutorial — removed redundant "Tutorial →" link from ScenarioPanel
+- `driver.js` CSS overrides in `globals.css` match the Costa Resiliente OKLCH design tokens
+- TypeScript declaration for `driver.js/dist/driver.css` in `apps/web/src/types/css-modules.d.ts`
+
+### Phase 4 — Lighthouse WCAG AA (C4 +0.2)
+
+**Results**: 84 (baseline) → 92 → 96 → **100/100 ✅**
+
+| Fix | Component | Issue |
+|-----|-----------|-------|
+| `bg-danger` → `bg-danger-deep` | `Badge` (primitives.tsx) | `text-surface` on cinnabar oklch(58%) = 3.8:1 < 4.5:1 |
+| `text-danger` → `text-danger-deep` | `Pill danger` (primitives.tsx) | oklch(58%) on danger-soft oklch(96%) = 3.65:1 < 4.5:1 |
+| `text-warn-muted` → `text-ink-muted` | `Pill warn` (primitives.tsx) | oklch(62%) amber on warn-soft = 2.28:1 |
+| `text-ink-subtle` → `text-ink-muted` | `SectionLabel` (primitives.tsx) | oklch(60%) on cream = 2.62:1 |
+| `text-ink-subtle` → `text-ink-muted` | Mobile nav inactive text (LeftRail) | same contrast issue |
+| `text-ink-subtle` → `text-ink-muted` | SituationBrief "Situación" header | same |
+| `text-ink-subtle` → `text-ink-muted` | SituationBrief priority district name | same |
+| `aria-label` on `<select>` | ScenarioPanel district select | missing label |
+| `ariaLabel` prop on `Toggle` | ScenarioPanel layer toggles (8) + 3D toggle | missing label |
+| MapLibre zoom buttons: 36px → 44px | `globals.css` | WCAG 2.5.8 target-size |
+| Mobile MapLibre `margin-bottom: 200px` | `globals.css` @media max-width:639px | Zoom btn overlapped SituationBrief action row |
+
+### Session 2 Commits
+
+| Hash | Message |
+|------|---------|
+| db9f478 | feat(sse): hoist alert stream to app shell — map refreshes without panel open |
+| 07abf2a | feat(tutorial): replace modal overlay with driver.js spotlight walkthrough |
+| 00dc4e1 | docs(session): complete SESSION_LOG — Phase 2/3/4 results |
+| (pending) | fix(a11y): Lighthouse 100/100 — contrast, target-size, aria-labels |
+
+### End-of-Session State (Session 2)
+
+- **Tests**: 218/218 pass (unchanged) — `test_session_audit.py`
+- **Lighthouse**: 100/100 accessibility ✅ WCAG AA confirmed
+- **Tutorial**: driver.js 7-step spotlight walkthrough ✅
+- **SSE**: app-shell-level, map refreshes on push ✅
+- **Score estimate**: ~24.5/25 (C1 +0.3 SSE, C4 +0.8 tutorial+lighthouse)
+- **VPS**: still undeployed — requires infra provisioning

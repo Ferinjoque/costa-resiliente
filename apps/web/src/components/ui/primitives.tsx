@@ -87,7 +87,7 @@ export function SectionLabel({
   return (
     <p
       className={clsx(
-        "text-2xs font-semibold tracking-caps text-ink-subtle uppercase",
+        "text-2xs font-semibold tracking-caps text-ink-muted uppercase",
         className,
       )}
     >
@@ -145,9 +145,9 @@ type PillVariant = "default" | "danger" | "warn" | "ok" | "accent";
 
 const PILL_VARIANT: Record<PillVariant, string> = {
   default: "bg-surface-sunken text-ink-muted",
-  danger:  "bg-danger-soft    text-danger",
-  warn:    "bg-warn-soft      text-warn-muted",
-  ok:      "bg-ok-soft        text-ok-muted",
+  danger:  "bg-danger-soft    text-danger-deep",
+  warn:    "bg-warn-soft      text-ink-muted",
+  ok:      "bg-ok-soft        text-ink",
   accent:  "bg-accent-soft    text-accent",
 };
 
@@ -183,7 +183,7 @@ export function Badge({
   variant?: "danger" | "warn" | "accent";
 }) {
   const BADGE_VARIANT = {
-    danger: "bg-danger text-surface",
+    danger: "bg-danger-deep text-surface",
     warn:   "bg-warn text-surface",
     accent: "bg-accent text-surface",
   };
@@ -211,11 +211,13 @@ export function Toggle({
   checked,
   onChange,
   label,
+  ariaLabel,
   disabled = false,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label?: string;
+  ariaLabel?: string;
   disabled?: boolean;
 }) {
   return (
@@ -223,7 +225,7 @@ export function Toggle({
       <span
         role="switch"
         aria-checked={checked}
-        aria-label={label}
+        aria-label={ariaLabel ?? label}
         onClick={() => onChange(!checked)}
         className={clsx(
           "relative inline-flex w-[36px] h-[20px] rounded-full transition-colors cursor-pointer shrink-0",

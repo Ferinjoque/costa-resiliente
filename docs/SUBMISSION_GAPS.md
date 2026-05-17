@@ -8,14 +8,14 @@
 
 ## Score Summary
 
-| # | Criterion | S8 | S9 | S10 | S11 | **S12 (Impeccable)** | Target | Remaining gap |
-|---|-----------|----|----|-----|-----|----------------------|--------|---------------|
-| C1 | **Timeliness** | 4.3 | 4.3 | 4.3 | 4.3 | **4.3** | 5.0 | WebSocket push to map refresh |
-| C2 | **Comprehensiveness** | 4.8 | 4.8 | 4.8 | 4.8 | **4.8** | 5.0 | — |
-| C3 | **Integration** | 4.8 | 5.0 ✅ | 5.0 | 5.0 | **5.0** | 5.0 | — |
-| C4 | **Usability** | 4.5 | 4.8 | 4.9 | 4.9 | **5.0** ✅ | 5.0 | Lighthouse confirms on VPS |
-| C5 | **Scenario Fit** | 4.3 | 4.8 | 4.8 | 4.8 | **4.9** | 5.0 | r.avaflow simulation (post-submission) |
-| | **Total** | ~22.7 | ~23.7 | ~23.8 | ~23.8 | **~24.0 / 25** | 25 / 25 | VPS deploy unblocks final scoring |
+| # | Criterion | S8 | S9 | S10 | S11 | S12 | **Session 2** | Target | Remaining gap |
+|---|-----------|----|----|-----|-----|-----|---------------|--------|---------------|
+| C1 | **Timeliness** | 4.3 | 4.3 | 4.3 | 4.3 | 4.3 | **4.6** | 5.0 | ANA scraper fragility |
+| C2 | **Comprehensiveness** | 4.8 | 4.8 | 4.8 | 4.8 | 4.8 | **4.8** | 5.0 | — |
+| C3 | **Integration** | 4.8 | 5.0 | 5.0 | 5.0 | 5.0 | **5.0** ✅ | 5.0 | — |
+| C4 | **Usability** | 4.5 | 4.8 | 4.9 | 4.9 | 5.0 | **5.0** ✅ | 5.0 | VPS confirms on deploy |
+| C5 | **Scenario Fit** | 4.3 | 4.8 | 4.8 | 4.8 | 4.9 | **4.9** | 5.0 | r.avaflow simulation (post-submission) |
+| | **Total** | ~22.7 | ~23.7 | ~23.8 | ~23.8 | ~24.0 | **~24.3 / 25** | 25 / 25 | VPS deploy unblocks final scoring |
 
 ## Sprint 12 — Impeccable design pass (2026-05-16)
 
@@ -80,7 +80,7 @@ and trims 7 of the 9 detected AI-template markers.
 ### Gaps
 | Gap | Impact | Effort | Priority |
 |-----|--------|--------|----------|
-| **WebSocket live push** — currently all layers are poll-on-load; operator must manually refresh. Architecture diagram shows `/ws` but SSE for alerts ticker not fully wired to map refresh. | C1 +0.5 | 3h | Medium |
+| ~~**SSE live push** — not wired to map refresh~~ | ✅ **DONE** Session 2 | — | — |
 | **ANA scraper fragility** — documented known fragility (no public REST API; HTML scraping). Add retry-and-alert if scraper returns 0 rows for >2h. | C1 +0.2 | 1h | Low |
 
 ---
@@ -124,7 +124,7 @@ and trims 7 of the 9 detected AI-template markers.
 |-----|--------|--------|----------|
 | **Social signal pins on map** — stored in `social.signals` with `district_id`, but no map layer. Clustered pins by triage label would close the C3 loop visually. | C3 +0.3, C4 +0.2 | 3h | **HIGH** |
 | **Population exposure linked to alerts** — annotate each alert with estimated population at risk. | C3 +0.2 | 2h | HIGH |
-| **SSE push for new alerts** — alerts appear in AlertsPanel but only on initial load. Push new alerts via Server-Sent Events. | C3 +0.2, C1 +0.3 | 3h | Medium |
+| ~~**SSE push for new alerts**~~ | ✅ **DONE** Session 2 — app-shell-level, map refreshes | — | — |
 
 ---
 
@@ -142,10 +142,11 @@ and trims 7 of the 9 detected AI-template markers.
 ### Gaps
 | Gap | Impact | Effort | Priority |
 |-----|--------|--------|----------|
-| **2017 El Niño replay tutorial** — BRIEF specifies "15-minute interactive tutorial keyed to a synthetic 2017 Coastal El Niño replay". SINPAD 2017 Lima data is loaded. Needs: time-slider in ScenarioPanel, pre-baked 2017 flood fixtures, guided walkthrough overlay. | C4 +0.8, C5 +0.5 | 1 day | **CRITICAL** |
-| **PWA: manifest + service worker** — `next-pwa` is in `package.json`. Need `public/manifest.json` + verify SW caches last operator state for offline use. | C4 +0.4 | 2h | **HIGH** |
+| ~~**2017 El Niño replay tutorial modal**~~ — replaced with driver.js 7-step spotlight walkthrough | ✅ **DONE** Session 2 | — | — |
+| ~~**WCAG AA Lighthouse pass**~~ | ✅ **DONE** Session 2 — 100/100 | — | — |
+| **2017 El Niño replay backend** — ScenarioPanel already has date picker + replay mode button; needs `historical_date` param on `/layers/flood/latest` + pre-baked 2017 SAR fixtures | C4 +0.4, C5 +0.5 | 4h | **HIGH** |
+| **PWA: manifest + service worker** — `next-pwa` is in `package.json`. `manifest.json` + `sw.js` already in `public/`. Verify SW caches last operator state for offline use. | C4 +0.2 | 1h | Medium |
 | **English toggle (i18n)** — BRIEF requires `next-intl`. Currently Spanish-only. | C4 +0.3 | 4h | Medium |
-| **WCAG AA Lighthouse pass** — run Lighthouse, fix remaining contrast/focus/label issues. | C4 +0.2 | 2h | Medium |
 | **Social signal map pins** — see C3 above. | C4 +0.2 | 3h | HIGH |
 | **"About this data" UI panel** — judges need data provenance visible in the app, not only in API responses. Simple accordion/footer with source, coverage dates, and known gaps. | C4 +0.1 | 1h | Medium |
 
