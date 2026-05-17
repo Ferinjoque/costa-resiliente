@@ -105,8 +105,7 @@ export function DemoLiveSimulator() {
       timerRef.current = setTimeout(injectNextSignal, delay);
     }
 
-    // First injection after 20s — gives map time to finish loading
-    timerRef.current = setTimeout(injectNextSignal, 20_000);
+    timerRef.current = setTimeout(injectNextSignal, 4_000);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
