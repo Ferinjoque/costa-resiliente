@@ -58,9 +58,11 @@ const KEYWORD_ROUTES: Array<{ keys: string[]; demo: string }> = [
 ];
 
 function findDemoResponse(query: string): string | null {
-  const q = query.toLowerCase();
-  const key = Object.keys(DEMO_COPILOT_RESPONSES).find((k) => k.toLowerCase() === q);
+  const q = query.toLowerCase().trim();
+  // Exact match (handles both Spanish and English keys)
+  const key = Object.keys(DEMO_COPILOT_RESPONSES).find((k) => k.toLowerCase().trim() === q);
   if (key) return key;
+  // Fuzzy keyword routing → falls back to Spanish demo key
   for (const { keys, demo } of KEYWORD_ROUTES) {
     if (keys.some((kw) => q.includes(kw.toLowerCase()))) return demo;
   }
@@ -270,16 +272,19 @@ export function AskPanel() {
           <>
             <p className="text-[11px] text-slate-500 text-center pt-2">{ui.hint}</p>
             <div className="space-y-1.5">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s.es}
-                  onClick={() => { const q = locale === "es" ? s.es : s.en; setQuery(q); submit(q); }}
-                  disabled={loading}
-                  className="w-full text-left text-xs text-slate-300 bg-surface-panel hover:bg-costa-900/40 hover:text-costa-200 border border-slate-700 hover:border-costa-700/50 rounded-lg px-3 py-2 transition-colors disabled:opacity-40"
-                >
-                  {locale === "es" ? s.es : s.en}
-                </button>
-              ))}
+              {SUGGESTIONS.map((s) => {
+                const q = locale === "es" ? s.es : s.en;
+                return (
+                  <button
+                    key={s.es}
+                    onClick={() => { setQuery(q); submit(q); }}
+                    disabled={loading}
+                    className="w-full text-left text-xs text-slate-300 bg-surface-panel hover:bg-costa-900/40 hover:text-costa-200 border border-slate-700 hover:border-costa-700/50 rounded-lg px-3 py-2 transition-colors disabled:opacity-40"
+                  >
+                    {q}
+                  </button>
+                );
+              })}
             </div>
           </>
         )}

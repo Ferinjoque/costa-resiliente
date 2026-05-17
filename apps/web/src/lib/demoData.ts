@@ -486,6 +486,96 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
       { infrastructure: "Av. Lurigancho km 8-11", status: "damaged", district: "Lurigancho" },
     ],
   },
+
+  // ─── English-locale responses (matched by suggestion click) ──────────────────
+
+  "What are the active alerts right now?": {
+    answer: "Currently active alerts — Lima Metropolitan Area:\n\n1. **[CRITICAL] Huayco — Quebrada Jicamarca** (Lurigancho): XGBoost probability 0.91, 63 mm rain in 72h exceeds 42 mm threshold. Preventive evacuation recommended.\n2. **[HIGH] SAR Flood — Huachipa** (Ate): 1.8 km² active flood polygon, 24,600 people in flood zone.\n3. **[HIGH] Chillón River Overflow** (Carabayllo): Level 3.1 m at Carabayllo station (threshold: 2.5 m).\n4. **[HIGH] Social Cluster — SJL sector 3**: 12 urgent help signals in 3h, geo-clustered, PII redacted.\n\n**SINAGERD Level: EMERGENCY** — 1 critical alert active.\n\nSource: SAR Sentinel-1 + ANA stations + Bluesky/Reddit triage.",
+    intent: "flood_status",
+    confidence: 0.92,
+    query_plan: "active_alerts_summary",
+    sources: [
+      { district: "Lurigancho", alert_type: "huayco", severity: "critical", huayco_prob: 0.91 },
+      { district: "Ate", alert_type: "flood", severity: "high", flood_area_km2: 1.8 },
+      { district: "Carabayllo", alert_type: "flood", severity: "high", river_level_m: 3.1 },
+    ],
+  },
+  "Which districts should I evacuate first?": {
+    answer: "Evacuation priority order — Lima Metropolitan Area (current risk × population density):\n\n1. **Lurigancho-Chosica** — CRITICAL. Quebrada Jicamarca activation imminent. 28,400 people in SAR flood zone. Recommend immediate evacuation of Canto Grande and Jicamarca sectors.\n2. **Carabayllo** — HIGH. Chillón at 3.1 m (threshold 2.5 m). 19,800 affected. Pre-position in Av. Túpac Amaru shelters.\n3. **Ate** — HIGH. Huachipa 1.8 km² flooded. 24,600 affected. Carretera Central closure forces alternative routes.\n\n**Recommendation**: Deploy INDECI USAR teams to Jicamarca now. Alert shelters: Colegio Los Pinos (Lurigancho, cap. 400), Estadio Carabayllo (cap. 800).\n\nSource: SINPAD 2003–2020 + SAR polygons + INEI 2017 population grid.",
+    intent: "evacuation_priority",
+    confidence: 0.95,
+    query_plan: "evacuation_priority_by_risk_density",
+    sources: [
+      { district: "Lurigancho", priority: 1, affected_population: 28400, shelter_capacity: 1200 },
+      { district: "Carabayllo", priority: 2, affected_population: 19800, shelter_capacity: 800 },
+      { district: "Ate", priority: 3, affected_population: 24600, shelter_capacity: 600 },
+    ],
+  },
+  "Which districts have the highest risk right now?": {
+    answer: "Highest-risk districts — Lima Metropolitan Area:\n\n1. **Lurigancho** — ALTO: 3 active SAR flood polygons (4.2 km²), critical huayco alert in Quebrada Jicamarca (prob. 0.91).\n2. **Carabayllo** — ALTO: Chillón river overflow, north sector, level 3.1 m (threshold: 2.5 m), 2 active polygons.\n3. **Ate** — ALTO: Active flood in Huachipa 1.8 km², rising trend at Puente Los Ángeles station.\n\nTotal: 4 active alerts, ~84,572 people in risk zones.\n\nSource: SAR Sentinel-1 × ANA stations × INEI population.",
+    intent: "flood_status",
+    confidence: 0.92,
+    query_plan: "flood_status_by_district",
+    sources: [
+      { district: "Lurigancho", flood_area_km2: 4.2, alert_count: 2, severity: "critical" },
+      { district: "Carabayllo", flood_area_km2: 2.8, alert_count: 1, severity: "high" },
+      { district: "Ate", flood_area_km2: 1.9, alert_count: 1, severity: "high" },
+    ],
+  },
+  "What is the forecast for the next 24 hours?": {
+    answer: "72-hour rainfall forecast — Lima watersheds (SENAMHI WRF model):\n\n• **+6h**: Rímac 8.5 mm — LOW risk\n• **+12h**: Rímac 15.8 mm — MODERATE risk, huayco prob. 28%\n• **+24h**: Rímac 31.2 mm — **HIGH risk**, huayco prob. 52%\n• **+48h**: Rímac 48.5 mm — **HIGH risk**, prob. 71% ⚠️ exceeds 42 mm threshold\n• **+72h**: Rímac 64.2 mm — **HIGH risk**, prob. 82%\n\n**PRE-ALERT**: Huayco activation threshold (42 mm) will be exceeded at the +24h mark.\n\n**Recommendation**: Pre-position USAR teams in Jicamarca and activate shelter protocols in Lurigancho and Carabayllo sectors.\n\nSource: SENAMHI WRF model + NASA IMERG Early Run.",
+    intent: "rainfall_forecast",
+    confidence: 0.88,
+    query_plan: "rainfall_forecast_72h",
+    sources: [
+      { watershed: "Rímac", hours_24: 31.2, hours_48: 48.5, hours_72: 64.2, threshold_mm: 42 },
+      { watershed: "Chillón", hours_24: 18.7, hours_48: 28.3, hours_72: 38.9, threshold_mm: 35 },
+    ],
+  },
+  "Which evacuation routes are blocked?": {
+    answer: "Blocked and compromised evacuation routes — Lima Metropolitan Area:\n\n🔴 **Collapsed / Impassable**:\n• Ñaña Pedestrian Bridge — undermined foundation, closed to all traffic.\n• Carretera Central km 23 (Chosica) — landslide, total road cut.\n\n🟠 **Reduced capacity** (use with caution):\n• Av. Lurigancho km 8–11 — potholes and erosion, no heavy vehicles.\n• Carabayllo–Canta Road km 4 — lateral landslide, single lane.\n\n**Active alternative routes**:\n• Central Highway → Ramiro Prialé (avoid km 23).\n• Lurigancho: use Av. Las Torres + Canto Grande connector.\n• Carabayllo: route through Av. Universitaria Norte.\n\nSource: MTC field reports + social signals (road_blocked label).",
+    intent: "infrastructure_impact",
+    confidence: 0.85,
+    query_plan: "road_damage_assessment",
+    sources: [
+      { infrastructure: "Puente Ñaña", status: "collapsed", district: "Lurigancho" },
+      { infrastructure: "Carretera Central km 23", status: "blocked", district: "Lurigancho" },
+      { infrastructure: "Av. Lurigancho km 8-11", status: "damaged", district: "Lurigancho" },
+    ],
+  },
+  "How many urgent social signals are there now?": {
+    answer: "Social signals — last 24 hours (AI-triaged, PII redacted via Presidio):\n\n• **Total signals**: 87 across 15 districts.\n• **Urgent (needs_help)**: 23 — concentrated in Lurigancho (8), Ate (6), Carabayllo (5).\n• **Road blocked**: 14 — 7 confirmed by infrastructure report.\n• **Infrastructure damage**: 12 — bridges, schools, water mains.\n• **Weather observation**: 38 — consistent with IMERG rainfall data.\n\n**Sources**: Bluesky (42), Reddit r/Peru + r/Lima (28), Telegram Senamhi_Peru (17).\n**Average triage confidence**: 0.82 (XGBoost classifier).\n\nAll signals geolocated within ±500m accuracy.",
+    intent: "social_signals",
+    confidence: 0.87,
+    query_plan: "social_signals_summary_24h",
+    sources: [
+      { source: "bluesky", count: 42, urgent: 12, confidence: 0.84 },
+      { source: "reddit", count: 28, urgent: 7, confidence: 0.79 },
+      { source: "telegram", count: 17, urgent: 4, confidence: 0.88 },
+    ],
+  },
+  "Which hydrological stations are on alert?": {
+    answer: "ANA hydrological station status — Lima watersheds:\n\n🔴 **Alert** (threshold exceeded):\n• **ANA-Chosica** (Rímac): 2.4 m — threshold 2.0 m ⚠️, flow 185 m³/s, rising trend.\n• **ANA-Carabayllo** (Chillón): 3.1 m — threshold 2.5 m ⚠️, flow 148 m³/s.\n\n🟡 **Warning** (near threshold):\n• **ANA-Chaclacayo** (Rímac): 1.8 m — threshold 1.5 m, flow 121 m³/s.\n• **ANA-Huachipa** (Rímac): 1.9 m — threshold 1.8 m, flow 89 m³/s.\n\n🟢 **Normal**:\n• **ANA-Lurín** (Lurín): 0.6 m — threshold 1.2 m, flow 12 m³/s.\n\nSource: ANA Observatorio Chirilu (scraper, 15 min interval) + SENAMHI.",
+    intent: "station_status",
+    confidence: 0.91,
+    query_plan: "station_alert_status",
+    sources: [
+      { station: "ANA-Chosica", river: "Rímac", level_m: 2.4, threshold_m: 2.0, status: "alert" },
+      { station: "ANA-Carabayllo", river: "Chillón", level_m: 3.1, threshold_m: 2.5, status: "alert" },
+      { station: "ANA-Chaclacayo", river: "Rímac", level_m: 1.8, threshold_m: 1.5, status: "warning" },
+    ],
+  },
+  "How many people are in active flood zones?": {
+    answer: "Population exposure estimate — active SAR flood zones (PostGIS cross-reference):\n\n• **Total affected**: ~84,572 people across 4 districts.\n• **Lurigancho-Chosica**: ~28,400 pop. in SAR zone (4.2 km²).\n• **Carabayllo**: ~19,800 pop. in SAR zone (2.8 km²).\n• **Ate**: ~24,600 pop. in SAR zone (1.9 km²).\n• **San Juan de Lurigancho**: ~11,772 pop. in SAR zone (0.8 km²).\n\n**Methodology**: SAR Sentinel-1 flood polygons × district boundaries × INEI 2017 population grid (100m resolution).\n\nNote: Figure represents people within flood polygon extent — actual evacuees may be lower depending on elevation within zone.",
+    intent: "flood_status",
+    confidence: 0.91,
+    query_plan: "flood_exposure_population",
+    sources: [
+      { district: "Lurigancho", affected_population: 28400, overlap_km2: 4.2 },
+      { district: "Carabayllo", affected_population: 19800, overlap_km2: 2.8 },
+      { district: "Ate", affected_population: 24600, overlap_km2: 1.9 },
+    ],
+  },
 };
 
 // ─── Critical infrastructure (OSM) ───────────────────────────────────────────
