@@ -9,6 +9,9 @@ const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 // Keyword → demo response key mapping for fuzzy fallback
 const KEYWORD_ROUTES: Array<{ keys: string[]; demo: string }> = [
+  { keys: ["alerta", "alert", "activ", "active alerts", "alertas activas"], demo: "¿Cuáles son las alertas activas ahora?" },
+  { keys: ["evacu", "prioridad", "priority", "evacuation", "primero", "first"], demo: "¿Qué distritos debo evacuar primero?" },
+  { keys: ["jicamarca", "umbral", "threshold", "precipitación necesaria", "activar huayco"], demo: "¿Cuánta precipitación es necesaria para activar un huayco en Jicamarca?" },
   { keys: ["riesgo", "distrito", "risk", "district", "mayor riesgo", "which district", "highest risk"], demo: "¿Cuáles son los distritos en mayor riesgo ahora?" },
   { keys: ["huayco", "quebrada", "landslide", "desliz", "quebradas"], demo: "¿Qué quebradas tienen riesgo alto de huayco?" },
   { keys: ["lluvia", "rain", "rímac", "rimac", "precipit", "72h", "72 h", "rainfall", "cuánta lluvia", "acumulada"], demo: "¿Cuánta lluvia acumulada hubo en el Rímac en las últimas 72h?" },
@@ -28,9 +31,9 @@ function findDemoResponse(query: string): string | null {
 }
 
 const SUGGESTIONS: { es: string; en: string }[] = [
+  { es: "¿Cuáles son las alertas activas ahora?", en: "What are the active alerts right now?" },
+  { es: "¿Qué distritos debo evacuar primero?", en: "Which districts should I evacuate first?" },
   { es: "¿Cuáles son los distritos en mayor riesgo ahora?", en: "Which districts have the highest risk right now?" },
-  { es: "¿Qué quebradas tienen riesgo alto de huayco?", en: "Which quebradas have high huayco risk?" },
-  { es: "¿Cuánta lluvia acumulada hubo en el Rímac en las últimas 72h?", en: "How much rain accumulated in the Rímac watershed in the last 72h?" },
   { es: "¿Cuántas personas están en zona de inundación activa?", en: "How many people are in active flood zones?" },
   { es: "¿Qué infraestructura crítica está en zona inundada?", en: "What critical infrastructure is in flooded areas?" },
   { es: "¿Cuál es el nivel del río Rímac en Chosica?", en: "What is the Rímac river level at Chosica?" },

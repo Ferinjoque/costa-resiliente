@@ -3,7 +3,22 @@
 import { ClipboardList, Download } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useDecisionLog } from "@/lib/queries";
-import { decisionLogCsvUrl } from "@/lib/api";
+import { useApiHealth } from "@/lib/queries";
+import type { DecisionLogEntry } from "@/lib/api";
+
+function downloadCsv(entries: DecisionLogEntry[]) {
+  const header = "id,logged_at,operator_id,action_type,alert_id,payload\n";
+  const rows = entries.map((e) =>
+    [e.id, e.logged_at, e.operator_id, e.action_type, e.alert_id ?? "", JSON.stringify(e.payload)].join(",")
+  ).join("\n");
+  const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `costa_resiliente_decision_log_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 function timeStamp(iso: string): string {
   const d = new Date(iso);
@@ -28,6 +43,8 @@ const ACTION_LABELS: Record<string, string> = {
 export function DecisionLogPanel() {
   const { activePanel } = useUIStore();
   const { data: entries = [], isLoading, isError } = useDecisionLog(100);
+  const { data: health, isError: apiDown } = useApiHealth();
+  const online = health?.status === "ok" && !apiDown;
 
   if (activePanel !== "log") return null;
 
@@ -47,14 +64,24 @@ export function DecisionLogPanel() {
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
         <ClipboardList size={15} className="text-costa-500" aria-hidden="true" />
         <h2 className="text-sm font-semibold text-white">Registro</h2>
-        <a
-          href={decisionLogCsvUrl()}
-          download
-          className="ml-auto text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-xs rounded focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none"
-          aria-label="Exportar registro a CSV"
-        >
-          <Download size={13} /> CSV
-        </a>
+        {online ? (
+          <a
+            href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/alerts/decision-log/export`}
+            download
+            className="ml-auto text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-xs rounded focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none"
+            aria-label="Exportar registro a CSV"
+          >
+            <Download size={13} /> CSV
+          </a>
+        ) : (
+          <button
+            onClick={() => downloadCsv(entries)}
+            className="ml-auto text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-xs rounded focus-visible:ring-2 focus-visible:ring-costa-500 focus-visible:outline-none"
+            aria-label="Exportar registro a CSV (modo demo)"
+          >
+            <Download size={13} /> CSV
+          </button>
+        )}
       </div>
 
       <ul
