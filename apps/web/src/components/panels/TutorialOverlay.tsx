@@ -58,7 +58,7 @@ const STEPS: Step[] = [
     stat: "Chosica: 4.2 km² · Carabayllo: 2.8 km² · Ate: 1.9 km²",
     autoLayers: ["districts", "imerg", "flood"],
     autoReplayDate: "2017-03-22",
-    autoDistrict: { ubigeo: "150112", name: "Lurigancho" },
+    autoDistrict: { ubigeo: "150118", name: "Lurigancho" },
     actionLabel: "Polígonos SAR cargados",
   },
   {
