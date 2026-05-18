@@ -392,8 +392,6 @@ export default function MapView() {
   useEffect(() => {
     const m = map.current;
     if (!m) return;
-    type MapWithFog = maplibregl.Map & { setFog(f: object | null): void };
-
     const enter3D = () => {
       _is3DOn.current = true;
 
@@ -408,15 +406,6 @@ export default function MapView() {
         });
       }
       m.setTerrain({ source: "terrain-dem", exaggeration: 2.5 });
-
-      // Deep-space atmospheric fog (setFog exists at runtime but not in v4 type defs)
-      (m as MapWithFog).setFog({
-        color: "rgb(15, 23, 42)",
-        "high-color": "rgb(20, 45, 100)",
-        "horizon-blend": 0.04,
-        "space-color": "rgb(3, 5, 15)",
-        "star-intensity": 0.5,
-      });
 
       // Dramatic pitch entry with cubic-ease
       m.easeTo({ pitch: 62, bearing: -20, duration: 2000, easing: (t) => 1 - (1 - t) ** 3 });
@@ -584,7 +573,6 @@ export default function MapView() {
       _rotCleanup.current?.();
       _rotCleanup.current = null;
       try { m.setTerrain(null); } catch { /* ignore */ }
-      try { (m as MapWithFog).setFog(null); } catch { /* ignore */ }
       for (const id of ["sky", "flood-extrusion", "risk-extrusion", "imerg-extrusion", "hazard-extrusion"]) {
         try { if (m.getLayer(id)) m.removeLayer(id); } catch { /* ignore */ }
       }
