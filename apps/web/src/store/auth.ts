@@ -14,6 +14,8 @@ export interface Operator {
 interface AuthState {
   token: string | null;
   operator: Operator | null;
+  loginModalOpen: boolean;
+  setLoginModalOpen: (v: boolean) => void;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   hydrate: () => void;
@@ -25,6 +27,8 @@ const LS_OPERATOR = "cr_auth_operator";
 export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   operator: null,
+  loginModalOpen: false,
+  setLoginModalOpen: (v) => set({ loginModalOpen: v }),
 
   hydrate: () => {
     if (typeof window === "undefined") return;
