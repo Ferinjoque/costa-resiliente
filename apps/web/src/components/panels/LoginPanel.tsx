@@ -197,8 +197,8 @@ export function LoginPanel() {
           <div className="px-6 pb-5">
             <p className="text-2xs text-ink-subtle mb-2">
               {locale === "es"
-                ? "Cuentas de demostración (contraseña: demo1234):"
-                : "Demo accounts (password: demo1234):"}
+                ? "Cuentas de demostración:"
+                : "Demo accounts:"}
             </p>
             <div className="flex flex-col gap-1">
               {DEMO_HINTS.map(({ username: u, role, note }) => (

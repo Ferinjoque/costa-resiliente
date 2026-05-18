@@ -142,7 +142,7 @@
 - **Status**: ✅ Loaded; layer live on map as "Peligro Histórico"
 
 ### Spanish Signal Triage (LLM)
-- **Model**: gemma4:e4b (primary) / qwen3:14b (fallback) via Ollama
+- **Model**: qwen2.5:7b-instruct-q4_K_M via Ollama
 - **Labels**: needs_help, infrastructure_damage, road_blocked, weather_observation, false_alarm, irrelevant
 - **Output**: `social.signals.triage_label` + `triage_confidence`
 - **Status**: ✅ Implemented; all ingested signals are triaged
