@@ -10,7 +10,8 @@ services:
       target: development
     volumes:
       - ./apps/api/src:/app/src:ro
-    command: uvicorn costa_api.main:app --host 0.0.0.0 --port 8000 --reload
+      - ./apps/api/tests:/app/tests:ro
+    command: uvicorn costa_api.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src --timeout-graceful-shutdown 5
 
   prefect-worker:
     volumes:

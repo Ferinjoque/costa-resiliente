@@ -194,10 +194,7 @@ async def log_decision(entry: LogEntry, db: AsyncSession = Depends(get_db)) -> d
 
 @router.get("/stream")
 async def alerts_stream(request: Request) -> StreamingResponse:
-    """Server-Sent Events — pushes active alerts every 10 s.
-    DB operations run in a shielded task so that client disconnects cannot
-    cancel mid-flight asyncpg operations and corrupt the connection pool.
-    """
+    """Server-Sent Events — pushes active alerts every 10 s."""
     async def _fetch_alerts() -> str:
         async with engine.connect() as conn:
             result = await conn.execute(
@@ -219,32 +216,18 @@ async def alerts_stream(request: Request) -> StreamingResponse:
         return json.dumps(alerts)
 
     async def generate():
-        fetch_task: asyncio.Task | None = None
-        try:
-            while True:
+        while True:
+            if await request.is_disconnected():
+                break
+            try:
+                payload = await asyncio.wait_for(_fetch_alerts(), timeout=8.0)
+                yield f"data: {payload}\n\n"
+            except (asyncio.TimeoutError, Exception):
+                pass
+            for _ in range(10):
                 if await request.is_disconnected():
-                    break
-                fetch_task = asyncio.create_task(_fetch_alerts())
-                try:
-                    payload = await asyncio.shield(fetch_task)
-                    yield f"data: {payload}\n\n"
-                except asyncio.CancelledError:
-                    break
-                finally:
-                    fetch_task = None
-                for _ in range(10):
-                    if await request.is_disconnected():
-                        return
-                    await asyncio.sleep(1)
-        except (GeneratorExit, Exception):
-            pass
-        finally:
-            if fetch_task and not fetch_task.done():
-                fetch_task.cancel()
-                try:
-                    await fetch_task
-                except (asyncio.CancelledError, Exception):
-                    pass
+                    return
+                await asyncio.sleep(1)
 
     return StreamingResponse(
         generate(),
