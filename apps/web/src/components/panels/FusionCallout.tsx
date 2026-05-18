@@ -64,7 +64,7 @@ export function FusionCallout() {
 
   return (
     <aside
-      className="absolute top-14 right-4 z-20 w-[260px] bg-surface border border-border-strong rounded-2xl shadow-panel overflow-hidden panel-animate sm:top-4 sm:right-auto sm:left-[272px]"
+      className="absolute top-14 right-4 z-20 w-[260px] bg-surface border border-border-strong rounded-2xl shadow-panel overflow-hidden panel-animate sm:top-4 sm:right-auto sm:left-[296px]"
       role="status"
       aria-live="polite"
       aria-label={t.title}
