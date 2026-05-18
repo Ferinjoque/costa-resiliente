@@ -410,7 +410,7 @@ export default function MapView() {
           maxzoom: 15,
         });
       }
-      m.setTerrain({ source: "terrain-dem", exaggeration: 2.5 });
+      m.setTerrain({ source: "terrain-dem", exaggeration: 1.2 });
 
       // Dramatic pitch entry with cubic-ease
       const EASE_MS = 2000;
