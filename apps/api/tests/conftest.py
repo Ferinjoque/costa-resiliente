@@ -87,6 +87,17 @@ async def _do_restore(snap: dict) -> None:
         await pool.close()
 
 
+def pytest_configure(config: pytest.Config) -> None:
+    """
+    Force session-scoped event loops for all async tests.
+    Without this, SQLAlchemy's asyncpg global pool holds connections from
+    the first test's loop; subsequent tests get a new loop and pool cleanup
+    raises 'Event loop is closed'.
+    pytest-asyncio 1.x removed the event_loop fixture override; use ini cache instead.
+    """
+    config._inicache["asyncio_default_test_loop_scope"] = "session"  # type: ignore[attr-defined]
+
+
 @pytest.fixture(scope="session", autouse=True)
 def db_cleanup():
     """Session-scoped autouse fixture: snapshot before tests, restore after."""
