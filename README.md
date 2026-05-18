@@ -1,215 +1,96 @@
 # Costa Resiliente
 
-**Near-real-time operational awareness platform for El Niño-driven floods and
-huaycos in Lima Metropolitana, Peru.**
+**Near-real-time operational awareness platform for El Niño-driven floods and huaycos in Lima Metropolitana, Peru.**
 
-> IEEE Response Quest Challenge 2026 submission · Fernando Injoque
-
----
-
-## What It Does
-
-Costa Resiliente fuses satellite radar (Sentinel-1), hydrometeorological data
-(NASA IMERG, ANA, SENAMHI), infrastructure layers (CENEPRED SIGRID, OSM), and
-Spanish-language social signals (Bluesky, Reddit, RSS, Telegram) into a single
-browser-accessible dashboard for SINAGERD emergency managers at COEN, COER Lima
-Metropolitana, and distrital COELs.
-
-It addresses all six IEEE Response Quest sub-problems:
-
-| Sub-problem | How |
-|-------------|-----|
-| **Access** | Prefect flows per data source with retries, STAC catalog |
-| **Storage** | PostGIS + TimescaleDB for vector + time-series; MinIO for rasters |
-| **Integration** | Unified spatial schema + Redis pub/sub live updates |
-| **UI** | Next.js dashboard — Scenario Panel, Map, Alerts, Ask, Decision Log |
-| **Decision-making** | Operator Copilot (RAG over structured data, Spanish NL) |
-| **Modeling** | SAR flood segmentation, XGBoost huayco susceptibility, r.avaflow |
+> IEEE Response Quest Challenge 2026 submission · Fernando Injoque · Apache 2.0
 
 ---
 
-## Quick Start (Local Dev)
+## What it is
+
+A browser-accessible operational dashboard for Peru's SINAGERD emergency managers (COEN, COER Lima Metropolitana, distrital COELs) responding to El Niño Costero floods and huaycos. Fuses satellite radar, hydrometeorological data, infrastructure layers, and Spanish-language social signals through an agentic AI copilot — all running on local hardware, no cloud API dependency.
+
+## Documentation map
+
+| Doc | Purpose |
+|-----|---------|
+| **[`docs/STATUS.md`](docs/STATUS.md)** | Current build state, rubric score, what's pending |
+| **[`docs/COMPETITION.md`](docs/COMPETITION.md)** | IEEE rubric, scope, locked decisions, Phase 2 submitted text |
+| **[`apps/web/DESIGN.md`](apps/web/DESIGN.md)** | Frontend design system |
+| [`docs/architecture.md`](docs/architecture.md) | System architecture + data flow |
+| [`docs/data-sources.md`](docs/data-sources.md) | Per-source endpoints + status |
+| [`docs/responsible-data-handling.md`](docs/responsible-data-handling.md) | Privacy + compliance (Ley 29733 + OCHA + IASC) |
+| [`docs/operator-runbook.md`](docs/operator-runbook.md) | Operator manual |
+| [`docs/decisions/`](docs/decisions/) | ADRs |
+| [`CLAUDE.md`](CLAUDE.md) | Agent / contributor working instructions |
+
+## Quick start
 
 ```bash
-# 1. Clone and copy environment template
 git clone <repo-url> && cd costa-resiliente
-cp .env.example .env  # fill in required values
-
-# 2. Start all services
-docker compose up -d
-
-# 3. Wait for healthchecks (~30s), then verify
-docker compose ps
-curl http://localhost:8000/api/v1/health
-curl http://localhost:3000
+cp .env.example .env                          # fill in EarthData, Telegram, etc.
+docker compose up -d                          # 9 services
+docker compose ps                             # verify health
 ```
 
----
+Web at <http://localhost:3000> · API at <http://localhost:8000> · API docs at <http://localhost:8000/docs>.
 
-## Architecture
+Demo SINAGERD operator accounts (password `demo1234`):
+- `coen_lima` — COEN, national
+- `coer_lima` — COER, Lima region
+- `coel_sjl` — COEL, San Juan de Lurigancho (150132)
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                    Browser (Next.js)                      │
-│  Scenario Panel │ Map View │ Alerts Feed │ Ask │ Log     │
-└────────────────────────┬─────────────────────────────────┘
-                         │ HTTP / WebSocket / SSE
-┌────────────────────────▼─────────────────────────────────┐
-│                FastAPI (apps/api)                         │
-│  /districts  /layers  /alerts  /copilot  /ws/live        │
-└───────┬──────────────────────┬───────────────────────────┘
-        │                      │
-┌───────▼──────┐    ┌──────────▼──────────────────────────┐
-│   PostGIS +  │    │        Prefect Workers               │
-│ TimescaleDB  │    │  Sentinel-1 │ IMERG │ ANA │ Social   │
-│   (pgstac)   │    │  Flood Seg  │ Huayco Model │ Triage  │
-└───────┬──────┘    └──────────┬──────────────────────────┘
-        │                      │
-┌───────▼──────────────────────▼──────────────────────────┐
-│           MinIO (rasters)  │  Redis (cache / pub-sub)    │
-│           Ollama (LLM serving — Gemma 3 12B-IT)          │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Key design choices → [docs/decisions/](docs/decisions/)
-
----
-
-## Repository Layout
+## Architecture at a glance
 
 ```
-costa-resiliente/
-├── apps/
-│   ├── api/          # FastAPI — REST + WebSocket backend
-│   ├── workers/      # Prefect flows + ML inference
-│   └── web/          # Next.js 14 dashboard
-├── docs/
-│   ├── decisions/    # Architecture Decision Records (ADRs)
-│   ├── architecture.md
-│   ├── data-sources.md
-│   └── responsible-data-handling.md
-├── infra/
-│   ├── postgres/     # PostGIS + TimescaleDB init SQL
-│   ├── stac/         # pgstac configuration
-│   └── minio/        # bucket bootstrap
-├── data/
-│   ├── fixtures/     # committed test datasets
-│   ├── raw/          # gitignored local raster cache
-│   └── processed/    # gitignored derived outputs
-├── scripts/          # one-shot utilities
-└── notebooks/        # exploratory only
+┌────────────────────────────────────────────────────────────┐
+│                 Browser / PWA (Next.js 14)                 │
+│  Scenario · Map · Alerts · Ask · Log · Social · Notifs    │
+└─────────────────────┬──────────────────────────────────────┘
+              HTTP REST · SSE · JWT auth
+┌─────────────────────▼──────────────────────────────────────┐
+│   FastAPI — ~32 endpoints + SSE alert stream               │
+│   Agentic copilot · 8 DB tools · pgvector RAG · guardrails │
+└──────┬──────────────────────┬──────────────────────────────┘
+       │                      │
+┌──────▼──────┐    ┌──────────▼────────────────────────────┐
+│ PostgreSQL  │    │   Prefect 3 workers                   │
+│ + PostGIS   │    │   Sentinel-1 / IMERG / Hydro / Social │
+│ + Timescale │    │   Flood U-Net · Huayco XGBoost · LLM  │
+│ + pgstac    │    └───────────┬───────────────────────────┘
+│ + pgvector  │                │
+└──────┬──────┘                │
+       │                       │
+┌──────▼──────────┬────────────▼──────────────────────────┐
+│ Redis pub/sub   │  MinIO rasters  │  Ollama (local-only) │
+│                 │                 │  qwen2.5:7b copilot  │
+│                 │                 │  gemma2:2b guardrails│
+│                 │                 │  nomic-embed RAG     │
+└─────────────────┴─────────────────┴──────────────────────┘
 ```
 
----
+## Stack
 
-## Data Sources
+- **Backend:** FastAPI · PostgreSQL 16 (PostGIS + TimescaleDB + pgstac + pgvector) · Redis · MinIO · Prefect 3 · Ollama (qwen2.5:7b + gemma2:2b + nomic-embed-text)
+- **Frontend:** Next.js 14 App Router · TypeScript · Tailwind · MapLibre GL · Zustand · TanStack Query · PWA
+- **ML:** U-Net (Sen1Floods11 weights), XGBoost (Castro-Cabrera 2024), Spanish LLM triage
 
-Full description in [docs/data-sources.md](docs/data-sources.md).
+## Data sources
 
-| Tier | Source | Layer |
-|------|--------|-------|
-| 1 | Sentinel-1 GRD (MS Planetary Computer) | SAR flood |
-| 1 | NASA IMERG Early Run | Rainfall accumulations |
-| 1 | OSM via Overpass API | Infrastructure |
-| 1 | INEI 2017 census | Population |
-| 2 | ANA Rímac/Chillón/Lurín stations | River levels |
-| 2 | SENAMHI station network | Hydromet |
-| 2 | CENEPRED SIGRID | Hazard polygons |
-| 2 | INDECI SINPAD historical | Emergency records |
-| 3 | Bluesky Jetstream firehose | Social signals |
-| 3 | Reddit r/Peru, r/Lima | Social signals |
-| 3 | RPP / Andina / El Comercio RSS | News signals |
-| 3 | Telegram public channels | Official COER feeds |
+10 sources across satellite, hydromet, historical, social, and infrastructure tiers. Full list in [`docs/data-sources.md`](docs/data-sources.md). Notable: Sentinel-1 GRD via Microsoft Planetary Computer, NASA IMERG Early Run V07B, ANA + SENAMHI scrapers, INDECI SINPAD 2003–2020 (2,063 Lima events), Bluesky AT Protocol firehose, Telegram SENAMHI_Peru channel.
 
----
+## Responsible data handling
 
-## ML Components
+Code-level, not aspirational:
+- PII redaction via `presidio-analyzer` before any signal stored
+- Location coarsened to manzana centroid (~100 m) for non-responder views
+- 7-day pg_cron purge on raw social signals
+- Append-only operator decision log enforced by DB trigger
+- LLM anti-fabrication guarantee — all claims trace to DB rows
+- Compliant with Peru Ley 29733 + DS 016-2024-JUS, OCHA, IASC
 
-- **SAR Flood Segmentation**: Sen1Floods11 / UrbanSARFloods weights, inference
-  <5 min on CPU / <60s on GPU
-- **Huayco Susceptibility**: XGBoost (slope, aspect, rainfall, NDVI, soil
-  moisture) following Castro-Cabrera et al. (2024)
-- **r.avaflow**: on-demand debris flow simulation for top-10 Lima quebradas
-- **Spanish Signal Triage**: Gemma 3 12B-IT via Ollama, structured JSON output
-- **Operator Copilot**: RAG over PostGIS — Spanish NL → SQL → Spanish summary
-
----
-
-## Responsible Data Handling
-
-Implemented as code, not documentation. See
-[docs/responsible-data-handling.md](docs/responsible-data-handling.md).
-
-- PII redaction via `presidio-analyzer` before any storage
-- Location coarsened to manzana centroid (~100m) for non-responder views
-- Raw social data purged after 7 days (pg_cron)
-- Immutable operator decision log
-- Compliant with Peru Ley 29733 + DS 016-2024-JUS
-
----
-
-## Development
-
-```bash
-# Python linting + formatting
-cd apps/api && ruff check . && black .
-
-# Frontend
-cd apps/web && npm run dev
-
-# Run all Prefect flows locally
-cd apps/workers && prefect server start &
-prefect deploy --all
-
-# Tests (113 passing as of Sprint 6)
-pytest -x -q
-```
-
-### Pre-commit hooks
-
-```bash
-pip install pre-commit
-pre-commit install
-```
-
-## Sprint Status
-
-| Sprint | Focus | Status | Tests |
-|--------|-------|--------|-------|
-| 0 | Scaffolding — schema, docker-compose, stubs | ✅ | — |
-| 1 | Foundation ingestion — Sentinel-1, IMERG, geodata | ✅ | 39 |
-| 2 | Dashboard skeleton — MapView, TanStack Query | ✅ | 39 |
-| 3 | Flood segmentation — U-Net, Sen1Floods11 | ✅ | 39 |
-| 4 | Huayco + ANA/SENAMHI + social ingestion | ✅ | 85 |
-| 5 | LLM triage + Operator Copilot RAG | ✅ | 100 |
-| 6 | Alerts feed, alert generator, decision log CSV | ✅ | 113 |
-| 7 | Submission prep | 🔄 | — |
-
----
-
-## Branch Strategy
-
-- **`develop`** — all active development, always deployable
-- **`main`** — tagged submission releases only
-- Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`)
-
----
-
-## IEEE Response Quest Challenge
-
-Submission deadline: **9 October 2026**  
-Concept form: June 5, 2026  
-Phase 3 judging: November–December 2026
-
-Five rubric criteria (equal weight):
-1. Timeliness & Real-Time Responsiveness
-2. Comprehensiveness & Novel Data Discovery
-3. Integration & Responsible Data Handling
-4. Usability & Operational Readiness
-5. Scenario Fit & Innovation
-
----
+See [`docs/responsible-data-handling.md`](docs/responsible-data-handling.md).
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+Apache 2.0 — see [`LICENSE`](LICENSE).

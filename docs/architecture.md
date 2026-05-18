@@ -41,10 +41,14 @@ See [ADR-0002](decisions/0002-ml-architecture.md) for ML model decisions.
 └─────────────────────┘
            │
 ┌──────────▼──────────┐     ┌──────────────────────────────────┐
-│  MinIO (object      │     │  Ollama (LLM serving)            │
-│  storage for rasters│     │  gemma4:e4b — primary (9.6GB)    │
-│  and model weights) │     │  qwen3:14b — fallback (9.0GB)    │
-│  (port 9000)        │     │  (port 11434)                    │
+│  MinIO (object      │     │  Ollama (LLM serving, local-only)│
+│  storage for rasters│     │  qwen2.5:7b-instruct-q4_K_M (4.7G)│
+│  and model weights) │     │   ↳ copilot + signal triage      │
+│  (port 9000)        │     │  gemma2:2b (1.6G)                │
+│                     │     │   ↳ input + output guardrails    │
+│                     │     │  nomic-embed-text (274M)         │
+│                     │     │   ↳ pgvector RAG embeddings      │
+│                     │     │  (port 11434)                    │
 └─────────────────────┘     └──────────────────────────────────┘
            │
 ┌──────────▼──────────┐
@@ -130,7 +134,7 @@ Social firehose → PII redaction (presidio) → social.signals
 ```
 New S1 scene  → U-Net flood seg → ml.flood_polygons → ops.alerts (auto-generate)
 New IMERG acc → XGBoost huayco → ml.huayco_susceptibility → ops.alerts (if risk_level=high)
-New signals   → gemma4:e4b triage → triage_label on social.signals
+New signals   → qwen2.5:7b triage (XML sandboxed) → triage_label on social.signals
 ```
 
 ### 3. API (FastAPI, on-demand)
@@ -161,12 +165,15 @@ DecisionLog    → GET /decisions + POST on operator action
 
 ## LLM Configuration
 
-| Role | Model | Tag | Size | Notes |
-|------|-------|-----|------|-------|
-| Primary copilot + triage | Gemma 4 | `gemma4:e4b` | 9.6GB | Google, 128K ctx, multimodal, native tool calling |
-| Fallback | Qwen3 14B | `qwen3:14b` | 9.0GB | Alibaba, 128K ctx, strong Spanish, thinking mode |
+All inference is local. No cloud API dependency. No data egress for citizen PII signals.
 
-Model selection via env vars: `OLLAMA_PRIMARY_MODEL`, `OLLAMA_FALLBACK_MODEL` — no code changes needed to swap.
+| Role | Model | Tag | Size |
+|------|-------|-----|------|
+| Copilot + signal triage | Qwen 2.5 7B Instruct (Q4_K_M) | `qwen2.5:7b-instruct-q4_K_M` | 4.7 GB |
+| Input + output guardrails | Gemma 2 2B | `gemma2:2b` | 1.6 GB |
+| RAG embeddings (pgvector) | Nomic Embed Text | `nomic-embed-text` | 274 MB |
+
+Model selection via env vars: `LLM_PRIMARY_MODEL`, `LLM_GUARDRAIL_MODEL`, `LLM_EMBED_MODEL`. Pydantic `AliasChoices` falls back to legacy `OLLAMA_*` names if set. No code changes needed to swap models.
 
 ---
 
