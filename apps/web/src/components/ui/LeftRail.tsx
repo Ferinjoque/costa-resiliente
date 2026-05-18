@@ -124,11 +124,8 @@ export function LeftRail() {
           </ul>
         </nav>
 
-        {/* Operator identity chip */}
-        <OperatorChip />
-
         {/* Secondary nav */}
-        <div className="px-2 pb-3 border-t border-border-subtle pt-2">
+        <div className="px-2 pb-2 border-t border-border-subtle pt-2">
           <SecBtn
             Icon={Link2}
             label={locale === "es" ? "Compartir" : "Share"}
@@ -160,6 +157,9 @@ export function LeftRail() {
             onClick={toggleLocale}
           />
         </div>
+
+        {/* Operator identity chip / login button */}
+        <OperatorChip />
       </aside>
 
       {/* ── Mobile: bottom tab bar ─────────────────────────────────────── */}
