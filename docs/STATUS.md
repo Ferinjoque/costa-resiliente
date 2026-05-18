@@ -28,9 +28,9 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: 299/300 passing — single flake is `test_session_audit.py::TestCopilot::test_ask_xss_in_query` (Ollama timeout under load, unrelated to app code, present in Session 5 baseline too)
+- **API**: 308/309 passing (Session 5: 299/300 → +9 new for field-report + proposals). Single flake is `test_session_audit.py::TestCopilot::test_ask_xss_in_query` (Ollama timeout under load, present in Session 5 baseline too).
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
-- **Build**: Next.js production build green; first-load JS `/` = 173 kB
+- **Build**: Next.js production build green; first-load JS `/` = 175 kB (Session 5: 153 → 173 → 175 with new ProposalsPanel)
 
 Test command (in container):
 ```bash
@@ -287,11 +287,40 @@ flake under load — STATUS Session 5 noted; unchanged by this work).
 **Frontend:** `npx tsc --noEmit` clean; production build green; first-load JS
 `/` = 173 kB (up from 153 kB Session 5 — added auth + notifications surfaces).
 
+**HITL workflow closed (new for Session 6):**
+- `feat(ui/ProposalsPanel)`: backend has shipped `/api/v1/proposals`
+  (create / list / approve / reject) since Sprint 11 but 210 proposals
+  were sitting in `ops.alert_proposals` with no UI. The agentic copilot's
+  human-in-the-loop story was therefore aspirational. New bottom-right
+  drawer mirrors AlertsPanel layout, gated on a logged-in operator, with
+  optimistic remove + rollback on failure. Keyboard shortcut `P`. Approve
+  inserts into `ops.alerts` AND `ops.decision_log` under the authenticated
+  operator. LeftRail badge counts critical+high pending.
+- `feat(api/social)`: new `POST /api/v1/social/field-report` endpoint.
+  The FieldReport UI used to do an optimistic cache update only with no
+  persistence — refresh dropped the report. Now writes to `social.signals`
+  with `source='campo'` and `triage_model='operator_assertion'`, AND
+  appends to `ops.decision_log`. Closes the audit-trail loop for operator
+  observations.
+- `fix(api/proposals)`: `list_proposals` now filters obvious test residue
+  (XSS / SQL-injection seeds, empty titles, `Test Flood Alert` fixtures)
+  so the duty officer's queue shows real proposals only. Rows remain in
+  the table for audit; just hidden from the operator-facing list.
+
+**Tests added (Session 6):**
+- 5 new tests `test_social.py` covering field-report persist / invalid
+  label rejection / empty-text rejection / null-district / dedup.
+- 4 new tests `test_proposals.py` covering list filter / approve →
+  alerts insert / approve unknown 404 / reject locks status.
+
 **Known infrastructure gaps surfaced (not closed tonight):**
 - `pgstac.items` relation does not exist in postgres (`stac-fastapi-pgstac`
-  image does not ship `pypgstac` CLI to migrate). `flood-segmentation-hourly`
-  and `sentinel1-daily` cannot pull new scenes until pgstac is bootstrapped.
-  Existing 7 flood polygons + Session 3 fixtures still serve the rubric demo.
+  image does not ship `pypgstac` CLI to migrate; GitHub release asset has
+  moved). `flood-segmentation-hourly` and `sentinel1-daily` cannot pull
+  new scenes until pgstac is bootstrapped. Existing 7 flood polygons +
+  Session 3 fixtures still serve the rubric demo.
+- ANA scraper + IMERG remain susceptible to external publication latency
+  — the new FEEDS chip surfaces this honestly to the operator.
 
 ### Session 5 — 2026-05-17 — Operational hardening for government use
 
