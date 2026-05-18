@@ -254,7 +254,7 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
     )
     alerts_trend = [
         {"day": str(r["day"]), "severity": r["severity"], "count": int(r["cnt"])}
-        for r in trend_result
+        for r in trend_result.mappings()
     ]
 
     # Social breakdown last 24h
@@ -272,7 +272,7 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
     )
     social_breakdown = [
         {"label": r["triage_label"], "count": int(r["cnt"])}
-        for r in social_result
+        for r in social_result.mappings()
     ]
 
     # IMERG 30-day daily max acc_24h via watersheds intersecting district
@@ -284,7 +284,7 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
                 MAX(ia.acc_72h_mm) AS max_72h_mm
             FROM hydro.imerg_accumulations ia
             JOIN geo.watersheds w ON w.id = ia.watershed_id
-            JOIN geo.districts d ON ST_Intersects(w.geom, d.geom)
+            JOIN geo.districts d ON ST_Intersects(ST_MakeValid(w.geom), ST_MakeValid(d.geom))
             WHERE d.id = :did
               AND ia.time >= NOW() - INTERVAL '30 days'
             GROUP BY 1
@@ -298,7 +298,7 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
             "acc_24h_mm": float(r["max_24h_mm"]) if r["max_24h_mm"] else 0.0,
             "acc_72h_mm": float(r["max_72h_mm"]) if r["max_72h_mm"] else 0.0,
         }
-        for r in imerg_result
+        for r in imerg_result.mappings()
     ]
 
     # Hydro station latest readings
@@ -328,7 +328,7 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
             "latest_time": _iso(r["latest_time"]),
             "level_m": r["level_m"], "flow_m3s": r["flow_m3s"], "rain_mm": r["rain_mm"],
         }
-        for r in station_result
+        for r in station_result.mappings()
     ]
 
     # SINPAD historical event count (table may not exist if load_sinpad.py not run)

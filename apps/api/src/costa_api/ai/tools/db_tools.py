@@ -313,9 +313,12 @@ async def get_rainfall_accumulation(db: AsyncSession, hours_back: int = 72) -> l
 async def get_active_alerts(db: AsyncSession, severity: str | None = None) -> list[dict]:
     if severity:
         sql = text("""
-            SELECT a.id, a.alert_type, a.severity, a.status,
-                   a.title, a.summary, a.district_ubigeo, a.created_at
+            SELECT a.id, a.type AS alert_type, a.severity, a.status,
+                   a.title, a.description AS summary,
+                   d.ubigeo AS district_ubigeo, d.name AS district_name,
+                   a.created_at
             FROM ops.alerts a
+            LEFT JOIN geo.districts d ON d.id = a.district_id
             WHERE a.status = 'active'
               AND a.severity = :sev
             ORDER BY a.created_at DESC LIMIT 20
@@ -323,9 +326,12 @@ async def get_active_alerts(db: AsyncSession, severity: str | None = None) -> li
         result = await db.execute(sql, {"sev": severity})
     else:
         sql = text("""
-            SELECT a.id, a.alert_type, a.severity, a.status,
-                   a.title, a.summary, a.district_ubigeo, a.created_at
+            SELECT a.id, a.type AS alert_type, a.severity, a.status,
+                   a.title, a.description AS summary,
+                   d.ubigeo AS district_ubigeo, d.name AS district_name,
+                   a.created_at
             FROM ops.alerts a
+            LEFT JOIN geo.districts d ON d.id = a.district_id
             WHERE a.status = 'active'
             ORDER BY
                 CASE a.severity

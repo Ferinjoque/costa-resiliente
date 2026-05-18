@@ -179,7 +179,7 @@ services:
       dockerfile: Dockerfile
     container_name: costa-prefect-worker
     restart: unless-stopped
-    command: prefect worker start --pool costa-pool
+    command: python -m costa_workers.flows.schedules
     env_file: .env
     environment:
       PREFECT_API_URL: http://prefect-server:4200/api
