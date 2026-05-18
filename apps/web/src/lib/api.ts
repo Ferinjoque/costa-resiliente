@@ -594,11 +594,43 @@ export function fetchStations(): Promise<StationCollection> {
   return get<StationCollection>("/api/v1/layers/stations");
 }
 
+// ─── Shelters ─────────────────────────────────────────────────────────────────
+
+export interface ShelterProperties {
+  id: number;
+  name: string;
+  ubigeo: string | null;
+  shelter_type: string;
+  capacity: number | null;
+  address: string | null;
+  indeci_code: string | null;
+  district_name: string | null;
+  notes: string | null;
+}
+
+export interface ShelterFeature {
+  type: "Feature";
+  geometry: GeoJSON.Geometry;
+  properties: ShelterProperties;
+}
+
+export interface ShelterCollection {
+  type: "FeatureCollection";
+  source: string;
+  retrieved_at: string;
+  count: number;
+  features: ShelterFeature[];
+}
+
+export function fetchShelters(): Promise<ShelterCollection> {
+  return get<ShelterCollection>("/api/v1/layers/shelters");
+}
+
 // ─── Notification subscribers ────────────────────────────────────────────────
 
 export interface NotificationSubscriber {
   id: number;
-  channel: "webhook" | "email" | "sms_stub";
+  channel: "webhook" | "email" | "sms" | "sms_stub";
   target: string;
   label: string;
   severity_min: string;

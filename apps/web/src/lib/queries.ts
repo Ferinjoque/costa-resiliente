@@ -32,6 +32,8 @@ import {
   fetchDistrictDashboard,
   fetchHealth,
   fetchStations,
+  fetchShelters,
+  type ShelterCollection,
   type DistrictCollection,
   type DistrictListItem,
   type ImergCollection,
@@ -455,6 +457,24 @@ export function usePendingProposals(
     queryFn: () => fetchPendingProposals(),
     staleTime: 15 * 1000,
     refetchInterval: 30 * 1000,
+    ...opts,
+  });
+}
+
+export function useShelters(
+  opts?: Partial<UseQueryOptions<ShelterCollection>>
+): UseQueryResult<ShelterCollection> {
+  return useQuery({
+    queryKey: ["shelters"],
+    queryFn: async () => {
+      try {
+        return await fetchShelters();
+      } catch {
+        return { type: "FeatureCollection" as const, source: "", retrieved_at: "", count: 0, features: [] };
+      }
+    },
+    staleTime: 60 * MIN,  // static data — refresh once per hour
+    refetchInterval: 60 * MIN,
     ...opts,
   });
 }

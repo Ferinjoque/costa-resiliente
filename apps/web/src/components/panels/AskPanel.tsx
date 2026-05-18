@@ -21,6 +21,7 @@ interface ChatMessage {
   displayed: string;
   isDemo?: boolean;
   isRedacted?: boolean;
+  quickMode?: boolean;
 }
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
@@ -112,7 +113,8 @@ function InfoPopover({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
           [es ? "Modelo" : "Model",           "Qwen 2.5 · 7B-Instruct"],
           [es ? "Infraestructura" : "Infra",   es ? "Local · Docker" : "Local · Docker"],
           [es ? "Datos" : "Data",              "PostGIS · IMERG · ANA"],
-          [es ? "Latencia típica" : "Latency", "15–45 s (CPU)"],
+          [es ? "Modo rápido" : "Quick mode",   es ? "~2s · sin LLM" : "~2s · no LLM"],
+          [es ? "Modo completo" : "Full mode",   es ? "15–30s · CPU" : "15–30s · CPU"],
           [es ? "Privacidad" : "Privacy",      es ? "Sin datos externos" : "No third-party data"],
         ].map(([k, v]) => (
           <div key={k} className="flex justify-between gap-2">
@@ -267,6 +269,7 @@ export function AskPanel() {
       });
       let answerText: string;
       let isRedacted = false;
+      let isQuickMode = false;
       if (res.status === 400) {
         const err = await res.json();
         answerText = err.detail ?? (es ? "Consulta no permitida." : "Query not allowed.");
@@ -274,9 +277,10 @@ export function AskPanel() {
         const data = await res.json();
         answerText = data.answer ?? (es ? "Sin respuesta." : "No response.");
         isRedacted = !!data.redacted;
+        isQuickMode = !!data.quick_mode;
       }
       const asstId = Math.random().toString(36).slice(2);
-      setMessages((prev) => [...prev, { id: asstId, role: "assistant", content: answerText, displayed: "", isRedacted }]);
+      setMessages((prev) => [...prev, { id: asstId, role: "assistant", content: answerText, displayed: "", isRedacted, quickMode: isQuickMode }]);
       animateMessage(answerText, asstId);
     } catch {
       const demoKey = findDemoResponse(trimmed);
@@ -430,6 +434,11 @@ export function AskPanel() {
                           className="inline-block w-0.5 h-4 bg-accent ml-0.5 animate-pulse align-text-bottom"
                           aria-hidden="true"
                         />
+                      )}
+                      {msg.quickMode && (
+                        <p className="text-[10px] text-accent mt-2 opacity-70 border-t border-border pt-1.5">
+                          {es ? "Modo rápido · sin LLM · ~2s" : "Quick mode · no LLM · ~2s"}
+                        </p>
                       )}
                       {msg.isDemo && (
                         <p className="text-[10px] text-ink-subtle mt-2 opacity-60 border-t border-border pt-1.5">
