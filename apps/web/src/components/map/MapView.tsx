@@ -28,6 +28,7 @@ export const mapInstanceRef: { current: maplibregl.Map | null } = { current: nul
 const _rotRaf: { current: number } = { current: 0 };
 const _waterRaf: { current: number } = { current: 0 };
 const _is3DOn: { current: boolean } = { current: false };
+const _rotCleanup: { current: (() => void) | null } = { current: null };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const IMERG_COLOR_RAMP = [
@@ -380,6 +381,8 @@ export default function MapView() {
     return () => {
       cancelAnimationFrame(_rotRaf.current);
       cancelAnimationFrame(_waterRaf.current);
+      _rotCleanup.current?.();
+      _rotCleanup.current = null;
       _is3DOn.current = false;
       m.remove();
       map.current = null;
@@ -396,13 +399,33 @@ export default function MapView() {
       _is3DOn.current = true;
       m.easeTo({ pitch: 62, bearing: -20, duration: 1200, easing: (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t });
 
-      // Auto-rotation: slow panoramic spin (~0.05°/frame ≈ 3°/s)
+      // Auto-rotation: ~0.12°/tick at 30fps, pauses when user interacts
       let bearing = m.getBearing();
-      const rotate = () => {
+      let lastInteraction = 0;
+      let lastFrame = 0;
+      const PAUSE_AFTER_MS = 4000;
+      const FRAME_INTERVAL = 33; // ~30 fps keeps MapLibre render pressure low
+
+      const onInteract = () => { lastInteraction = Date.now(); };
+      m.on("mousedown", onInteract);
+      m.on("touchstart", onInteract);
+      m.on("wheel", onInteract);
+      _rotCleanup.current = () => {
+        m.off("mousedown", onInteract);
+        m.off("touchstart", onInteract);
+        m.off("wheel", onInteract);
+      };
+
+      const rotate = (ts: number) => {
         if (!_is3DOn.current) return;
-        bearing += 0.05;
-        if (bearing > 360) bearing -= 360;
-        m.setBearing(bearing);
+        if (ts - lastFrame >= FRAME_INTERVAL) {
+          if (Date.now() - lastInteraction > PAUSE_AFTER_MS) {
+            bearing += 0.12;
+            if (bearing > 360) bearing -= 360;
+            m.setBearing(bearing);
+          }
+          lastFrame = ts;
+        }
         _rotRaf.current = requestAnimationFrame(rotate);
       };
       _rotRaf.current = requestAnimationFrame(rotate);
@@ -472,6 +495,8 @@ export default function MapView() {
       _is3DOn.current = false;
       cancelAnimationFrame(_rotRaf.current);
       cancelAnimationFrame(_waterRaf.current);
+      _rotCleanup.current?.();
+      _rotCleanup.current = null;
       m.easeTo({ pitch: 0, bearing: 0, duration: 700 });
       if (m.getLayer("flood-extrusion")) m.removeLayer("flood-extrusion");
       if (m.getLayer("risk-extrusion")) m.removeLayer("risk-extrusion");
