@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from costa_api.auto_seed import maybe_seed
 from costa_api.config import settings
 from costa_api.db import engine
-from costa_api.routers import districts, health, layers, alerts, copilot, share, fusion, proposals, notifications, auth
+from costa_api.routers import districts, health, layers, alerts, copilot, share, fusion, proposals, notifications, auth, social
 
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
@@ -65,3 +65,4 @@ app.include_router(fusion.router, prefix="/api/v1")
 app.include_router(proposals.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(social.router, prefix="/api/v1")
