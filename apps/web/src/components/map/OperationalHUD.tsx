@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUIStore } from "@/store/ui";
-import { useAlerts, useFloodExposure, useApiHealth, useSocialSignals } from "@/lib/queries";
+import { useAlerts, useFloodExposure, useApiHealth, useSocialSignals, useScraperHealth } from "@/lib/queries";
 import { clsx } from "clsx";
 
 // ─── HUD: solid surface chip anchored top-right ───────────────────────────────
@@ -32,6 +32,7 @@ export function OperationalHUD() {
   const { data: exposure } = useFloodExposure();
   const { data: health, isError: apiDown } = useApiHealth();
   const { data: socialData } = useSocialSignals(48);
+  const { data: scraperHealth } = useScraperHealth();
 
   const [clock, setClock] = useState("");
   useEffect(() => {
@@ -56,6 +57,13 @@ export function OperationalHUD() {
     (f) => f.properties.triage_label === "needs_help" || f.properties.triage_label === "road_blocked",
   ).length ?? 0;
   const online = health?.status === "ok" && !apiDown;
+
+  // Scraper degradation: count offline sources for an at-a-glance chip
+  const scraperSources = scraperHealth?.sources ? Object.values(scraperHealth.sources) : [];
+  const offlineSources = scraperSources.filter((s) => s.status === "offline").length;
+  const staleSources = scraperSources.filter((s) => s.status === "stale").length;
+  const scraperLevel: "ok" | "warn" | "danger" =
+    offlineSources >= 3 ? "danger" : (offlineSources > 0 || staleSources > 2) ? "warn" : "ok";
 
   return (
     /* Desktop only; mobile gets SituationBrief */
@@ -105,6 +113,38 @@ export function OperationalHUD() {
         )}
         {urgentSocial > 0 && (
           <HudMetric value={String(urgentSocial)} label={locale === "es" ? "señales" : "signals"} border />
+        )}
+        {/* Scraper degradation chip (only when not ok) */}
+        {scraperLevel !== "ok" && scraperHealth && (
+          <button
+            type="button"
+            onClick={() => useUIStore.getState().setActivePanel("sources")}
+            className={clsx(
+              "flex items-center gap-1 px-2.5 py-1.5 border-r border-border-subtle",
+              "hover:bg-surface-sunken transition-colors",
+            )}
+            title={locale === "es"
+              ? `${offlineSources} fuente(s) sin datos, ${staleSources} con retraso. Click para detalles.`
+              : `${offlineSources} source(s) offline, ${staleSources} stale. Click for details.`}
+            aria-label={locale === "es" ? "Estado de fuentes degradado" : "Data source status degraded"}
+          >
+            <span
+              className={clsx(
+                "w-1.5 h-1.5 rounded-full shrink-0",
+                scraperLevel === "danger" ? "bg-danger animate-pulse" : "bg-warn",
+              )}
+              aria-hidden="true"
+            />
+            <span className={clsx(
+              "text-2xs font-bold uppercase tracking-widest",
+              scraperLevel === "danger" ? "text-danger" : "text-warn-muted",
+            )}>
+              {locale === "es" ? "FUENTES" : "FEEDS"}
+            </span>
+            <span className="text-2xs font-mono tabular-nums text-ink-subtle">
+              {offlineSources > 0 ? `-${offlineSources}` : `~${staleSources}`}
+            </span>
+          </button>
         )}
         {/* Clock */}
         <div className="flex items-center gap-1.5 px-3 py-1.5">
