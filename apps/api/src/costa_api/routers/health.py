@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from typing import Any
 
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.db import get_db, engine
 from costa_api.auto_seed import maybe_seed
+from costa_api.config import settings
 
 router = APIRouter(tags=["health"])
 
@@ -106,14 +108,35 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
         "SELECT COUNT(*) as count, MAX(created_at) as last_seen_at FROM ops.alerts"
     )
 
+    # Merge Redis scraper health for ANA/SENAMHI (written by the worker after each run)
+    async def _redis_scraper_status(source_key: str) -> dict:
+        try:
+            import redis.asyncio as aioredis
+            r = aioredis.from_url(settings.redis_url, decode_responses=True, socket_timeout=1)
+            raw = await r.get(f"costa:scraper:status:{source_key}")
+            await r.aclose()
+            if raw:
+                d = json.loads(raw)
+                stations_ok = d.get("stations_ok", 0)
+                total = d.get("total", 1)
+                ok_pct = stations_ok / max(total, 1)
+                scraper_status = "ok" if ok_pct >= 0.5 else ("stale" if ok_pct > 0 else "offline")
+                return {"scraper_live_stations": stations_ok, "scraper_total": total, "scraper_status": scraper_status}
+        except Exception:
+            pass
+        return {}
+
+    ana_scraper = await _redis_scraper_status("ana")
+    senamhi_scraper = await _redis_scraper_status("senamhi")
+
     sources = {
         "bluesky": {"label": "Bluesky Jetstream", "schedule": "15min", **bluesky},
         "rss": {"label": "RSS (RPP/Andina/Canal N…)", "schedule": "15min", **rss},
         "reddit": {"label": "Reddit (r/Peru, r/Lima)", "schedule": "15min", **reddit},
         "telegram": {"label": "Telegram (SENAMHI)", "schedule": "15min", **telegram},
-        "imerg": {"label": "NASA IMERG Early Run", "schedule": "1h", **imerg},
-        "stations": {"label": "ANA/SENAMHI Stations", "schedule": "30min", **stations},
-        "flood": {"label": "SAR Flood Polygons", "schedule": "1h", **flood},
+        "imerg": {"label": "NASA IMERG Early Run", "schedule": "30min", **imerg},
+        "stations": {"label": "ANA/SENAMHI Stations", "schedule": "15min", **stations, **ana_scraper},
+        "flood": {"label": "SAR Flood Polygons", "schedule": "daily", **flood},
         "alerts": {"label": "Auto-generated Alerts", "schedule": "5min", **alerts},
     }
 
