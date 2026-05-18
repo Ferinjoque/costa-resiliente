@@ -22,6 +22,13 @@ function ensurePMTilesProtocol() {
   protocolRegistered = true;
 }
 
+// Module-level map ref so TutorialOverlay can drive camera without prop drilling
+export const mapInstanceRef: { current: maplibregl.Map | null } = { current: null };
+// 3D animation state (module-level so cleanup works across renders)
+const _rotRaf: { current: number } = { current: 0 };
+const _waterRaf: { current: number } = { current: 0 };
+const _is3DOn: { current: boolean } = { current: false };
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 const IMERG_COLOR_RAMP = [
   0, "#1e3a5f", 5, "#2563eb", 20, "#38bdf8",
@@ -155,6 +162,7 @@ export default function MapView() {
       attributionControl: false,
     });
     map.current = m;
+    mapInstanceRef.current = m;
 
     // Navigation: moved to bottom-right (below MapRadar, clear of the HUD top-right pills).
     // Attribution: bottom-left alongside scale so it clears the MapRadar widget.
@@ -369,36 +377,115 @@ export default function MapView() {
       });
     });
 
-    return () => { m.remove(); map.current = null; };
+    return () => {
+      cancelAnimationFrame(_rotRaf.current);
+      cancelAnimationFrame(_waterRaf.current);
+      _is3DOn.current = false;
+      m.remove();
+      map.current = null;
+      mapInstanceRef.current = null;
+    };
   }, []);
 
-  // ─── 3D mode — pitch map + extrusion layer ────────────────────────────────
+  // ─── 3D mode — cinematic pitch + auto-rotation + risk towers + flood water ──
   useEffect(() => {
     const m = map.current;
-    if (!m || !m.loaded()) return;
-    m.easeTo({ pitch: is3DMode ? 45 : 0, bearing: is3DMode ? -15 : 0, duration: 600 });
+    if (!m) return;
 
-    if (is3DMode && m.getSource("flood-src") && !m.getLayer("flood-extrusion")) {
-      m.addLayer({
-        id: "flood-extrusion",
-        type: "fill-extrusion",
-        source: "flood-src",
-        layout: { visibility: activeLayers.has("flood") ? "visible" : "none" },
-        paint: {
-          "fill-extrusion-color": "#2563eb",
-          "fill-extrusion-opacity": 0.6,
-          "fill-extrusion-height": [
-            "interpolate", ["linear"],
-            ["coalesce", ["get", "area_km2"], 0],
-            0, 50, 5, 400, 20, 1200,
-          ],
-          "fill-extrusion-base": 0,
-        },
-      });
-    } else if (!is3DMode && m.getLayer("flood-extrusion")) {
-      m.removeLayer("flood-extrusion");
-    }
-  }, [is3DMode, activeLayers]);
+    const enter3D = () => {
+      _is3DOn.current = true;
+      m.easeTo({ pitch: 62, bearing: -20, duration: 1200, easing: (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t });
+
+      // Auto-rotation: slow panoramic spin (~0.05°/frame ≈ 3°/s)
+      let bearing = m.getBearing();
+      const rotate = () => {
+        if (!_is3DOn.current) return;
+        bearing += 0.05;
+        if (bearing > 360) bearing -= 360;
+        m.setBearing(bearing);
+        _rotRaf.current = requestAnimationFrame(rotate);
+      };
+      _rotRaf.current = requestAnimationFrame(rotate);
+
+      // District risk towers from risk-src (height = population at risk, color = risk level)
+      const addRiskTowers = () => {
+        if (!m.getSource("risk-src") || m.getLayer("risk-extrusion")) return;
+        m.addLayer({
+          id: "risk-extrusion",
+          type: "fill-extrusion",
+          source: "risk-src",
+          paint: {
+            "fill-extrusion-color": [
+              "match", ["get", "risk_level"],
+              "alto",     "#dc2626",
+              "moderado", "#f97316",
+              "#22c55e",
+            ] as maplibregl.ExpressionSpecification,
+            "fill-extrusion-opacity": 0.78,
+            "fill-extrusion-height": [
+              "interpolate", ["linear"],
+              ["coalesce", ["get", "population_at_risk"], 0],
+              0, 100, 50000, 1200, 200000, 3500, 600000, 7000,
+            ] as maplibregl.ExpressionSpecification,
+            "fill-extrusion-base": 0,
+          },
+        });
+      };
+      if (m.loaded()) addRiskTowers(); else m.once("load", addRiskTowers);
+
+      // Flood water extrusion from flood-src
+      const addFloodTowers = () => {
+        if (!m.getSource("flood-src") || m.getLayer("flood-extrusion")) return;
+        m.addLayer({
+          id: "flood-extrusion",
+          type: "fill-extrusion",
+          source: "flood-src",
+          layout: { visibility: activeLayers.has("flood") ? "visible" : "none" },
+          paint: {
+            "fill-extrusion-color": "#38bdf8",
+            "fill-extrusion-opacity": 0.6,
+            "fill-extrusion-height": [
+              "interpolate", ["linear"],
+              ["coalesce", ["get", "area_km2"], 0],
+              0, 60, 1, 250, 5, 600, 20, 1400,
+            ] as maplibregl.ExpressionSpecification,
+            "fill-extrusion-base": 0,
+          },
+        });
+
+        // Animated flood water: opacity pulses 0.4 → 0.75 using sin wave
+        const t0 = performance.now();
+        const animWater = () => {
+          if (!_is3DOn.current) return;
+          if (!m.getLayer("flood-extrusion")) return;
+          const elapsed = performance.now() - t0;
+          const opacity = 0.575 + 0.175 * Math.sin(elapsed / 1400);
+          m.setPaintProperty("flood-extrusion", "fill-extrusion-opacity", opacity);
+          _waterRaf.current = requestAnimationFrame(animWater);
+        };
+        _waterRaf.current = requestAnimationFrame(animWater);
+      };
+      if (m.loaded()) addFloodTowers(); else m.once("load", addFloodTowers);
+    };
+
+    const exit3D = () => {
+      _is3DOn.current = false;
+      cancelAnimationFrame(_rotRaf.current);
+      cancelAnimationFrame(_waterRaf.current);
+      m.easeTo({ pitch: 0, bearing: 0, duration: 700 });
+      if (m.getLayer("flood-extrusion")) m.removeLayer("flood-extrusion");
+      if (m.getLayer("risk-extrusion")) m.removeLayer("risk-extrusion");
+    };
+
+    if (is3DMode) enter3D(); else exit3D();
+
+    return () => {
+      if (!is3DMode) return;
+      cancelAnimationFrame(_rotRaf.current);
+      cancelAnimationFrame(_waterRaf.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [is3DMode]);
 
   // ─── Close popup when context changes ─────────────────────────────────────
   useEffect(() => { activePopup.current?.remove(); activePopup.current = null; },
@@ -840,7 +927,7 @@ export default function MapView() {
     const layerMap: Record<string, string[]> = {
       districts:      ["districts-fill", "districts-outline", "districts-label"],
       imerg:          ["imerg-fill"],
-      flood:          ["flood-fill", "flood-outline"],
+      flood:          ["flood-fill", "flood-outline", "flood-extrusion"],
       huayco:         ["huayco-circle"],
       hazard:         ["hazard-fill", "hazard-outline"],
       infrastructure: ["infra-circle"],

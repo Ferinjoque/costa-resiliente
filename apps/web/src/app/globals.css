@@ -351,3 +351,110 @@ html, body {
 .driver-popover-arrow-side-bottom.driver-popover-arrow {
   border-color: oklch(78% 0.009 80) !important;
 }
+
+/* Fix: Tailwind * rule injects pseudo-elements onto driver.js buttons */
+.driver-popover-footer button::before,
+.driver-popover-footer button::after,
+.driver-popover-next-btn::before,
+.driver-popover-next-btn::after,
+.driver-popover-prev-btn::before,
+.driver-popover-prev-btn::after,
+.driver-popover-done-btn::before,
+.driver-popover-done-btn::after,
+.driver-popover-close-btn::before,
+.driver-popover-close-btn::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* ─── Tour card components (.cr-tour-*) ─────────────────────────────────── */
+.cr-tour-ts {
+  display: block;
+  font-size: 9px;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: oklch(55% 0.005 240);
+  margin-bottom: 0.5rem;
+}
+.cr-tour-metrics {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+}
+.cr-tour-metric {
+  flex: 1;
+  background: oklch(93% 0.007 80);
+  border: 1px solid oklch(85% 0.008 80);
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.cr-tour-metric--warn {
+  background: oklch(96% 0.06 80);
+  border-color: oklch(75% 0.14 65);
+}
+.cr-tour-metric--crit {
+  background: oklch(96% 0.04 20);
+  border-color: oklch(65% 0.2 20);
+}
+.cr-tour-metric--ok {
+  background: oklch(95% 0.05 145);
+  border-color: oklch(65% 0.15 145);
+}
+.cr-tour-num {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  color: oklch(14% 0.008 240);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+}
+.cr-tour-metric--warn .cr-tour-num { color: oklch(42% 0.14 65); }
+.cr-tour-metric--crit .cr-tour-num { color: oklch(45% 0.2 20); }
+.cr-tour-metric--ok   .cr-tour-num { color: oklch(38% 0.15 145); }
+.cr-tour-unit {
+  font-size: 9px;
+  font-weight: 600;
+  color: oklch(50% 0.005 240);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cr-tour-lbl {
+  font-size: 8.5px;
+  color: oklch(55% 0.005 240);
+  text-align: center;
+  line-height: 1.2;
+}
+.cr-tour-body {
+  font-size: 0.8125rem;
+  color: oklch(38% 0.006 240);
+  line-height: 1.55;
+  margin: 0;
+}
+.cr-tour-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.375rem;
+}
+.cr-tour-badge {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: oklch(88% 0.006 240);
+  color: oklch(30% 0.006 240);
+}
+.cr-tour-badge--ok   { background: oklch(88% 0.08 145); color: oklch(30% 0.12 145); }
+.cr-tour-badge--warn { background: oklch(92% 0.1 80);   color: oklch(38% 0.14 65); }
+.cr-tour-badge--crit { background: oklch(92% 0.06 20);  color: oklch(38% 0.2 20); }
+.cr-tour-divider {
+  border: none;
+  border-top: 1px solid oklch(88% 0.006 80);
+  margin: 0.5rem 0;
+}
