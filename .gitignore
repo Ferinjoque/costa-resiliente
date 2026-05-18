@@ -124,3 +124,12 @@ Thumbs.db
 # Build artifacts
 *.whl
 *.tar.gz
+
+# Session 6 — generated/transient artifacts
+lighthouse-report.json
+lighthouse-full.json
+docs/lighthouse-report.json
+scripts/smoke_results.json
+apps/web/tsconfig.tsbuildinfo
+apps/web/public/sw.js
+apps/web/public/workbox-*.js
