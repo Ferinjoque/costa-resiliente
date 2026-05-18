@@ -18,21 +18,94 @@ Idempotency:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
 from datetime import datetime, timedelta, timezone
 
+import httpx
 from prefect import flow, task
 
 logger = logging.getLogger(__name__)
 
 DB_DSN = os.getenv("DATABASE_URL", "postgresql://costa:costa@localhost:5432/costa_resiliente")
 
+SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+_NOTIFY_SEVERITIES = {"critical", "high"}  # auto-notify on these; operators see medium/low in UI
+
+
+async def _auto_notify(pool, alert_id: int, severity: str, title: str, alert_type: str) -> None:
+    """
+    Fan out to notification_subscribers for newly generated alerts.
+    Only fires for critical/high — medium/low visible in dashboard only.
+    Mirrors the logic in api/notifications.py but runs in-process in the worker.
+    """
+    if severity not in _NOTIFY_SEVERITIES:
+        return
+    try:
+        sev_rank = SEVERITY_RANK[severity]
+        subscribers = await pool.fetch(
+            """
+            SELECT id, channel, target, label, severity_min
+            FROM ops.notification_subscribers
+            WHERE active = TRUE
+            """
+        )
+        for sub in subscribers:
+            sub_min_rank = SEVERITY_RANK.get(sub["severity_min"], 2)
+            if sev_rank < sub_min_rank:
+                continue
+            payload = {
+                "event": "new_alert",
+                "alert_id": alert_id,
+                "severity": severity,
+                "title": title,
+                "type": alert_type,
+                "source": "costa-resiliente-auto",
+            }
+            channel = sub["channel"]
+            status, err = "skipped", f"{channel} stub"
+            if channel == "webhook":
+                async with httpx.AsyncClient(timeout=5.0) as client:
+                    for attempt in range(1, 4):
+                        try:
+                            resp = await client.post(sub["target"], json=payload,
+                                                    headers={"User-Agent": "CostaResililienteAlerts/1.0"})
+                            if resp.status_code < 300:
+                                status, err = "delivered", ""
+                                break
+                            err = f"HTTP {resp.status_code}"
+                        except Exception as exc:
+                            err = str(exc)
+                        if attempt < 3:
+                            await asyncio.sleep(2 ** attempt)
+            await pool.execute(
+                """
+                INSERT INTO ops.notification_deliveries
+                    (subscriber_id, alert_id, trigger_event, status, attempts, last_error, delivered_at)
+                VALUES ($1, $2, 'auto_generated', $3, 1, $4,
+                        CASE WHEN $5 = 'delivered' THEN NOW() ELSE NULL END)
+                """,
+                sub["id"], alert_id, status, err or None, status,
+            )
+    except Exception as exc:
+        logger.warning("_auto_notify failed (non-fatal): %s", exc)
+
 FLOOD_ALERT_MIN_KM2 = 0.1      # minimum flood area to generate an alert
 HUAYCO_ALERT_LEVELS = {"high", "very_high"}
 SOCIAL_CLUSTER_MIN = 5          # minimum signal count to trigger alert
 SOCIAL_CLUSTER_WINDOW_H = 1     # hours to look back for social clusters
+
+# IMERG rainfall thresholds (ANA/SENAMHI-aligned for Lima El Niño events)
+RAIN_CRITICAL_72H_MM = 50.0    # EMERGENCIA-level — corresponds to ~2017 El Niño peaks
+RAIN_HIGH_72H_MM = 25.0        # ALERTA level
+RAIN_HIGH_24H_MM = 15.0        # 24h spike threshold
+
+# Auto-resolution windows (if triggering condition no longer met)
+FLOOD_ALERT_TTL_DAYS = 7       # SAR polygon is still evidence for 7 days
+HUAYCO_ALERT_TTL_H = 48        # susceptibility recalculated daily
+SOCIAL_ALERT_TTL_H = 4         # social clusters dissipate quickly
 
 
 def _flood_severity(area_km2: float) -> str:
@@ -89,18 +162,20 @@ async def generate_flood_alerts(db_dsn: str = DB_DSN) -> int:
                 f"Polígono SAR adquirido {row['acquired_at'].strftime('%d/%m %H:%M')} UTC. "
                 f"Confianza: {float(row['confidence'] or 0):.0%}."
             )
-            await pool.execute(
+            new_id = await pool.fetchval(
                 """
                 INSERT INTO ops.alerts
                     (type, severity, status, title, description,
                      district_id, source_refs)
                 VALUES ('flood', $1, 'active', $2, $3, $4, $5::jsonb)
+                RETURNING id
                 """,
                 severity, title, desc,
                 row["primary_district_id"],
                 source_refs,
             )
             inserted += 1
+            await _auto_notify(pool, new_id, severity, title, "flood")
 
     logger.info("Flood alerts generated: %d", inserted)
     return inserted
@@ -234,6 +309,152 @@ async def generate_social_alerts(db_dsn: str = DB_DSN) -> int:
     return inserted
 
 
+@task(retries=2, retry_delay_seconds=30, log_prints=True)
+async def generate_rainfall_alerts(db_dsn: str = DB_DSN) -> int:
+    """
+    Generate ops.alerts when IMERG rainfall accumulations exceed ANA El Niño thresholds.
+    One alert per watershed per threshold breach. Auto-deduped within 6h window.
+    """
+    import asyncpg
+
+    async with asyncpg.create_pool(db_dsn, min_size=1, max_size=2) as pool:
+        rows = await pool.fetch(
+            """
+            SELECT ia.watershed_id, w.name AS watershed_name,
+                   ia.time, ia.acc_24h_mm, ia.acc_72h_mm
+            FROM hydro.imerg_accumulations ia
+            JOIN geo.watersheds w ON w.id = ia.watershed_id
+            WHERE ia.time = (
+                SELECT MAX(time) FROM hydro.imerg_accumulations
+            )
+            ORDER BY ia.acc_72h_mm DESC NULLS LAST
+            """
+        )
+
+        inserted = 0
+        dedup_window = datetime.now(timezone.utc) - timedelta(hours=6)
+
+        for row in rows:
+            acc_72h = float(row["acc_72h_mm"] or 0)
+            acc_24h = float(row["acc_24h_mm"] or 0)
+
+            # Determine if this reading breaches any threshold
+            if acc_72h >= RAIN_CRITICAL_72H_MM:
+                severity = "critical"
+                threshold_label = f"Acumulación 72h: {acc_72h:.1f} mm (UMBRAL CRÍTICO >{RAIN_CRITICAL_72H_MM:.0f} mm)"
+            elif acc_72h >= RAIN_HIGH_72H_MM:
+                severity = "high"
+                threshold_label = f"Acumulación 72h: {acc_72h:.1f} mm (UMBRAL ALTO >{RAIN_HIGH_72H_MM:.0f} mm)"
+            elif acc_24h >= RAIN_HIGH_24H_MM:
+                severity = "medium"
+                threshold_label = f"Acumulación 24h: {acc_24h:.1f} mm (>{RAIN_HIGH_24H_MM:.0f} mm/día)"
+            else:
+                continue  # Below all thresholds — no alert needed
+
+            # Skip if recent rainfall alert already exists for this watershed
+            existing = await pool.fetchval(
+                """
+                SELECT id FROM ops.alerts
+                WHERE type = 'rainfall'
+                  AND source_refs->>'watershed_id' = $1
+                  AND status = 'active'
+                  AND created_at >= $2
+                LIMIT 1
+                """,
+                str(row["watershed_id"]), dedup_window,
+            )
+            if existing:
+                continue
+
+            source_refs = json.dumps({
+                "watershed_id": str(row["watershed_id"]),
+                "imerg_time": str(row["time"]),
+                "acc_72h_mm": acc_72h,
+                "acc_24h_mm": acc_24h,
+            })
+            title = f"Lluvia intensa — cuenca {row['watershed_name']}"
+            desc = threshold_label + f". Observado a las {row['time'].strftime('%d/%m %H:%M')} UTC (IMERG)."
+
+            new_id = await pool.fetchval(
+                """
+                INSERT INTO ops.alerts
+                    (type, severity, status, title, description, source_refs)
+                VALUES ('rainfall', $1, 'active', $2, $3, $4::jsonb)
+                RETURNING id
+                """,
+                severity, title, desc, source_refs,
+            )
+            inserted += 1
+            await _auto_notify(pool, new_id, severity, title, "rainfall")
+
+    logger.info("Rainfall alerts generated: %d", inserted)
+    return inserted
+
+
+@task(retries=2, retry_delay_seconds=30, log_prints=True)
+async def resolve_stale_alerts(db_dsn: str = DB_DSN) -> int:
+    """
+    Auto-resolve alerts whose triggering condition can no longer be active.
+    Flood: older than FLOOD_ALERT_TTL_DAYS.
+    Huayco: older than HUAYCO_ALERT_TTL_H.
+    Social: older than SOCIAL_ALERT_TTL_H.
+    Rainfall: older than 6h (IMERG refreshes every 30min).
+    Only transitions active → resolved (append-only audit trail preserved).
+    """
+    import asyncpg
+
+    async with asyncpg.create_pool(db_dsn, min_size=1, max_size=2) as pool:
+        # Flood
+        flood_resolved = await pool.fetchval(
+            """
+            UPDATE ops.alerts SET status = 'resolved'
+            WHERE type = 'flood'
+              AND status = 'active'
+              AND created_at < NOW() - INTERVAL '1 day' * $1
+            RETURNING COUNT(*)
+            """,
+            FLOOD_ALERT_TTL_DAYS,
+        )
+        # Huayco
+        huayco_resolved = await pool.fetchval(
+            """
+            UPDATE ops.alerts SET status = 'resolved'
+            WHERE type = 'huayco'
+              AND status = 'active'
+              AND created_at < NOW() - make_interval(hours => $1)
+            RETURNING COUNT(*)
+            """,
+            HUAYCO_ALERT_TTL_H,
+        )
+        # Social
+        social_resolved = await pool.fetchval(
+            """
+            UPDATE ops.alerts SET status = 'resolved'
+            WHERE type = 'social_cluster'
+              AND status = 'active'
+              AND created_at < NOW() - make_interval(hours => $1)
+            RETURNING COUNT(*)
+            """,
+            SOCIAL_ALERT_TTL_H,
+        )
+        # Rainfall
+        rain_resolved = await pool.fetchval(
+            """
+            UPDATE ops.alerts SET status = 'resolved'
+            WHERE type = 'rainfall'
+              AND status = 'active'
+              AND created_at < NOW() - INTERVAL '6 hours'
+            RETURNING COUNT(*)
+            """
+        )
+
+    total = (flood_resolved or 0) + (huayco_resolved or 0) + (social_resolved or 0) + (rain_resolved or 0)
+    if total:
+        logger.info("Auto-resolved %d stale alerts (flood=%s, huayco=%s, social=%s, rain=%s)",
+                    total, flood_resolved, huayco_resolved, social_resolved, rain_resolved)
+    return total
+
+
 @flow(name="generate-alerts", log_prints=True)
 async def generate_alerts_flow() -> dict:
     """
@@ -242,12 +463,16 @@ async def generate_alerts_flow() -> dict:
     flood = await generate_flood_alerts()
     huayco = await generate_huayco_alerts()
     social = await generate_social_alerts()
+    rainfall = await generate_rainfall_alerts()
+    resolved = await resolve_stale_alerts()
 
-    total = flood + huayco + social
-    logger.info("Alert generation complete: %d new alerts", total)
+    total = flood + huayco + social + rainfall
+    logger.info("Alert generation complete: %d new, %d auto-resolved", total, resolved)
     return {
         "flood_alerts": flood,
         "huayco_alerts": huayco,
         "social_alerts": social,
+        "rainfall_alerts": rainfall,
         "total": total,
+        "auto_resolved": resolved,
     }
