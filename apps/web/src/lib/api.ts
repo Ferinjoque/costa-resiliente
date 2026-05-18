@@ -4,12 +4,19 @@
  */
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const LS_TOKEN = "cr_auth_token";
+
+function getAuthHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const token = localStorage.getItem(LS_TOKEN);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 async function get<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     signal: AbortSignal.timeout(4_000),
-    headers: { Accept: "application/json", ...init?.headers },
+    headers: { Accept: "application/json", ...getAuthHeaders(), ...init?.headers },
   });
   if (!res.ok) {
     throw new Error(`API ${path} → ${res.status} ${res.statusText}`);
@@ -273,7 +280,7 @@ export async function actOnAlert(
 ): Promise<{ alert_id: number; new_status: string }> {
   const res = await fetch(`${BASE}/api/v1/alerts/${alertId}/action`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
     body: JSON.stringify({ operator_id: operatorId, action, note }),
   });
   if (!res.ok) throw new Error(`actOnAlert → ${res.status}`);
@@ -348,6 +355,7 @@ export interface SocialSignalProperties {
   source_id?: string | null;
   triage_label: string | null;
   triage_confidence: number | null;
+  published_at?: string | null;
   ingested_at: string;
   district_id: number | null;
   district_name: string | null;
@@ -584,4 +592,103 @@ export interface StationCollection {
 
 export function fetchStations(): Promise<StationCollection> {
   return get<StationCollection>("/api/v1/layers/stations");
+}
+
+// ─── Notification subscribers ────────────────────────────────────────────────
+
+export interface NotificationSubscriber {
+  id: number;
+  channel: "webhook" | "email" | "sms_stub";
+  target: string;
+  label: string;
+  severity_min: string;
+  district_filter: string | null;
+  active: boolean;
+  created_by: string;
+  created_at: string;
+}
+
+export interface NotificationDelivery {
+  id: number;
+  subscriber_id: number;
+  alert_id: number | null;
+  trigger_event: string;
+  status: "pending" | "delivered" | "failed" | "skipped";
+  attempts: number;
+  last_error: string | null;
+  delivered_at: string | null;
+  created_at: string;
+}
+
+export function fetchNotificationSubscribers(): Promise<NotificationSubscriber[]> {
+  return get<NotificationSubscriber[]>("/api/v1/notifications");
+}
+
+export function fetchNotificationDeliveries(): Promise<NotificationDelivery[]> {
+  return get<NotificationDelivery[]>("/api/v1/notifications/deliveries");
+}
+
+export async function createNotificationSubscriber(
+  body: Pick<NotificationSubscriber, "channel" | "target" | "label" | "severity_min"> & { district_filter?: string | null },
+): Promise<NotificationSubscriber> {
+  const res = await fetch(`${BASE}/api/v1/notifications`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail ?? `createSubscriber → ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function deleteNotificationSubscriber(id: number): Promise<void> {
+  const res = await fetch(`${BASE}/api/v1/notifications/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error(`deleteSubscriber → ${res.status}`);
+}
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+
+export interface OperatorTokenResponse {
+  access_token: string;
+  token_type: string;
+  operator_id: number;
+  role: string;
+  district_ubigeo: string | null;
+}
+
+export interface OperatorOut {
+  id: number;
+  username: string;
+  full_name: string;
+  role: string;
+  district_ubigeo: string | null;
+  active: boolean;
+  created_at: string;
+}
+
+export async function loginOperator(username: string, password: string): Promise<OperatorTokenResponse> {
+  const form = new URLSearchParams({ username, password, grant_type: "password" });
+  const res = await fetch(`${BASE}/api/v1/auth/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form.toString(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { detail?: string }).detail ?? `Error ${res.status}`);
+  }
+  return res.json();
+}
+
+export function fetchCurrentOperator(): Promise<OperatorOut> {
+  return get<OperatorOut>("/api/v1/auth/me");
+}
+
+export function fetchOperators(): Promise<OperatorOut[]> {
+  return get<OperatorOut[]>("/api/v1/auth/operators");
 }
