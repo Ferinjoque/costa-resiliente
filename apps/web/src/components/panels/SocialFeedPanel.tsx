@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Radio, MapPin, X, Filter, Send, PlusCircle, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
+import { useAuthStore } from "@/store/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSocialSignals, useDistrictList } from "@/lib/queries";
 import { logDecision } from "@/lib/api";
@@ -258,6 +259,7 @@ function SignalRow({
 function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => void }) {
   const qc = useQueryClient();
   const { addToast } = useUIStore();
+  const operator = useAuthStore((s) => s.operator);
   const { data: districtList } = useDistrictList();
   const [label, setLabel] = useState<Label>("needs_help");
   const [text, setText] = useState("");
@@ -294,7 +296,7 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
 
     // Write to decision log backend (best-effort)
     await logDecision({
-      operator_id: "operator-1",
+      operator_id: operator?.username ?? "field_anonymous",
       action_type: "field_report",
       alert_id: null,
       payload: {

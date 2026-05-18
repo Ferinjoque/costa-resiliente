@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useUIStore } from "@/store/ui";
+import { useAuthStore } from "@/store/auth";
 import { DEMO_COPILOT_RESPONSES } from "@/lib/demoData";
 import { clsx } from "clsx";
 
@@ -193,6 +194,7 @@ const SUGGESTIONS: { es: string; en: string }[] = [
 
 export function AskPanel() {
   const { activePanel, locale } = useUIStore();
+  const operator = useAuthStore((s) => s.operator);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -256,7 +258,11 @@ export function AskPanel() {
       const res = await fetch(`${BASE}/api/v1/copilot/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: trimmed, operator_id: "demo" }),
+        body: JSON.stringify({
+          query: trimmed,
+          operator_id: operator?.username ?? "demo",
+          district_ubigeo: operator?.district_ubigeo ?? undefined,
+        }),
         signal: AbortSignal.timeout(55_000),
       });
       let answerText: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Bell,
   CheckCircle,
@@ -165,6 +165,43 @@ function EscalationModal({
       : `SINAGERD Level: ${sinagerdLevel}\nEvent: ${alert.title}\nType: ${typeLabel}\nRequired action: Activate preventive evacuation protocol and coordinate with INDECI COEN.\n\nAdditional notes:`;
 
   const [note, setNote] = useState(defaultNote);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Focus trap + Escape handler + auto-focus textarea
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    textareaRef.current?.focus();
+
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+        return;
+      }
+      if (e.key !== "Tab" || !dialogRef.current) return;
+      const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      previouslyFocused?.focus?.();
+    };
+  }, [onCancel]);
 
   return (
     <div
@@ -174,7 +211,7 @@ function EscalationModal({
       aria-label={locale === "es" ? "Confirmar escalada" : "Confirm escalation"}
     >
       <div className="absolute inset-0 bg-black/60" onClick={onCancel} aria-hidden="true" />
-      <div className="relative w-full sm:max-w-md bg-surface border border-border-strong rounded-t-2xl sm:rounded-2xl shadow-panel flex flex-col z-10">
+      <div ref={dialogRef} className="relative w-full sm:max-w-md bg-surface border border-border-strong rounded-t-2xl sm:rounded-2xl shadow-panel flex flex-col z-10">
         <div className="flex items-center gap-2.5 px-5 pt-4 pb-3 border-b border-border">
           <TrendingUp size={15} className="text-warn-muted shrink-0" aria-hidden="true" />
           <div className="flex-1 min-w-0">
@@ -201,6 +238,7 @@ function EscalationModal({
             {locale === "es" ? "Reporte de escalada (editable)" : "Escalation report (editable)"}
           </label>
           <textarea
+            ref={textareaRef}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={6}
