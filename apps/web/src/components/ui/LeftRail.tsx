@@ -12,9 +12,10 @@ import {
   HelpCircle,
   Globe2,
   Webhook,
+  Sparkles,
 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
-import { useAlerts, useSocialSignals } from "@/lib/queries";
+import { useAlerts, useSocialSignals, usePendingProposals } from "@/lib/queries";
 import { clsx } from "clsx";
 import { Badge } from "@/components/ui/primitives";
 import { OperatorChip } from "@/components/panels/LoginPanel";
@@ -24,7 +25,7 @@ import { OperatorChip } from "@/components/panels/LoginPanel";
 // Inspiration: felt.com, Mapbox Studio, Linear sidebar.
 
 type PanelId = "map" | "alerts" | "social" | "dashboard" | "ask" | "log"
-             | "sources" | "share" | "notifications";
+             | "sources" | "share" | "notifications" | "proposals";
 
 interface NavItem {
   id: Exclude<PanelId, "sources" | "share">;
@@ -40,16 +41,21 @@ const NAV: NavItem[] = [
   { id: "dashboard", label: { es: "Resumen",   en: "Summary"}, shortcut: "D", Icon: BarChart3    },
   { id: "ask",       label: { es: "Consultar", en: "Ask"    }, shortcut: "C", Icon: MessageSquare},
   { id: "log",       label: { es: "Registro",  en: "Log"    }, shortcut: "L", Icon: ClipboardList},
+  { id: "proposals", label: { es: "Propuestas", en: "Proposals"}, shortcut: "P", Icon: Sparkles    },
 ];
 
 export function LeftRail() {
   const { activePanel, setActivePanel, locale, setLocale, setTutorialOpen } = useUIStore();
   const { data: alerts = [] } = useAlerts();
   const { data: socialData } = useSocialSignals(48);
+  const { data: pendingProposals = [] } = usePendingProposals();
 
   const alertBadge = alerts.filter((a) => a.status === "active").length;
   const socialBadge = (socialData?.features ?? []).filter(
     (f) => f.properties.triage_label === "needs_help" || f.properties.triage_label === "road_blocked",
+  ).length;
+  const proposalsBadge = pendingProposals.filter(
+    (p) => p.severity === "critical" || p.severity === "high",
   ).length;
 
   const toggleLocale = () => setLocale(locale === "es" ? "en" : "es");
@@ -83,7 +89,10 @@ export function LeftRail() {
           <ul className="space-y-0.5" role="list">
             {NAV.map(({ id, label, shortcut, Icon }) => {
               const active = activePanel === id;
-              const badge = id === "alerts" ? alertBadge : id === "social" ? socialBadge : 0;
+              const badge =
+                id === "alerts" ? alertBadge :
+                id === "social" ? socialBadge :
+                id === "proposals" ? proposalsBadge : 0;
               return (
                 <li key={id}>
                   <button

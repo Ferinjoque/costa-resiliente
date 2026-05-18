@@ -20,6 +20,7 @@ import { useAlertStream } from "@/lib/useAlertStream";
 import { ToastStack } from "@/components/ui/ToastStack";
 import { SocialFeedPanel } from "@/components/panels/SocialFeedPanel";
 import { NotificationsPanel } from "@/components/panels/NotificationsPanel";
+import { ProposalsPanel } from "@/components/panels/ProposalsPanel";
 import { SituationBrief } from "@/components/panels/SituationBrief";
 import { LoginPanel } from "@/components/panels/LoginPanel";
 
@@ -47,7 +48,7 @@ const DemoLiveSimulator = dynamic(
 
 const FIRST_VISIT_KEY = "cr_visited_v1";
 
-const SHORTCUT_MAP: Record<string, "alerts" | "dashboard" | "ask" | "log" | "map" | "social" | "notifications"> = {
+const SHORTCUT_MAP: Record<string, "alerts" | "dashboard" | "ask" | "log" | "map" | "social" | "notifications" | "proposals"> = {
   a: "alerts", á: "alerts",
   d: "dashboard",
   c: "ask",
@@ -55,6 +56,7 @@ const SHORTCUT_MAP: Record<string, "alerts" | "dashboard" | "ask" | "log" | "map
   m: "map",
   s: "social",
   n: "notifications",
+  p: "proposals",
 };
 
 function KeyboardNavigator() {
@@ -140,6 +142,7 @@ export default function Home() {
         <SharePanel />
         <SocialFeedPanel />
         <NotificationsPanel />
+        <ProposalsPanel />
         <DistrictDashboardPanel />
         <FusionCallout />
         <SituationBrief />
