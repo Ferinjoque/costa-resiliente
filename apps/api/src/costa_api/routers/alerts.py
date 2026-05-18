@@ -35,7 +35,7 @@ class AlertSummary(BaseModel):
     province: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
-    source_refs: Optional[dict] = None
+    source_refs: Optional[list | dict] = None
     created_at: datetime
     updated_at: datetime
 
@@ -109,10 +109,20 @@ async def list_alerts(
         """),
         params,
     )
+    def _coerce_refs(raw):
+        # source_refs is JSONB — may be a dict OR a list of dicts depending on
+        # who inserted the alert (alert_generator vs proposal-approval). Pass
+        # through unchanged; the Pydantic model accepts either shape.
+        if raw is None:
+            return None
+        if isinstance(raw, (dict, list)):
+            return raw
+        return None
+
     return [
         AlertSummary(**{
             **dict(r._mapping),
-            "source_refs": dict(r._mapping["source_refs"]) if r._mapping.get("source_refs") else None,
+            "source_refs": _coerce_refs(r._mapping.get("source_refs")),
         })
         for r in rows
     ]
