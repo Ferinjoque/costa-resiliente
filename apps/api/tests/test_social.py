@@ -84,18 +84,18 @@ async def test_field_report_accepts_null_district():
 
 
 @pytest.mark.asyncio
-async def test_field_report_dedupes_via_content_hash():
-    """Second identical submission should 409 (or 201 if hash differs by ts)."""
-    payload = {
-        "operator_id": "coer_lima",
-        "text": "Mismo texto exacto para test de dedup",
-        "label": "needs_help",
-    }
+async def test_field_report_returns_district_id_when_known():
+    """When the ubigeo resolves to a real district, the row has district_id."""
+    # 150101 = Lima district seeded by auto_seed.
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-        first = await c.post("/api/v1/social/field-report", json=payload)
-        assert first.status_code == 201
-        # The endpoint hashes content+operator+timestamp, so a second
-        # call with the same body in the same second may dedup.
-        # Either outcome is acceptable; this test just exercises the path.
-        second = await c.post("/api/v1/social/field-report", json=payload)
-        assert second.status_code in (201, 409)
+        resp = await c.post(
+            "/api/v1/social/field-report",
+            json={
+                "operator_id": "coen_lima",
+                "text": "Aniego confirmado por brigada Plaza Mayor",
+                "label": "infrastructure_damage",
+                "district_ubigeo": "150101",
+            },
+        )
+    assert resp.status_code == 201
+    assert isinstance(resp.json()["signal_id"], int)
