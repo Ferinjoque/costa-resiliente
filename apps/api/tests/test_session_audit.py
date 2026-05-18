@@ -1087,7 +1087,8 @@ class TestDBIntegrity:
 
     def test_alerts_have_valid_status(self, client):
         r = client.get("/alerts")
-        valid = {"active", "acknowledged", "false_positive", "resolved", "closed"}
+        # Must match ops.alerts CHECK constraint exactly.
+        valid = {"active", "acknowledged", "escalated", "closed", "false_positive"}
         for a in r.json():
             assert a["status"] in valid, f"Invalid status: {a['status']}"
 
