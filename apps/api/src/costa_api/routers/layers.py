@@ -560,7 +560,7 @@ async def social_signals(
         text(f"""
             SELECT
                 s.id, s.source, s.source_id, s.triage_label, s.triage_confidence,
-                s.ingested_at, s.district_id, d.name AS district_name,
+                s.published_at, s.ingested_at, s.district_id, d.name AS district_name,
                 s.content_redacted AS text,
                 COALESCE(
                     ST_AsGeoJSON(s.geom)::json,
@@ -596,6 +596,7 @@ async def social_signals(
                     "source_id": r["source_id"],
                     "triage_label": r["triage_label"],
                     "triage_confidence": r["triage_confidence"],
+                    "published_at": _iso(r["published_at"]) if r["published_at"] else None,
                     "ingested_at": _iso(r["ingested_at"]),
                     "district_id": r["district_id"],
                     "district_name": r["district_name"],
