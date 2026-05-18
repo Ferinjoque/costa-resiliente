@@ -785,7 +785,7 @@ export default function MapView() {
   // ─── Layer visibility sync ────────────────────────────────────────────────
   useEffect(() => {
     const m = map.current;
-    if (!m || !m.isStyleLoaded()) return;
+    if (!m) return;
     const layerMap: Record<string, string[]> = {
       districts:      ["districts-fill", "districts-outline", "districts-label"],
       imerg:          ["imerg-fill"],
@@ -796,11 +796,24 @@ export default function MapView() {
       social:         ["social-clusters", "social-cluster-count", "social-circle"],
       stations:       ["stations-circle", "stations-label"],
     };
-    for (const [key, ids] of Object.entries(layerMap)) {
-      const v = activeLayers.has(key) ? "visible" : "none";
-      for (const id of ids) {
-        if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", v);
+    const applyVisibility = () => {
+      for (const [key, ids] of Object.entries(layerMap)) {
+        const v = activeLayers.has(key) ? "visible" : "none";
+        for (const id of ids) {
+          try {
+            if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", v);
+          } catch {
+            // Layer not ready yet — will pick up correct visibility when added
+          }
+        }
       }
+    };
+    // Apply now if style is ready; also re-apply once style finishes loading
+    // (isStyleLoaded() can be false while tiles are fetching, causing missed updates)
+    applyVisibility();
+    if (!m.isStyleLoaded()) {
+      m.once("styledata", applyVisibility);
+      return () => { m.off("styledata", applyVisibility); };
     }
   }, [activeLayers]);
 

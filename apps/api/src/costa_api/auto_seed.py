@@ -563,8 +563,20 @@ async def maybe_seed(engine: AsyncEngine) -> None:
             text("SELECT COUNT(*) FROM ml.flood_polygons WHERE scene_id LIKE 'elnino2017%'")
         )).scalar_one()
 
-        if flood_count > 0 and _qbr > 0 and _infra > 0 and _hazard > 0 and _elnino >= len(_ELNINO_FLOODS):
-            logger.info("auto_seed: all tables populated (%d flood rows, %d elnino) — skipping", flood_count, _elnino)
+        _alerts = (await conn.execute(text("SELECT COUNT(*) FROM ops.alerts"))).scalar_one()
+        _social = (await conn.execute(text("SELECT COUNT(*) FROM social.signals"))).scalar_one()
+        _imerg  = (await conn.execute(
+            text("SELECT COUNT(*) FROM hydro.imerg_accumulations WHERE time > NOW() - INTERVAL '7 days'")
+        )).scalar_one()
+        _stobs  = (await conn.execute(text("SELECT COUNT(*) FROM hydro.station_observations"))).scalar_one()
+
+        operational_ok = _alerts > 0 and _social > 0 and _imerg > 0 and _stobs > 0
+
+        if flood_count > 0 and _qbr > 0 and _infra > 0 and _hazard > 0 and _elnino >= len(_ELNINO_FLOODS) and operational_ok:
+            logger.info(
+                "auto_seed: all tables populated (flood=%d elnino=%d alerts=%d social=%d) — skipping",
+                flood_count, _elnino, _alerts, _social,
+            )
             return
 
         logger.info(
