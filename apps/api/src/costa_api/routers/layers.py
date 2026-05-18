@@ -195,6 +195,7 @@ async def huayco_susceptibility(db: AsyncSession = Depends(get_db)) -> dict[str,
                 ST_AsGeoJSON(ST_PointOnSurface(q.geom))::json AS geometry
             FROM geo.quebradas q
             LEFT JOIN ml.huayco_susceptibility hs ON hs.quebrada_id = q.id
+            WHERE q.geom IS NOT NULL
             ORDER BY hs.quebrada_id, hs.computed_at DESC
         """)
     )
