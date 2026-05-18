@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: 9 new tests added (5 social + 4 proposals) all passing in isolation. Single Ollama timeout flake unchanged. Full-suite run shows ~20 `test_session_audit.py` failures attributed to asyncpg connection-pool exhaustion when the FastAPI app is exercised in-process by ASGITransport while also serving live HTTP from costa-api (default pool: 5 + 10 overflow). Every individual failing test passes when run in isolation — `python -m pytest tests/test_session_audit.py::TestAlerts::test_action_sql_injection_in_operator` etc. PASS one-by-one. The fix is a larger pool or per-test client teardown; documented here, not done tonight.
+- **API**: 308 passed / 1 deselected (Ollama-flake) + 1 teardown-error in full suite. Up from Session 5's 299 with +9 new tests (5 social + 4 proposals). The earlier 20-failure cascade traced to a bug in `list_alerts` — `dict(r._mapping['source_refs'])` crashed when source_refs was a JSON *array* (the shape produced by the proposal-approve insert path), returning 500 to every subsequent `client.get('/alerts')` in `test_session_audit.py`. Fixed: `AlertSummary.source_refs` now accepts `list | dict | None` and the router passes JSONB through unchanged.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB (Session 5: 153 → 173 → 175 with new ProposalsPanel)
 
