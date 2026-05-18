@@ -14,6 +14,7 @@ All data comes from parameterised whitelisted queries in tools/db_tools.py.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
@@ -28,12 +29,16 @@ from costa_api.ai.tools.db_tools import TOOL_SCHEMAS, dispatch
 
 logger = logging.getLogger(__name__)
 
-_SYSTEM = """Eres el Copiloto Operativo de Costa Resiliente para Lima, Perú. Sistema de alertas de inundaciones y huaycos.
+_SYSTEM = """Eres el Copiloto Operativo de Costa Resiliente, Lima Metropolitana. Apoyas al oficial de guardia del COER Lima durante emergencias de inundaciones y huaycos El Niño.
 
-INSTRUCCIONES:
-- SIEMPRE llama al menos una herramienta antes de responder. Usa los valores por defecto si no se especifican parámetros.
-- Nunca inventes datos. Responde solo con lo que retornen las herramientas.
-- Responde en español, máximo 3 oraciones."""
+REGLAS:
+- SIEMPRE llama al menos una herramienta. Nunca respondas sin datos de las herramientas.
+- Nunca inventes cifras. Si herramienta retorna cero filas, dilo explícitamente.
+- Personas afectadas → usa get_population_at_risk.
+- Tendencia de ríos → usa get_river_levels (campo trend: rising/falling/stable).
+- Protocolos INDECI/SINAGERD → usa search_protocols.
+- Responde en español, 2-4 oraciones. Menciona nivel SINAGERD cuando aplique.
+- Si algún río tiene trend=rising, destácalo como prioridad inmediata de evacuación."""
 
 
 @dataclass
@@ -48,11 +53,12 @@ class AgentResult:
 
 
 _KEYWORD_MAP: list[tuple[list[str], str]] = [
+    (["poblaci", "personas", "habitantes", "afectad", "riesgo pob"], "get_population_at_risk"),
     (["inundaci", "desborde", "flood", "sar", "sentinel", "poligono"], "get_flood_polygons"),
     (["huayco", "quebrada", "deslizami", "flujo", "lahar"], "get_huayco_risk"),
     (["río", "rio", "nivel", "caudal", "estaci", "chosica", "rimac", "chillon"], "get_river_levels"),
     (["social", "reporte", "bluesky", "reddit", "señal", "vecino"], "get_social_clusters"),
-    (["hospital", "escuela", "puente", "infraestructura", "afectad"], "get_infrastructure_impact"),
+    (["hospital", "escuela", "puente", "infraestructura"], "get_infrastructure_impact"),
     (["lluvia", "precipitaci", "imerg", "acumul", "mm", "rain"], "get_rainfall_accumulation"),
     (["alerta", "alert", "activ", "emergencia"], "get_active_alerts"),
     (["protocolo", "evacu", "indeci", "minsa", "cenepred", "procedimiento"], "search_protocols"),
@@ -123,8 +129,8 @@ async def run(
             # Model chose to answer directly (no more tool calls needed)
             break
 
-        # 3. Execute each requested tool
-        tool_result_messages: list[dict] = []
+        # 3. Execute all requested tools in parallel
+        parsed_calls: list[tuple[str, dict]] = []
         for call in tool_calls:
             fn = call.get("function", {})
             name = fn.get("name", "")
@@ -134,13 +140,21 @@ async def run(
                     args = json.loads(args)
                 except json.JSONDecodeError:
                     args = {}
+            parsed_calls.append((name, args))
 
-            result = await dispatch(name, args, db, rag_fn=rag_fn)
+        results = await asyncio.gather(
+            *[dispatch(name, args, db, rag_fn=rag_fn) for name, args in parsed_calls],
+            return_exceptions=True,
+        )
+
+        tool_result_messages: list[dict] = []
+        for (name, args), result in zip(parsed_calls, results):
+            if isinstance(result, Exception):
+                logger.error("Tool %s raised: %s", name, result)
+                result = {"tool": name, "rows": [], "count": 0, "error": str(result)}
             tool_call_trace.append({"tool": name, "args": args, "count": result.get("count", 0)})
-
             if result.get("rows"):
                 all_tool_results.extend(result["rows"])
-
             tool_result_messages.append({
                 "role": "tool",
                 "content": json.dumps(result, default=str, ensure_ascii=False),
@@ -200,7 +214,16 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         return f"Se identificaron {n} quebrada{'s' if n != 1 else ''} con riesgo elevado. La más crítica: {top}."
     if "level_m" in first:
         r = rows[0]
-        return f"Última lectura: nivel {r.get('level_m', '—')} m, caudal {r.get('flow_m3s', '—')} m³/s en estación {r.get('name', '?')}."
+        trend = r.get("trend", "unknown")
+        trend_es = {"rising": "↑ subiendo", "falling": "↓ bajando", "stable": "estable", "unknown": "—"}.get(trend, "—")
+        change = r.get("level_change_1h_m")
+        change_str = f" ({change:+.3f} m en 1h)" if change is not None else ""
+        # Highlight rising stations most critical for duty officer
+        rising = [row for row in rows if row.get("trend") == "rising"]
+        if rising:
+            names = ", ".join(row.get("name", "?") for row in rising[:3])
+            return f"⚠ {len(rising)} estación(es) con nivel en ascenso: {names}. {r.get('name','?')}: {r.get('level_m','—')} m {trend_es}{change_str}."
+        return f"Última lectura: {r.get('name','?')} — nivel {r.get('level_m','—')} m ({trend_es}{change_str}), caudal {r.get('flow_m3s','—')} m³/s."
     if "triage_label" in first:
         total = sum(r.get("count") or 0 for r in rows)
         return f"Se registraron {total} señales sociales en el período consultado."
@@ -221,5 +244,13 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
     if "acc_72h_mm" in first:
         mx = max((r.get("acc_72h_mm") or 0) for r in rows)
         return f"Acumulación máxima en 72h: {mx:.1f} mm. {'⚠ Umbral SUPERADO (>42mm)' if mx > 42 else 'Por debajo del umbral de alerta'}."
+    if "estimated_population_at_risk" in first:
+        total = sum(int(r.get("estimated_population_at_risk") or 0) for r in rows)
+        top_d = rows[0].get("district", "?")
+        top_p = int(rows[0].get("estimated_population_at_risk") or 0)
+        return (
+            f"Estimado {total:,} personas en zonas inundadas ({n} distrito{'s' if n != 1 else ''}). "
+            f"Distrito más afectado: {top_d} (~{top_p:,} personas)."
+        )
 
     return f"Se recuperaron {n} registros. Revise los datos adjuntos."

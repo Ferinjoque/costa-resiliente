@@ -33,7 +33,8 @@ async def chat(
         "stream": False,
         "options": {
             "temperature": temperature,
-            "num_predict": 256,   # tool calls are short JSON; cap to keep inference fast on CPU
+            "num_predict": 256,   # tool calls are short JSON; cap keeps inference fast
+            "num_ctx": 8192,      # default 32k → 8k; fits 4 tool iterations comfortably, 3x faster KV
         },
     }
     if tools:
