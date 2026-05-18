@@ -50,6 +50,32 @@ class AgentResult:
     redacted: bool = False
     blocked: bool = False
     block_reason: str = ""
+    quick_mode: bool = False  # True when LLM was bypassed for a fast template answer
+
+
+# ─── Quick-mode patterns ──────────────────────────────────────────────────────
+# Maps (keyword-set, tool_name). First match wins.
+# These 5 cover the most common duty-officer queries at 3am.
+# Bypass LLM entirely: keyword match → DB tool → template answer (~2s).
+
+_QUICK_PATTERNS: list[tuple[list[str], str]] = [
+    (["alerta", "activ", "cuántas alert", "cuantas alert", "emergencia activ"], "get_active_alerts"),
+    (["nivel", "caudal", "río", "rio", "rimac", "chillon", "chillón", "lurin", "lurín", "estaci"], "get_river_levels"),
+    (["inundad", "inundacion", "flood", "sar", "poligono", "polígono", "zona inund"], "get_flood_polygons"),
+    (["lluvia", "precipitaci", "imerg", "acumul", "cuánto lluv", "cuanto lluv", "mm"], "get_rainfall_accumulation"),
+    (["poblaci", "personas", "habitantes", "afectad", "riesgo pob", "cuántos", "cuantos"], "get_population_at_risk"),
+]
+
+
+def _detect_quick(query: str) -> str | None:
+    """Return tool_name if exactly one quick-mode pattern matches, else None.
+
+    Multi-topic queries (>1 match) fall through to full LLM mode so the agent
+    can dispatch multiple tools in parallel.
+    """
+    q = query.lower()
+    matches = [tool for keywords, tool in _QUICK_PATTERNS if any(kw in q for kw in keywords)]
+    return matches[0] if len(matches) == 1 else None
 
 
 _KEYWORD_MAP: list[tuple[list[str], str]] = [
@@ -96,6 +122,26 @@ async def run(
             block_reason=guard.reason,
             confidence=0.0,
         )
+
+    # 1b. Quick-mode: bypass LLM for 5 common query types (~2s vs 15-30s)
+    quick_tool = _detect_quick(query)
+    if quick_tool:
+        try:
+            result = await dispatch(quick_tool, {}, db, rag_fn=rag_fn)
+            rows = result.get("rows", [])
+            answer = _build_answer([], rows, query)
+            clean_answer, triggered = sanitise(answer, rows)
+            logger.info("quick_mode hit: tool=%s rows=%d op=%s", quick_tool, len(rows), operator_id)
+            return AgentResult(
+                answer=clean_answer,
+                sources=json.loads(json.dumps(rows[:20], default=str)),
+                tool_calls=[{"tool": quick_tool, "args": {}, "count": len(rows), "quick_mode": True}],
+                confidence=0.9 if rows else 0.4,
+                redacted=bool(triggered),
+                quick_mode=True,
+            )
+        except Exception as exc:
+            logger.warning("quick_mode dispatch failed (%s): %s — falling through to full agent", quick_tool, exc)
 
     messages: list[dict] = [
         {"role": "system", "content": _SYSTEM},

@@ -48,6 +48,9 @@ dependencies = [
 
     # AI / LLM (httpx already included above)
     # No heavy ML deps needed — embeddings via Ollama API, structured output via pydantic
+
+    # SMS (Twilio — optional; only active when TWILIO_ACCOUNT_SID is set in .env)
+    "twilio>=9.0",
 ]
 
 [project.optional-dependencies]

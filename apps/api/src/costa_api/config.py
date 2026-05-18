@@ -90,5 +90,14 @@ class Settings(BaseSettings):
     lima_bbox_east: float = -76.7
     lima_bbox_north: float = -11.7
 
+    # Twilio SMS (optional — stub fires if not set; only costs money when ACCOUNT_SID is configured)
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_number: str = ""  # E.164 format, e.g. +15005550006
+
+    @property
+    def twilio_enabled(self) -> bool:
+        return bool(self.twilio_account_sid and self.twilio_auth_token and self.twilio_from_number)
+
 
 settings = Settings()

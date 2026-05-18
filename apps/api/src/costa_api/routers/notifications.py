@@ -1,4 +1,4 @@
-"""Notification subscribers — CRUD + async webhook fan-out.
+"""Notification subscribers — CRUD + async webhook + SMS fan-out.
 
 Fan-out fires (background task) when:
   - A new alert is created with severity in (critical, high)
@@ -6,8 +6,10 @@ Fan-out fires (background task) when:
 
 Channels:
   webhook  — POST JSON payload to target URL (httpx, 5s timeout, 3 retries)
-  email    — stub: logs intent, no SMTP (no paid API without explicit approval)
-  sms_stub — stub: logs intent, no SMS provider call
+  sms      — Twilio SMS; active only when TWILIO_ACCOUNT_SID/AUTH_TOKEN/FROM_NUMBER set in .env
+             Gracefully degrades to stub behavior when credentials absent ($0 until configured)
+  sms_stub — legacy stub: logs intent, no provider call (kept for backwards compat)
+  email    — stub: logs intent, no SMTP
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.db import get_db, engine
+from costa_api.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/notifications", tags=["notifications"])
@@ -45,8 +48,8 @@ class SubscriberCreate(BaseModel):
     @field_validator("channel")
     @classmethod
     def check_channel(cls, v: str) -> str:
-        if v not in {"webhook", "email", "sms_stub"}:
-            raise ValueError("channel must be webhook, email, or sms_stub")
+        if v not in {"webhook", "email", "sms", "sms_stub"}:
+            raise ValueError("channel must be webhook, email, sms, or sms_stub")
         return v
 
     @field_validator("severity_min")
@@ -197,6 +200,26 @@ async def _send_webhook(target: str, payload: dict, timeout: float = 5.0, retrie
     return False, last_err
 
 
+async def _send_sms(to_number: str, body: str) -> tuple[bool, str]:
+    """Send SMS via Twilio. Returns (success, error). No-ops if credentials absent."""
+    if not settings.twilio_enabled:
+        logger.info("[notifications] Twilio not configured — SMS stub for %s", to_number)
+        return False, "twilio_not_configured"
+    try:
+        from twilio.rest import Client  # lazy import — optional dep
+        client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
+        msg = client.messages.create(
+            body=body,
+            from_=settings.twilio_from_number,
+            to=to_number,
+        )
+        logger.info("[notifications] SMS sent sid=%s to=%s", msg.sid, to_number)
+        return True, ""
+    except Exception as exc:
+        logger.error("[notifications] Twilio error: %s", exc)
+        return False, str(exc)
+
+
 async def fan_out_notifications(
     alert_id: Optional[int],
     alert_severity: str,
@@ -241,8 +264,20 @@ async def fan_out_notifications(
                 success, err = await _send_webhook(sub["target"], payload)
                 status = "delivered" if success else "failed"
                 await _record_delivery(sub["id"], alert_id, trigger_event, status, 3 if not success else 1, err or None)
+            elif channel == "sms":
+                sms_body = (
+                    f"[COSTA RESILIENTE] {payload['severity'].upper()}: {payload['title']}. "
+                    f"Distrito: {payload.get('district_ubigeo', 'Lima')}. "
+                    f"Evento: {trigger_event}."
+                )
+                success, err = await _send_sms(sub["target"], sms_body)
+                if err == "twilio_not_configured":
+                    status = "skipped"
+                else:
+                    status = "delivered" if success else "failed"
+                await _record_delivery(sub["id"], alert_id, trigger_event, status, 1, err or None)
             else:
-                # sms_stub / email — log intent, no paid API call
+                # sms_stub / email — log intent, no provider call
                 logger.info("[notifications] stub %s → %s: alert_id=%s event=%s", channel, sub["label"], alert_id, trigger_event)
                 await _record_delivery(sub["id"], alert_id, trigger_event, "skipped", 0, f"{channel} stub — not wired")
     except Exception as exc:

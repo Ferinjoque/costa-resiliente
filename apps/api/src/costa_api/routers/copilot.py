@@ -52,6 +52,7 @@ class CopilotResponse(BaseModel):
     tool_calls: list[dict] = []  # agentic trace: [{tool, args, count}]
     blocked: bool = False
     redacted: bool = False
+    quick_mode: bool = False  # True when LLM was bypassed (keyword → template, ~2s)
 
 
 # ─── Backward-compat exports (referenced by sprint5 contract tests) ───────────
@@ -165,4 +166,5 @@ async def ask(
         tool_calls=result.tool_calls,
         blocked=result.blocked,
         redacted=result.redacted,
+        quick_mode=result.quick_mode,
     )
