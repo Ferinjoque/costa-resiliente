@@ -11,18 +11,20 @@ import {
   Database,
   HelpCircle,
   Globe2,
+  Webhook,
 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useAlerts, useSocialSignals } from "@/lib/queries";
 import { clsx } from "clsx";
 import { Badge } from "@/components/ui/primitives";
+import { OperatorChip } from "@/components/panels/LoginPanel";
 
 // ─── Felt-style sidebar ───────────────────────────────────────────────────────
 // Light cream panel on the left. The map is to the right. Solid, no glass.
 // Inspiration: felt.com, Mapbox Studio, Linear sidebar.
 
 type PanelId = "map" | "alerts" | "social" | "dashboard" | "ask" | "log"
-             | "sources" | "share";
+             | "sources" | "share" | "notifications";
 
 interface NavItem {
   id: Exclude<PanelId, "sources" | "share">;
@@ -122,6 +124,9 @@ export function LeftRail() {
           </ul>
         </nav>
 
+        {/* Operator identity chip */}
+        <OperatorChip />
+
         {/* Secondary nav */}
         <div className="px-2 pb-3 border-t border-border-subtle pt-2">
           <SecBtn
@@ -135,6 +140,12 @@ export function LeftRail() {
             label={locale === "es" ? "Fuentes de datos" : "Data sources"}
             active={activePanel === "sources"}
             onClick={() => setActivePanel("sources")}
+          />
+          <SecBtn
+            Icon={Webhook}
+            label={locale === "es" ? "Notificaciones" : "Notifications"}
+            active={activePanel === "notifications"}
+            onClick={() => setActivePanel("notifications")}
           />
           <SecBtn
             Icon={HelpCircle}

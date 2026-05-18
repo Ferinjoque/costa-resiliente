@@ -19,7 +19,9 @@ import { useUIStore } from "@/store/ui";
 import { useAlertStream } from "@/lib/useAlertStream";
 import { ToastStack } from "@/components/ui/ToastStack";
 import { SocialFeedPanel } from "@/components/panels/SocialFeedPanel";
+import { NotificationsPanel } from "@/components/panels/NotificationsPanel";
 import { SituationBrief } from "@/components/panels/SituationBrief";
+import { LoginPanel } from "@/components/panels/LoginPanel";
 
 // Deferred: keeps initial map paint < 2s
 const MapView = dynamic(() => import("@/components/map/MapView"), {
@@ -45,13 +47,14 @@ const DemoLiveSimulator = dynamic(
 
 const FIRST_VISIT_KEY = "cr_visited_v1";
 
-const SHORTCUT_MAP: Record<string, "alerts" | "dashboard" | "ask" | "log" | "map" | "social"> = {
+const SHORTCUT_MAP: Record<string, "alerts" | "dashboard" | "ask" | "log" | "map" | "social" | "notifications"> = {
   a: "alerts", á: "alerts",
   d: "dashboard",
   c: "ask",
   l: "log",
   m: "map",
   s: "social",
+  n: "notifications",
 };
 
 function KeyboardNavigator() {
@@ -136,6 +139,7 @@ export default function Home() {
         <DataSourcesPanel />
         <SharePanel />
         <SocialFeedPanel />
+        <NotificationsPanel />
         <DistrictDashboardPanel />
         <FusionCallout />
         <SituationBrief />
@@ -148,6 +152,7 @@ export default function Home() {
         <KeyboardNavigator />
         <DemoLiveSimulator />
         <ToastStack />
+        <LoginPanel />
       </main>
     </div>
   );
