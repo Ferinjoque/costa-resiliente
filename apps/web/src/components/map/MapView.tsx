@@ -388,22 +388,45 @@ export default function MapView() {
     };
   }, []);
 
-  // ─── 3D mode — cinematic pitch + auto-rotation + risk towers + flood water ──
+  // ─── 3D mode — terrain + sky + fog + extrusions for every active layer ──────
   useEffect(() => {
     const m = map.current;
     if (!m) return;
+    type MapWithFog = maplibregl.Map & { setFog(f: object | null): void };
 
     const enter3D = () => {
       _is3DOn.current = true;
-      m.easeTo({ pitch: 62, bearing: -20, duration: 1200, easing: (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t });
 
-      // Auto-rotation: ~0.12°/tick at 30fps, pauses when user interacts
+      // Real Andes terrain via free AWS Terrarium tiles
+      if (!m.getSource("terrain-dem")) {
+        m.addSource("terrain-dem", {
+          type: "raster-dem",
+          tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
+          tileSize: 256,
+          encoding: "terrarium",
+          maxzoom: 15,
+        });
+      }
+      m.setTerrain({ source: "terrain-dem", exaggeration: 2.5 });
+
+      // Deep-space atmospheric fog (setFog exists at runtime but not in v4 type defs)
+      (m as MapWithFog).setFog({
+        color: "rgb(15, 23, 42)",
+        "high-color": "rgb(20, 45, 100)",
+        "horizon-blend": 0.04,
+        "space-color": "rgb(3, 5, 15)",
+        "star-intensity": 0.5,
+      });
+
+      // Dramatic pitch entry with cubic-ease
+      m.easeTo({ pitch: 62, bearing: -20, duration: 2000, easing: (t) => 1 - (1 - t) ** 3 });
+
+      // Auto-rotation: 0.08°/tick at 30 fps, pauses 4 s after user interaction
       let bearing = m.getBearing();
       let lastInteraction = 0;
       let lastFrame = 0;
-      const PAUSE_AFTER_MS = 4000;
-      const FRAME_INTERVAL = 33; // ~30 fps keeps MapLibre render pressure low
-
+      const PAUSE_MS = 4000;
+      const FRAME_MS = 33;
       const onInteract = () => { lastInteraction = Date.now(); };
       m.on("mousedown", onInteract);
       m.on("touchstart", onInteract);
@@ -413,13 +436,11 @@ export default function MapView() {
         m.off("touchstart", onInteract);
         m.off("wheel", onInteract);
       };
-
       const rotate = (ts: number) => {
         if (!_is3DOn.current) return;
-        if (ts - lastFrame >= FRAME_INTERVAL) {
-          if (Date.now() - lastInteraction > PAUSE_AFTER_MS) {
-            bearing += 0.12;
-            if (bearing > 360) bearing -= 360;
+        if (ts - lastFrame >= FRAME_MS) {
+          if (Date.now() - lastInteraction > PAUSE_MS) {
+            bearing = (bearing + 0.08) % 360;
             m.setBearing(bearing);
           }
           lastFrame = ts;
@@ -428,65 +449,132 @@ export default function MapView() {
       };
       _rotRaf.current = requestAnimationFrame(rotate);
 
-      // District risk towers from risk-src (height = population at risk, color = risk level)
-      const addRiskTowers = () => {
-        if (!m.getSource("risk-src") || m.getLayer("risk-extrusion")) return;
-        m.addLayer({
-          id: "risk-extrusion",
-          type: "fill-extrusion",
-          source: "risk-src",
-          paint: {
-            "fill-extrusion-color": [
-              "match", ["get", "risk_level"],
-              "alto",     "#dc2626",
-              "moderado", "#f97316",
-              "#22c55e",
-            ] as maplibregl.ExpressionSpecification,
-            "fill-extrusion-opacity": 0.78,
-            "fill-extrusion-height": [
-              "interpolate", ["linear"],
-              ["coalesce", ["get", "population_at_risk"], 0],
-              0, 100, 50000, 1200, 200000, 3500, 600000, 7000,
-            ] as maplibregl.ExpressionSpecification,
-            "fill-extrusion-base": 0,
-          },
-        });
-      };
-      if (m.loaded()) addRiskTowers(); else m.once("load", addRiskTowers);
+      // All 3D layer setup (sky + extrusions) — requires style to be loaded
+      const setup3DLayers = () => {
+        // Sky atmosphere (navy night sky, slight halo at horizon)
+        if (!m.getLayer("sky")) {
+          m.addLayer({
+            id: "sky",
+            type: "sky" as maplibregl.LayerSpecification["type"],
+            paint: {
+              "sky-type": "atmosphere",
+              "sky-atmosphere-sun": [0.0, 90.0],
+              "sky-atmosphere-sun-intensity": 15,
+              "sky-atmosphere-color": "#0f172a",
+              "sky-atmosphere-halo-color": "#1e3a5f",
+            } as unknown,
+          } as unknown as maplibregl.LayerSpecification);
+        }
 
-      // Flood water extrusion from flood-src
-      const addFloodTowers = () => {
-        if (!m.getSource("flood-src") || m.getLayer("flood-extrusion")) return;
-        m.addLayer({
-          id: "flood-extrusion",
-          type: "fill-extrusion",
-          source: "flood-src",
-          layout: { visibility: activeLayers.has("flood") ? "visible" : "none" },
-          paint: {
-            "fill-extrusion-color": "#38bdf8",
-            "fill-extrusion-opacity": 0.6,
-            "fill-extrusion-height": [
-              "interpolate", ["linear"],
-              ["coalesce", ["get", "area_km2"], 0],
-              0, 60, 1, 250, 5, 600, 20, 1400,
-            ] as maplibregl.ExpressionSpecification,
-            "fill-extrusion-base": 0,
-          },
-        });
+        const { activeLayers: al, scenario: sc } = useUIStore.getState();
 
-        // Animated flood water: opacity pulses 0.4 → 0.75 using sin wave
-        const t0 = performance.now();
-        const animWater = () => {
-          if (!_is3DOn.current) return;
-          if (!m.getLayer("flood-extrusion")) return;
-          const elapsed = performance.now() - t0;
-          const opacity = 0.575 + 0.175 * Math.sin(elapsed / 1400);
-          m.setPaintProperty("flood-extrusion", "fill-extrusion-opacity", opacity);
+        // District risk towers — height = population at risk, lit by risk level color
+        if (m.getSource("risk-src") && !m.getLayer("risk-extrusion")) {
+          m.addLayer({
+            id: "risk-extrusion",
+            type: "fill-extrusion",
+            source: "risk-src",
+            paint: {
+              "fill-extrusion-color": [
+                "match", ["get", "risk_level"],
+                "alto", "#dc2626", "moderado", "#f97316", "#22c55e",
+              ] as maplibregl.ExpressionSpecification,
+              "fill-extrusion-opacity": 0.85,
+              "fill-extrusion-height": [
+                "interpolate", ["linear"],
+                ["coalesce", ["get", "population_at_risk"], 0],
+                0, 200, 30000, 900, 100000, 2000, 300000, 3500, 700000, 5500,
+              ] as maplibregl.ExpressionSpecification,
+              "fill-extrusion-base": 0,
+              "fill-extrusion-vertical-gradient": true,
+            },
+          });
+        }
+
+        // Flood water extrusion — animated opacity wave
+        if (m.getSource("flood-src") && !m.getLayer("flood-extrusion")) {
+          m.addLayer({
+            id: "flood-extrusion",
+            type: "fill-extrusion",
+            source: "flood-src",
+            layout: { visibility: al.has("flood") ? "visible" : "none" },
+            paint: {
+              "fill-extrusion-color": [
+                "interpolate", ["linear"],
+                ["coalesce", ["get", "confidence"], 0.5],
+                0.5, "#1d4ed8", 0.8, "#2563eb", 1.0, "#38bdf8",
+              ] as maplibregl.ExpressionSpecification,
+              "fill-extrusion-opacity": 0.72,
+              "fill-extrusion-height": [
+                "interpolate", ["linear"],
+                ["coalesce", ["get", "area_km2"], 0],
+                0, 80, 0.5, 280, 2, 650, 10, 1400, 30, 2400,
+              ] as maplibregl.ExpressionSpecification,
+              "fill-extrusion-base": 0,
+              "fill-extrusion-vertical-gradient": true,
+            },
+          });
+          const t0 = performance.now();
+          const animWater = () => {
+            if (!_is3DOn.current || !m.getLayer("flood-extrusion")) return;
+            const o = 0.575 + 0.175 * Math.sin((performance.now() - t0) / 1200);
+            m.setPaintProperty("flood-extrusion", "fill-extrusion-opacity", o);
+            _waterRaf.current = requestAnimationFrame(animWater);
+          };
           _waterRaf.current = requestAnimationFrame(animWater);
-        };
-        _waterRaf.current = requestAnimationFrame(animWater);
+        }
+
+        // IMERG precipitation columns — height + color scaled by rainfall mm
+        if (m.getSource("imerg-src") && !m.getLayer("imerg-extrusion")) {
+          const prop = accProp(sc.timeWindowHours);
+          m.addLayer({
+            id: "imerg-extrusion",
+            type: "fill-extrusion",
+            source: "imerg-src",
+            layout: { visibility: al.has("imerg") ? "visible" : "none" },
+            paint: {
+              "fill-extrusion-color": [
+                "interpolate", ["linear"], ["coalesce", ["get", prop], 0],
+                0, "#1e3a5f", 5, "#2563eb", 20, "#38bdf8",
+                50, "#fbbf24", 100, "#f97316", 200, "#dc2626",
+              ] as maplibregl.ExpressionSpecification,
+              "fill-extrusion-opacity": 0.62,
+              "fill-extrusion-height": [
+                "interpolate", ["linear"], ["coalesce", ["get", prop], 0],
+                0, 0, 5, 130, 20, 520, 60, 1200, 150, 2600,
+              ] as maplibregl.ExpressionSpecification,
+              "fill-extrusion-base": 0,
+              "fill-extrusion-vertical-gradient": true,
+            },
+          });
+        }
+
+        // Hazard zone platforms — height indicates danger level
+        if (m.getSource("hazard-src") && !m.getLayer("hazard-extrusion")) {
+          m.addLayer({
+            id: "hazard-extrusion",
+            type: "fill-extrusion",
+            source: "hazard-src",
+            layout: { visibility: al.has("hazard") ? "visible" : "none" },
+            paint: {
+              "fill-extrusion-color": [
+                "match", ["get", "level"],
+                "muy_alto", "#dc2626", "alto", "#f97316",
+                "medio", "#fbbf24", "bajo", "#84cc16", "#94a3b8",
+              ] as maplibregl.ExpressionSpecification,
+              "fill-extrusion-opacity": 0.55,
+              "fill-extrusion-height": [
+                "match", ["get", "level"],
+                "muy_alto", 750, "alto", 450, "medio", 200, "bajo", 80, 40,
+              ] as maplibregl.ExpressionSpecification,
+              "fill-extrusion-base": 0,
+              "fill-extrusion-vertical-gradient": true,
+            },
+          });
+        }
       };
-      if (m.loaded()) addFloodTowers(); else m.once("load", addFloodTowers);
+
+      if (m.loaded()) setup3DLayers(); else m.once("load", setup3DLayers);
     };
 
     const exit3D = () => {
@@ -495,9 +583,12 @@ export default function MapView() {
       cancelAnimationFrame(_waterRaf.current);
       _rotCleanup.current?.();
       _rotCleanup.current = null;
+      try { m.setTerrain(null); } catch { /* ignore */ }
+      try { (m as MapWithFog).setFog(null); } catch { /* ignore */ }
+      for (const id of ["sky", "flood-extrusion", "risk-extrusion", "imerg-extrusion", "hazard-extrusion"]) {
+        try { if (m.getLayer(id)) m.removeLayer(id); } catch { /* ignore */ }
+      }
       m.easeTo({ pitch: 0, bearing: 0, duration: 700 });
-      if (m.getLayer("flood-extrusion")) m.removeLayer("flood-extrusion");
-      if (m.getLayer("risk-extrusion")) m.removeLayer("risk-extrusion");
     };
 
     if (is3DMode) enter3D(); else exit3D();
@@ -949,10 +1040,10 @@ export default function MapView() {
     if (!m) return;
     const layerMap: Record<string, string[]> = {
       districts:      ["districts-fill", "districts-outline", "districts-label"],
-      imerg:          ["imerg-fill"],
+      imerg:          ["imerg-fill", "imerg-extrusion"],
       flood:          ["flood-fill", "flood-outline", "flood-extrusion"],
       huayco:         ["huayco-circle"],
-      hazard:         ["hazard-fill", "hazard-outline"],
+      hazard:         ["hazard-fill", "hazard-outline", "hazard-extrusion"],
       infrastructure: ["infra-circle"],
       social:         ["social-clusters", "social-cluster-count", "social-circle"],
       stations:       ["stations-circle", "stations-label"],
