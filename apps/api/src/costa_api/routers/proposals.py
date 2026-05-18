@@ -46,11 +46,20 @@ class ProposalReview(BaseModel):
 
 @router.get("")
 async def list_proposals(db: AsyncSession = Depends(get_db)) -> list[dict]:
+    # Excludes obvious test residue (XSS/SQL-injection seeds, empty titles,
+    # 'Test Flood Alert' fixtures) from the operator-facing list. The rows
+    # remain in the table for audit; they're just hidden from the duty
+    # officer who has no business reviewing test data.
     result = await db.execute(text("""
         SELECT id, severity, alert_type, district_ubigeo,
-               title, summary, status, created_at
+               title, summary, source_refs, status, created_at
         FROM ops.alert_proposals
         WHERE status = 'pending'
+          AND title IS NOT NULL AND title <> ''
+          AND title NOT LIKE 'Test %'
+          AND title NOT LIKE '<%>%'
+          AND title NOT LIKE '%DROP TABLE%'
+          AND COALESCE(summary, '') NOT LIKE 'Automated test%'
         ORDER BY
             CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1
                           WHEN 'medium' THEN 2 ELSE 3 END,

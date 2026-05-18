@@ -7,7 +7,7 @@ import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSocialSignals, useDistrictList } from "@/lib/queries";
-import { logDecision } from "@/lib/api";
+import { submitFieldReport } from "@/lib/api";
 import type { SocialSignalProperties, SocialSignalCollection } from "@/lib/api";
 import {
   PanelHeader,
@@ -129,8 +129,6 @@ function timeAgoShort(iso: string): string {
 
 const ALL_LABELS = ["needs_help", "road_blocked", "infrastructure_damage", "weather_observation"] as const;
 type Label = typeof ALL_LABELS[number];
-
-let _fieldId = 9000;
 
 // ─── ConfidenceBadge ──────────────────────────────────────────────────────────
 
@@ -271,53 +269,55 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
   async function submit() {
     if (!text.trim()) return;
     setSending(true);
-    const now = new Date().toISOString();
-    const id = ++_fieldId;
 
-    // Optimistic update to social feed
-    qc.setQueryData<SocialSignalCollection>(["social-signals", 48, undefined], (old) => {
-      if (!old) return old;
-      const feature = {
-        type: "Feature" as const,
-        geometry: { type: "Point" as const, coordinates: [-77.042, -12.046] as [number, number] },
-        properties: {
-          id,
-          source: "campo",
-          triage_label: label,
-          triage_confidence: 1.0,
-          text: text.trim(),
-          district_name: selectedDistrict?.name ?? null,
-          district_id: null,
-          ingested_at: now,
-        } as unknown as SocialSignalProperties,
-      };
-      return { ...old, features: [...old.features, feature] };
-    });
-
-    // Write to decision log backend (best-effort)
-    await logDecision({
-      operator_id: operator?.username ?? "field_anonymous",
-      action_type: "field_report",
-      alert_id: null,
-      payload: {
-        label,
-        label_es: LABEL_ES[label] ?? label,
-        district: selectedDistrict?.name ?? null,
-        ubigeo: districtUbigeo || null,
+    try {
+      // Persist to social.signals via the dedicated field-report endpoint
+      // (also writes ops.decision_log under the authenticated operator).
+      const result = await submitFieldReport({
+        operator_id: operator?.username ?? "field_anonymous",
         text: text.trim(),
-        source: "campo",
-      },
-      session_id: "demo",
-    });
+        label,
+        district_ubigeo: districtUbigeo || null,
+        session_id: "demo",
+      });
 
-    setSending(false);
-    addToast({
-      message: locale === "es" ? "Reporte de campo enviado" : "Field report submitted",
-      variant: "success",
-    });
-    setText("");
-    setDistrictUbigeo("");
-    onClose();
+      // Optimistic update to social feed cache — backed by a real DB row now.
+      qc.setQueryData<SocialSignalCollection>(["social-signals", 48, undefined], (old) => {
+        if (!old) return old;
+        const feature = {
+          type: "Feature" as const,
+          geometry: { type: "Point" as const, coordinates: [-77.042, -12.046] as [number, number] },
+          properties: {
+            id: result.signal_id,
+            source: "campo",
+            triage_label: label,
+            triage_confidence: 1.0,
+            text: text.trim(),
+            district_name: selectedDistrict?.name ?? null,
+            district_id: null,
+            ingested_at: result.ingested_at ?? new Date().toISOString(),
+          } as unknown as SocialSignalProperties,
+        };
+        return { ...old, features: [...old.features, feature] };
+      });
+
+      addToast({
+        message: locale === "es" ? "Reporte de campo registrado" : "Field report stored",
+        variant: "success",
+      });
+      setText("");
+      setDistrictUbigeo("");
+      onClose();
+    } catch {
+      addToast({
+        message: locale === "es"
+          ? "No se pudo registrar el reporte. Reintenta."
+          : "Could not store the report. Retry.",
+        variant: "danger",
+      });
+    } finally {
+      setSending(false);
+    }
   }
 
   return (

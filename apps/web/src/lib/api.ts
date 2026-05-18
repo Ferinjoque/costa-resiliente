@@ -738,3 +738,34 @@ export async function rejectProposal(
   if (!res.ok) throw new Error(`reject → ${res.status}`);
   return res.json();
 }
+
+// ─── Field reports ────────────────────────────────────────────────────────────
+
+export interface FieldReportPayload {
+  operator_id: string;
+  text: string;
+  label: string;
+  district_ubigeo?: string | null;
+  session_id?: string | null;
+}
+
+export interface FieldReportResponse {
+  signal_id: number;
+  ingested_at: string | null;
+  status: string;
+}
+
+export async function submitFieldReport(
+  body: FieldReportPayload,
+): Promise<FieldReportResponse> {
+  const res = await fetch(`${BASE}/api/v1/social/field-report`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error((detail as { detail?: string }).detail ?? `field-report → ${res.status}`);
+  }
+  return res.json();
+}
