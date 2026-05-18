@@ -51,11 +51,11 @@ function riskPillVariant(riskKey: string): "danger" | "warn" | "ok" {
 }
 
 export function FusionCallout() {
-  const { scenario, setScenario, setActivePanel, locale } = useUIStore();
+  const { scenario, setScenario, setActivePanel, activePanel, locale } = useUIStore();
   const { data, isLoading } = useFusion(scenario.districtUbigeo);
   const t = T[locale];
 
-  if (!scenario.districtUbigeo) return null;
+  if (!scenario.districtUbigeo || activePanel === "dashboard") return null;
 
   const dismiss = () =>
     setScenario({ districtUbigeo: null, districtName: null });

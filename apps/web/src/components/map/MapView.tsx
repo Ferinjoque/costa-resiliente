@@ -353,8 +353,6 @@ export default function MapView() {
               districtUbigeo: toggling ? null : p.ubigeo,
               districtName:   toggling ? null : p.name,
             });
-            // Auto-open dashboard so operator immediately sees district data
-            if (!toggling) setActivePanel("dashboard");
             activePopup.current?.remove();
             activePopup.current = null;
             return;
