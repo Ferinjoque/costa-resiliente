@@ -283,6 +283,53 @@ CREATE TABLE IF NOT EXISTS ops.alert_proposals (
 );
 CREATE INDEX IF NOT EXISTS alert_proposals_status_idx ON ops.alert_proposals (status);
 
+-- ─── ops: Operators (SINAGERD tiers) ────────────────────────────────────────
+-- Three tiers: coen (national), coer (regional), coel (district).
+-- COEL operators are scoped to a single district_ubigeo.
+CREATE TABLE IF NOT EXISTS ops.operators (
+    id              BIGSERIAL PRIMARY KEY,
+    username        TEXT NOT NULL UNIQUE,
+    full_name       TEXT NOT NULL,
+    role            TEXT NOT NULL CHECK (role IN ('coen','coer','coel')),
+    district_ubigeo CHAR(6),       -- required for coel, ignored for coen/coer
+    password_hash   TEXT NOT NULL, -- argon2/bcrypt via passlib
+    active          BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS operators_username_idx ON ops.operators (username);
+
+-- ─── ops: Notification Subscribers + Delivery Log ───────────────────────────
+-- Operators register webhook/email endpoints. Fan-out fires on escalated alerts
+-- and on new alerts with severity in (critical, high).
+CREATE TABLE IF NOT EXISTS ops.notification_subscribers (
+    id              BIGSERIAL PRIMARY KEY,
+    channel         TEXT NOT NULL CHECK (channel IN ('webhook', 'email', 'sms_stub')),
+    target          TEXT NOT NULL,          -- URL for webhook; address for email/sms
+    label           TEXT NOT NULL,          -- human-readable name
+    severity_min    TEXT NOT NULL DEFAULT 'high'
+                        CHECK (severity_min IN ('critical','high','medium','low')),
+    district_filter TEXT,                   -- ubigeo prefix filter; NULL = all districts
+    active          BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by      TEXT NOT NULL DEFAULT 'system',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS notif_sub_active_idx ON ops.notification_subscribers (active, severity_min);
+
+CREATE TABLE IF NOT EXISTS ops.notification_deliveries (
+    id              BIGSERIAL PRIMARY KEY,
+    subscriber_id   BIGINT NOT NULL REFERENCES ops.notification_subscribers(id),
+    alert_id        BIGINT REFERENCES ops.alerts(id),
+    trigger_event   TEXT NOT NULL,          -- 'new_alert' | 'alert_escalated' | 'dispatch'
+    status          TEXT NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending','delivered','failed','skipped')),
+    attempts        INTEGER NOT NULL DEFAULT 0,
+    last_error      TEXT,
+    delivered_at    TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS notif_del_sub_idx   ON ops.notification_deliveries (subscriber_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS notif_del_alert_idx ON ops.notification_deliveries (alert_id);
+
 -- ─── rag: Protocol Documents ─────────────────────────────────────────────────
 -- Stores chunked text from INDECI/CENEPRED/MINSA manuals + their embeddings
 -- nomic-embed-text produces 768-dim vectors; bge-m3 produces 1024-dim.
