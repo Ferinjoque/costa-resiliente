@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 import logging
 import os
 import re
@@ -33,6 +34,63 @@ import httpx
 from prefect import flow, task
 
 logger = logging.getLogger(__name__)
+
+# ─── Redis stale-reading cache ────────────────────────────────────────────────
+# Keyed as `costa:hydro:{station_code}:latest`.  TTL 24h.
+# When ANA/SENAMHI endpoint is down, the last known good reading is served
+# instead of returning nothing — critical during flood events when gauge sites
+# are overloaded.
+
+def _redis_url() -> str:
+    return os.getenv("REDIS_URL", "redis://redis:6379/0")
+
+
+async def _cache_station_reading(code: str, obs: dict) -> None:
+    try:
+        import redis.asyncio as aioredis
+        r = aioredis.from_url(_redis_url(), decode_responses=True, socket_timeout=2)
+        await r.setex(
+            f"costa:hydro:{code}:latest",
+            86400,  # 24h TTL
+            json.dumps(obs, default=str),
+        )
+        await r.aclose()
+    except Exception as exc:
+        logger.debug("Redis cache write skipped for %s: %s", code, exc)
+
+
+async def _get_cached_reading(code: str) -> dict | None:
+    try:
+        import redis.asyncio as aioredis
+        r = aioredis.from_url(_redis_url(), decode_responses=True, socket_timeout=2)
+        raw = await r.get(f"costa:hydro:{code}:latest")
+        await r.aclose()
+        if raw:
+            data = json.loads(raw)
+            data["from_cache"] = True
+            return data
+    except Exception as exc:
+        logger.debug("Redis cache read skipped for %s: %s", code, exc)
+    return None
+
+
+async def _publish_scraper_status(source: str, ok: bool, stations_ok: int, total: int) -> None:
+    """Publish scraper health to Redis pub/sub for OperationalHUD FEEDS chip."""
+    try:
+        import redis.asyncio as aioredis
+        r = aioredis.from_url(_redis_url(), decode_responses=True, socket_timeout=2)
+        payload = json.dumps({
+            "source": source,
+            "ok": ok,
+            "stations_ok": stations_ok,
+            "total": total,
+            "ts": datetime.now(timezone.utc).isoformat(),
+        })
+        await r.set(f"costa:scraper:status:{source}", payload, ex=3600)
+        await r.aclose()
+    except Exception as exc:
+        logger.debug("Scraper status publish skipped: %s", exc)
+
 
 def _db_dsn() -> str:
     if url := os.getenv("DATABASE_URL"):
@@ -163,6 +221,7 @@ def _parse_senamhi_csv(csv_text: str, station_code: str) -> list[dict]:
 async def fetch_ana_station(station: dict) -> list[dict]:
     """
     Fetch latest 24h observations for one ANA station via SNIRH HTML scraping.
+    Falls back to Redis-cached last known good reading when endpoint is unreachable.
     """
     url = (
         f"{ANA_BASE}/Descarga/DescargaDatosHidrometeorologicos"
@@ -173,10 +232,17 @@ async def fetch_ana_station(station: dict) -> list[dict]:
             resp = await client.get(url)
             resp.raise_for_status()
         except httpx.HTTPError as exc:
-            logger.warning("ANA fetch failed for %s: %s", station["code"], exc)
-            return []
+            logger.warning("ANA fetch failed for %s: %s — trying Redis cache", station["code"], exc)
+            cached = await _get_cached_reading(station["code"])
+            if cached:
+                logger.info("ANA %s: serving stale cached reading (cached_at=%s)", station["code"], cached.get("observed_at"))
+            return [cached] if cached else []
+
     await asyncio.sleep(RATE_LIMIT_S)
     observations = _parse_ana_table(resp.text, station["code"])
+    if observations:
+        # Cache the most recent observation for stale fallback
+        await _cache_station_reading(station["code"], observations[0])
     logger.info(
         "ANA station %s (%s): %d observations",
         station["name"], station["code"], len(observations),
@@ -188,6 +254,7 @@ async def fetch_ana_station(station: dict) -> list[dict]:
 async def fetch_senamhi_station(station: dict) -> list[dict]:
     """
     Fetch latest 24h observations for one SENAMHI station.
+    Falls back to Redis-cached last known good reading when endpoint is unreachable.
     """
     url = (
         f"{SENAMHI_BASE}/descarga-datos-hidrometeorologicos-pluviometros"
@@ -198,10 +265,16 @@ async def fetch_senamhi_station(station: dict) -> list[dict]:
             resp = await client.get(url)
             resp.raise_for_status()
         except httpx.HTTPError as exc:
-            logger.warning("SENAMHI fetch failed for %s: %s", station["code"], exc)
-            return []
+            logger.warning("SENAMHI fetch failed for %s: %s — trying Redis cache", station["code"], exc)
+            cached = await _get_cached_reading(station["code"])
+            if cached:
+                logger.info("SENAMHI %s: serving stale cached reading", station["code"])
+            return [cached] if cached else []
+
     await asyncio.sleep(RATE_LIMIT_S)
     observations = _parse_senamhi_csv(resp.text, station["code"])
+    if observations:
+        await _cache_station_reading(station["code"], observations[0])
     logger.info(
         "SENAMHI station %s (%s): %d observations",
         station["name"], station["code"], len(observations),
@@ -360,9 +433,10 @@ async def _check_stale_stations(pool: "asyncpg.Pool", threshold_hours: int = 2) 
 @flow(name="ingest-hydro-stations", log_prints=True)
 async def ingest_hydro_stations_flow() -> dict:
     """
-    Fetch hydro observations from ANA SNIRH and SENAMHI; falls back to Open-Meteo
-    (free, no auth) when government endpoints are unreachable.
-    Schedule: every 30 minutes.
+    Fetch hydro observations from ANA SNIRH and SENAMHI.
+    Per-station fallback chain: primary scrape → Redis stale cache → Open-Meteo (rain only).
+    Publishes scraper health status to Redis for OperationalHUD FEEDS chip.
+    Schedule: every 15 minutes.
     """
     import asyncpg
 
@@ -370,35 +444,45 @@ async def ingest_hydro_stations_flow() -> dict:
     stations_meta = {s["code"]: s for s in all_stations}
 
     all_observations: list[dict] = []
-    primary_ok = False
+    ana_ok_count = 0
+    senamhi_ok_count = 0
 
     # ANA stations (primary)
     for station in ANA_STATIONS:
         obs = await fetch_ana_station(station)
         all_observations.extend(obs)
-        if obs:
-            primary_ok = True
+        if obs and not obs[0].get("from_cache"):
+            ana_ok_count += 1
 
     # SENAMHI stations (primary)
     for station in SENAMHI_STATIONS:
         obs = await fetch_senamhi_station(station)
         all_observations.extend(obs)
-        if obs:
-            primary_ok = True
+        if obs and not obs[0].get("from_cache"):
+            senamhi_ok_count += 1
 
-    # Open-Meteo fallback when primary sources return nothing
-    if not primary_ok:
+    # Open-Meteo fallback — only for stations that returned nothing at all
+    # (neither fresh nor cached).  Gives rain_mm even when gauges are down.
+    stations_with_data = {o["station_code"] for o in all_observations}
+    fallback_stations = [s for s in all_stations if s["code"] not in stations_with_data]
+    if fallback_stations:
         logger.warning(
-            "ANA/SENAMHI returned 0 observations — falling back to Open-Meteo precipitation"
+            "%d station(s) have no data from primary or cache — Open-Meteo fallback: %s",
+            len(fallback_stations),
+            ", ".join(s["name"] for s in fallback_stations),
         )
-        for station in all_stations:
+        for station in fallback_stations:
             obs = await fetch_openmeteo_station(station)
             all_observations.extend(obs)
+
+    # Publish scraper health for FEEDS chip
+    await _publish_scraper_status("ana", ana_ok_count > 0, ana_ok_count, len(ANA_STATIONS))
+    await _publish_scraper_status("senamhi", senamhi_ok_count > 0, senamhi_ok_count, len(SENAMHI_STATIONS))
 
     total = await upsert_observations(all_observations, stations_meta)
     logger.info("Hydro ingest complete: %d observations stored", total)
 
-    # Warn if any station has been silent for >2 hours (scraper fragility check)
+    stale: list[str] = []
     try:
         async with asyncpg.create_pool(DB_DSN, min_size=1, max_size=2) as pool:
             stale = await _check_stale_stations(pool, threshold_hours=2)
@@ -414,5 +498,8 @@ async def ingest_hydro_stations_flow() -> dict:
     return {
         "observations_stored": total,
         "stations_polled": len(all_stations),
-        "stale_stations": stale if "stale" in dir() else [],
+        "ana_live": ana_ok_count,
+        "senamhi_live": senamhi_ok_count,
+        "fallback_count": len(fallback_stations),
+        "stale_stations": stale,
     }
