@@ -414,7 +414,7 @@ export default function MapView() {
 
       // Dramatic pitch entry with cubic-ease
       const EASE_MS = 2000;
-      m.easeTo({ pitch: 62, bearing: -20, duration: EASE_MS, easing: (t) => 1 - (1 - t) ** 3 });
+      m.easeTo({ pitch: 62, duration: EASE_MS, easing: (t) => 1 - (1 - t) ** 3 });
 
       // Defer rotation start until the easeTo finishes — otherwise setBearing()
       // on the first RAF tick cancels the in-flight camera ease, leaving pitch at 0.
