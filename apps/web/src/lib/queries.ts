@@ -48,6 +48,10 @@ import {
   type DistrictDashboard,
   type StationCollection,
   fetchDistrictFusion,
+  fetchNotificationSubscribers,
+  fetchNotificationDeliveries,
+  type NotificationSubscriber,
+  type NotificationDelivery,
 } from "./api";
 import {
   DEMO_ALERTS,
@@ -413,6 +417,30 @@ export function useStations(
     },
     staleTime: 2 * MIN,
     refetchInterval: 2 * MIN,
+    ...opts,
+  });
+}
+
+export function useNotificationSubscribers(
+  opts?: Partial<UseQueryOptions<NotificationSubscriber[]>>
+): UseQueryResult<NotificationSubscriber[]> {
+  return useQuery({
+    queryKey: ["notification-subscribers"],
+    queryFn: () => fetchNotificationSubscribers(),
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+    ...opts,
+  });
+}
+
+export function useNotificationDeliveries(
+  opts?: Partial<UseQueryOptions<NotificationDelivery[]>>
+): UseQueryResult<NotificationDelivery[]> {
+  return useQuery({
+    queryKey: ["notification-deliveries"],
+    queryFn: () => fetchNotificationDeliveries(),
+    staleTime: 15 * 1000,
+    refetchInterval: 30 * 1000,
     ...opts,
   });
 }
