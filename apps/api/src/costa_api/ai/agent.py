@@ -205,7 +205,19 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         total = sum(r.get("count") or 0 for r in rows)
         return f"Se registraron {total} señales sociales en el período consultado."
     if "severity" in first:
-        return f"Hay {n} alerta{'s' if n != 1 else ''} activa{'s' if n != 1 else ''} en el sistema."
+        total = first.get("_total_active", n)
+        # Break down by severity from sample (truthful even if capped at 20)
+        sev_counts: dict[str, int] = {}
+        for r in rows:
+            sev_counts[r.get("severity", "?")] = sev_counts.get(r.get("severity", "?"), 0) + 1
+        crit = sev_counts.get("critical", 0)
+        high = sev_counts.get("high", 0)
+        breakdown = []
+        if crit: breakdown.append(f"{crit} crítica{'s' if crit != 1 else ''}")
+        if high: breakdown.append(f"{high} alta{'s' if high != 1 else ''}")
+        suffix = f" ({', '.join(breakdown)} entre las {n} más recientes)" if breakdown else ""
+        capped = " (mostrando las 20 más recientes)" if total > n else ""
+        return f"Hay {total} alerta{'s' if total != 1 else ''} activa{'s' if total != 1 else ''} en el sistema{capped}.{suffix}"
     if "acc_72h_mm" in first:
         mx = max((r.get("acc_72h_mm") or 0) for r in rows)
         return f"Acumulación máxima en 72h: {mx:.1f} mm. {'⚠ Umbral SUPERADO (>42mm)' if mx > 42 else 'Por debajo del umbral de alerta'}."

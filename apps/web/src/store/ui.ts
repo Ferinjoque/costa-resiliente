@@ -13,7 +13,7 @@ export interface LiveToast {
   district?: string;
   // General action confirmation variant
   message?: string;
-  variant?: "success" | "info" | "warn";
+  variant?: "success" | "info" | "warn" | "danger";
 }
 
 interface Scenario {

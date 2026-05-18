@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Radio, X, CheckCircle, Info, AlertTriangle } from "lucide-react";
+import { Radio, X, CheckCircle, Info, AlertTriangle, XCircle } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import type { LiveToast as LiveToastType } from "@/store/ui";
@@ -31,18 +31,24 @@ function Toast({ toast }: { toast: LiveToastType }) {
 
   // General action confirmation variant
   if (message) {
-    const Icon = variant === "success" ? CheckCircle : variant === "warn" ? AlertTriangle : Info;
+    const Icon =
+      variant === "success" ? CheckCircle :
+      variant === "warn"    ? AlertTriangle :
+      variant === "danger"  ? XCircle : Info;
     const iconClass =
       variant === "success" ? "text-ok-muted" :
-      variant === "warn"    ? "text-warn-muted" : "text-accent";
+      variant === "warn"    ? "text-warn-muted" :
+      variant === "danger"  ? "text-danger" : "text-accent";
     return (
       <div
         className={clsx(
           "flex items-center gap-2.5 bg-surface border rounded-xl px-3 py-2.5 shadow-2xl w-64 text-xs animate-slide-in-right",
-          variant === "success" ? "border-ok/30" : variant === "warn" ? "border-warn/30" : "border-border",
+          variant === "success" ? "border-ok/30" :
+          variant === "warn"    ? "border-warn/30" :
+          variant === "danger"  ? "border-danger/40" : "border-border",
         )}
-        role="status"
-        aria-live="polite"
+        role={variant === "danger" ? "alert" : "status"}
+        aria-live={variant === "danger" ? "assertive" : "polite"}
       >
         <Icon size={14} className={clsx("shrink-0", iconClass)} aria-hidden="true" />
         <p className="flex-1 text-ink font-medium leading-snug">{message}</p>

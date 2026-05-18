@@ -311,7 +311,14 @@ async def get_rainfall_accumulation(db: AsyncSession, hours_back: int = 72) -> l
 
 
 async def get_active_alerts(db: AsyncSession, severity: str | None = None) -> list[dict]:
+    """Active alerts ordered by severity. Caller-aware: every returned row
+    carries `_total` = full unconstrained count so the answer layer can say
+    'X activas' (truth) instead of 'len(rows)' (capped at 20)."""
     if severity:
+        count_sql = text(
+            "SELECT COUNT(*) FROM ops.alerts WHERE status = 'active' AND severity = :sev"
+        )
+        total = (await db.execute(count_sql, {"sev": severity})).scalar() or 0
         sql = text("""
             SELECT a.id, a.type AS alert_type, a.severity, a.status,
                    a.title, a.description AS summary,
@@ -325,6 +332,8 @@ async def get_active_alerts(db: AsyncSession, severity: str | None = None) -> li
         """)
         result = await db.execute(sql, {"sev": severity})
     else:
+        count_sql = text("SELECT COUNT(*) FROM ops.alerts WHERE status = 'active'")
+        total = (await db.execute(count_sql)).scalar() or 0
         sql = text("""
             SELECT a.id, a.type AS alert_type, a.severity, a.status,
                    a.title, a.description AS summary,
@@ -342,7 +351,10 @@ async def get_active_alerts(db: AsyncSession, severity: str | None = None) -> li
             LIMIT 20
         """)
         result = await db.execute(sql)
-    return [dict(r._mapping) for r in result]
+    rows = [dict(r._mapping) for r in result]
+    for r in rows:
+        r["_total_active"] = int(total)
+    return rows
 
 
 # ─── Dispatcher ───────────────────────────────────────────────────────────────
