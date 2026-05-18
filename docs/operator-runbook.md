@@ -1,12 +1,21 @@
 # Operator Runbook — Costa Resiliente
 
-> Sprint 7 deliverable — this is the working draft.
+> Updated through Sprint 8 — covers auth, SLA indicators, notifications, and PDF export.
 
 ## Quick Start
 
 1. Open browser to `http://<server-ip>:3000`
 2. Dashboard loads Lima Metropolitana map
-3. Active alerts appear in the Alertas panel (right rail)
+3. Click **Iniciar sesión** (bottom-left) and log in with your SINAGERD credentials
+4. Active alerts appear in the Alertas panel (right rail)
+
+### Demo accounts (non-production)
+
+| Username | Password | Role | Scope |
+|----------|----------|------|-------|
+| `coen_lima` | `demo1234` | COEN | National — full access |
+| `coer_lima` | `demo1234` | COER | Lima region |
+| `coel_sjl` | `demo1234` | COEL | District 150132 |
 
 ## Panel Guide
 
@@ -32,7 +41,18 @@
 
 ### Registro (log icon)
 - Immutable record of all operator actions
-- Export button → CSV for EDAN-Perú submission workflows
+- **CSV** export button for EDAN-Perú submission workflows
+- **PDF** export button → generates A4 EDAN-Perú situational report (active alerts + decision log)
+
+### SLA Indicators
+- Each alert card shows elapsed time since creation
+- Chip turns red when SINAGERD SLA is breached:
+  - Critical: 5 min · High: 10 min · Medium: 30 min · Low: 60 min
+
+### Notificaciones (bell icon)
+- Register webhook or SMS-stub subscribers
+- Subscribers receive escalated and high-severity alerts automatically
+- Delivery history shown in the deliveries tab
 
 ## Emergency Procedures
 
