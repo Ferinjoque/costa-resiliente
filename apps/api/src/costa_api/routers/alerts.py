@@ -77,7 +77,14 @@ async def list_alerts(
     db: AsyncSession = Depends(get_db),
 ) -> list[AlertSummary]:
     """Return alerts from ops.alerts with district info, newest first."""
-    conditions = ["1=1"]
+    # Exclude obvious test residue (XSS/SQL seeds, 'Test ' prefix fixtures)
+    # from the operator-facing list. Rows remain in the table; just hidden.
+    conditions = [
+        "1=1",
+        "a.title NOT LIKE 'Test %'",
+        "a.title NOT LIKE '<%>%'",
+        "a.title NOT LIKE '%DROP TABLE%'",
+    ]
     params: dict = {"limit": limit}
 
     if status:
