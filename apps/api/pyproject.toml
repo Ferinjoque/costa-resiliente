@@ -37,7 +37,10 @@ dependencies = [
 
     # Auth
     "python-jose[cryptography]>=3.3",
-    "passlib[bcrypt]>=1.7",
+    "bcrypt>=4.0",
+
+    # Reports
+    "reportlab>=4.2",
 
     # Utilities
     "python-multipart>=0.0.9",
@@ -58,6 +61,9 @@ dev = [
     "black>=24.0",
     "mypy>=1.10",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
 
 [tool.setuptools.packages.find]
 where = ["src"]

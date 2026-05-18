@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from costa_api.auto_seed import maybe_seed
 from costa_api.config import settings
 from costa_api.db import engine
-from costa_api.routers import districts, health, layers, alerts, copilot, share, fusion, proposals
+from costa_api.routers import districts, health, layers, alerts, copilot, share, fusion, proposals, notifications, auth
 
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
@@ -35,6 +35,7 @@ async def _seed_with_retry(max_attempts: int = 5, delay: float = 5.0) -> None:
 async def lifespan(app: FastAPI):
     logger.info("Costa Resiliente API starting up")
     await _seed_with_retry()
+    await auth.seed_demo_operators()
     yield
     logger.info("Costa Resiliente API shutting down")
 
@@ -62,3 +63,5 @@ app.include_router(copilot.router, prefix="/api/v1")
 app.include_router(share.router, prefix="/api/v1")
 app.include_router(fusion.router, prefix="/api/v1")
 app.include_router(proposals.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")

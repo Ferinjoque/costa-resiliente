@@ -1,0 +1,289 @@
+"""Operator authentication — JWT issuance + role extraction.
+
+POST /auth/token   — issue a short-lived JWT (24h) from username+password.
+GET  /auth/me      — return current operator details from token.
+GET  /auth/operators — list all operators (no password fields).
+
+SINAGERD roles:
+  coen  — COEN: sees all 43 Lima districts.
+  coer  — COER Lima: sees all 43 Lima districts.
+  coel  — COEL: sees only their district_ubigeo.
+
+Testing: pass X-Testing-Operator header (only active when TESTING=1 env).
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+from datetime import datetime, timedelta, timezone
+from typing import Optional
+
+import bcrypt as _bcrypt_lib
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
+from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from costa_api.config import settings
+from costa_api.db import get_db, engine
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/auth", tags=["auth"])
+
+_oauth2 = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token", auto_error=False)
+
+
+def _hash_password(pw: str) -> str:
+    return _bcrypt_lib.hashpw(pw.encode(), _bcrypt_lib.gensalt()).decode()
+
+
+def _verify_password(pw: str, hashed: str) -> bool:
+    return _bcrypt_lib.checkpw(pw.encode(), hashed.encode())
+
+_SECRET = getattr(settings, "jwt_secret", None) or os.environ.get("JWT_SECRET", "costa-dev-secret-change-in-prod")
+_ALGO = "HS256"
+_TTL_HOURS = 24
+
+TESTING = os.environ.get("TESTING", "0") == "1"
+
+
+# ─── Schemas ──────────────────────────────────────────────────────────────────
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    operator_id: int
+    role: str
+    district_ubigeo: Optional[str]
+
+
+class OperatorOut(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    role: str
+    district_ubigeo: Optional[str]
+    active: bool
+    created_at: datetime
+
+
+class OperatorCreate(BaseModel):
+    username: str
+    full_name: str
+    role: str
+    district_ubigeo: Optional[str] = None
+    password: str
+
+
+# ─── Token helpers ────────────────────────────────────────────────────────────
+
+def _issue_token(operator_id: int, username: str, role: str, district_ubigeo: Optional[str]) -> str:
+    exp = datetime.now(timezone.utc) + timedelta(hours=_TTL_HOURS)
+    return jwt.encode(
+        {"sub": str(operator_id), "username": username, "role": role, "district": district_ubigeo, "exp": exp},
+        _SECRET,
+        algorithm=_ALGO,
+    )
+
+
+def _decode_token(token: str) -> dict:
+    return jwt.decode(token, _SECRET, algorithms=[_ALGO])
+
+
+# ─── Dependency: current operator ─────────────────────────────────────────────
+
+class CurrentOperator(BaseModel):
+    id: int
+    username: str
+    role: str
+    district_ubigeo: Optional[str]
+
+
+async def get_current_operator(
+    request: Request,
+    token: Optional[str] = Depends(_oauth2),
+) -> Optional[CurrentOperator]:
+    """
+    Returns None if no valid token (unauthenticated).
+    Raises 401 if token present but invalid.
+    In TESTING mode, reads X-Testing-Operator header instead.
+    """
+    if TESTING:
+        header = request.headers.get("X-Testing-Operator")
+        if header:
+            parts = header.split(":", 3)
+            return CurrentOperator(
+                id=int(parts[0]),
+                username=parts[1] if len(parts) > 1 else "test",
+                role=parts[2] if len(parts) > 2 else "coer",
+                district_ubigeo=parts[3] if len(parts) > 3 else None,
+            )
+    if not token:
+        return None
+    try:
+        data = _decode_token(token)
+        return CurrentOperator(
+            id=int(data["sub"]),
+            username=data["username"],
+            role=data["role"],
+            district_ubigeo=data.get("district"),
+        )
+    except (JWTError, KeyError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido o expirado.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+async def require_operator(
+    op: Optional[CurrentOperator] = Depends(get_current_operator),
+) -> CurrentOperator:
+    """Like get_current_operator but requires auth (raises 401 if missing)."""
+    if op is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Se requiere autenticación.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return op
+
+
+# ─── Seed demo operators if table is empty ────────────────────────────────────
+
+DEMO_OPERATORS = [
+    {
+        "username": "coer_lima",
+        "full_name": "COER Lima — Operador demo",
+        "role": "coer",
+        "district_ubigeo": None,
+        "password": "demo1234",
+    },
+    {
+        "username": "coen_lima",
+        "full_name": "COEN — Coordinador demo",
+        "role": "coen",
+        "district_ubigeo": None,
+        "password": "demo1234",
+    },
+    {
+        "username": "coel_sjl",
+        "full_name": "COEL San Juan de Lurigancho — demo",
+        "role": "coel",
+        "district_ubigeo": "150132",
+        "password": "demo1234",
+    },
+]
+
+
+async def seed_demo_operators() -> None:
+    """Insert demo operators on first run if table is empty."""
+    try:
+        async with engine.begin() as conn:
+            count = (await conn.execute(text("SELECT COUNT(*) FROM ops.operators"))).scalar()
+            if count and count > 0:
+                return
+            for op in DEMO_OPERATORS:
+                await conn.execute(
+                    text("""
+                        INSERT INTO ops.operators (username, full_name, role, district_ubigeo, password_hash)
+                        VALUES (:u, :fn, :role, :dist, :ph)
+                        ON CONFLICT (username) DO NOTHING
+                    """),
+                    {
+                        "u": op["username"],
+                        "fn": op["full_name"],
+                        "role": op["role"],
+                        "dist": op["district_ubigeo"],
+                        "ph": _hash_password(op["password"]),
+                    },
+                )
+            logger.info("[auth] 3 demo operators seeded (password: demo1234)")
+    except Exception as exc:
+        logger.warning("[auth] Could not seed operators: %s", exc)
+
+
+# ─── Endpoints ────────────────────────────────────────────────────────────────
+
+@router.post("/token", response_model=TokenResponse)
+async def issue_token(
+    form: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    """Issue a JWT for username+password."""
+    result = await db.execute(
+        text("SELECT id, password_hash, role, district_ubigeo, active FROM ops.operators WHERE username = :u"),
+        {"u": form.username},
+    )
+    row = result.mappings().first()
+    if not row or not row["active"] or not _verify_password(form.password, row["password_hash"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario o contraseña incorrectos.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = _issue_token(row["id"], form.username, row["role"], row["district_ubigeo"])
+    return TokenResponse(
+        access_token=token,
+        operator_id=row["id"],
+        role=row["role"],
+        district_ubigeo=row["district_ubigeo"],
+    )
+
+
+@router.get("/me", response_model=OperatorOut)
+async def current_user(
+    op: CurrentOperator = Depends(require_operator),
+    db: AsyncSession = Depends(get_db),
+) -> OperatorOut:
+    result = await db.execute(
+        text("SELECT id, username, full_name, role, district_ubigeo, active, created_at FROM ops.operators WHERE id = :id"),
+        {"id": op.id},
+    )
+    row = result.mappings().first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Operador no encontrado.")
+    return OperatorOut(**dict(row))
+
+
+@router.get("/operators", response_model=list[OperatorOut])
+async def list_operators(
+    _op: CurrentOperator = Depends(require_operator),
+    db: AsyncSession = Depends(get_db),
+) -> list[OperatorOut]:
+    """List all operators (COEN/COER only in production; any authenticated in demo)."""
+    result = await db.execute(
+        text("SELECT id, username, full_name, role, district_ubigeo, active, created_at FROM ops.operators ORDER BY role, id")
+    )
+    return [OperatorOut(**dict(r)) for r in result.mappings().all()]
+
+
+@router.post("/operators", response_model=OperatorOut, status_code=201)
+async def create_operator(
+    body: OperatorCreate,
+    _op: CurrentOperator = Depends(require_operator),
+    db: AsyncSession = Depends(get_db),
+) -> OperatorOut:
+    valid_roles = {"coen", "coer", "coel"}
+    if body.role not in valid_roles:
+        raise HTTPException(status_code=422, detail=f"role must be one of: {', '.join(sorted(valid_roles))}")
+    row = await db.execute(
+        text("""
+            INSERT INTO ops.operators (username, full_name, role, district_ubigeo, password_hash)
+            VALUES (:u, :fn, :role, :dist, :ph)
+            RETURNING id, username, full_name, role, district_ubigeo, active, created_at
+        """),
+        {
+            "u": body.username,
+            "fn": body.full_name,
+            "role": body.role,
+            "dist": body.district_ubigeo,
+            "ph": _hash_password(body.password),
+        },
+    )
+    await db.commit()
+    return OperatorOut(**dict(row.mappings().one()))
