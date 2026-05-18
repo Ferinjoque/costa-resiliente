@@ -28,9 +28,9 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: 299 passing, 1–2 flaky `test_ask_*` copilot timeouts (Ollama under load — unrelated to app code)
+- **API**: 299/300 passing — single flake is `test_session_audit.py::TestCopilot::test_ask_xss_in_query` (Ollama timeout under load, unrelated to app code, present in Session 5 baseline too)
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
-- **Build**: Next.js production build green; first-load JS `/` = 153 kB
+- **Build**: Next.js production build green; first-load JS `/` = 173 kB
 
 Test command (in container):
 ```bash
@@ -223,7 +223,77 @@ POST   /api/v1/auth/operators
 
 ## Recent session log (rolling, last 5)
 
-### Session 5 — 2026-05-17 (current) — Operational hardening for government use
+### Session 6 — 2026-05-18 (current) — Trust-the-loop hardening pass
+
+Overnight iteration treating the rubric question "useful or pretty?" as the
+acceptance criterion. Two categories of fix.
+
+**Real bugs found by walking the operator path:**
+- `fix(api/districts)`: `GET /districts/{ubigeo}/dashboard` returned 500. SQLAlchemy
+  `Row` iterator was being accessed by string key (`r["day"]`) for the 7d alert
+  trend, 24h social breakdown, 30d IMERG trend, and station latest readings.
+  Converted four iterators to `.mappings()`.
+- `fix(api/districts)`: dashboard IMERG 30d trend crashed with `GEOSIntersects:
+  TopologyException` on Lima geometry. Wrapped watershed↔district intersect in
+  `ST_MakeValid()` on both sides (the same fix pattern as Session 1).
+- `fix(ai/db_tools)`: `get_active_alerts` referenced non-existent columns
+  (`alert_type`, `summary`, `district_ubigeo`). Rewrote the SQL with correct
+  column names and a `LEFT JOIN geo.districts` to expose the ubigeo. The copilot
+  could not answer `"¿cuáles son las alertas activas?"` until this landed.
+- `fix(ingest/social)`: Prefect worker was running `prefect worker start
+  --pool costa-pool` but `schedules.py` uses `serve()`. Result: zero deployments
+  registered, ingestion silently halted. Swapped the compose command. After
+  recreate, 9 deployments (sentinel1, imerg, hydro, social, flood-seg, huayco,
+  triage, alerts, rag-index) register and execute on their intervals.
+- `fix(ingest/social)`: 2 RSS feeds (`canaln.pe`, `larepublica.pe`) were 404ing
+  every run. Replaced with `gestion.pe`.
+- `fix(ingest/social)`: **PII redaction was failing on every signal** and silently
+  storing raw text. Presidio's `AnalyzerEngine` was instantiated without an
+  NLP engine so it defaulted to English; every Spanish call raised
+  "No matching recognizers were found". Now lazy-initialises a process-wide
+  engine bound to `es_core_news_sm`. Verified end-to-end with a triggered run
+  — no warning emitted. This is a Ley 29733 / OCHA compliance defect not just
+  a code smell.
+- `fix(flows/schedules)`: `HuaycoModel.load()` was called as a classmethod;
+  it's an instance method. Replaced with `model = HuaycoModel(); model.load()`.
+
+**"Pretty vs useful" hardening (the more important category):**
+- `fix(ui/AlertsPanel)`: when an alert action (`escalate` / `acknowledge` /
+  `dispatch`) failed the network call, the optimistic status update stayed
+  *and the success toast still fired*. A duty officer was being told their
+  escalation to COEN was registered when no DB row existed. Now the optimistic
+  state rolls back and a danger toast surfaces the failure.
+- `feat(ui/Toast)`: new `danger` variant with assertive `aria-live` + XCircle
+  iconography so failures actually read as failures (not a same-colored success).
+- `fix(api/copilot)`: when an operator asked "cuántas alertas activas",
+  the agent answered `len(rows)` — capped at the tool's LIMIT 20. Now
+  `get_active_alerts` returns the unconstrained `_total_active`, the summariser
+  reports the true total, breaks it down by severity from the sample, and
+  explicitly says "(mostrando las 20 más recientes)" when the sample is capped.
+- `feat(ui/AskPanel + FieldReport)`: were hardcoding `operator_id: "demo"` /
+  `"operator-1"` in copilot queries and field-report writes. Now wired to the
+  authenticated operator (`useAuthStore`) so decision-log rows attribute to
+  the real SINAGERD user. `AlertsPanel` operator_id also standardised on
+  username (was numeric `operator.id`) so the audit trail is uniform.
+- `feat(ui/EscalationModal)`: full keyboard focus trap. Auto-focuses textarea,
+  Escape cancels, Tab cycles within dialog, focus restores on close.
+- `feat(ui/OperationalHUD)`: new "FEEDS" degradation chip. When ≥3 sources are
+  offline → danger pulse. Stale or 1–2 offline → warn. Click jumps to the
+  DataSources panel. A duty officer can see at a glance whether upstream data
+  is fresh enough to act on.
+
+**Tests:** 299/300 (same single pre-existing Ollama `test_ask_xss` timeout
+flake under load — STATUS Session 5 noted; unchanged by this work).
+**Frontend:** `npx tsc --noEmit` clean; production build green; first-load JS
+`/` = 173 kB (up from 153 kB Session 5 — added auth + notifications surfaces).
+
+**Known infrastructure gaps surfaced (not closed tonight):**
+- `pgstac.items` relation does not exist in postgres (`stac-fastapi-pgstac`
+  image does not ship `pypgstac` CLI to migrate). `flood-segmentation-hourly`
+  and `sentinel1-daily` cannot pull new scenes until pgstac is bootstrapped.
+  Existing 7 flood polygons + Session 3 fixtures still serve the rubric demo.
+
+### Session 5 — 2026-05-17 — Operational hardening for government use
 
 Built four features turning the platform from "visualization" into "operationally usable":
 - **B1** — `feat(notifications)`: Subscriber CRUD + delivery log; webhook fan-out on `high`/`critical` escalation; new `NotificationsPanel` UI
@@ -283,7 +353,8 @@ For full detail of all sessions, see [`../SESSION_LOG.md`](../SESSION_LOG.md).
 | 10 | Sprint 10 — EOC operational UX (QuickDispatch, ResponseProtocol, FieldReport) | ✅ |
 | 11 | Sprint 11 — Agentic AI layer (gateway, guardrails, RAG, tools, proposals) | ✅ |
 | 12 | Sprint 12 — Impeccable design pass | ✅ |
-| 13 | Government-use hardening (B1–B4) | ✅ (this session) |
+| 13 | Government-use hardening (B1–B4) | ✅ |
+| 14 | Trust-the-loop pass (PII fix, truthful counts, no false-success toast, Prefect deploys) | ✅ (this session) |
 
 ---
 
@@ -306,9 +377,10 @@ For full detail of all sessions, see [`../SESSION_LOG.md`](../SESSION_LOG.md).
 
 | Item | Impact | Status |
 |------|--------|--------|
-| ANA scraper UI red indicator when `status: offline` | C1 cosmetic | Endpoint exists, DataFreshnessBar check needs verification |
-| `EscalationModal` programmatic focus trap | A11y polish | Currently aria-modal + click-backdrop only |
+| ANA scraper UI red indicator when `status: offline` | C1 cosmetic | ✅ Done Session 6 — `OperationalHUD` FEEDS chip + DataSourcesPanel per-source health |
+| `EscalationModal` programmatic focus trap | A11y polish | ✅ Done Session 6 — auto-focus textarea, Escape, Tab cycle, focus restore |
 | `r.avaflow` debris-flow simulation snapshot | C5 +0.2 | Deferred post-submission (3+ days GRASS container work) |
+| Bootstrap `pgstac` schema for Sentinel-1 ingest + flood-seg flows | C1 (new scenes) | Not blocking demo (7 polygons + 2017 fixtures already in DB) |
 
 ---
 
