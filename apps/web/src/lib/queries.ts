@@ -235,22 +235,23 @@ export function useHazard(
 }
 
 export function useAlerts(
-  status?: string,
+  filters?: import("./api").AlertFilters,
   opts?: Partial<UseQueryOptions<Alert[]>>
 ): UseQueryResult<Alert[]> {
   return useQuery({
-    queryKey: ["alerts", status],
+    queryKey: ["alerts", filters],
     queryFn: async () => {
       try {
-        const data = await fetchAlerts(status);
+        const data = await fetchAlerts(filters);
+        const status = filters?.status;
         return withDemoFallback(data, status ? DEMO_ALERTS.filter((a) => a.status === status) : DEMO_ALERTS);
       } catch {
+        const status = filters?.status;
         return status ? DEMO_ALERTS.filter((a) => a.status === status) : DEMO_ALERTS;
       }
     },
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
-    // Keep previous data during refetch — prevents blank→data flash in SituationSummary
     placeholderData: (prev) => prev,
     ...opts,
   });

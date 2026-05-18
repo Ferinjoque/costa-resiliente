@@ -30,6 +30,8 @@ class AlertSummary(BaseModel):
     title: str
     description: Optional[str] = None
     district_id: Optional[int] = None
+    district_name: Optional[str] = None
+    province: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
     source_refs: Optional[dict] = None
@@ -68,10 +70,12 @@ class DecisionLogEntry(BaseModel):
 async def list_alerts(
     status: Optional[str] = Query(None),
     severity: Optional[str] = Query(None),
+    province: Optional[str] = Query(None, description="Filter by province. 'Lima' = Lima Metropolitana (43 districts). Omit for all."),
+    district: Optional[str] = Query(None, description="Filter by district name (case-insensitive)."),
     limit: int = Query(50, ge=0, le=200),
     db: AsyncSession = Depends(get_db),
 ) -> list[AlertSummary]:
-    """Return alerts from ops.alerts, newest first."""
+    """Return alerts from ops.alerts with district info, newest first."""
     conditions = ["1=1"]
     params: dict = {"limit": limit}
 
@@ -81,15 +85,23 @@ async def list_alerts(
     if severity:
         conditions.append("a.severity = :severity")
         params["severity"] = severity
+    if province:
+        conditions.append("d.province = :province")
+        params["province"] = province
+    if district:
+        conditions.append("d.name ILIKE :district")
+        params["district"] = district
 
     where = " AND ".join(conditions)
     rows = await db.execute(
         text(f"""
             SELECT a.id, a.type, a.severity, a.status, a.title, a.description,
-                   a.district_id, a.created_at, a.updated_at,
+                   a.district_id, d.name AS district_name, d.province,
+                   a.created_at, a.updated_at,
                    ST_Y(a.geom) AS lat, ST_X(a.geom) AS lng,
                    a.source_refs
             FROM ops.alerts a
+            LEFT JOIN geo.districts d ON d.id = a.district_id
             WHERE {where}
             ORDER BY a.created_at DESC
             LIMIT :limit

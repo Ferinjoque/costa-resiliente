@@ -252,12 +252,21 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
         />
 
         <div className="flex-1 min-w-0 px-4 py-3">
-          {/* Meta line: type · age · source */}
+          {/* Meta line: type · age · district · source */}
           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
             <Icon size={10} className="text-ink-subtle shrink-0" aria-hidden="true" />
             <span className="text-xs text-ink-subtle font-medium">{typeLabel}</span>
             <span className="text-ink-subtle" aria-hidden="true">·</span>
             <span className="text-xs text-ink-subtle tabular-nums">{timeAgo(alert.created_at)}</span>
+            {alert.district_name && (
+              <>
+                <span className="text-ink-subtle" aria-hidden="true">·</span>
+                <span className="flex items-center gap-0.5 text-xs text-ink-subtle">
+                  <MapPin size={9} className="shrink-0" aria-hidden="true" />
+                  {alert.district_name}
+                </span>
+              </>
+            )}
             {src && (
               <>
                 <span className="text-ink-subtle" aria-hidden="true">·</span>
@@ -669,20 +678,43 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
 
 type FilterTab = "active" | "all";
 
+// Lima Metropolitana districts (province = "Lima")
+const LIMA_METRO_DISTRICTS = [
+  "Ancón","Ate","Barranco","Breña","Carabayllo","Chaclacayo","Chorrillos",
+  "Cieneguilla","Comas","El Agustino","Independencia","Jesús María","La Molina",
+  "La Victoria","Lima","Lince","Los Olivos","Lurigancho","Lurín","Magdalena del Mar",
+  "Miraflores","Pachacámac","Pucusana","Pueblo Libre","Puente Piedra","Punta Hermosa",
+  "Punta Negra","Rímac","San Bartolo","San Borja","San Isidro","San Juan de Lurigancho",
+  "San Juan de Miraflores","San Luis","San Martín de Porres","San Miguel","Santa Anita",
+  "Santa María del Mar","Santa Rosa","Santiago de Surco","Surquillo","Villa El Salvador",
+  "Villa María del Triunfo",
+];
+
 export function AlertsPanel() {
   const { activePanel, locale, alertStreamConnected: sseConnected } = useUIStore();
-  const { data: alerts = [], isLoading, isError, dataUpdatedAt } = useAlerts();
-  const { data: exposure } = useFloodExposure();
   const tr = useT(locale);
-  const [tab, setTab] = useState<FilterTab>("active");
+  const [tab, setTab]               = useState<FilterTab>("active");
+  const [province, setProvince]     = useState<string>("Lima");
+  const [district, setDistrict]     = useState<string>("");
+
+  const filters = {
+    ...(province ? { province } : {}),
+    ...(district ? { district } : {}),
+  };
+
+  const { data: alerts = [], isLoading, isError, dataUpdatedAt } = useAlerts(
+    Object.keys(filters).length > 0 ? filters : undefined,
+  );
+  const { data: exposure } = useFloodExposure();
 
   if (activePanel !== "alerts") return null;
 
   const activeAlerts  = alerts.filter((a) => a.status === "active");
   const historyAlerts = alerts.filter((a) => a.status !== "active");
   const displayed     = tab === "active" ? activeAlerts : alerts;
-
   const activeCount   = activeAlerts.length;
+
+  const districtOptions = province === "Lima" ? LIMA_METRO_DISTRICTS : [];
 
   return (
     <aside
@@ -715,6 +747,54 @@ export function AlertsPanel() {
       </PanelHeader>
 
       <Divider />
+
+      {/* Province + district filter row */}
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-border-subtle bg-surface-raised/40">
+        {/* Province toggle: Lima Metro / All */}
+        <div className="flex rounded-md border border-border-subtle overflow-hidden shrink-0">
+          {[
+            { value: "Lima", label: locale === "es" ? "Lima Metro" : "Lima Metro" },
+            { value: "",     label: locale === "es" ? "Todo Lima" : "All Lima" },
+          ].map(({ value, label }) => (
+            <button
+              key={value || "all"}
+              onClick={() => { setProvince(value); setDistrict(""); }}
+              className={clsx(
+                "px-2.5 py-1 text-2xs font-medium transition-colors",
+                province === value
+                  ? "bg-accent text-white"
+                  : "text-ink-subtle hover:text-ink hover:bg-surface-sunken",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* District select — only shown for Lima Metro */}
+        {province === "Lima" && (
+          <select
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+            className="flex-1 min-w-0 text-2xs bg-surface border border-border-subtle rounded-md px-2 py-1 text-ink truncate"
+            aria-label={locale === "es" ? "Filtrar por distrito" : "Filter by district"}
+          >
+            <option value="">{locale === "es" ? "Todos los distritos" : "All districts"}</option>
+            {districtOptions.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        )}
+        {district && (
+          <button
+            onClick={() => setDistrict("")}
+            className="text-ink-subtle hover:text-ink"
+            aria-label={locale === "es" ? "Limpiar filtro" : "Clear filter"}
+          >
+            <X size={12} />
+          </button>
+        )}
+      </div>
 
       {/* Filter tabs */}
       <div className="flex border-b border-border-subtle px-4 gap-0" role="tablist">
