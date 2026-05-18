@@ -32,7 +32,8 @@ async def huayco_flow() -> dict:
     from costa_workers.ml.huayco_model import HuaycoModel, run_huayco_susceptibility
 
     db_dsn = os.getenv("DATABASE_URL", f"postgresql://{os.getenv('POSTGRES_USER','costa')}:{os.getenv('POSTGRES_PASSWORD','change_me_in_production')}@{os.getenv('POSTGRES_HOST','postgres')}:{os.getenv('POSTGRES_PORT','5432')}/{os.getenv('POSTGRES_DB','costa_resiliente')}")
-    model = HuaycoModel.load()
+    model = HuaycoModel()
+    model.load()
     results = await run_huayco_susceptibility(db_dsn=db_dsn, model=model)
     return {"quebradas_updated": len(results)}
 

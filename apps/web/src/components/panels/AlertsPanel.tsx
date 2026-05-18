@@ -273,7 +273,7 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   const qc = useQueryClient();
   const { setFlyToPoint, addToast } = useUIStore();
   const { operator } = useAuthStore();
-  const operatorId = operator ? String(operator.id) : DEFAULT_OPERATOR_ID;
+  const operatorId = operator?.username ?? DEFAULT_OPERATOR_ID;
   const Icon = TYPE_ICON[alert.type] ?? Bell;
   const tr = useT(locale);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -560,7 +560,7 @@ const RESOURCES: Resource[] = [
 function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en" }) {
   const { addToast } = useUIStore();
   const { operator } = useAuthStore();
-  const operatorId = operator ? String(operator.id) : DEFAULT_OPERATOR_ID;
+  const operatorId = operator?.username ?? DEFAULT_OPERATOR_ID;
   const [dispatched, setDispatched] = useState<Map<ResourceId, string>>(new Map());
   const active   = alerts.filter((a) => a.status === "active");
   const urgent   = active.filter((a) => a.severity === "critical" || a.severity === "high");
@@ -647,7 +647,7 @@ function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en
 function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en" }) {
   const { addToast } = useUIStore();
   const { operator } = useAuthStore();
-  const operatorId = operator ? String(operator.id) : DEFAULT_OPERATOR_ID;
+  const operatorId = operator?.username ?? DEFAULT_OPERATOR_ID;
   const [checked, setChecked]     = useState<Set<string>>(new Set());
   const [collapsed, setCollapsed] = useState(true);
   const active   = alerts.filter((a) => a.status === "active");
