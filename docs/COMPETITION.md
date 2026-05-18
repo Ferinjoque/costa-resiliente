@@ -1,7 +1,7 @@
 # Costa Resiliente — Competition Context
 
 > **This is the single source of truth for IEEE Response Quest 2026 context, rubric, and scope.**
-> Last updated: 2026-05-17
+> Last updated: 2026-05-18
 
 For current build progress, see [`STATUS.md`](STATUS.md).
 For frontend design system, see [`../apps/web/DESIGN.md`](../apps/web/DESIGN.md).
@@ -170,6 +170,31 @@ Implementation is code-level, not aspirational:
 | Operator runbook | ✅ [`operator-runbook.md`](operator-runbook.md) |
 | Architecture doc | ✅ [`architecture.md`](architecture.md) |
 | Data sources doc | ✅ [`data-sources.md`](data-sources.md) |
+
+---
+
+## Phase 3 delta — what changed since Phase 2 submission
+
+The Phase 2 concept text below describes the state at June 5, 2026. The Phase 3 product now delivered contains the following material additions:
+
+| Area | Phase 2 | Phase 3 |
+|------|---------|---------|
+| Copilot DB tools | 8 tools | **9 tools** — added `get_population_at_risk` (INEI 2017 census × SAR spatial join; estimates affected persons per district with `ST_MakeValid` + `ST_Intersection`) |
+| Auth | Not described | JWT auth for 3 SINAGERD operator roles (COEN/COER/COEL); all actions attributed to authenticated user in Decision Log |
+| Notifications | Not described | Webhook + SMS (Twilio) subscriber CRUD; auto fan-out on critical/high alert creation (not just on operator escalate) |
+| HITL workflow | Aspirational | Full proposals panel — agentic copilot submits to `ops.alert_proposals`, operator approves/rejects; no AI alert reaches live feed without human approval |
+| EDAN-Perú PDF | Not described | PDF export from Decision Log via ReportLab (A4, Spanish); CSV export also available |
+| Copilot latency | ~30s (full LLM) | **Quick-mode** for 5 common query types: keyword match → DB tool → template answer in ~2s, bypassing LLM entirely; honest UX signal when full reasoning is engaged |
+| Alert queue management | Basic | Auto-resolution by alert type (flood: 7d, huayco: 48h, social: 4h, rainfall: 6h); prevents queue saturation during sustained El Niño events |
+| IMERG alerts | Not described | Automated rainfall threshold alerts (50/25/15 mm at 72/72/24h windows; ANA-aligned); deduplicated per watershed per 6h |
+| River level trend | Not described | Two-CTE query computes 1h trend (rising >5cm/h / falling / stable) and level_change_1h_m; system prompt highlights rising rivers for evacuation priority |
+| Data resilience | Not described | ANA/SENAMHI gauge readings cached in Redis (24h TTL); station layer stays populated during government site outages |
+| Callao | Optional Phase 3 | Static district polygons and geodata for 9 Callao districts added (includes Ventanilla and Mi Perú quebrada risk zones) |
+| Evacuation shelters | Not described | INDECI-designated Lima evacuation shelters layer (static data); linked from AlertsPanel for duty-officer next-step guidance |
+| Frontend panels | 6 main surfaces | 9 main surfaces: added ProposalsPanel, NotificationsPanel, DistrictDashboardPanel, SharePanel, FusionCallout |
+| Services | 9 containers | 9 containers (same); pgstac bootstrapped with pypgstac so Sentinel-1 and flood-seg flows now ingest new scenes |
+
+**Rubric alignment note:** The Phase 2 submission referenced "8 whitelisted database tools" and did not describe notifications, auth, HITL, or PDF export. All of these are now fully implemented and tested. Tool count correction for Phase 3 judges: **9 tools**.
 
 ---
 

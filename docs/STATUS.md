@@ -103,6 +103,7 @@ GET    /api/v1/layers/stations
 GET    /api/v1/layers/watersheds
 GET    /api/v1/layers/quebradas
 GET    /api/v1/layers/social
+GET    /api/v1/layers/shelters                (INDECI evacuation shelters — Session 8)
 
 GET    /api/v1/alerts
 POST   /api/v1/alerts/{id}/action
@@ -138,7 +139,8 @@ POST   /api/v1/auth/operators
 
 | Schema | Table | Rows | Notes |
 |--------|-------|------|-------|
-| `geo` | `districts` | 159 | 43 Lima Metro + surrounding provinces. INEI 2017 population seeded for 41 Lima districts |
+| `geo` | `districts` | 166 | 43 Lima Metro + surrounding provinces + 7 Callao (Session 8). INEI 2017 population seeded |
+| `geo` | `shelters` | 20 | INDECI-referenced Lima Metropolitana evacuation shelters (Session 8) |
 | `geo` | `infrastructure` | 43,072 | OSM hospitals, schools, bridges, substations, fire stations |
 | `geo` | `hazard_zones` | 50 | SINPAD-derived (flood + landslide × muy_alto/alto/medio/bajo) |
 | `geo` | `quebradas` | 10 | Priority Lima quebradas |
@@ -223,6 +225,47 @@ POST   /api/v1/auth/operators
 ---
 
 ## Recent session log (rolling, last 5)
+
+### Session 8 — 2026-05-18 — Sprint 16: Shelters, Callao, Quick-mode, Twilio, Tour
+
+Autonomous session (Fernando offline 11am–4pm). All changes on `develop`, local Ollama only.
+
+**P1–P3, P7 — Documentation sprint:**
+- `docs(runbook)`: `operator-runbook.md` fully rewritten to Sprint 15 — Proposals/HITL panel, 9-tool copilot with quick-mode table, auto-resolution lifecycle, ANA Redis fallback, Ollama timeout recovery, SINAGERD role table.
+- `docs(sources)`: `data-sources.md` date updated, dead RSS feeds removed (Canal N, La República → Gestión), ANA Redis stale-cache note, new "Agentic Copilot Tools" section with 9-tool table.
+- `docs(competition)`: `COMPETITION.md` Phase 3 delta section — comparison table (8→9 tools), auth, HITL, PDF, quick-mode, shelters, Callao.
+- `docs(arch)`: `architecture.md` honest inference-latency table: quick-mode ~2s, full agentic 15–30s, triage 3–8s.
+
+**P4 — INDECI evacuation shelters layer (end-to-end):**
+- `infra/postgres/migration_shelters.sql` — `geo.shelters` table with `GENERATED ALWAYS AS` geom; 20 Lima INDECI-referenced shelters seeded (Parque Zonal Huiracocha, Estadio Nacional, Coliseo Chosica, Gran Chimú Ate, Sinchi Roca, etc.). Applied to running container.
+- `routers/layers.py` — `GET /api/v1/layers/shelters` GeoJSON endpoint.
+- `api.ts` — `ShelterCollection` types + `fetchShelters()`.
+- `queries.ts` — `useShelters()` hook (60-min staleTime, static data).
+- `MapView.tsx` — sage-green circle + label layers, popup with capacity/type/district, cursor change.
+- `ScenarioPanel.tsx` — `"shelters"` entry added to `LAYERS` constant (toggle UI).
+
+**P5 — Copilot quick-mode (5 query types, ~2s without LLM):**
+- `agent.py` — `_QUICK_PATTERNS` + `_detect_quick()`. Fixed: multi-topic queries (matching >1 pattern) now fall through to full LLM, not just first match.
+- `copilot.py` — `quick_mode: bool` in `CopilotResponse`.
+- `AskPanel.tsx` — "Modo rápido · sin LLM · ~2s" badge on responses.
+
+**P6 — Callao geodata:**
+- `infra/postgres/migration_callao.sql` — 7 Callao districts (`070101`–`070107`, including Mi Perú created 2014 by Ley N°30197). Approximate polygon geometries. Applied to running container.
+
+**P8 — Real SMS via Twilio:**
+- `pyproject.toml` — `twilio>=9.0` dependency. Installed in running container.
+- `config.py` — `twilio_account_sid / auth_token / from_number` + `twilio_enabled` property.
+- `notifications.py` — `_send_sms()` with lazy Twilio import; stubs gracefully when unconfigured. Fan-out handles `"sms"` channel.
+- `.env.example` — Twilio stanza documented.
+
+**P9 — driver.js onboarding tour updated:**
+- `TutorialOverlay.tsx` — new step 5 for Proposals HITL panel (`#driver-nav-proposals`): 4-eyes approval flow, LLM reasoning visible, SMS+email on approval. Copilot step (now step 6) updated to mention quick-mode and population-at-risk query. `layerEffects` indices updated accordingly.
+
+**Tests:** 314 passed, 1 flaky teardown error (pre-existing, passes in isolation). 3 test failures fixed: `test_direct_answer_no_tools`, `test_output_guardrail_redacts_key`, `test_parallel_tool_execution` — all caused by quick-mode intercepting mock-LLM test queries.
+
+**Build:** TypeScript 0 errors. Next.js production build green.
+
+---
 
 ### Session 7 — 2026-05-18 — Real-disaster utility pass + AI speed
 

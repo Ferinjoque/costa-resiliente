@@ -1,6 +1,6 @@
 # Data Sources — Costa Resiliente
 
-> Status column reflects actual implementation state as of 2026-05-13.
+> Status column reflects actual implementation state as of 2026-05-18.
 
 ---
 
@@ -49,10 +49,11 @@
 ### ANA Observatorio Chirilu + SNIRH
 - **URLs**: `observatoriochirilu.ana.gob.pe`, `snirh.ana.gob.pe`
 - **Access**: HTML scraper (no public REST API confirmed)
-- **Known fragility**: scraping is brittle; documented gap; fallback = manual nightly CSV
+- **Known fragility**: scraping is brittle; government sites go down during active flood events
+- **Resilience**: every successful gauge reading cached to Redis (`costa:gauge:reading:{code}`, 24h TTL); scraper falls back to last known reading with `from_cache=True` on HTTP failure — station layer never goes blank during an outage
 - **Storage**: `hydro.stations` + `hydro.station_observations`
-- **Implementation**: `apps/workers/src/costa_workers/ingest/hydro.py`
-- **Status**: ✅ Scraper implemented; data populates station layer on map
+- **Implementation**: `apps/workers/src/costa_workers/ingest/hydro.py` + `ana_scraper.py`
+- **Status**: ✅ Scraper implemented with Redis stale-reading cache; health published to `costa:scraper:status:{ana|senamhi}`
 
 ### SENAMHI
 - **URL**: `senamhi.gob.pe`
@@ -97,13 +98,12 @@
 ### RSS News Feeds
 - RPP: `https://rpp.pe/rss`
 - Andina (official Peru news agency): `https://andina.pe/agencia/rss.aspx`
-- Canal N: `https://canaln.pe/rss`
 - El Comercio: `https://elcomercio.pe/rss/`
-- La República: `https://larepublica.pe/rss/`
+- Gestión: `https://gestion.pe/rss/` *(replaced Canal N and La República — both returned 404 consistently as of 2026-05)*
 - Peru21: `https://peru21.pe/rss/`
 - **Filter**: Disaster keyword match; last 48h only
 - **Implementation**: `apps/workers/src/costa_workers/ingest/social.py::ingest_rss_feeds()`
-- **Status**: ✅ Active
+- **Status**: ✅ Active (5 feeds; 2 dead feeds removed)
 
 ### Reddit
 - **Subreddits**: r/Peru, r/Lima, r/Chosica
@@ -146,6 +146,24 @@
 - **Labels**: needs_help, infrastructure_damage, road_blocked, weather_observation, false_alarm, irrelevant
 - **Output**: `social.signals.triage_label` + `triage_confidence`
 - **Status**: ✅ Implemented; all ingested signals are triaged
+
+---
+
+## Agentic Copilot Tools (DB query layer)
+
+Nine whitelisted parameterised tools available to the copilot. The LLM never executes raw SQL.
+
+| Tool | Data source | Notes |
+|------|-------------|-------|
+| `get_flood_polygons` | `ml.flood_polygons` | SAR U-Net extents + confidence |
+| `get_huayco_risk` | `ml.huayco_susceptibility` | XGBoost risk per quebrada |
+| `get_river_levels` | `hydro.station_observations` | Latest reading + 1h trend (rising/stable/falling) |
+| `get_social_clusters` | `social.signals` | Triage-labelled signal counts |
+| `get_infrastructure_impact` | `geo.infrastructure` | Hospitals, bridges, substations in flood zones |
+| `get_rainfall_accumulation` | `hydro.imerg_accumulations` | 1h–72h per watershed; ANA-aligned thresholds |
+| `get_active_alerts` | `ops.alerts` | Full count + severity breakdown; uncapped total |
+| `search_protocols` | pgvector RAG | INDECI / MINSA / CENEPRED protocol embeddings |
+| `get_population_at_risk` | `geo.districts` × `ml.flood_polygons` | INEI 2017 census × SAR spatial join; estimates affected persons per district |
 
 ---
 

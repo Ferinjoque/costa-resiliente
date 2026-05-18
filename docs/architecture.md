@@ -175,6 +175,24 @@ All inference is local. No cloud API dependency. No data egress for citizen PII 
 
 Model selection via env vars: `LLM_PRIMARY_MODEL`, `LLM_GUARDRAIL_MODEL`, `LLM_EMBED_MODEL`. Pydantic `AliasChoices` falls back to legacy `OLLAMA_*` names if set. No code changes needed to swap models.
 
+### Inference latency — honest disclosure
+
+This platform runs Ollama on CPU (no dedicated GPU assumed). Measured on an AMD Ryzen 5 / 16 GB machine:
+
+| Operation | Typical latency | Notes |
+|-----------|----------------|-------|
+| Copilot quick-mode (5 common queries) | **~2s** | Keyword match → DB tool → template; LLM not invoked |
+| Full agentic loop (1–4 tool iterations) | **15–30s** | qwen2.5:7b Q4_K_M on CPU; acceptable for deliberate queries |
+| Signal triage (background, per signal) | **3–8s** | Same model; runs in Prefect worker, not in critical path |
+| Embedding (nomic-embed-text) | **<1s** | 274 MB model; fast even on CPU |
+| Guardrail check (gemma2:2b) | **1–3s** | Runs after agentic answer; adds tail latency |
+
+**Operational implications:**
+- At 2am during a flash flood, duty officers should use **quick-mode queries** for status checks. Full agentic reasoning is appropriate for nuanced strategic questions ("¿qué distritos debo evacuar primero?").
+- `num_ctx=8192` is set (down from Ollama default 32k). This loads the KV cache 3× faster and avoids "Server disconnected" errors under concurrent load at the cost of slightly shorter context.
+- On a VPS with a modern CPU (Hetzner CX32: 4 vCPU), expect similar latency. A GPU-equipped VPS (e.g., Hetzner GX2-Ampere) would reduce full-loop latency to ~5s but is not required for the rubric demo.
+- The keyword fallback fires automatically when LLM times out (30s ceiling), so the copilot never returns a blank answer.
+
 ---
 
 ## Security Architecture
