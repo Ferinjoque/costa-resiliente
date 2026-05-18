@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: 308/309 passing (Session 5: 299/300 → +9 new for field-report + proposals). Single flake is `test_session_audit.py::TestCopilot::test_ask_xss_in_query` (Ollama timeout under load, present in Session 5 baseline too).
+- **API**: 9 new tests added (5 social + 4 proposals) all passing in isolation. Single Ollama timeout flake unchanged. Full-suite run shows ~20 `test_session_audit.py` failures attributed to asyncpg connection-pool exhaustion when the FastAPI app is exercised in-process by ASGITransport while also serving live HTTP from costa-api (default pool: 5 + 10 overflow). Every individual failing test passes when run in isolation — `python -m pytest tests/test_session_audit.py::TestAlerts::test_action_sql_injection_in_operator` etc. PASS one-by-one. The fix is a larger pool or per-test client teardown; documented here, not done tonight.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB (Session 5: 153 → 173 → 175 with new ProposalsPanel)
 
