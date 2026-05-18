@@ -55,16 +55,48 @@ function buildSourceUrl(source: string, sourceId?: string | null): string | null
   if (!sourceId) return null;
   const s = source.toLowerCase();
   if (s === "bluesky") {
-    // source_id is an AT-URI: at://did:.../app.bsky.feed.post/rkey
-    const parts = sourceId.split("/");
-    const rkey = parts.at(-1);
-    const did = parts[2];
-    if (did && rkey) return `https://bsky.app/profile/${did}/post/${rkey}`;
+    // stored format: "did:plc:xxx/rkey"  (not full AT-URI)
+    const slash = sourceId.lastIndexOf("/");
+    if (slash > 0) {
+      const did = sourceId.slice(0, slash);
+      const rkey = sourceId.slice(slash + 1);
+      if (did && rkey) return `https://bsky.app/profile/${did}/post/${rkey}`;
+    }
   }
   if (s === "reddit") return `https://reddit.com/${sourceId}`;
-  if (s === "rss" || s === "rss_rpp" || s === "rss_andina") return sourceId; // source_id is the article URL
-  if (s === "telegram") return sourceId; // source_id is the message link
+  // All RSS sources store the article URL as source_id
+  if (s.startsWith("rss")) return sourceId;
+  // Telegram stores "ChannelName/messageId"
+  if (s === "telegram") {
+    if (sourceId.startsWith("https://")) return sourceId;
+    return `https://t.me/${sourceId}`;
+  }
   return null;
+}
+
+function formatSignalDate(published_at: string | null | undefined, ingested_at: string, locale: "es" | "en"): string {
+  const iso = published_at ?? ingested_at;
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+
+  const timeStr = d.toLocaleTimeString(locale === "es" ? "es-PE" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  if (sameDay) return timeStr;
+  if (isYesterday) return locale === "es" ? `ayer ${timeStr}` : `yest. ${timeStr}`;
+
+  const dateStr = d.toLocaleDateString(locale === "es" ? "es-PE" : "en-US", {
+    day: "numeric",
+    month: "short",
+  });
+  return `${dateStr} ${timeStr}`;
 }
 
 // Urgency sort: needs_help first, then chronological desc
@@ -134,8 +166,11 @@ function SignalRow({
   const label = props.triage_label ?? "unknown";
   const labelText = locale === "es" ? (LABEL_ES[label] ?? label) : (LABEL_EN[label] ?? label);
   const pillVariant = labelToPillVariant(label);
-  const hasLongText = (props.text?.length ?? 0) > 80;
+  // At text-sm (13px) and ~328px panel width, ~45 chars fit per line.
+  // Only show "More" when text is genuinely longer than 2 visual lines.
+  const hasLongText = (props.text?.length ?? 0) > 100;
   const sourceUrl = buildSourceUrl(props.source ?? "", props.source_id);
+  const dateLabel = formatSignalDate(props.published_at, props.ingested_at, locale);
 
   return (
     <li
@@ -179,8 +214,11 @@ function SignalRow({
               {props.district_name}
             </span>
           )}
-          <span className="text-xs text-ink-subtle font-mono shrink-0">
-            {timeAgoShort(props.ingested_at)}
+          <span
+            className="text-xs text-ink-subtle font-mono shrink-0"
+            title={locale === "es" ? `Publicado: ${new Date(props.published_at ?? props.ingested_at).toLocaleString("es-PE")}` : `Published: ${new Date(props.published_at ?? props.ingested_at).toLocaleString("en-US")}`}
+          >
+            {dateLabel}
           </span>
           {props.triage_confidence != null && (
             <ConfidenceBadge value={props.triage_confidence} />
