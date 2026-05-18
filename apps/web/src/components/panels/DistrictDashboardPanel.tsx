@@ -1390,11 +1390,10 @@ export function DistrictDashboardPanel() {
         // Mobile: sheet from bottom
         "fixed bottom-14 left-0 right-0 h-[80vh] rounded-t-2xl",
         "bg-surface border-t border-border-strong shadow-panel z-20",
-        // Desktop: floating card to the right of ScenarioPanel (left side)
-        "sm:absolute sm:top-4 sm:left-[272px] sm:right-auto sm:bottom-auto",
-        "sm:w-[320px] sm:max-h-[calc(100vh-2rem)] sm:overflow-y-auto",
-        "sm:rounded-2xl sm:border sm:border-border-strong sm:border-t",
-        "sm:shadow-panel",
+        // Desktop: flush right panel
+        "sm:absolute sm:top-0 sm:right-0 sm:bottom-auto sm:left-auto",
+        "sm:h-full sm:w-[400px] sm:rounded-none sm:border-t-0",
+        "sm:border-l sm:border-border-strong",
         "flex flex-col panel-animate",
       )}
       aria-label={tr("dashboard", "panelLabel")}
