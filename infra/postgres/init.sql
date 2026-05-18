@@ -195,7 +195,7 @@ CREATE INDEX IF NOT EXISTS signals_geom_idx ON social.signals USING GIST (geom);
 CREATE INDEX IF NOT EXISTS signals_source_idx ON social.signals (source, ingested_at DESC);
 CREATE INDEX IF NOT EXISTS signals_label_idx ON social.signals (triage_label, ingested_at DESC);
 CREATE INDEX IF NOT EXISTS signals_district_idx ON social.signals (district_id, ingested_at DESC);
-CREATE INDEX IF NOT EXISTS signals_content_hash_idx ON social.signals (content_hash);
+CREATE UNIQUE INDEX IF NOT EXISTS signals_content_hash_uniq ON social.signals (content_hash);
 
 -- ─── ops: Alerts ──────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS ops.alerts (

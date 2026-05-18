@@ -19,14 +19,14 @@ services:
     environment:
       PYTHONPATH: /app/src
 
-  # One-shot: register all deployments with Prefect server, then exit.
-  # Restart: "no" so it doesn't loop. Re-run: docker compose up prefect-deploy
+  # Long-running serve() runner: registers all deployments AND executes them inline.
+  # serve() polls Prefect server and runs flows in-process — no work pool needed.
   prefect-deploy:
     build:
       context: apps/workers
       dockerfile: Dockerfile
-    container_name: costa-prefect-deploy
-    restart: "no"
+    container_name: costa-prefect-serve
+    restart: unless-stopped
     command: python -m costa_workers.flows.schedules
     env_file: .env
     environment:
@@ -34,6 +34,7 @@ services:
       POSTGRES_HOST: postgres
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: minio:9000
+      PYTHONPATH: /app/src
     networks:
       - costa-net
     volumes:

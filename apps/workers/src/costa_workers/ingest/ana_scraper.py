@@ -47,30 +47,32 @@ def _db_dsn() -> str:
 DB_DSN = _db_dsn()
 
 # ─── ANA SNIRH station codes (Rímac + Chillón + Lurín) ───────────────────────
+# lat/lng added for Open-Meteo fallback when ANA/SENAMHI endpoints are unavailable
 ANA_STATIONS: list[dict] = [
     # Rímac
-    {"code": "100120", "name": "Chosica",        "river": "Rimac",   "source": "ana"},
-    {"code": "100130", "name": "La Atarjea",      "river": "Rimac",   "source": "ana"},
-    {"code": "100110", "name": "Sheque",           "river": "Rimac",   "source": "ana"},
-    {"code": "100100", "name": "Obrajillo",        "river": "Rimac",   "source": "ana"},
+    {"code": "100120", "name": "Chosica",         "river": "Rimac",   "source": "ana",     "lat": -11.93, "lng": -76.70},
+    {"code": "100130", "name": "La Atarjea",       "river": "Rimac",   "source": "ana",     "lat": -12.03, "lng": -76.96},
+    {"code": "100110", "name": "Sheque",            "river": "Rimac",   "source": "ana",     "lat": -11.90, "lng": -76.57},
+    {"code": "100100", "name": "Obrajillo",         "river": "Rimac",   "source": "ana",     "lat": -11.68, "lng": -76.82},
     # Chillón
-    {"code": "107130", "name": "Huamantanga",     "river": "Chillon", "source": "ana"},
-    {"code": "107120", "name": "Lajas",           "river": "Chillon", "source": "ana"},
+    {"code": "107130", "name": "Huamantanga",      "river": "Chillon", "source": "ana",     "lat": -11.52, "lng": -76.76},
+    {"code": "107120", "name": "Lajas",            "river": "Chillon", "source": "ana",     "lat": -11.56, "lng": -76.73},
     # Lurín
-    {"code": "119100", "name": "Santiago de Tuna","river": "Lurin",   "source": "ana"},
-    {"code": "119110", "name": "Manchay Bajo",    "river": "Lurin",   "source": "ana"},
+    {"code": "119100", "name": "Santiago de Tuna", "river": "Lurin",   "source": "ana",     "lat": -12.05, "lng": -76.72},
+    {"code": "119110", "name": "Manchay Bajo",      "river": "Lurin",   "source": "ana",     "lat": -12.10, "lng": -76.81},
 ]
 
 # SENAMHI stations (meteorological, rainfall-focused)
 SENAMHI_STATIONS: list[dict] = [
-    {"code": "47288", "name": "Von Humboldt",     "river": None,      "source": "senamhi"},
-    {"code": "47284", "name": "Chosica - SENAMHI","river": "Rimac",   "source": "senamhi"},
-    {"code": "47271", "name": "Manchay",          "river": "Lurin",   "source": "senamhi"},
-    {"code": "47249", "name": "Canta",            "river": "Chillon", "source": "senamhi"},
+    {"code": "47288", "name": "Von Humboldt",      "river": None,      "source": "senamhi", "lat": -12.08, "lng": -77.00},
+    {"code": "47284", "name": "Chosica - SENAMHI", "river": "Rimac",   "source": "senamhi", "lat": -11.93, "lng": -76.70},
+    {"code": "47271", "name": "Manchay",           "river": "Lurin",   "source": "senamhi", "lat": -12.10, "lng": -76.84},
+    {"code": "47249", "name": "Canta",             "river": "Chillon", "source": "senamhi", "lat": -11.47, "lng": -76.63},
 ]
 
 ANA_BASE = "https://snirh.ana.gob.pe/Snirh"
 SENAMHI_BASE = "https://www.senamhi.gob.pe"
+OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
 REQUEST_TIMEOUT = 30.0
 RATE_LIMIT_S = 2.0  # seconds between requests per source
 
@@ -207,6 +209,61 @@ async def fetch_senamhi_station(station: dict) -> list[dict]:
     return observations
 
 
+@task(retries=3, retry_delay_seconds=30, log_prints=True)
+async def fetch_openmeteo_station(station: dict) -> list[dict]:
+    """
+    Fallback: fetch hourly precipitation for a station from Open-Meteo (no auth required).
+    Returns observations with rain_mm only (no level/flow — gauge data unavailable).
+    Used when ANA/SENAMHI endpoints are unreachable.
+    """
+    lat = station.get("lat")
+    lng = station.get("lng")
+    if lat is None or lng is None:
+        return []
+
+    params = {
+        "latitude": lat,
+        "longitude": lng,
+        "hourly": "precipitation",
+        "past_days": 1,
+        "forecast_days": 0,
+        "timezone": "America/Lima",
+    }
+    async with _make_client() as client:
+        try:
+            resp = await client.get(OPEN_METEO_BASE, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as exc:
+            logger.warning("Open-Meteo fetch failed for %s: %s", station["code"], exc)
+            return []
+
+    hourly = data.get("hourly", {})
+    times = hourly.get("time", [])
+    precip = hourly.get("precipitation", [])
+    observations = []
+    for ts, rain in zip(times, precip):
+        if rain is None:
+            continue
+        try:
+            obs_at = datetime.fromisoformat(ts).replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        observations.append({
+            "station_code": station["code"],
+            "observed_at": obs_at,
+            "level_m": None,
+            "flow_m3s": None,
+            "rain_mm": float(rain),
+        })
+
+    logger.info(
+        "Open-Meteo station %s (%s): %d observations",
+        station["name"], station["code"], len(observations),
+    )
+    return observations
+
+
 @task(retries=2, retry_delay_seconds=30, log_prints=True)
 async def upsert_observations(observations: list[dict], stations_meta: dict[str, dict]) -> int:
     """
@@ -219,19 +276,34 @@ async def upsert_observations(observations: list[dict], stations_meta: dict[str,
         return 0
 
     async with asyncpg.create_pool(DB_DSN, min_size=1, max_size=3) as pool:
-        # Ensure station rows exist (idempotent)
+        # Ensure station rows exist (idempotent), updating geom if coordinates present
         for code, meta in stations_meta.items():
-            await pool.execute(
-                """
-                INSERT INTO hydro.stations
-                    (code, name, source, river, active)
-                VALUES ($1, $2, $3, $4, TRUE)
-                ON CONFLICT (code) DO UPDATE SET
-                    name = EXCLUDED.name,
-                    active = TRUE
-                """,
-                code, meta["name"], meta["source"], meta.get("river"),
-            )
+            if meta.get("lat") is not None and meta.get("lng") is not None:
+                await pool.execute(
+                    """
+                    INSERT INTO hydro.stations
+                        (code, name, source, river, active, geom)
+                    VALUES ($1, $2, $3, $4, TRUE, ST_SetSRID(ST_MakePoint($5, $6), 4326))
+                    ON CONFLICT (code) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        active = TRUE,
+                        geom = EXCLUDED.geom
+                    """,
+                    code, meta["name"], meta["source"], meta.get("river"),
+                    meta["lng"], meta["lat"],
+                )
+            else:
+                await pool.execute(
+                    """
+                    INSERT INTO hydro.stations
+                        (code, name, source, river, active)
+                    VALUES ($1, $2, $3, $4, TRUE)
+                    ON CONFLICT (code) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        active = TRUE
+                    """,
+                    code, meta["name"], meta["source"], meta.get("river"),
+                )
 
         inserted = 0
         for obs in observations:
@@ -288,7 +360,8 @@ async def _check_stale_stations(pool: "asyncpg.Pool", threshold_hours: int = 2) 
 @flow(name="ingest-hydro-stations", log_prints=True)
 async def ingest_hydro_stations_flow() -> dict:
     """
-    Fetch hydro observations from ANA SNIRH and SENAMHI, upsert to DB.
+    Fetch hydro observations from ANA SNIRH and SENAMHI; falls back to Open-Meteo
+    (free, no auth) when government endpoints are unreachable.
     Schedule: every 30 minutes.
     """
     import asyncpg
@@ -297,16 +370,30 @@ async def ingest_hydro_stations_flow() -> dict:
     stations_meta = {s["code"]: s for s in all_stations}
 
     all_observations: list[dict] = []
+    primary_ok = False
 
-    # ANA stations
+    # ANA stations (primary)
     for station in ANA_STATIONS:
         obs = await fetch_ana_station(station)
         all_observations.extend(obs)
+        if obs:
+            primary_ok = True
 
-    # SENAMHI stations
+    # SENAMHI stations (primary)
     for station in SENAMHI_STATIONS:
         obs = await fetch_senamhi_station(station)
         all_observations.extend(obs)
+        if obs:
+            primary_ok = True
+
+    # Open-Meteo fallback when primary sources return nothing
+    if not primary_ok:
+        logger.warning(
+            "ANA/SENAMHI returned 0 observations — falling back to Open-Meteo precipitation"
+        )
+        for station in all_stations:
+            obs = await fetch_openmeteo_station(station)
+            all_observations.extend(obs)
 
     total = await upsert_observations(all_observations, stations_meta)
     logger.info("Hydro ingest complete: %d observations stored", total)
