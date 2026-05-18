@@ -17,10 +17,12 @@ import {
   Ambulance,
   Flame,
   ExternalLink,
+  Clock,
   type LucideIcon,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
+import { useAuthStore } from "@/store/auth";
 import { useAlerts, useFloodExposure } from "@/lib/queries";
 import { actOnAlert, logDecision } from "@/lib/api";
 import type { LiveToast } from "@/store/ui";
@@ -39,7 +41,8 @@ import {
   EmptyState,
 } from "@/components/ui/primitives";
 
-const OPERATOR_ID = "operator-1";
+// Fallback when not logged in (demo mode)
+const DEFAULT_OPERATOR_ID = "operator-1";
 
 const TYPE_ICON: Record<string, LucideIcon> = {
   flood: AlertTriangle,
@@ -75,6 +78,47 @@ const STATUS_VARIANT: Record<string, "danger" | "ok" | "warn" | "default"> = {
   false_positive: "warn",
   closed:         "default",
 };
+
+// ─── SLA thresholds (minutes before breach) ──────────────────────────────────
+
+const SLA_MINUTES: Record<string, number> = {
+  critical: 5,
+  high:     10,
+  medium:   30,
+  low:      60,
+};
+
+function SlaChip({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
+  if (alert.status !== "active") return null;
+  const ageMs  = Date.now() - new Date(alert.created_at).getTime();
+  const ageMin = Math.floor(ageMs / 60_000);
+  const sla    = SLA_MINUTES[alert.severity] ?? 30;
+  const breach = ageMin >= sla;
+
+  const label = ageMin < 1
+    ? (locale === "es" ? "<1m" : "<1m")
+    : `${ageMin}m`;
+  const slaLabel = locale === "es"
+    ? `SLA: ${sla}min para reconocer`
+    : `SLA: ${sla}min to acknowledge`;
+
+  return (
+    <span
+      className={clsx(
+        "inline-flex items-center gap-0.5 text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded-md",
+        breach
+          ? "bg-danger-soft text-danger border border-danger/20"
+          : "bg-surface-sunken text-ink-subtle border border-border-subtle",
+      )}
+      title={slaLabel}
+      aria-label={`${ageMin} ${locale === "es" ? "minutos desde el aviso" : "minutes since alert"}`}
+    >
+      <Clock size={8} aria-hidden="true" />
+      {label}
+      {breach && <span aria-hidden="true">!</span>}
+    </span>
+  );
+}
 
 // ─── Monotonic action id generator ───────────────────────────────────────────
 let _lastTs = 0;
@@ -190,6 +234,8 @@ const ACTION_TOAST: Record<string, { es: string; en: string }> = {
 function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   const qc = useQueryClient();
   const { setFlyToPoint, addToast } = useUIStore();
+  const { operator } = useAuthStore();
+  const operatorId = operator ? String(operator.id) : DEFAULT_OPERATOR_ID;
   const Icon = TYPE_ICON[alert.type] ?? Bell;
   const tr = useT(locale);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -212,7 +258,7 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
     );
     setMenuOpen(false);
     try {
-      await actOnAlert(alert.id, action, OPERATOR_ID, note);
+      await actOnAlert(alert.id, action, operatorId, note);
       qc.invalidateQueries({ queryKey: ["alerts"] });
       addToast({
         message: ACTION_TOAST[action]?.[locale] ?? (locale === "es" ? "Acción registrada" : "Action logged"),
@@ -252,12 +298,13 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
         />
 
         <div className="flex-1 min-w-0 px-4 py-3">
-          {/* Meta line: type · age · district · source */}
+          {/* Meta line: type · age · SLA · district · source */}
           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
             <Icon size={10} className="text-ink-subtle shrink-0" aria-hidden="true" />
             <span className="text-xs text-ink-subtle font-medium">{typeLabel}</span>
             <span className="text-ink-subtle" aria-hidden="true">·</span>
             <span className="text-xs text-ink-subtle tabular-nums">{timeAgo(alert.created_at)}</span>
+            <SlaChip alert={alert} locale={locale} />
             {alert.district_name && (
               <>
                 <span className="text-ink-subtle" aria-hidden="true">·</span>
@@ -464,6 +511,8 @@ const RESOURCES: Resource[] = [
 
 function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en" }) {
   const { addToast } = useUIStore();
+  const { operator } = useAuthStore();
+  const operatorId = operator ? String(operator.id) : DEFAULT_OPERATOR_ID;
   const [dispatched, setDispatched] = useState<Map<ResourceId, string>>(new Map());
   const active   = alerts.filter((a) => a.status === "active");
   const urgent   = active.filter((a) => a.severity === "critical" || a.severity === "high");
@@ -484,7 +533,7 @@ function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en
     });
     setDispatched((m) => new Map([...m, [r.id, ts]]));
     await logDecision({
-      operator_id: OPERATOR_ID,
+      operator_id: operatorId,
       action_type: "resource_dispatch",
       alert_id: primaryAlert?.id ?? null,
       payload: { resource: r.id, resource_name: label, dispatched_at: new Date().toISOString() },
@@ -549,6 +598,8 @@ function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en
 
 function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en" }) {
   const { addToast } = useUIStore();
+  const { operator } = useAuthStore();
+  const operatorId = operator ? String(operator.id) : DEFAULT_OPERATOR_ID;
   const [checked, setChecked]     = useState<Set<string>>(new Set());
   const [collapsed, setCollapsed] = useState(true);
   const active   = alerts.filter((a) => a.status === "active");
@@ -581,7 +632,7 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
     } else {
       next.add(id);
       await logDecision({
-        operator_id: OPERATOR_ID,
+        operator_id: operatorId,
         action_type: "protocol_step",
         alert_id: primaryAlert?.id ?? null,
         payload: { step: id, label, completed_at: new Date().toISOString() },
