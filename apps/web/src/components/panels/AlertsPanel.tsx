@@ -302,12 +302,22 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
         message: ACTION_TOAST[action]?.[locale] ?? (locale === "es" ? "Acción registrada" : "Action logged"),
         variant: action === "escalate" ? "warn" : "success",
       } as Omit<LiveToast, "id" | "at">);
-    } catch {
-      // optimistic update stands in demo mode — still show toast
+    } catch (e) {
+      // Roll back optimistic status update — the action did NOT register.
+      // Telling an operator their escalation went through when it didn't is
+      // worse than no UI at all in an emergency-ops context.
+      qc.setQueryData<Alert[]>(["alerts"], (old) =>
+        old ? old.map((a) => (a.id === alert.id ? { ...a, status: alert.status } : a)) : old,
+      );
+      const errMsg = locale === "es"
+        ? `No se pudo registrar la acción. Verifica conectividad e inténtalo de nuevo.`
+        : `Could not register the action. Check connectivity and retry.`;
       addToast({
-        message: ACTION_TOAST[action]?.[locale] ?? (locale === "es" ? "Acción registrada" : "Action logged"),
-        variant: "success",
+        message: errMsg,
+        variant: "danger",
       } as Omit<LiveToast, "id" | "at">);
+      // re-throw in dev so it surfaces; in prod, swallow to keep UI alive
+      if (process.env.NODE_ENV !== "production") throw e;
     } finally {
       setActing(false);
     }

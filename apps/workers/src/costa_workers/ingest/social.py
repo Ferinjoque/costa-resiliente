@@ -83,10 +83,9 @@ LIMA_DISTRICTS: frozenset[str] = frozenset({
 RSS_FEEDS = [
     "https://rpp.pe/rss",
     "https://andina.pe/agencia/rss.aspx",
-    "https://canaln.pe/rss",
     "https://elcomercio.pe/rss/",
-    "https://larepublica.pe/rss/",
     "https://peru21.pe/rss/",
+    "https://gestion.pe/rss/",
 ]
 
 REQUEST_TIMEOUT = 20.0
@@ -119,18 +118,36 @@ def _matches_keywords(text: str) -> bool:
 
 # ─── PII redaction ────────────────────────────────────────────────────────────
 
+_PRESIDIO_ANALYZER = None  # process-wide singleton (engine init is heavy)
+_PRESIDIO_ANONYMIZER = None
+
+
+def _get_presidio():
+    """Lazy-init presidio engines with the Spanish spaCy NLP backend."""
+    global _PRESIDIO_ANALYZER, _PRESIDIO_ANONYMIZER
+    if _PRESIDIO_ANALYZER is not None:
+        return _PRESIDIO_ANALYZER, _PRESIDIO_ANONYMIZER
+    from presidio_analyzer import AnalyzerEngine
+    from presidio_analyzer.nlp_engine import NlpEngineProvider
+    from presidio_anonymizer import AnonymizerEngine
+
+    nlp_cfg = {
+        "nlp_engine_name": "spacy",
+        "models": [{"lang_code": "es", "model_name": "es_core_news_sm"}],
+    }
+    nlp_engine = NlpEngineProvider(nlp_configuration=nlp_cfg).create_engine()
+    _PRESIDIO_ANALYZER = AnalyzerEngine(nlp_engine=nlp_engine, supported_languages=["es"])
+    _PRESIDIO_ANONYMIZER = AnonymizerEngine()
+    return _PRESIDIO_ANALYZER, _PRESIDIO_ANONYMIZER
+
+
 def redact_pii(text: str) -> str:
     """
     Redact PII from text using presidio-analyzer with Spanish spaCy model.
     Falls back to returning the original text if presidio is unavailable.
     """
     try:
-        from presidio_analyzer import AnalyzerEngine
-        from presidio_anonymizer import AnonymizerEngine
-
-        analyzer = AnalyzerEngine()
-        anonymizer = AnonymizerEngine()
-
+        analyzer, anonymizer = _get_presidio()
         results = analyzer.analyze(
             text=text,
             language="es",
