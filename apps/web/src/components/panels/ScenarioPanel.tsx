@@ -23,6 +23,7 @@ const LAYERS: { id: string; label: { es: string; en: string }; hint: { es: strin
   { id: "infrastructure", label: { es: "Infraestructura",    en: "Infrastructure"    }, hint: { es: "Hospitales, colegios, puentes (OSM)",       en: "Hospitals, schools, bridges (OSM)"        } },
   { id: "social",         label: { es: "Señales sociales",   en: "Social signals"    }, hint: { es: "Pines Bluesky/Reddit triados por IA",      en: "AI-triaged Bluesky/Reddit pins"           } },
   { id: "stations",       label: { es: "Estaciones ANA",     en: "ANA Stations"      }, hint: { es: "Nivel e caudal de ríos en tiempo real",    en: "Real-time river level and flow"           } },
+  { id: "shelters",       label: { es: "Albergues INDECI",   en: "INDECI Shelters"   }, hint: { es: "Albergues de evacuación designados por INDECI — Lima Metropolitana", en: "INDECI-designated evacuation shelters — Lima Metropolitana" } },
 ];
 
 const L = (locale: Locale, es: string, en: string) => locale === "es" ? es : en;

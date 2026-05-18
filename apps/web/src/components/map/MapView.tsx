@@ -7,7 +7,7 @@ import { useUIStore } from "@/store/ui";
 import {
   useDistricts, useImerg, useFlood, useHuayco,
   useInfrastructure, useHazard, useSocialSignals, useDistrictRiskSummary,
-  useFloodExposure, useStations, useAlerts,
+  useFloodExposure, useStations, useAlerts, useShelters,
 } from "@/lib/queries";
 import type { FloodExposure } from "@/lib/api";
 
@@ -134,6 +134,7 @@ export default function MapView() {
   const { data: hazardData } = useHazard();
   const { data: socialData } = useSocialSignals(48);
   const { data: stationsData } = useStations();
+  const { data: sheltersData } = useShelters();
   const { data: exposureData } = useFloodExposure();
   const { data: alertsData = [] } = useAlerts();
 
@@ -706,6 +707,56 @@ export default function MapView() {
     if (m.loaded()) setup(); else m.once("load", setup);
   }, [stationsData, addOrUpdateSource]);
 
+  // ─── INDECI shelters ──────────────────────────────────────────────────────
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !sheltersData) return;
+    const setup = () => {
+      addOrUpdateSource("shelters-src", sheltersData);
+      if (m.getLayer("shelters-circle")) return;
+      m.addLayer({
+        id: "shelters-circle", type: "circle", source: "shelters-src",
+        layout: { visibility: vis("shelters") },
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 5, 13, 9],
+          "circle-color": "#34d399",   // sage green — safe zone semantic
+          "circle-opacity": 0.9,
+          "circle-stroke-color": "#0f172a",
+          "circle-stroke-width": 1.5,
+        },
+      });
+      m.addLayer({
+        id: "shelters-label", type: "symbol", source: "shelters-src", minzoom: 11,
+        layout: {
+          visibility: vis("shelters"),
+          "text-field": ["get", "name"],
+          "text-size": 9,
+          "text-font": ["Open Sans Regular"],
+          "text-offset": [0, 1.2],
+          "text-anchor": "top",
+        },
+        paint: { "text-color": "#34d399", "text-halo-color": "#0f172a", "text-halo-width": 1 },
+      });
+      m.on("click", "shelters-circle", (e) => {
+        const p = e.features?.[0]?.properties as Record<string, unknown> | undefined;
+        if (!p) return;
+        const cap = p.capacity ? `${Number(p.capacity).toLocaleString("es-PE")} pers.` : "—";
+        const html = popupHtml(`[A] ${String(p.name ?? "Albergue")}`, [
+          ["Tipo",       String(p.shelter_type ?? "—").replace("_", " ")],
+          ["Capacidad",  cap],
+          ["Distrito",   p.district_name ? String(p.district_name) : null],
+          ["Código INDECI", p.indeci_code ? String(p.indeci_code) : null],
+          ["Dirección",  p.address ? String(p.address) : null],
+          ["Notas",      p.notes ? String(p.notes) : null],
+        ], "cr-title-ok");
+        openPopup(m, e.lngLat, html, activePopup);
+      });
+      m.on("mouseenter", "shelters-circle", () => { m.getCanvas().style.cursor = "pointer"; });
+      m.on("mouseleave", "shelters-circle", () => { m.getCanvas().style.cursor = ""; });
+    };
+    if (m.loaded()) setup(); else m.once("load", setup);
+  }, [sheltersData, addOrUpdateSource]);
+
   // ─── Alert pins ───────────────────────────────────────────────────────────
   useEffect(() => {
     const m = map.current;
@@ -795,6 +846,7 @@ export default function MapView() {
       infrastructure: ["infra-circle"],
       social:         ["social-clusters", "social-cluster-count", "social-circle"],
       stations:       ["stations-circle", "stations-label"],
+      shelters:       ["shelters-circle", "shelters-label"],
     };
     const applyVisibility = () => {
       for (const [key, ids] of Object.entries(layerMap)) {

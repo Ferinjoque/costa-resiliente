@@ -76,12 +76,23 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
       },
     },
     {
+      element: "#driver-nav-proposals",
+      popover: {
+        title: es ? "5 — Propuestas HITL (4 ojos)" : "5 — HITL Proposals (4-eyes)",
+        description: es
+          ? "La IA genera borradores de alerta con razonamiento visible. El operador COEL aprueba o rechaza — ninguna alerta se envía sin firma humana. Aprobación dispara SMS + correo a suscriptores SINAGERD."
+          : "The AI generates alert drafts with visible reasoning. The COEL operator approves or rejects — no alert is dispatched without a human signature. Approval triggers SMS + email to SINAGERD subscribers.",
+        side: "right",
+        align: "center",
+      },
+    },
+    {
       element: "#driver-nav-ask",
       popover: {
-        title: es ? "5 — Copiloto operacional" : "5 — Operational Copilot",
+        title: es ? "6 — Copiloto operacional" : "6 — Operational Copilot",
         description: es
-          ? "Consultas en español directamente sobre PostGIS — sin alucinaciones. Pregunta por distritos, quebradas, nivel del río, rutas bloqueadas o estado de estaciones."
-          : "Spanish queries directly against PostGIS — no hallucinations. Ask about districts, quebradas, river levels, blocked routes, or station status.",
+          ? "9 herramientas PostGIS en español. Modo rápido (~2 s, sin LLM) para las 5 consultas frecuentes: prueba «¿cuántas personas están en riesgo?» para ver exposición poblacional al instante."
+          : "9 PostGIS tools in Spanish. Quick-mode (~2 s, no LLM) for the 5 most-common queries: try «¿cuántas personas están en riesgo?» to see population exposure instantly.",
         side: "right",
         align: "center",
       },
@@ -145,8 +156,9 @@ export function TutorialOverlay() {
         2: () => { if (!useUIStore.getState().activeLayers.has("flood")) useUIStore.getState().toggleLayer("flood"); },
         3: () => { if (!useUIStore.getState().activeLayers.has("hazard")) useUIStore.getState().toggleLayer("hazard"); },
         4: () => useUIStore.getState().setActivePanel("alerts"),
-        5: () => useUIStore.getState().setActivePanel("ask"),
-        6: () => {
+        5: () => useUIStore.getState().setActivePanel("proposals"),
+        6: () => useUIStore.getState().setActivePanel("ask"),
+        7: () => {
           if (!useUIStore.getState().activeLayers.has("social")) useUIStore.getState().toggleLayer("social");
           useUIStore.getState().setActivePanel("social");
         },
