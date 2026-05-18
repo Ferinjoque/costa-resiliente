@@ -29,6 +29,7 @@ const _rotRaf: { current: number } = { current: 0 };
 const _waterRaf: { current: number } = { current: 0 };
 const _is3DOn: { current: boolean } = { current: false };
 const _rotCleanup: { current: (() => void) | null } = { current: null };
+const _rotStartTimer: { current: number | null } = { current: null };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const IMERG_COLOR_RAMP = [
@@ -377,6 +378,10 @@ export default function MapView() {
     });
 
     return () => {
+      if (_rotStartTimer.current != null) {
+        window.clearTimeout(_rotStartTimer.current);
+        _rotStartTimer.current = null;
+      }
       cancelAnimationFrame(_rotRaf.current);
       cancelAnimationFrame(_waterRaf.current);
       _rotCleanup.current?.();
@@ -408,35 +413,43 @@ export default function MapView() {
       m.setTerrain({ source: "terrain-dem", exaggeration: 2.5 });
 
       // Dramatic pitch entry with cubic-ease
-      m.easeTo({ pitch: 62, bearing: -20, duration: 2000, easing: (t) => 1 - (1 - t) ** 3 });
+      const EASE_MS = 2000;
+      m.easeTo({ pitch: 62, bearing: -20, duration: EASE_MS, easing: (t) => 1 - (1 - t) ** 3 });
 
-      // Auto-rotation: 0.08°/tick at 30 fps, pauses 4 s after user interaction
-      let bearing = m.getBearing();
-      let lastInteraction = 0;
-      let lastFrame = 0;
-      const PAUSE_MS = 4000;
-      const FRAME_MS = 33;
-      const onInteract = () => { lastInteraction = Date.now(); };
-      m.on("mousedown", onInteract);
-      m.on("touchstart", onInteract);
-      m.on("wheel", onInteract);
-      _rotCleanup.current = () => {
-        m.off("mousedown", onInteract);
-        m.off("touchstart", onInteract);
-        m.off("wheel", onInteract);
-      };
-      const rotate = (ts: number) => {
+      // Defer rotation start until the easeTo finishes — otherwise setBearing()
+      // on the first RAF tick cancels the in-flight camera ease, leaving pitch at 0.
+      if (_rotStartTimer.current != null) window.clearTimeout(_rotStartTimer.current);
+      _rotStartTimer.current = window.setTimeout(() => {
+        _rotStartTimer.current = null;
         if (!_is3DOn.current) return;
-        if (ts - lastFrame >= FRAME_MS) {
-          if (Date.now() - lastInteraction > PAUSE_MS) {
-            bearing = (bearing + 0.08) % 360;
-            m.setBearing(bearing);
+
+        let bearing = m.getBearing();
+        let lastInteraction = 0;
+        let lastFrame = 0;
+        const PAUSE_MS = 4000;
+        const FRAME_MS = 33;
+        const onInteract = () => { lastInteraction = Date.now(); };
+        m.on("mousedown", onInteract);
+        m.on("touchstart", onInteract);
+        m.on("wheel", onInteract);
+        _rotCleanup.current = () => {
+          m.off("mousedown", onInteract);
+          m.off("touchstart", onInteract);
+          m.off("wheel", onInteract);
+        };
+        const rotate = (ts: number) => {
+          if (!_is3DOn.current) return;
+          if (ts - lastFrame >= FRAME_MS) {
+            if (Date.now() - lastInteraction > PAUSE_MS) {
+              bearing = (bearing + 0.08) % 360;
+              m.setBearing(bearing);
+            }
+            lastFrame = ts;
           }
-          lastFrame = ts;
-        }
+          _rotRaf.current = requestAnimationFrame(rotate);
+        };
         _rotRaf.current = requestAnimationFrame(rotate);
-      };
-      _rotRaf.current = requestAnimationFrame(rotate);
+      }, EASE_MS + 100);
 
       // All 3D layer setup (sky + extrusions) — requires style to be loaded
       const setup3DLayers = () => {
@@ -568,6 +581,10 @@ export default function MapView() {
 
     const exit3D = () => {
       _is3DOn.current = false;
+      if (_rotStartTimer.current != null) {
+        window.clearTimeout(_rotStartTimer.current);
+        _rotStartTimer.current = null;
+      }
       cancelAnimationFrame(_rotRaf.current);
       cancelAnimationFrame(_waterRaf.current);
       _rotCleanup.current?.();
