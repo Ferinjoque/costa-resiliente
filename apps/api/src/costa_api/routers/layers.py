@@ -608,3 +608,57 @@ async def social_signals(
             if r["geometry"] is not None
         ],
     }
+
+
+@router.get("/shelters")
+async def shelters(
+    active_only: bool = Query(True, description="Return only active shelters"),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """INDECI-designated Lima Metropolitana evacuation shelters (static layer).
+
+    Returns GeoJSON FeatureCollection — one point per shelter with capacity,
+    type, and district info. Used by operators to identify the nearest safe
+    evacuation destination after population-at-risk alerts.
+    """
+    where = "WHERE s.active = TRUE" if active_only else ""
+    result = await db.execute(
+        text(f"""
+            SELECT
+                s.id, s.name, s.ubigeo, s.shelter_type, s.capacity,
+                s.lat, s.lng, s.address, s.indeci_code, s.active, s.notes,
+                d.name AS district_name,
+                ST_AsGeoJSON(s.geom)::json AS geometry
+            FROM geo.shelters s
+            LEFT JOIN geo.districts d ON d.ubigeo = s.ubigeo
+            {where}
+            ORDER BY s.id
+        """)
+    )
+    rows = result.mappings().all()
+    return {
+        "type": "FeatureCollection",
+        "source": "INDECI — Albergues y Refugios Lima Metropolitana (estático)",
+        "source_url": "https://www.indeci.gob.pe",
+        "retrieved_at": _now_iso(),
+        "count": len(rows),
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {
+                    "id": r["id"],
+                    "name": r["name"],
+                    "ubigeo": r["ubigeo"],
+                    "shelter_type": r["shelter_type"],
+                    "capacity": r["capacity"],
+                    "address": r["address"],
+                    "indeci_code": r["indeci_code"],
+                    "district_name": r["district_name"],
+                    "notes": r["notes"],
+                },
+                "geometry": r["geometry"],
+            }
+            for r in rows
+            if r["geometry"] is not None
+        ],
+    }

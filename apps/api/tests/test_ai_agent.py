@@ -71,7 +71,7 @@ async def test_direct_answer_no_tools():
         )
 
         result = await agent_run(
-            query="¿Cuál es el estado de las inundaciones en Ate?",
+            query="¿Cuál es el protocolo de evacuación en Ate?",
             operator_id="op1",
             db=db,
         )
@@ -152,7 +152,7 @@ async def test_output_guardrail_redacts_key():
         )
 
         result = await agent_run(
-            query="¿Cuál es el nivel del río?",
+            query="¿Cuál es el protocolo de monitoreo hidrológico?",
             operator_id="op1",
             db=db,
         )
