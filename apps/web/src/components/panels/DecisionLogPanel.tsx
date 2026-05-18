@@ -189,6 +189,20 @@ export function DecisionLogPanel() {
           </Button>
         )}
 
+        {/* Export PDF (EDAN-Perú report) */}
+        {online && (
+          <a
+            href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/alerts/decision-log/report`}
+            download
+            className="text-ink-muted hover:text-ink transition-colors flex items-center gap-1 text-xs rounded focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            aria-label={locale === "es" ? "Exportar informe PDF" : "Export PDF report"}
+            title={locale === "es" ? "Informe situacional EDAN-Perú (PDF)" : "EDAN-Perú situational report (PDF)"}
+          >
+            <Download size={13} />
+            <span className="hidden sm:inline">PDF</span>
+          </a>
+        )}
+
         {/* Close */}
         <Button
           variant="ghost"
