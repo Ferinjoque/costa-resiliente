@@ -692,3 +692,49 @@ export function fetchCurrentOperator(): Promise<OperatorOut> {
 export function fetchOperators(): Promise<OperatorOut[]> {
   return get<OperatorOut[]>("/api/v1/auth/operators");
 }
+
+// ─── HITL Alert Proposals ─────────────────────────────────────────────────────
+
+export interface AlertProposal {
+  id: number;
+  severity: "critical" | "high" | "medium" | "low";
+  alert_type: string;
+  district_ubigeo: string | null;
+  title: string;
+  summary: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  source_refs?: Array<Record<string, unknown>>;
+}
+
+export function fetchPendingProposals(): Promise<AlertProposal[]> {
+  return get<AlertProposal[]>("/api/v1/proposals");
+}
+
+export async function approveProposal(
+  id: number,
+  operatorId: string,
+  notes?: string,
+): Promise<{ alert_id: number; proposal_id: number; status: string }> {
+  const res = await fetch(`${BASE}/api/v1/proposals/${id}/approve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ operator_id: operatorId, notes }),
+  });
+  if (!res.ok) throw new Error(`approve → ${res.status}`);
+  return res.json();
+}
+
+export async function rejectProposal(
+  id: number,
+  operatorId: string,
+  notes?: string,
+): Promise<{ proposal_id: number; status: string }> {
+  const res = await fetch(`${BASE}/api/v1/proposals/${id}/reject`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ operator_id: operatorId, notes }),
+  });
+  if (!res.ok) throw new Error(`reject → ${res.status}`);
+  return res.json();
+}

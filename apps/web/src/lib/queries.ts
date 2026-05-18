@@ -52,6 +52,8 @@ import {
   fetchNotificationDeliveries,
   type NotificationSubscriber,
   type NotificationDelivery,
+  fetchPendingProposals,
+  type AlertProposal,
 } from "./api";
 import {
   DEMO_ALERTS,
@@ -439,6 +441,18 @@ export function useNotificationDeliveries(
   return useQuery({
     queryKey: ["notification-deliveries"],
     queryFn: () => fetchNotificationDeliveries(),
+    staleTime: 15 * 1000,
+    refetchInterval: 30 * 1000,
+    ...opts,
+  });
+}
+
+export function usePendingProposals(
+  opts?: Partial<UseQueryOptions<AlertProposal[]>>
+): UseQueryResult<AlertProposal[]> {
+  return useQuery({
+    queryKey: ["pending-proposals"],
+    queryFn: () => fetchPendingProposals(),
     staleTime: 15 * 1000,
     refetchInterval: 30 * 1000,
     ...opts,
