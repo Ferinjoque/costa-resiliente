@@ -240,6 +240,8 @@ export interface Alert {
   title: string;
   description?: string | null;
   district_id: number | null;
+  district_name?: string | null;
+  province?: string | null;
   lat?: number | null;
   lng?: number | null;
   source_refs?: { source?: string; label?: string; url?: string | null } | null;
@@ -248,8 +250,18 @@ export interface Alert {
   status: string;
 }
 
-export function fetchAlerts(status?: string): Promise<Alert[]> {
-  const q = status ? `?status=${encodeURIComponent(status)}` : "";
+export interface AlertFilters {
+  status?: string;
+  province?: string;
+  district?: string;
+}
+
+export function fetchAlerts(filters?: AlertFilters): Promise<Alert[]> {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set("status", filters.status);
+  if (filters?.province) params.set("province", filters.province);
+  if (filters?.district) params.set("district", filters.district);
+  const q = params.size > 0 ? `?${params.toString()}` : "";
   return get<Alert[]>(`/api/v1/alerts${q}`);
 }
 
