@@ -469,9 +469,10 @@ export async function mintShareToken(
   const res = await fetch(`${BASE}/api/v1/share`, {
     method: "POST",
     signal: AbortSignal.timeout(30_000),
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
     body: JSON.stringify({ scenario }),
   });
+  if (res.status === 401) { _on401?.(); throw new Error("mintShareToken → 401"); }
   if (!res.ok) throw new Error(`mintShareToken → ${res.status}`);
   return res.json();
 }
