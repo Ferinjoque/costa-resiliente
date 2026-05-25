@@ -59,7 +59,7 @@ def _validate_scenario(s: ScenarioSnapshot) -> None:
     if bad:
         raise HTTPException(400, f"Unknown layer keys: {sorted(bad)}")
     if s.timeWindowHours not in (1, 3, 6, 12, 24, 48, 72):
-        raise HTTPException(400, "timeWindowHours must be one of 1,3,6,12,24,72")
+        raise HTTPException(400, "timeWindowHours must be one of 1,3,6,12,24,48,72")
 
 
 # ─── Routes ───────────────────────────────────────────────────────────────────

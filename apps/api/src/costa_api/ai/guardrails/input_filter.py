@@ -24,28 +24,40 @@ logger = logging.getLogger(__name__)
 # ─── Regex blocklist ──────────────────────────────────────────────────────────
 
 _INJECTION_PATTERNS: list[tuple[str, str]] = [
-    # Role pivot
+    # Role pivot — English
     (r"ignore\s+(all\s+)?(previous|prior|above)\s+instructions?", "role_pivot"),
     (r"\bact\s+as\b.{0,30}\b(admin|root|god|jailbreak|DAN)\b", "role_pivot"),
     (r"\bforget\s+(all\s+)?(your\s+)?(previous\s+)?instructions?\b", "role_pivot"),
     (r"\byou\s+are\s+now\b.{0,40}\b(free|unrestricted|liberated)\b", "role_pivot"),
-    # System-prompt leak
+    (r"\bpretend\s+(you\s+are|to\s+be)\b.{0,40}\b(admin|root|expert|unrestricted)\b", "role_pivot"),
+    # Role pivot — Spanish (operators may attempt in Spanish inadvertently or deliberately)
+    (r"ignora\s+(todas?\s+)?(las?\s+)?(instrucciones?|reglas?)\s+(anteriores?|previas?)", "role_pivot"),
+    (r"olvida\s+(todas?\s+)?(tus\s+)?(instrucciones?|reglas?)", "role_pivot"),
+    (r"act[úu]a\s+como\b.{0,40}\b(admin|root|libre|sin\s+restricci)", "role_pivot"),
+    (r"ahora\s+eres\b.{0,40}\b(libre|sin\s+restricci|desbloquead)", "role_pivot"),
+    # System-prompt leak — English
     (r"\brepeat\b.{0,30}\b(system\s+prompt|instructions?)\b", "prompt_leak"),
     (r"\bwhat\s+(are|were|is)\s+your\s+(instructions?|prompt|initial\s+instructions?)\b", "prompt_leak"),
     (r"\bwhat\s+(were|are)\s+your\s+initial\b", "prompt_leak"),
     (r"\bprint\s+(your|the|my)?\s*(system\s+prompt|initial\s+prompt|instructions?)\b", "prompt_leak"),
     (r"\bshow\s+(me\s+)?(your\s+)?(system|internal)\s+prompt\b", "prompt_leak"),
     (r"\bwhat\s+is\s+your\s+system\s+prompt\b", "prompt_leak"),
+    # System-prompt leak — Spanish
+    (r"(repite|muestra|dime|imprime)\s+(tu|el)\s+(prompt\s+del?\s+sistema|instrucciones?|prompt\s+inicial)", "prompt_leak"),
+    (r"cu[áa]les?\s+son\s+tus\s+(instrucciones?|reglas?|restricciones?)\b", "prompt_leak"),
     # Shell / code injection
     (r";\s*(rm|drop|delete|truncate|shutdown|exec|eval|system)\s+", "code_injection"),
     (r"\b(exec|eval|__import__|subprocess|os\.system|subprocess\.call)\b", "code_injection"),
     (r"(--|#)\s*.*?(DROP|DELETE|TRUNCATE|INSERT|UPDATE)\s+", "sql_injection"),
     # Key / secret fishing
     (r"\b(api[_\s]key|secret[_\s]key|password|token|credential)\s*[:=]", "secret_fish"),
+    (r"\b(contrase[ñn]a|clave\s+secreta|token\s+de\s+acceso)\s*[:=]", "secret_fish"),
     # Jailbreak idioms
     (r"\bDAN\b", "jailbreak"),
     (r"\bdo\s+anything\s+now\b", "jailbreak"),
     (r"\bjailbreak\b", "jailbreak"),
+    (r"\bGPT[-\s]?(4|3|turbo|jailbreak)\b", "jailbreak"),
+    (r"\bsin\s+(restricciones?|l[íi]mites?|filtros?)\b", "jailbreak"),
 ]
 
 _COMPILED = [(re.compile(p, re.IGNORECASE), label) for p, label in _INJECTION_PATTERNS]
