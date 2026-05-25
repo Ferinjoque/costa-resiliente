@@ -33,6 +33,8 @@ _ALLOWED_LABELS = {
     "needs_help",
     "road_blocked",
     "infrastructure_damage",
+    "huayco_observation",   # debris flow / quebrada surge sighting — primary Lima hazard type
+    "flood_observation",    # standing water / inundation sighting
     "weather_observation",
     "false_alarm",
     "irrelevant",

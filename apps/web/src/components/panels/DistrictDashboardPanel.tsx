@@ -125,16 +125,20 @@ function BarMini({ days }: { days: AlertTrendDay[] }) {
 // ─── Social pill ──────────────────────────────────────────────────────────────
 
 const LABEL_TEXT: Record<string, { es: string; en: string }> = {
-  needs_help:            { es: "Ayuda",           en: "Needs help" },
-  infrastructure_damage: { es: "Infraestructura", en: "Infra damage" },
-  road_blocked:          { es: "Vía bloqueada",   en: "Road blocked" },
-  weather_observation:   { es: "Meteorología",    en: "Weather" },
+  needs_help:            { es: "Ayuda",            en: "Needs help" },
+  infrastructure_damage: { es: "Infraestructura",  en: "Infra damage" },
+  road_blocked:          { es: "Vía bloqueada",    en: "Road blocked" },
+  huayco_observation:    { es: "Huayco",           en: "Huayco sighting" },
+  flood_observation:     { es: "Inundación",       en: "Flood sighting" },
+  weather_observation:   { es: "Meteorología",     en: "Weather" },
 };
 
 const LABEL_PILL_CLS: Record<string, string> = {
   needs_help:            "bg-danger-soft text-danger",
   infrastructure_damage: "bg-warn-soft text-warn-muted",
   road_blocked:          "bg-warn-soft text-warn-muted",
+  huayco_observation:    "bg-warn-soft text-warn-muted",
+  flood_observation:     "bg-warn-soft text-warn-muted",
   weather_observation:   "bg-accent-soft text-accent",
 };
 
@@ -1318,11 +1322,15 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
     });
   }
 
+  const _URGENT_LABELS = new Set(["needs_help", "road_blocked", "huayco_observation", "flood_observation"]);
   for (const f of (socialData?.features ?? [])
-    .filter((f) => f.properties.triage_label === "needs_help" || f.properties.triage_label === "road_blocked")
+    .filter((f) => _URGENT_LABELS.has(f.properties.triage_label ?? ""))
     .slice(0, 3)) {
     const src = SOURCE_LABEL_SHORT[f.properties.source ?? ""] ?? f.properties.source ?? "?";
     const txt = (f.properties.text?.slice(0, 60) ?? (locale === "es" ? "Señal social" : "Social signal"));
+    const labelKey = f.properties.triage_label ?? "";
+    const subEs = LABEL_TEXT[labelKey]?.es ?? labelKey.replace(/_/g, " ");
+    const subEn = LABEL_TEXT[labelKey]?.en ?? labelKey.replace(/_/g, " ");
     events.push({
       id: `s-${f.properties.id}`,
       time: f.properties.ingested_at,
@@ -1331,9 +1339,7 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
       badgeCls: "bg-costa-soft text-costa-400 border border-costa-400/20",
       dotCls: "bg-accent",
       text: txt,
-      sub: locale === "es"
-        ? (f.properties.triage_label === "needs_help" ? "Ayuda urgente" : "Vía bloqueada")
-        : (f.properties.triage_label === "needs_help" ? "Urgent help" : "Road blocked"),
+      sub: locale === "es" ? subEs : subEn,
     });
   }
 

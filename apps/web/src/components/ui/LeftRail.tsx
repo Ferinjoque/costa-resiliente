@@ -51,8 +51,9 @@ export function LeftRail() {
   const { data: pendingProposals = [] } = usePendingProposals();
 
   const alertBadge = alerts.filter((a) => a.status === "active").length;
+  const _urgentSet = new Set(["needs_help", "road_blocked", "huayco_observation", "flood_observation"]);
   const socialBadge = (socialData?.features ?? []).filter(
-    (f) => f.properties.triage_label === "needs_help" || f.properties.triage_label === "road_blocked",
+    (f) => _urgentSet.has(f.properties.triage_label ?? ""),
   ).length;
   const proposalsBadge = pendingProposals.filter(
     (p) => p.severity === "critical" || p.severity === "high",

@@ -53,8 +53,9 @@ export function OperationalHUD() {
   const cfg = LEVEL_CONFIG[level];
   const floodKm2   = exposure?.districts.reduce((s, d) => s + d.overlap_km2, 0) ?? 0;
   const affectedPop = exposure?.total_affected_population ?? 0;
+  const _urgentLabels = new Set(["needs_help", "road_blocked", "huayco_observation", "flood_observation"]);
   const urgentSocial = socialData?.features.filter(
-    (f) => f.properties.triage_label === "needs_help" || f.properties.triage_label === "road_blocked",
+    (f) => _urgentLabels.has(f.properties.triage_label ?? ""),
   ).length ?? 0;
   const online = health?.status === "ok" && !apiDown;
 

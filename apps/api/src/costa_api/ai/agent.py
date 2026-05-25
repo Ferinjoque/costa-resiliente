@@ -420,9 +420,14 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         )
 
     if "chunk" in first:
-        # Protocol/RAG rows — synthesise top excerpt
+        # Protocol/RAG rows — synthesise top excerpts (up to 3 most relevant chunks)
         top = first.get("title", "protocolo")
-        excerpt = (first.get("chunk") or "")[:200].strip()
-        return f"Protocolo encontrado: {top}. {excerpt}{'…' if len(first.get('chunk','')) > 200 else ''}"
+        parts = []
+        for r in rows[:3]:
+            chunk = (r.get("chunk") or "").strip()
+            if chunk:
+                parts.append(chunk[:300] + ("…" if len(chunk) > 300 else ""))
+        combined = " ".join(parts)
+        return f"Protocolo encontrado: {top}. {combined}"
 
     return f"Se recuperaron {n} registros. Revise los datos adjuntos."
