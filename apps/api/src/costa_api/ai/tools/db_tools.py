@@ -473,6 +473,9 @@ async def dispatch(tool_name: str, args: dict, db: AsyncSession, rag_fn=None) ->
         return cached
 
     try:
+        # Cap per-tool DB time at 30s (agent has 90s overall; spatial joins can
+        # be expensive if query planner picks a bad plan under concurrent load).
+        await db.execute(text("SET LOCAL statement_timeout = '30000'"))
         # Use inspect.signature to get only declared parameters (not all local vars).
         # co_varnames includes locals too, which could pass unexpected kwargs through.
         valid_params = set(inspect.signature(fn).parameters) - {"db"}
