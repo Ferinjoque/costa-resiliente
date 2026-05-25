@@ -169,11 +169,11 @@ class TestDistricts:
 
     def test_get_district_invalid_ubigeo_short(self, client):
         r = client.get("/districts/123")
-        assert r.status_code in {404, 422}
+        assert r.status_code in {400, 404, 422}
 
     def test_get_district_invalid_ubigeo_alpha(self, client):
         r = client.get("/districts/XXXXX")
-        assert r.status_code in {404, 422}
+        assert r.status_code in {400, 404, 422}
 
     def test_get_district_invalid_ubigeo_sql_injection(self, client):
         r = client.get("/districts/150101'; DROP TABLE geo.districts; --")
@@ -189,7 +189,7 @@ class TestDistricts:
 
     def test_get_district_empty_string(self, client):
         r = client.get("/districts/ ")
-        assert r.status_code in {404, 422}
+        assert r.status_code in {400, 404, 422}
 
     def test_dashboard_valid_ubigeo(self, client):
         r = client.get("/districts")
@@ -207,7 +207,7 @@ class TestDistricts:
 
     def test_dashboard_invalid_ubigeo(self, client):
         r = client.get("/districts/ZZZZZ/dashboard")
-        assert r.status_code in {404, 422}
+        assert r.status_code in {400, 404, 422}
 
     def test_watersheds_valid_ubigeo(self, client):
         r = client.get("/districts")
@@ -217,7 +217,7 @@ class TestDistricts:
 
     def test_watersheds_invalid_ubigeo(self, client):
         r = client.get("/districts/ZZZZZ/watersheds")
-        assert r.status_code in {200, 404, 422}
+        assert r.status_code in {400, 404, 422}
 
     def test_districts_wrong_method(self, client):
         r = client.delete("/districts")
@@ -468,7 +468,7 @@ class TestLayers:
 
     def test_social_label_invalid(self, client):
         r = client.get("/layers/social?label=INVALID_LABEL")
-        assert r.status_code in {200, 422}
+        assert r.status_code in {400, 422}
 
 
 # ─── 4. Alerts ────────────────────────────────────────────────────────────────

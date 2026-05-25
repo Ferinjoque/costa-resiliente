@@ -2,13 +2,19 @@
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.db import get_db
 
 router = APIRouter(prefix="/layers", tags=["layers"])
+
+_SIGNAL_LABELS = {
+    "needs_help", "road_blocked", "infrastructure_damage",
+    "huayco_observation", "flood_observation", "weather_observation",
+    "false_alarm", "irrelevant",
+}
 
 
 def _now_iso() -> str:
@@ -126,7 +132,7 @@ async def imerg_latest(
 
 @router.get("/flood/latest")
 async def flood_latest(
-    limit: int = Query(10, le=50),
+    limit: int = Query(10, ge=1, le=50),
     at: Optional[str] = Query(None, description="Replay reference date ISO (YYYY-MM-DD)"),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
@@ -546,6 +552,8 @@ async def social_signals(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Social signal pins — GeoJSON FeatureCollection for map layer."""
+    if label is not None and label not in _SIGNAL_LABELS:
+        raise HTTPException(400, f"Invalid label. Must be one of: {sorted(_SIGNAL_LABELS)}")
     params: dict = {"hours": hours}
     conditions = [
         "s.triage_label NOT IN ('irrelevant', 'false_alarm')",
