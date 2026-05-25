@@ -1269,9 +1269,10 @@ const SOURCE_LABEL_SHORT: Record<string, string> = {
 };
 
 function IncidentTimeline({ locale }: { locale: Locale }) {
-  const { data: alerts = [] } = useAlerts();
-  const { data: log = [] } = useDecisionLog(20);
-  const { data: socialData } = useSocialSignals(6);
+  const { data: alerts = [], isLoading: alertsLoading } = useAlerts();
+  const { data: log = [], isLoading: logLoading } = useDecisionLog(20);
+  const { data: socialData, isLoading: socialLoading } = useSocialSignals(6);
+  const isLoading = alertsLoading || logLoading || socialLoading;
 
   const events: EventItem[] = [];
   const ATYPE = locale === "es" ? ALERT_TYPE_ES : ALERT_TYPE_EN;
@@ -1350,9 +1351,23 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
   events.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   const top = events.slice(0, 10);
 
-  if (top.length === 0) return null;
-
   const title = locale === "es" ? "Cronología del incidente" : "Incident timeline";
+
+  if (isLoading && top.length === 0) {
+    return (
+      <div>
+        <div className="flex items-center gap-1.5 mb-3">
+          <History size={10} className="text-ink-subtle" aria-hidden="true" />
+          <SectionLabel>{title}</SectionLabel>
+        </div>
+        <p className="text-xs text-ink-muted py-4 text-center animate-pulse" aria-live="polite">
+          {locale === "es" ? "Cargando cronología…" : "Loading timeline…"}
+        </p>
+      </div>
+    );
+  }
+
+  if (top.length === 0) return null;
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", timeZone: "America/Lima" });
 
