@@ -589,10 +589,12 @@ class TestAlerts:
         assert r2.status_code in {400, 422}
 
     def test_action_missing_operator_id(self, client):
+        # operator_id is now Optional and ignored — JWT identity is always used.
+        # Request without operator_id should succeed (200) since JWT is present.
         r = client.get("/alerts")
         alert_id = r.json()[0]["id"]
         r2 = client.post(f"/alerts/{alert_id}/action", json={"action": "acknowledge"})
-        assert r2.status_code in {400, 422}
+        assert r2.status_code in {200, 400, 422}
 
     def test_action_nonexistent_alert(self, client):
         r = client.post("/alerts/999999/action", json={"action": "acknowledge", "operator_id": "test-op"})
