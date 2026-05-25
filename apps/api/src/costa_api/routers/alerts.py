@@ -9,6 +9,19 @@ import csv
 from datetime import datetime, timezone
 from typing import Optional
 
+
+def _parse_iso_dt(s: str | None) -> datetime | None:
+    """Parse an ISO-8601 string (with optional Z suffix) to an aware datetime.
+
+    asyncpg requires actual datetime objects, not raw strings, for timestamp
+    query parameters. Both '2026-05-01T00:00:00Z' and '2026-05-01T00:00:00+00:00'
+    are supported; returns None when s is None or empty.
+    """
+    if not s:
+        return None
+    s = s.strip().replace("Z", "+00:00")
+    return datetime.fromisoformat(s)
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -304,12 +317,14 @@ async def list_decision_log(
     if operator_id:
         conditions.append("dl.operator_id = :op")
         params["op"] = operator_id
-    if since:
+    since_dt = _parse_iso_dt(since)
+    until_dt = _parse_iso_dt(until)
+    if since_dt:
         conditions.append("dl.logged_at >= :since")
-        params["since"] = since
-    if until:
+        params["since"] = since_dt
+    if until_dt:
         conditions.append("dl.logged_at <= :until")
-        params["until"] = until
+        params["until"] = until_dt
 
     where = " AND ".join(conditions)
     rows = await db.execute(
@@ -349,12 +364,14 @@ async def export_decision_log(
     if operator_id:
         conditions.append("dl.operator_id = :op")
         params["op"] = operator_id
-    if since:
+    since_dt = _parse_iso_dt(since)
+    until_dt = _parse_iso_dt(until)
+    if since_dt:
         conditions.append("dl.logged_at >= :since")
-        params["since"] = since
-    if until:
+        params["since"] = since_dt
+    if until_dt:
         conditions.append("dl.logged_at <= :until")
-        params["until"] = until
+        params["until"] = until_dt
 
     where = " AND ".join(conditions)
     rows = await db.execute(
@@ -382,7 +399,7 @@ async def export_decision_log(
         writer.writerow({k: str(v) if v is not None else "" for k, v in rec.items()})
 
     output.seek(0)
-    ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     range_suffix = ""
     if since or until:
         s = (since or "")[:10].replace("-", "")
