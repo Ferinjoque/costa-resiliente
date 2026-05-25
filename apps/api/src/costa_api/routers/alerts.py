@@ -195,6 +195,7 @@ async def act_on_alert(
     }
     new_status = status_map[action.action]
 
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     # Fetch alert metadata needed for notification fan-out before updating.
     # Join districts to get ubigeo for subscriber district_filter matching.
     meta_row = await db.execute(
@@ -375,6 +376,7 @@ async def list_decision_log(
         params["until"] = until_dt
 
     where = " AND ".join(conditions)
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     rows = await db.execute(
         text(f"""
             SELECT dl.id, dl.logged_at, dl.operator_id, dl.action_type,
@@ -423,6 +425,7 @@ async def export_decision_log(
         params["until"] = until_dt
 
     where = " AND ".join(conditions)
+    await db.execute(text("SET LOCAL statement_timeout = '15000'"))
     rows = await db.execute(
         text(f"""
             SELECT dl.id, dl.logged_at, dl.operator_id, dl.action_type,
@@ -488,6 +491,7 @@ async def export_pdf_report(
     except ImportError:
         raise HTTPException(status_code=503, detail="PDF export no disponible — dependencia reportlab no instalada")
 
+    await db.execute(text("SET LOCAL statement_timeout = '15000'"))
     # ── Fetch active alerts ───────────────────────────────────────────────────
     alert_rows = (await db.execute(
         text("""
