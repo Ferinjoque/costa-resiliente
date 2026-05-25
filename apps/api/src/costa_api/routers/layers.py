@@ -67,6 +67,7 @@ async def imerg_latest(
         params["watershed_id"] = watershed_id
 
     # Actual data freshness — time of the most recent IMERG record in DB
+    await db.execute(text("SET LOCAL statement_timeout = '15000'"))
     freshness_row = await db.execute(
         text("SELECT MAX(time) FROM hydro.imerg_accumulations")
     )
@@ -138,6 +139,7 @@ async def flood_latest(
 ) -> dict[str, Any]:
     """Latest SAR flood polygons from ml.flood_polygons. Supports replay via ?at=."""
     ref_time = _parse_replay_time(at)
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     freshness_row = await db.execute(
         text("SELECT MAX(acquired_at) FROM ml.flood_polygons")
     )
@@ -183,6 +185,7 @@ async def flood_latest(
 @router.get("/huayco/susceptibility")
 async def huayco_susceptibility(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """Latest huayco probability per quebrada."""
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     freshness_row = await db.execute(
         text("SELECT MAX(computed_at) FROM ml.huayco_susceptibility")
     )
@@ -238,6 +241,7 @@ async def hazard_zones(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """CENEPRED SIGRID official hazard zone polygons."""
+    await db.execute(text("SET LOCAL statement_timeout = '15000'"))
     freshness_row = await db.execute(
         text("SELECT MAX(loaded_at) FROM geo.hazard_zones")
     )
@@ -372,6 +376,7 @@ async def stations(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Hydro station locations with latest reading."""
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     freshness_row = await db.execute(
         text("SELECT MAX(time) FROM hydro.station_observations")
     )
@@ -382,8 +387,6 @@ async def stations(
     if source:
         where = "WHERE s.source = :source"
         params["source"] = source
-
-    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     result = await db.execute(
         text(f"""
             SELECT
@@ -436,6 +439,7 @@ async def stations(
 @router.get("/watersheds")
 async def watersheds(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """All Lima watersheds as GeoJSON."""
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     result = await db.execute(
         text("""
             SELECT id, name, river, area_km2,
@@ -469,6 +473,7 @@ async def watersheds(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
 @router.get("/quebradas")
 async def quebradas(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """All Lima priority quebradas with thresholds."""
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     result = await db.execute(
         text("""
             SELECT q.id, q.name, q.priority, q.threshold_24h_mm,
@@ -504,6 +509,7 @@ async def quebradas(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
 @router.get("/flood/exposure")
 async def flood_exposure(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """Population at risk — spatial join of recent flood polygons × districts."""
+    await db.execute(text("SET LOCAL statement_timeout = '30000'"))
     result = await db.execute(
         text("""
             SELECT
