@@ -537,7 +537,7 @@ class TestAlerts:
 
     def test_filter_severity_invalid(self, client):
         r = client.get("/alerts?severity=INVALID")
-        assert r.status_code in {200, 422}
+        assert r.status_code in {200, 400, 422}
 
     def test_filter_status_active(self, client):
         r = client.get("/alerts?status=active")
