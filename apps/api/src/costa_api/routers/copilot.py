@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,10 +39,10 @@ router = APIRouter(prefix="/copilot", tags=["copilot"])
 # ─── Request / Response ───────────────────────────────────────────────────────
 
 class CopilotQuery(BaseModel):
-    query: str
-    district_ubigeo: Optional[str] = None
-    operator_id: str
-    session_id: Optional[str] = None
+    query: str = Field(..., min_length=1, max_length=5000)
+    district_ubigeo: Optional[str] = Field(None, max_length=12)
+    operator_id: str = Field(..., min_length=1, max_length=100)
+    session_id: Optional[str] = Field(None, max_length=64)
 
 
 class CopilotResponse(BaseModel):

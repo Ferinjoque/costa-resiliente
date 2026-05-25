@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { useApiHealth } from "@/lib/queries";
+import { useUIStore } from "@/store/ui";
 import { LeftRail } from "@/components/ui/LeftRail";
 import { ScenarioPanel } from "@/components/panels/ScenarioPanel";
 import { AlertsPanel } from "@/components/panels/AlertsPanel";
@@ -15,7 +17,6 @@ import { LiveTicker } from "@/components/map/LiveTicker";
 import { ShareLoader } from "@/components/panels/ShareLoader";
 import { FusionCallout } from "@/components/panels/FusionCallout";
 import { DistrictDashboardPanel } from "@/components/panels/DistrictDashboardPanel";
-import { useUIStore } from "@/store/ui";
 import { useAlertStream } from "@/lib/useAlertStream";
 import { ToastStack } from "@/components/ui/ToastStack";
 import { SocialFeedPanel } from "@/components/panels/SocialFeedPanel";
@@ -82,6 +83,25 @@ function AlertStreamMount() {
   return null;
 }
 
+function DemoBanner() {
+  const { isError, isPending } = useApiHealth();
+  const locale = useUIStore((s) => s.locale);
+  if (isPending || !isError) return null;
+  return (
+    <div
+      role="alert"
+      aria-live="polite"
+      className="absolute top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 py-1 text-xs font-semibold pointer-events-none select-none"
+      style={{ background: "oklch(80% 0.17 85 / 0.92)", color: "oklch(25% 0.05 85)" }}
+    >
+      <span aria-hidden="true">⚠</span>
+      {locale === "en"
+        ? "API unavailable — displaying cached demo data. Live alerts and sensor readings are not updating."
+        : "API no disponible — mostrando datos de demostración. Alertas y sensores no se actualizan en tiempo real."}
+    </div>
+  );
+}
+
 function FirstRunTrigger() {
   const { setTutorialOpen, setScenario } = useUIStore();
   useEffect(() => {
@@ -117,6 +137,7 @@ export default function Home() {
         className="relative flex-1 overflow-hidden pb-14 sm:pb-0 bg-canvas"
         aria-label="Mapa y paneles operacionales"
       >
+        <DemoBanner />
         {/* Fullscreen map */}
         <div className="absolute inset-0 z-0">
           <Suspense fallback={

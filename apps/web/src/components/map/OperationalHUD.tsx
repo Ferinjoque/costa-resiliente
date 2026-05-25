@@ -163,8 +163,8 @@ export function OperationalHUD() {
             </span>
           )}
           {!online && (
-            <span className="ml-1 text-2xs font-medium text-ink-subtle bg-surface-sunken px-1.5 py-0.5 rounded-full">
-              DEMO
+            <span className="ml-1 text-2xs font-semibold text-warn bg-warn-soft px-1.5 py-0.5 rounded-full animate-pulse" title={locale === "en" ? "API unavailable — showing demo data" : "API no disponible — mostrando datos de demostración"}>
+              {locale === "en" ? "DEMO DATA" : "DATOS DEMO"}
             </span>
           )}
         </div>

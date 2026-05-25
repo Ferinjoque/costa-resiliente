@@ -70,8 +70,10 @@ async def submit_field_report(body: FieldReport, db: AsyncSession = Depends(get_
         if row:
             district_id = row.id
 
+    # Hash excludes timestamp so identical text from same operator deduplicates
+    # even if submitted multiple times (e.g., double-click or network retry).
     content_hash = hashlib.sha256(
-        f"campo:{body.operator_id}:{text_clean}:{datetime.now(timezone.utc).isoformat()}".encode()
+        f"campo:{body.operator_id}:{text_clean}".encode()
     ).hexdigest()
     expires_at = datetime.now(timezone.utc) + timedelta(days=30)
 

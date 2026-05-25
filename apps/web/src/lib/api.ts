@@ -280,6 +280,7 @@ export async function actOnAlert(
 ): Promise<{ alert_id: number; new_status: string }> {
   const res = await fetch(`${BASE}/api/v1/alerts/${alertId}/action`, {
     method: "POST",
+    signal: AbortSignal.timeout(30_000),
     headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
     body: JSON.stringify({ operator_id: operatorId, action, note }),
   });
@@ -297,6 +298,7 @@ export async function logDecision(entry: {
   try {
     await fetch(`${BASE}/api/v1/alerts/log`, {
       method: "POST",
+      signal: AbortSignal.timeout(5_000),
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(entry),
     });
@@ -425,6 +427,7 @@ export async function mintShareToken(
 ): Promise<MintShareResponse> {
   const res = await fetch(`${BASE}/api/v1/share`, {
     method: "POST",
+    signal: AbortSignal.timeout(30_000),
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ scenario }),
   });
@@ -665,6 +668,7 @@ export async function createNotificationSubscriber(
 ): Promise<NotificationSubscriber> {
   const res = await fetch(`${BASE}/api/v1/notifications`, {
     method: "POST",
+    signal: AbortSignal.timeout(30_000),
     headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
     body: JSON.stringify(body),
   });
@@ -678,6 +682,7 @@ export async function createNotificationSubscriber(
 export async function deleteNotificationSubscriber(id: number): Promise<void> {
   const res = await fetch(`${BASE}/api/v1/notifications/${id}`, {
     method: "DELETE",
+    signal: AbortSignal.timeout(30_000),
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error(`deleteSubscriber → ${res.status}`);
@@ -707,6 +712,7 @@ export async function loginOperator(username: string, password: string): Promise
   const form = new URLSearchParams({ username, password, grant_type: "password" });
   const res = await fetch(`${BASE}/api/v1/auth/token`, {
     method: "POST",
+    signal: AbortSignal.timeout(10_000),
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: form.toString(),
   });
@@ -750,6 +756,7 @@ export async function approveProposal(
 ): Promise<{ alert_id: number; proposal_id: number; status: string }> {
   const res = await fetch(`${BASE}/api/v1/proposals/${id}/approve`, {
     method: "POST",
+    signal: AbortSignal.timeout(30_000),
     headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     body: JSON.stringify({ operator_id: operatorId, notes }),
   });
@@ -764,6 +771,7 @@ export async function rejectProposal(
 ): Promise<{ proposal_id: number; status: string }> {
   const res = await fetch(`${BASE}/api/v1/proposals/${id}/reject`, {
     method: "POST",
+    signal: AbortSignal.timeout(30_000),
     headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     body: JSON.stringify({ operator_id: operatorId, notes }),
   });
@@ -792,6 +800,7 @@ export async function submitFieldReport(
 ): Promise<FieldReportResponse> {
   const res = await fetch(`${BASE}/api/v1/social/field-report`, {
     method: "POST",
+    signal: AbortSignal.timeout(30_000),
     headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     body: JSON.stringify(body),
   });
