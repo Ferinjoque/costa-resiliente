@@ -36,6 +36,7 @@ _DEFAULT_SECRETS = {
     "dev-secret-change-me",
     "dev-share-secret-change-me",
     "change_me_in_production",
+    "costa-dev-secret-change-in-prod",
 }
 
 
@@ -43,6 +44,7 @@ def _warn_default_secrets() -> None:
     """Log loud warnings if any secrets still use default placeholder values."""
     checks = {
         "APP_SECRET_KEY": settings.app_secret_key,
+        "JWT_SECRET": settings.jwt_secret,
         "SHARE_TOKEN_SECRET": settings.share_token_secret,
         "POSTGRES_PASSWORD": settings.postgres_password,
         "POSTGRES_AI_PASSWORD": settings.postgres_ai_password,
