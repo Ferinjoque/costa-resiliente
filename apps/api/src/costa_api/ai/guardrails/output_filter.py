@@ -29,8 +29,8 @@ _REDACT_PATTERNS: list[tuple[str, str, str]] = [
     (r"\b(AKIA|ASIA|AROA|AIDA|ANPA|ANVA|APKA)[A-Z0-9]{16}\b", "[REDACTED_AWS_KEY]", "aws_key"),
     # Postgres / Redis / Minio connection strings with passwords
     (r"(postgresql|redis|mysql|amqp)://[^:]+:[^@\s]+@", r"\1://[REDACTED]@", "conn_string"),
-    # Peru DNI: exactly 8 digits (not part of larger number)
-    (r"(?<!\d)\d{8}(?!\d)", "[DNI_REDACTED]", "dni"),
+    # Peru DNI: 8 digits preceded by DNI-context keyword (avoids redacting population/area counts)
+    (r"(?:DNI|D\.N\.I\.?|documento\s+de\s+identidad|n[°º]\.?\s+de\s+identidad)\s*:?\s*(\d{8})\b", "[DNI_REDACTED]", "dni"),
     # Email addresses
     (r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", "[EMAIL_REDACTED]", "email"),
 ]
