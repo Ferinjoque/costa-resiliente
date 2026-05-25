@@ -38,7 +38,7 @@ TOOL_SCHEMAS: list[dict] = [
                 "properties": {
                     "hours_back": {
                         "type": "integer",
-                        "description": "Horas hacia atrás desde ahora. Mínimo 1, máximo 168.",
+                        "description": "Horas hacia atrás desde ahora. Mínimo 1, máximo 240.",
                         "default": 168,
                     },
                     "district_name": {
@@ -200,8 +200,8 @@ TOOL_SCHEMAS: list[dict] = [
                 "properties": {
                     "hours_back": {
                         "type": "integer",
-                        "description": "Horas hacia atrás para polígonos de inundación.",
-                        "default": 168,
+                        "description": "Horas hacia atrás para polígonos de inundación. Máximo 240.",
+                        "default": 240,
                     },
                 },
                 "required": [],
@@ -214,7 +214,7 @@ TOOL_SCHEMAS: list[dict] = [
 # ─── Tool implementations ─────────────────────────────────────────────────────
 
 async def get_flood_polygons(db: AsyncSession, hours_back: int = 168, district_name: str | None = None) -> list[dict]:
-    hours_back = min(max(int(hours_back), 1), 168)
+    hours_back = min(max(int(hours_back), 1), 240)
     sql = text("""
         SELECT fp.scene_id, fp.acquired_at, fp.confidence,
                fp.area_km2, fp.model_version,
@@ -322,13 +322,13 @@ async def get_social_clusters(db: AsyncSession, hours_back: int = 24, district_n
     return [dict(r._mapping) for r in result]
 
 
-async def get_infrastructure_impact(db: AsyncSession, hours_back: int = 24) -> list[dict]:
-    hours_back = min(max(int(hours_back), 1), 168)
+async def get_infrastructure_impact(db: AsyncSession, hours_back: int = 240) -> list[dict]:
+    hours_back = min(max(int(hours_back), 1), 240)
     sql = text("""
         SELECT i.type, i.name, d.name AS district,
                fp.acquired_at, fp.confidence AS flood_confidence
         FROM geo.infrastructure i
-        JOIN ml.flood_polygons fp ON ST_Intersects(i.geom, fp.geom)
+        JOIN ml.flood_polygons fp ON ST_Intersects(ST_MakeValid(i.geom), ST_MakeValid(fp.geom))
         LEFT JOIN geo.districts d ON d.id = i.district_id
         WHERE fp.acquired_at >= NOW() - make_interval(hours => :hours)
         ORDER BY fp.acquired_at DESC LIMIT 20
@@ -399,9 +399,9 @@ async def get_active_alerts(db: AsyncSession, severity: str | None = None) -> li
     return rows
 
 
-async def get_population_at_risk(db: AsyncSession, hours_back: int = 168) -> list[dict]:
+async def get_population_at_risk(db: AsyncSession, hours_back: int = 240) -> list[dict]:
     """Intersect flood polygons with district census to estimate population at risk."""
-    hours_back = min(max(int(hours_back), 1), 168)
+    hours_back = min(max(int(hours_back), 1), 240)
     sql = text("""
         SELECT d.ubigeo, d.name AS district,
                d.population AS district_population,
@@ -410,8 +410,8 @@ async def get_population_at_risk(db: AsyncSession, hours_back: int = 168) -> lis
                ROUND(
                    (d.population *
                     LEAST(
-                        ST_Area(ST_Intersection(ST_Union(fp.geom), d.geom)::geography) /
-                        NULLIF(ST_Area(d.geom::geography), 0),
+                        ST_Area(ST_Intersection(ST_Union(ST_MakeValid(fp.geom)), ST_MakeValid(d.geom))::geography) /
+                        NULLIF(ST_Area(ST_MakeValid(d.geom)::geography), 0),
                         1.0
                     )
                    )::numeric, 0

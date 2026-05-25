@@ -71,7 +71,7 @@ async def test_direct_answer_no_tools():
         )
 
         result = await agent_run(
-            query="¿Cuál es el protocolo de evacuación en Ate?",
+            query="Compara la magnitud de esta emergencia con el evento de 1998",
             operator_id="op1",
             db=db,
         )
@@ -152,7 +152,7 @@ async def test_output_guardrail_redacts_key():
         )
 
         result = await agent_run(
-            query="¿Cuál es el protocolo de monitoreo hidrológico?",
+            query="Resume la situación de riesgo en las últimas 6 horas",
             operator_id="op1",
             db=db,
         )
@@ -309,7 +309,7 @@ async def test_parallel_tool_execution():
         )
 
         result = await agent_run(
-            query="¿Cuántas inundaciones y alertas hay actualmente?",
+            query="Describe el impacto conjunto de los fenómenos registrados hoy",
             operator_id="op1",
             db=db,
         )

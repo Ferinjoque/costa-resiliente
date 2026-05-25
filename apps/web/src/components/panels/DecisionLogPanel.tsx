@@ -230,8 +230,14 @@ export function DecisionLogPanel() {
         )}
 
         {isError && (
-          <li className="px-4 py-8 text-xs text-danger text-center" role="alert">
-            {errorText}
+          <li className="px-4 py-8 flex flex-col items-center gap-2" role="alert">
+            <span className="text-xs text-danger text-center">{errorText}</span>
+            <button
+              onClick={() => refetch()}
+              className="text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"
+            >
+              {locale === "es" ? "Reintentar" : "Retry"}
+            </button>
           </li>
         )}
 

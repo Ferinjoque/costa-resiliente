@@ -79,6 +79,13 @@ async def _do_restore(snap: dict) -> None:
             )
 
         # 5. Delete alert rows that didn't exist before tests (unlikely but safe)
+        #    Must delete notification_deliveries referencing those alerts first
+        #    (FK has no ON DELETE CASCADE).
+        await pool.execute(
+            "DELETE FROM ops.notification_deliveries WHERE alert_id IN "
+            "(SELECT id FROM ops.alerts WHERE created_at >= $1)",
+            snap["test_start"],
+        )
         await pool.execute(
             "DELETE FROM ops.alerts WHERE created_at >= $1",
             snap["test_start"],

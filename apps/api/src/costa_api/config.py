@@ -66,7 +66,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("LLM_FAST_MODEL", "OLLAMA_FALLBACK_MODEL"),
     )
     llm_embed_model: str = "nomic-embed-text"
-    llm_timeout_chat: float = 30.0   # 30s per call; keyword fallback handles slowness
+    llm_timeout_chat: float = 45.0   # 45s per call; CPU-only Qwen2.5-7B needs ~20-25s with 2-3 tools
     llm_timeout_embed: float = 10.0
     llm_max_tool_iters: int = 4
     llm_daily_token_budget: int = 500_000
