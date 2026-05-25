@@ -220,3 +220,95 @@ async def test_tampered_token_returns_401():
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         resp = await c.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {tampered}"})
     assert resp.status_code == 401
+
+
+# ─── POST /auth/operators ─────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_create_operator_as_coen_succeeds():
+    token = await _login("coen_lima")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/auth/operators",
+            json={
+                "username": "test_coel_temp",
+                "full_name": "Test COEL temp",
+                "role": "coel",
+                "district_ubigeo": "150101",
+                "password": "testpass99",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["username"] == "test_coel_temp"
+    assert body["role"] == "coel"
+    assert body["district_ubigeo"] == "150101"
+    assert "password_hash" not in body
+
+
+@pytest.mark.asyncio
+async def test_create_operator_as_coel_forbidden():
+    token = await _login("coel_sjl")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/auth/operators",
+            json={
+                "username": "test_extra_op",
+                "full_name": "Should fail",
+                "role": "coel",
+                "district_ubigeo": "150101",
+                "password": "testpass99",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_create_operator_invalid_role_returns_422():
+    token = await _login("coen_lima")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/auth/operators",
+            json={
+                "username": "test_bad_role",
+                "full_name": "Bad role",
+                "role": "admin",
+                "password": "testpass99",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_create_coel_without_district_returns_422():
+    token = await _login("coen_lima")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/auth/operators",
+            json={
+                "username": "test_coel_nodist",
+                "full_name": "COEL without district",
+                "role": "coel",
+                "password": "testpass99",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_create_operator_without_auth_returns_401():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/auth/operators",
+            json={
+                "username": "test_noauth",
+                "full_name": "No auth",
+                "role": "coer",
+                "password": "testpass99",
+            },
+        )
+    assert resp.status_code == 401

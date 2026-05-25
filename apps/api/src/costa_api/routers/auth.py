@@ -275,6 +275,7 @@ async def issue_token(
     _rl: None = Depends(_check_rate_limit),
 ) -> TokenResponse:
     """Issue a JWT for username+password."""
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     result = await db.execute(
         text("SELECT id, password_hash, full_name, role, district_ubigeo, active FROM ops.operators WHERE username = :u"),
         {"u": form.username},
@@ -335,6 +336,8 @@ async def create_operator(
     valid_roles = {"coen", "coer", "coel"}
     if body.role not in valid_roles:
         raise HTTPException(status_code=422, detail=f"role must be one of: {', '.join(sorted(valid_roles))}")
+    if body.role == "coel" and not body.district_ubigeo:
+        raise HTTPException(status_code=422, detail="COEL operators require a district_ubigeo.")
     row = await db.execute(
         text("""
             INSERT INTO ops.operators (username, full_name, role, district_ubigeo, password_hash)
