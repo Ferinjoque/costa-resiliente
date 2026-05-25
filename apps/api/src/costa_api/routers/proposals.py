@@ -17,12 +17,13 @@ import json
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.db import get_db
+from costa_api.routers.notifications import fan_out_notifications
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/proposals", tags=["proposals"])
@@ -105,6 +106,7 @@ async def create_proposal(body: ProposalCreate, db: AsyncSession = Depends(get_d
 async def approve_proposal(
     proposal_id: int,
     review: ProposalReview,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     # Atomically claim the proposal — prevents double-approve race condition.
@@ -162,6 +164,18 @@ async def approve_proposal(
         {"op": review.operator_id, "payload": payload_json},
     )
     await db.commit()
+
+    # Notify subscribers for high/critical approved alerts
+    if p["severity"] in ("critical", "high"):
+        background_tasks.add_task(
+            fan_out_notifications,
+            alert_id=alert_id,
+            alert_severity=p["severity"],
+            alert_title=p["title"],
+            alert_district_ubigeo=p["district_ubigeo"],
+            trigger_event="proposal_approved",
+        )
+
     return {"alert_id": alert_id, "proposal_id": proposal_id, "status": "approved"}
 
 
