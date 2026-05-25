@@ -139,7 +139,7 @@ export const DEMO_ALERTS: Alert[] = [
     severity: "critical",
     status: "active",
     title: "Riesgo crítico de huayco — Quebrada Jicamarca",
-    description: "Precipitación acumulada 24h supera umbral (42 mm). Modelo XGBoost: probabilidad 0.91.",
+    description: "Precipitación acumulada 72h supera umbral CRÍTICO ANA (>50 mm/72h). Modelo XGBoost: probabilidad 0.91.",
     district_id: 1,
     lat: -11.955,
     lng: -76.845,
@@ -287,23 +287,23 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Qué quebradas tienen riesgo alto de huayco?": {
-    answer: "Las quebradas con riesgo alto de huayco en las últimas 24 horas:\n\n• **Quebrada Jicamarca** (Lurigancho): probabilidad 0.91 — precipitación 24h superó umbral (42 mm). EVACUACIÓN PREVENTIVA recomendada.\n• **Quebrada Pedregal** (Carabayllo): probabilidad 0.74 — suelo saturado, slope 28°.\n• **Quebrada Quirio** (Ate): probabilidad 0.61 — señales sociales de bloqueo vial confirmadas.\n\nFuente: Modelo XGBoost entrenado en SINPAD 2003–2020 + IMERG NASA.",
+    answer: "Las quebradas con riesgo alto de huayco en las últimas 24 horas:\n\n• **Quebrada Jicamarca** (Lurigancho): probabilidad 0.91 — precipitación 24h superó umbral ANA (28.2 mm > 15 mm/24h). EVACUACIÓN PREVENTIVA recomendada.\n• **Quebrada Pedregal** (Carabayllo): probabilidad 0.74 — suelo saturado, slope 28°.\n• **Quebrada Quirio** (Ate): probabilidad 0.61 — señales sociales de bloqueo vial confirmadas.\n\nFuente: Modelo XGBoost entrenado en SINPAD 2003–2020 + IMERG NASA.",
     intent: "huayco_risk",
     confidence: 0.89,
     query_plan: "huayco_high_risk_quebradas",
     sources: [
-      { quebrada: "Jicamarca", probability: 0.91, district: "Lurigancho", threshold_mm: 42 },
+      { quebrada: "Jicamarca", probability: 0.91, district: "Lurigancho", threshold_mm: 15 },
       { quebrada: "Pedregal", probability: 0.74, district: "Carabayllo", slope_deg: 28 },
       { quebrada: "Quirio", probability: 0.61, district: "Ate", social_signals: 3 },
     ],
   },
   "¿Cuánta lluvia acumulada hubo en el Rímac en las últimas 72h?": {
-    answer: "Lluvia acumulada en la cuenca del Rímac (últimas 72 horas, fuente NASA IMERG Early Run):\n\n• **Total cuenca**: 63.4 mm — muy por encima del umbral de alerta (42 mm).\n• **Pico**: 28.2 mm en la madrugada del 15 de marzo (03:00–06:00 Lima).\n• **Estación Chosica (ANA)**: nivel del río 2.4 m, caudal 185 m³/s.\n• **Estación Chaclacayo**: nivel 1.8 m, tendencia ascendente.\n\nEstado: ALERTA HIDROLÓGICA activa para cuenca Rímac.",
+    answer: "Lluvia acumulada en la cuenca del Rímac (últimas 72 horas, fuente NASA IMERG Early Run):\n\n• **Total cuenca**: 63.4 mm — ⚠ EMERGENCIA, supera umbral CRÍTICO ANA (>50 mm/72h).\n• **Pico**: 28.2 mm en la madrugada del 15 de marzo (03:00–06:00 Lima).\n• **Estación Chosica (ANA)**: nivel del río 2.4 m, caudal 185 m³/s.\n• **Estación Chaclacayo**: nivel 1.8 m, tendencia ascendente.\n\nEstado: EMERGENCIA HIDROLÓGICA activa para cuenca Rímac.",
     intent: "rainfall_accumulation",
     confidence: 0.94,
     query_plan: "imerg_72h_watershed",
     sources: [
-      { watershed: "Rímac", accumulation_mm: 63.4, hours: 72, threshold_mm: 42 },
+      { watershed: "Rímac", accumulation_mm: 63.4, hours: 72, threshold_mm: 50 },
       { station: "Chosica", level_m: 2.4, flow_m3s: 185, status: "alert" },
     ],
   },
@@ -361,12 +361,12 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuánta precipitación es necesaria para activar un huayco en Jicamarca?": {
-    answer: "Umbral de activación de huayco — Quebrada Jicamarca:\n\n• **Umbral crítico 24h**: 42 mm/24h (calibrado con eventos SINPAD 2003–2020).\n• **Precipitación actual**: 63.4 mm/72h en cuenca alta del Rímac.\n• **Última 24h**: 28.2 mm (67% del umbral crítico).\n• **Probabilidad modelo XGBoost**: 0.91 — RIESGO CRÍTICO.\n• **Variables adicionales**: suelo saturado (3 días consecutivos de lluvia), pendiente 35°, litología friable.\n\nEl umbral fue superado a las 03:00 Lima del 15 de marzo.\n\nFuente: Modelo XGBoost entrenado en SINPAD × IMERG NASA × DEM SRTM.",
+    answer: "Umbral de activación de huayco — Quebrada Jicamarca:\n\n• **Umbral ANA alerta 24h**: 15 mm/24h. **Umbral ANA crítico 72h**: 50 mm/72h.\n• **Precipitación actual**: 63.4 mm/72h en cuenca alta del Rímac — ⚠ EMERGENCIA.\n• **Última 24h**: 28.2 mm (188% del umbral de alerta 24h — superado).\n• **Probabilidad modelo XGBoost**: 0.91 — RIESGO CRÍTICO.\n• **Variables adicionales**: suelo saturado (3 días consecutivos de lluvia), pendiente 35°, litología friable.\n\nEl umbral fue superado a las 03:00 Lima del 15 de marzo.\n\nFuente: Modelo XGBoost entrenado en SINPAD × IMERG NASA × DEM SRTM.",
     intent: "huayco_risk",
     confidence: 0.93,
     query_plan: "huayco_threshold_analysis",
     sources: [
-      { quebrada: "Jicamarca", threshold_24h_mm: 42, current_24h_mm: 28.2, probability: 0.91, slope_deg: 35 },
+      { quebrada: "Jicamarca", threshold_24h_mm: 15, current_24h_mm: 28.2, probability: 0.91, slope_deg: 35 },
     ],
   },
   "¿Cuál es el pronóstico para las próximas 24 horas?": {
@@ -492,7 +492,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
   // ─── English-locale responses (matched by suggestion click) ──────────────────
 
   "What are the active alerts right now?": {
-    answer: "Currently active alerts — Lima Metropolitan Area:\n\n1. **[CRITICAL] Huayco — Quebrada Jicamarca** (Lurigancho): XGBoost probability 0.91, 63 mm rain in 72h exceeds 42 mm threshold. Preventive evacuation recommended.\n2. **[HIGH] SAR Flood — Huachipa** (Ate): 1.8 km² active flood polygon, 24,600 people in flood zone.\n3. **[HIGH] Chillón River Overflow** (Carabayllo): Level 3.1 m at Carabayllo station (threshold: 2.5 m).\n4. **[HIGH] Social Cluster — SJL sector 3**: 12 urgent help signals in 3h, geo-clustered, PII redacted.\n\n**SINAGERD Level: EMERGENCY** — 1 critical alert active.\n\nSource: SAR Sentinel-1 + ANA stations + Bluesky/Reddit triage.",
+    answer: "Currently active alerts — Lima Metropolitan Area:\n\n1. **[CRITICAL] Huayco — Quebrada Jicamarca** (Lurigancho): XGBoost probability 0.91, 63 mm rain in 72h exceeds ANA EMERGENCIA threshold (50 mm/72h). Preventive evacuation recommended.\n2. **[HIGH] SAR Flood — Huachipa** (Ate): 1.8 km² active flood polygon, 24,600 people in flood zone.\n3. **[HIGH] Chillón River Overflow** (Carabayllo): Level 3.1 m at Carabayllo station (threshold: 2.5 m).\n4. **[HIGH] Social Cluster — SJL sector 3**: 12 urgent help signals in 3h, geo-clustered, PII redacted.\n\n**SINAGERD Level: EMERGENCY** — 1 critical alert active.\n\nSource: SAR Sentinel-1 + ANA stations + Bluesky/Reddit triage.",
     intent: "flood_status",
     confidence: 0.92,
     query_plan: "active_alerts_summary",
@@ -525,12 +525,12 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "What is the forecast for the next 24 hours?": {
-    answer: "72-hour rainfall forecast — Lima watersheds (SENAMHI WRF model):\n\n• **+6h**: Rímac 8.5 mm — LOW risk\n• **+12h**: Rímac 15.8 mm — MODERATE risk, huayco prob. 28%\n• **+24h**: Rímac 31.2 mm — **HIGH risk**, huayco prob. 52%\n• **+48h**: Rímac 48.5 mm — **HIGH risk**, prob. 71% ⚠️ exceeds 42 mm threshold\n• **+72h**: Rímac 64.2 mm — **HIGH risk**, prob. 82%\n\n**PRE-ALERT**: Huayco activation threshold (42 mm) will be exceeded at the +24h mark.\n\n**Recommendation**: Pre-position USAR teams in Jicamarca and activate shelter protocols in Lurigancho and Carabayllo sectors.\n\nSource: SENAMHI WRF model + NASA IMERG Early Run.",
+    answer: "72-hour rainfall forecast — Lima watersheds (SENAMHI WRF model):\n\n• **+6h**: Rímac 8.5 mm — LOW risk\n• **+12h**: Rímac 15.8 mm — MODERATE risk, huayco prob. 28%\n• **+24h**: Rímac 31.2 mm — **ALERTA** (>25 mm/72h ANA), huayco prob. 52%\n• **+48h**: Rímac 48.5 mm — **ALERTA**, prob. 71%\n• **+72h**: Rímac 64.2 mm — **EMERGENCIA** ⚠️ exceeds 50 mm/72h critical threshold, prob. 82%\n\n**PRE-ALERT**: ANA ALERTA threshold (25 mm/72h) crossed at +24h mark; EMERGENCIA (50 mm/72h) projected at +72h.\n\n**Recommendation**: Pre-position USAR teams in Jicamarca and activate shelter protocols in Lurigancho and Carabayllo sectors.\n\nSource: SENAMHI WRF model + NASA IMERG Early Run.",
     intent: "rainfall_forecast",
     confidence: 0.88,
     query_plan: "rainfall_forecast_72h",
     sources: [
-      { watershed: "Rímac", hours_24: 31.2, hours_48: 48.5, hours_72: 64.2, threshold_mm: 42 },
+      { watershed: "Rímac", hours_24: 31.2, hours_48: 48.5, hours_72: 64.2, threshold_mm: 25 },
       { watershed: "Chillón", hours_24: 18.7, hours_48: 28.3, hours_72: 38.9, threshold_mm: 35 },
     ],
   },
