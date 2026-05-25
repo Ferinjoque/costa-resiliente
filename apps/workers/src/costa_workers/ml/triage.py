@@ -211,48 +211,57 @@ async def run_triage_pipeline(
             if i > 0:
                 await asyncio.sleep(0.8)
 
-            result = await triage_signal(
-                content=row["content_redacted"],
-                ollama_host=ollama_host,
-                model=model,
-            )
-            now = datetime.now(timezone.utc)
-            processed += 1
+            try:
+                result = await triage_signal(
+                    content=row["content_redacted"],
+                    ollama_host=ollama_host,
+                    model=model,
+                )
+                now = datetime.now(timezone.utc)
+                processed += 1
 
-            if result is None:
-                # Quarantine: mark triage_at so we don't retry endlessly
+                if result is None:
+                    # Quarantine: mark triage_at so we don't retry endlessly
+                    await pool.execute(
+                        """
+                        UPDATE social.signals
+                        SET triage_at = $1, triage_model = $2
+                        WHERE id = $3
+                        """,
+                        now, model, row["id"],
+                    )
+                    quarantined += 1
+                    continue
+
+                try:
+                    district_id = await _resolve_district_id(pool, result.district_name)
+                except Exception as exc:
+                    logger.warning("District lookup failed for signal %d: %s", row["id"], exc)
+                    district_id = None
+
                 await pool.execute(
                     """
                     UPDATE social.signals
-                    SET triage_at = $1, triage_model = $2
-                    WHERE id = $3
+                    SET triage_label     = $1,
+                        triage_confidence = $2,
+                        triage_model     = $3,
+                        triage_at        = $4,
+                        district_id      = COALESCE($5, district_id),
+                        location_raw     = COALESCE($6, location_raw)
+                    WHERE id = $7
                     """,
-                    now, model, row["id"],
+                    result.label.value,
+                    result.confidence,
+                    model,
+                    now,
+                    district_id,
+                    result.location_entity,
+                    row["id"],
                 )
+                labelled += 1
+            except Exception as exc:
+                logger.error("Signal %d failed processing, skipping: %s", row["id"], exc)
                 quarantined += 1
-                continue
-
-            district_id = await _resolve_district_id(pool, result.district_name)
-            await pool.execute(
-                """
-                UPDATE social.signals
-                SET triage_label     = $1,
-                    triage_confidence = $2,
-                    triage_model     = $3,
-                    triage_at        = $4,
-                    district_id      = COALESCE($5, district_id),
-                    location_raw     = COALESCE($6, location_raw)
-                WHERE id = $7
-                """,
-                result.label.value,
-                result.confidence,
-                model,
-                now,
-                district_id,
-                result.location_entity,
-                row["id"],
-            )
-            labelled += 1
 
         logger.info(
             "Triage pipeline: %d processed, %d labelled, %d quarantined",
