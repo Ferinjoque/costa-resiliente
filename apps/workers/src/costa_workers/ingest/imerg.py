@@ -451,11 +451,13 @@ def _write_imerg_heartbeat() -> None:
         import redis as _redis
         redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
         r = _redis.from_url(redis_url, decode_responses=True, socket_timeout=2)
-        r.set(
-            "costa:scraper:last_run:imerg",
-            datetime.now(timezone.utc).isoformat(),
-            ex=3600,  # 1h — 2× the 30min schedule; stale if flow stops
-        )
-        r.close()
+        try:
+            r.set(
+                "costa:scraper:last_run:imerg",
+                datetime.now(timezone.utc).isoformat(),
+                ex=3600,  # 1h — 2× the 30min schedule; stale if flow stops
+            )
+        finally:
+            r.close()
     except Exception:
         pass

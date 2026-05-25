@@ -504,16 +504,18 @@ async def _write_scraper_heartbeats(results: list) -> None:
     try:
         import redis.asyncio as aioredis
         r = aioredis.from_url(redis_url, decode_responses=True, socket_timeout=2)
-        now_iso = datetime.now(timezone.utc).isoformat()
-        # results[0]=bluesky, [1]=rss, [2]=reddit, [3]=telegram (order matches gather)
-        source_order = ["bluesky", "rss", "reddit", "telegram"]
-        for i, source in enumerate(source_order):
-            if i < len(results) and not isinstance(results[i], Exception):
-                await r.set(
-                    f"costa:scraper:last_run:{source}",
-                    now_iso,
-                    ex=3600,  # expire after 1h so stale keys don't mislead
-                )
-        await r.aclose()
+        try:
+            now_iso = datetime.now(timezone.utc).isoformat()
+            # results[0]=bluesky, [1]=rss, [2]=reddit, [3]=telegram (order matches gather)
+            source_order = ["bluesky", "rss", "reddit", "telegram"]
+            for i, source in enumerate(source_order):
+                if i < len(results) and not isinstance(results[i], Exception):
+                    await r.set(
+                        f"costa:scraper:last_run:{source}",
+                        now_iso,
+                        ex=3600,  # expire after 1h so stale keys don't mislead
+                    )
+        finally:
+            await r.aclose()
     except Exception as exc:
         logger.warning("Could not write scraper heartbeats to Redis: %s", exc)

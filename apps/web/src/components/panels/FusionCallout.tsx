@@ -52,7 +52,7 @@ function riskPillVariant(riskKey: string): "danger" | "warn" | "ok" {
 
 export function FusionCallout() {
   const { scenario, setScenario, setActivePanel, activePanel, locale } = useUIStore();
-  const { data, isLoading } = useFusion(scenario.districtUbigeo);
+  const { data, isLoading, isError } = useFusion(scenario.districtUbigeo);
   const t = T[locale];
 
   if (!scenario.districtUbigeo || activePanel === "dashboard") return null;
@@ -94,6 +94,10 @@ export function FusionCallout() {
       <div className="px-4 py-3">
         {isLoading && (
           <p className="text-xs text-ink-muted">{t.loading}</p>
+        )}
+
+        {!isLoading && isError && (
+          <p className="text-xs text-danger">{locale === "es" ? "No se pudo cargar el análisis" : "Could not load analysis"}</p>
         )}
 
         {data && (
