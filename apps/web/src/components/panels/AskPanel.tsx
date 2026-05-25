@@ -299,6 +299,11 @@ export function AskPanel() {
         useAuthStore.getState().setLoginModalOpen(true);
         setLoading(false);
         return;
+      } else if (res.status === 429) {
+        const retryAfter = res.headers.get("Retry-After") ?? "60";
+        answerText = es
+          ? `Has enviado demasiadas consultas. Espera ${retryAfter} segundos e intenta de nuevo.`
+          : `Too many queries. Wait ${retryAfter} seconds before trying again.`;
       } else if (res.status === 400) {
         const err = await res.json();
         answerText = err.detail ?? (es ? "Consulta no permitida." : "Query not allowed.");
