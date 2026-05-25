@@ -159,6 +159,11 @@ class TestTriageSignal:
 
 # ─── Copilot intent / safety ─────────────────────────────────────────────────
 
+import importlib.util as _util
+_COSTA_API_AVAILABLE = _util.find_spec("costa_api") is not None
+
+
+@pytest.mark.skipif(not _COSTA_API_AVAILABLE, reason="costa_api not installed in worker env")
 class TestCopilotSafety:
     def test_summary_system_prompt_no_fabrication_rule(self):
         from costa_api.routers.copilot import SUMMARY_SYSTEM_PROMPT

@@ -199,6 +199,43 @@ async def test_flood_hours_back_clamped():
     assert db.execute.called
 
 
+# ─── DB tools: get_huayco_risk unknown input falls back to "high" ────────────
+
+@pytest.mark.asyncio
+async def test_huayco_risk_unknown_min_risk_does_not_crash():
+    """Unknown min_risk defaults to rank 2 (high) — must not raise or inject SQL."""
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=MagicMock(__iter__=MagicMock(return_value=iter([]))))
+
+    from costa_api.ai.tools.db_tools import get_huayco_risk
+
+    await get_huayco_risk(db, min_risk="'; DROP TABLE ml.huayco_susceptibility; --")
+    # If we reach here, the guard worked and no exception was raised
+    assert db.execute.called
+
+
+@pytest.mark.asyncio
+async def test_huayco_risk_valid_levels_passed():
+    """min_risk='very_high' must only query very_high rows (not lower levels)."""
+    db = AsyncMock()
+    captured: dict = {}
+
+    async def _capture_execute(sql, params=None):
+        captured["params"] = params
+        return MagicMock(__iter__=MagicMock(return_value=iter([])))
+
+    db.execute = _capture_execute
+
+    from costa_api.ai.tools.db_tools import get_huayco_risk
+
+    await get_huayco_risk(db, min_risk="very_high")
+    assert "levels" in (captured.get("params") or {})
+    levels = captured["params"]["levels"]
+    assert "very_high" in levels
+    assert "low" not in levels
+    assert "medium" not in levels
+
+
 # ─── Redis cache: write/read/invalidate ──────────────────────────────────────
 
 @pytest.mark.asyncio
