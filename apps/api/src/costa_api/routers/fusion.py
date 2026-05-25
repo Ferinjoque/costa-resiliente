@@ -127,6 +127,10 @@ async def district_fusion(
     if not ubigeo.isascii() or not ubigeo.isdigit() or len(ubigeo) != 6:
         raise HTTPException(400, "ubigeo must be a 6-digit INEI code")
 
+    # Cap expensive spatial join queries at 10s each so one slow district
+    # doesn't block the DB under load.
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
+
     # ── District metadata ─────────────────────────────────────────────────────
     dist_row = await db.execute(
         text("SELECT id, name, population FROM geo.districts WHERE ubigeo = :ubigeo"),
