@@ -1,7 +1,7 @@
 # Costa Resiliente — Project Status
 
 > **This is the single source of truth for what's built, what's pending, and the current rubric score.**
-> Last updated: 2026-05-25 (Session 14)
+> Last updated: 2026-05-25 (Session 17)
 > Branch: `develop`
 
 For competition context, see [`COMPETITION.md`](COMPETITION.md).
@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **445 passed, 0 errors** (Session 14). Up from 425 (20 new tests: health scraper, quick-mode, multi-quick, rainfall thresholds, huayco SQL injection guard).
+- **API**: **547 passed, 0 errors** (Session 17). Up from 445 (102 new tests: auth guards on 6 GET endpoints, 3 new 401 tests per newly-protected route, field-constraint tests for proposals/notifications, SSRF guard tests).
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB (Session 5: 153 → 173 → 175 with new ProposalsPanel)
@@ -464,6 +464,37 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
   traceable.
 
 **Tests:** 445 API passed (↑20 from 425), 240 worker passed 16 skipped. TypeScript: 0 errors.
+
+---
+
+### Session 17 — 2026-05-25 — Security hardening + export auth fix + Ollama robustness
+
+Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
+
+**Auth guards on sensitive GET endpoints (security fix):**
+- `fix(alerts)`: `GET /alerts/decision-log`, `GET /alerts/decision-log/export`, `GET /alerts/decision-log/report` were publicly accessible. Added `require_operator` dependency. These endpoints expose operator audit trail and LLM query content.
+- `fix(proposals)`: `GET /proposals` was publicly accessible. Added `require_operator`. Proposal queue includes pending AI-generated alert text — not public data.
+- `fix(notifications)`: `GET /notifications` and `GET /notifications/deliveries` were publicly accessible. Subscriber list includes webhook targets (SSRF-sensitive); delivery log reveals escalation timing.
+
+**Export download regression fixed:**
+- `fix(frontend)`: `DecisionLogPanel.tsx` CSV and PDF export links were plain `<a href>` HTML anchors — no auth headers. After auth-gating the export endpoints they downloaded 401 JSON error instead of files. Fixed by adding `downloadAuthenticatedFile(path, filename, mimeHint)` helper to `api.ts` and replacing both `<a>` tags with `<Button onClick>` that call it. Auth token included via `getAuthHeaders()`.
+
+**Source label corrections:**
+- `fix(layers)`: IMERG source label in `layers.py` said "NASA IMERG Early Run v07" — changed to "NASA IMERG Late Run V07B (GPM)" to match actual ingest.
+- `fix(health)`: IMERG label in `health.py` said "NASA IMERG Early Run" — corrected to "NASA IMERG Late Run V07B".
+
+**Ollama provider robustness:**
+- `fix(ollama)`: `embed()` had no retry on 429/503/502 (unlike `chat()`). Added 1-retry loop matching `chat()` pattern.
+- `fix(ollama)`: Added 0.5s backoff (`asyncio.sleep`) between retries in both `chat()` and `embed()` to give Ollama time to shed load before retry.
+- `fix(ollama)`: Improved log messages — include attempt number and delay duration.
+
+**Test coverage added (102 new tests → 547 total):**
+- `test(alerts)`: Auth guards verified — 3 new 401 tests for decision-log / export / report. All existing GET calls in test classes updated with `headers=AUTH`.
+- `test(proposals)`: 1 new 401 test for `GET /proposals`. Auth header added to existing list test.
+- `test(notifications)`: 2 new 401 tests for `GET /notifications` and `GET /notifications/deliveries`. Auth header added to list/deliveries calls.
+- `test(notifications/proposals)`: Field-constraint tests (label >100 chars, target >500 chars, district_filter >12 chars, title >200 chars, summary >2000 chars) pin Pydantic max_length validators.
+
+**Tests:** 547 API passed (↑102 from 445), 0 failed. TypeScript: 0 errors.
 
 ---
 
