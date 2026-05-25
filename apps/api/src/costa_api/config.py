@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     # App
     app_env: str = "development"
     app_secret_key: str = "dev-secret-change-me"
+    jwt_secret: str = "costa-dev-secret-change-in-prod"
     app_cors_origins: str = "http://localhost:3000"
     log_level: str = "INFO"
 
