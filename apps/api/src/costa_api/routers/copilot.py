@@ -94,7 +94,7 @@ async def _check_copilot_rate(operator_id: str) -> None:
 # ─── Request / Response ───────────────────────────────────────────────────────
 
 class CopilotQuery(BaseModel):
-    query: str = Field(..., min_length=1, max_length=5000)
+    query: str = Field(..., min_length=1, max_length=2000)
     district_ubigeo: Optional[str] = Field(None, max_length=12)
     operator_id: str = Field(..., min_length=1, max_length=100)
     session_id: Optional[str] = Field(None, max_length=64)
