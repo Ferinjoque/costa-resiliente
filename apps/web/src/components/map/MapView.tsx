@@ -37,7 +37,7 @@ const IMERG_COLOR_RAMP = [
   50, "#fbbf24", 100, "#f97316", 200, "#dc2626",
 ] as const;
 
-const ACC_WINDOWS = [1, 3, 6, 12, 24, 72] as const;
+const ACC_WINDOWS = [1, 3, 6, 12, 24, 72, 168] as const;
 type AccWindow = (typeof ACC_WINDOWS)[number];
 function closestAccWindow(h: number): AccWindow {
   return ACC_WINDOWS.reduce((p, c) => Math.abs(c - h) < Math.abs(p - h) ? c : p) as AccWindow;

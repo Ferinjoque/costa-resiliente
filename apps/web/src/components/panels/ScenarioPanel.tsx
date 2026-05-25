@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/primitives";
 import type { Locale } from "@/store/ui";
 
-const TIME_WINDOWS = [1, 3, 6, 12, 24, 48, 72] as const;
+const TIME_WINDOWS = [1, 3, 6, 12, 24, 72, 168] as const;
 
 const LAYERS: { id: string; label: { es: string; en: string }; hint: { es: string; en: string } }[] = [
   { id: "districts",      label: { es: "Distritos",          en: "Districts"         }, hint: { es: "Límites y nombre de los 43 distritos",      en: "43 district boundaries and names"         } },
