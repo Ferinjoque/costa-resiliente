@@ -239,6 +239,12 @@ class HuaycoModel:
             return np.array([], dtype=np.float32)
 
         X = features_to_matrix(features)
+        # Clamp to physically valid ranges — guards against DEM / sensor noise in DB.
+        # Order must match FEATURE_NAMES: slope, aspect, lithology, dist_stream,
+        # ndvi, soil_moisture, rain_24h, rain_72h, rain_7d
+        _MINS = np.array([ 0.0,   0.0, 0,    0.0, -1.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32)
+        _MAXS = np.array([90.0, 360.0, 5, 1e6,  1.0, 1.0, 1e4, 1e4, 1e4], dtype=np.float32)
+        X = np.clip(X, _MINS, _MAXS)
 
         if self._booster is None:
             logger.warning("Using slope-heuristic fallback (no model loaded)")
