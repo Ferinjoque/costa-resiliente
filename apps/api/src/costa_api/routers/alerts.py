@@ -267,6 +267,7 @@ async def log_decision(
     op: CurrentOperator = Depends(require_operator),
 ) -> dict:
     """Append a free-form entry to the decision log (dispatch, protocol step, note)."""
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     await db.execute(
         text("""
             INSERT INTO ops.decision_log
@@ -299,6 +300,7 @@ async def alerts_stream(request: Request) -> StreamingResponse:
     """
     async def _fetch_alerts() -> str:
         async with engine.connect() as conn:
+            await conn.execute(text("SET LOCAL statement_timeout = '7000'"))
             result = await conn.execute(
                 text("""
                     SELECT id, type, severity, title, status, created_at, district_id
