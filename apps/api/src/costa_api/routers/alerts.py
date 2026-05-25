@@ -91,7 +91,7 @@ class DecisionLogEntry(BaseModel):
 
 # ─── Alerts ───────────────────────────────────────────────────────────────────
 
-_VALID_ALERT_STATUSES = {"active", "resolved", "escalated", "dismissed", "acknowledged"}
+_VALID_ALERT_STATUSES = {"active", "acknowledged", "escalated", "closed", "false_positive"}
 _VALID_SEVERITIES = {"critical", "high", "medium", "low"}
 
 
