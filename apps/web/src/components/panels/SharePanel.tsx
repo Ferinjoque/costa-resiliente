@@ -129,9 +129,15 @@ export function SharePanel() {
 
   const handleCopy = async () => {
     if (!shareUrl) return;
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setError(locale === "es"
+        ? "No se pudo copiar. Seleccione el enlace manualmente."
+        : "Could not copy. Select the link manually.");
+    }
   };
 
   const handleOpen = () => {
