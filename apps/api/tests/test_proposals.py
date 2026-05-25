@@ -25,6 +25,17 @@ async def test_list_proposals_unauthenticated_returns_401():
 
 
 @pytest.mark.asyncio
+async def test_create_proposal_unauthenticated_returns_401():
+    """Create is operator-only — no auth header → 401 (prevents queue spam)."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/proposals",
+            json={"severity": "low", "alert_type": "general", "title": "X", "summary": "Y"},
+        )
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
 async def test_list_proposals_excludes_test_residue():
     """`Test Flood Alert`, XSS, and SQL-injection seed titles must not appear
     in the operator-facing list. They live on in the table for audit but the
@@ -55,8 +66,8 @@ async def test_create_proposal_then_approve_inserts_alert():
         "source_refs": [{"source": "sentinel1"}, {"source": "social_cluster"}],
     }
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-        # Create (internal — no auth required)
-        created = await c.post("/api/v1/proposals", json=proposal_body)
+        # Create requires auth
+        created = await c.post("/api/v1/proposals", json=proposal_body, headers=AUTH)
         assert created.status_code == 201
         pid = created.json()["id"]
 
@@ -119,6 +130,7 @@ async def test_create_proposal_rejects_oversized_title():
                 "title": "X" * 201,
                 "summary": "Resumen válido",
             },
+            headers=AUTH,
         )
     assert resp.status_code == 422
 
@@ -135,6 +147,7 @@ async def test_create_proposal_rejects_oversized_summary():
                 "title": "Título válido",
                 "summary": "Y" * 2001,
             },
+            headers=AUTH,
         )
     assert resp.status_code == 422
 
@@ -153,6 +166,7 @@ async def test_reject_proposal_locks_status():
                 "summary": "Riesgo bajo, monitorear 6h",
                 "source_refs": [],
             },
+            headers=AUTH,
         )
         pid = created.json()["id"]
 
