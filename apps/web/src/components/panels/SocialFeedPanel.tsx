@@ -7,7 +7,7 @@ import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSocialSignals, useDistrictList } from "@/lib/queries";
-import { submitFieldReport, RateLimitError } from "@/lib/api";
+import { submitFieldReport, RateLimitError, BROWSER_SESSION_ID } from "@/lib/api";
 import type { SocialSignalProperties, SocialSignalCollection } from "@/lib/api";
 import {
   PanelHeader,
@@ -284,7 +284,7 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
         text: text.trim(),
         label,
         district_ubigeo: districtUbigeo || null,
-        session_id: "demo",
+        session_id: BROWSER_SESSION_ID,
       });
 
       // Optimistic update to social feed cache — backed by a real DB row now.
