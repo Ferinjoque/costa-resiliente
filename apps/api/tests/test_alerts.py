@@ -152,6 +152,32 @@ class TestAlertAction:
                 )
                 assert resp.status_code == 200, f"action={action!r} returned {resp.status_code}"
 
+    @pytest.mark.asyncio
+    async def test_note_over_2000_chars_rejected(self):
+        """AlertAction.note has max_length=2000; oversized note must return 422."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            alerts = (await c.get("/api/v1/alerts?limit=1")).json()
+            if not alerts:
+                pytest.skip("no alerts available")
+            resp = await c.post(
+                f"/api/v1/alerts/{alerts[0]['id']}/action",
+                json={"operator_id": "test-op", "action": "acknowledge", "note": "N" * 2001},
+            )
+        assert resp.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_operator_id_over_100_chars_rejected(self):
+        """AlertAction.operator_id has max_length=100; oversized value must return 422."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            alerts = (await c.get("/api/v1/alerts?limit=1")).json()
+            if not alerts:
+                pytest.skip("no alerts available")
+            resp = await c.post(
+                f"/api/v1/alerts/{alerts[0]['id']}/action",
+                json={"operator_id": "x" * 101, "action": "acknowledge"},
+            )
+        assert resp.status_code == 422
+
 
 # ─── POST /api/v1/alerts/log ─────────────────────────────────────────────────
 

@@ -74,6 +74,38 @@ async def test_approve_unknown_proposal_404():
 
 
 @pytest.mark.asyncio
+async def test_create_proposal_rejects_oversized_title():
+    """ProposalCreate.title has max_length=200; longer must be rejected."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/proposals",
+            json={
+                "severity": "low",
+                "alert_type": "general",
+                "title": "X" * 201,
+                "summary": "Resumen válido",
+            },
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_create_proposal_rejects_oversized_summary():
+    """ProposalCreate.summary has max_length=2000; longer must be rejected."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/proposals",
+            json={
+                "severity": "low",
+                "alert_type": "general",
+                "title": "Título válido",
+                "summary": "Y" * 2001,
+            },
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_reject_proposal_locks_status():
     """A rejected proposal cannot then be approved."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
