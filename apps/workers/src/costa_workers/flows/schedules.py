@@ -46,6 +46,13 @@ async def rag_index_flow() -> dict:
     return await index_protocols()
 
 
+@flow(name="run-retention", log_prints=True)
+async def retention_flow() -> dict:
+    """Prune expired rows from social.signals, alerts, share_tokens, security_events."""
+    from costa_workers.flows.retention import run_retention
+    return await run_retention()
+
+
 # ─── Main entry point ─────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -112,5 +119,11 @@ if __name__ == "__main__":
             name="rag-index-daily",
             cron="0 2 * * *",
             tags=["rag", "ai"],
+        ),
+        # Data retention — daily at 03:00 UTC (prune expired signals, alerts, tokens)
+        retention_flow.to_deployment(
+            name="retention-daily",
+            cron="0 3 * * *",
+            tags=["ops", "retention"],
         ),
     )
