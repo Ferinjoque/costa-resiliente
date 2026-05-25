@@ -20,16 +20,19 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+import redis.asyncio as aioredis
+from fastapi import APIRouter, Depends, HTTPException, status
 import asyncio
 
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from costa_api.config import settings
 from costa_api.db import get_db, get_ai_db
 from costa_api.ai.agent import run as agent_run, AgentResult
 from costa_api.ai.rag import search_protocols
@@ -37,6 +40,55 @@ from costa_api.routers.auth import require_operator, CurrentOperator
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/copilot", tags=["copilot"])
+
+# ─── Per-operator rate limit ──────────────────────────────────────────────────
+# 6 copilot queries per operator per 60-second window.
+# Fails open: Redis unavailability never blocks legitimate operators.
+
+_COPILOT_RATE_LIMIT = 6
+_COPILOT_RATE_WINDOW = 60
+_copilot_rl_client: aioredis.Redis | None = None
+TESTING = os.environ.get("TESTING", "0") == "1"
+
+
+def _get_copilot_rl_client() -> aioredis.Redis | None:
+    global _copilot_rl_client
+    if _copilot_rl_client is None:
+        try:
+            _copilot_rl_client = aioredis.from_url(
+                settings.redis_url,
+                encoding="utf-8",
+                decode_responses=True,
+                socket_connect_timeout=1,
+                socket_timeout=1,
+            )
+        except Exception as exc:
+            logger.warning("[copilot] Redis rate-limiter init failed: %s", exc)
+    return _copilot_rl_client
+
+
+async def _check_copilot_rate(operator_id: str) -> None:
+    """Raise 429 if operator has exceeded query limit. Fails open on Redis outage."""
+    if TESTING or os.environ.get("TESTING", "0") == "1":
+        return
+    client = _get_copilot_rl_client()
+    if client is None:
+        return
+    key = f"costa:copilot:rate:{operator_id}"
+    try:
+        count = await client.incr(key)
+        if count == 1:
+            await client.expire(key, _COPILOT_RATE_WINDOW)
+        if count > _COPILOT_RATE_LIMIT:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Demasiadas consultas. Espere 60 segundos.",
+                headers={"Retry-After": str(_COPILOT_RATE_WINDOW)},
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("[copilot] Rate-limit check failed (fail-open): %s", exc)
 
 
 # ─── Request / Response ───────────────────────────────────────────────────────
@@ -145,6 +197,8 @@ async def ask(
     """
     # Use JWT identity for decision log (prevents operator_id spoofing)
     operator_id = op.username
+
+    await _check_copilot_rate(operator_id)
 
     try:
         result: AgentResult = await asyncio.wait_for(
