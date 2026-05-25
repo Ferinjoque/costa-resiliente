@@ -107,6 +107,20 @@ def load_scene_from_minio(scene_id: str) -> dict:
         aws_secret_access_key=MINIO_SECRET_KEY,
     )
 
+    def _find_band_key(band: str) -> str:
+        """Locate band object in MinIO using list_objects to tolerate .tif/.tiff and case."""
+        for prefix in (f"sentinel1/{scene_id}/{band}", f"sentinel-1/{scene_id}/{band}"):
+            resp = s3.list_objects_v2(Bucket=MINIO_BUCKET, Prefix=prefix.lower())
+            if resp.get("Contents"):
+                return resp["Contents"][0]["Key"]
+            resp = s3.list_objects_v2(Bucket=MINIO_BUCKET, Prefix=prefix.upper())
+            if resp.get("Contents"):
+                return resp["Contents"][0]["Key"]
+        raise FileNotFoundError(
+            f"No MinIO object found for scene {scene_id} band {band} "
+            f"(tried sentinel1/ and sentinel-1/ prefixes, both cases)"
+        )
+
     def _read_band(key: str) -> tuple[np.ndarray, object, str]:
         buf = BytesIO()
         s3.download_fileobj(MINIO_BUCKET, key, buf)
@@ -118,8 +132,8 @@ def load_scene_from_minio(scene_id: str) -> dict:
                 crs_wkt = ds.crs.wkt
         return arr, transform, crs_wkt
 
-    vv_key = f"sentinel-1/{scene_id}/VV.tif"
-    vh_key = f"sentinel-1/{scene_id}/VH.tif"
+    vv_key = _find_band_key("vv")
+    vh_key = _find_band_key("vh")
 
     logger.info("Loading VV: s3://%s/%s", MINIO_BUCKET, vv_key)
     vv_array, transform, crs_wkt = _read_band(vv_key)
