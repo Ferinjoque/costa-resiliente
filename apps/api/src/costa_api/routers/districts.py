@@ -27,6 +27,7 @@ def _iso(dt: Any) -> str | None:
 @router.get("/provinces")
 async def list_provinces(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """Return unique provinces with district counts. Default scope is Lima Metropolitana."""
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     result = await db.execute(
         text("""
             SELECT province, region, COUNT(*) AS district_count
@@ -57,6 +58,7 @@ async def list_districts(
     """
     where_clause = "WHERE province = :province" if province else ""
     params = {"province": province} if province else {}
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     result = await db.execute(
         text(f"""
             SELECT
@@ -190,6 +192,7 @@ def _validate_ubigeo(ubigeo: str) -> None:
 async def get_district(ubigeo: str, db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """Return a single district by INEI UBIGEO code."""
     _validate_ubigeo(ubigeo)
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     result = await db.execute(
         text("""
             SELECT
