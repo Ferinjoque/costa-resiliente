@@ -34,6 +34,26 @@ async function get<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function post<T>(
+  path: string,
+  body: unknown,
+  timeoutMs = 30_000,
+  extraHeaders?: Record<string, string>,
+): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    signal: AbortSignal.timeout(timeoutMs),
+    headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders(), ...extraHeaders },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401) { _on401?.(); throw new Error(`API ${path} → 401 Unauthorized`); }
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error((detail as { detail?: string }).detail ?? `API ${path} → ${res.status}`);
+  }
+  return res.json() as Promise<T>;
+}
+
 // ─── Districts ────────────────────────────────────────────────────────────────
 
 export interface DistrictProperties {
@@ -294,6 +314,7 @@ export async function actOnAlert(
     headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
     body: JSON.stringify({ operator_id: operatorId, action, note }),
   });
+  if (res.status === 401) { _on401?.(); throw new Error("actOnAlert → 401"); }
   if (!res.ok) throw new Error(`actOnAlert → ${res.status}`);
   return res.json();
 }
@@ -705,20 +726,10 @@ export function fetchNotificationDeliveries(): Promise<NotificationDelivery[]> {
   return get<NotificationDelivery[]>("/api/v1/notifications/deliveries");
 }
 
-export async function createNotificationSubscriber(
+export function createNotificationSubscriber(
   body: Pick<NotificationSubscriber, "channel" | "target" | "label" | "severity_min"> & { district_filter?: string | null },
 ): Promise<NotificationSubscriber> {
-  const res = await fetch(`${BASE}/api/v1/notifications`, {
-    method: "POST",
-    signal: AbortSignal.timeout(30_000),
-    headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.detail ?? `createSubscriber → ${res.status}`);
-  }
-  return res.json();
+  return post<NotificationSubscriber>("/api/v1/notifications", body);
 }
 
 export async function deleteNotificationSubscriber(id: number): Promise<void> {
@@ -727,6 +738,7 @@ export async function deleteNotificationSubscriber(id: number): Promise<void> {
     signal: AbortSignal.timeout(30_000),
     headers: getAuthHeaders(),
   });
+  if (res.status === 401) { _on401?.(); throw new Error("deleteSubscriber → 401"); }
   if (!res.ok) throw new Error(`deleteSubscriber → ${res.status}`);
 }
 
@@ -796,34 +808,20 @@ export function fetchPendingProposals(): Promise<AlertProposal[]> {
   return get<AlertProposal[]>("/api/v1/proposals");
 }
 
-export async function approveProposal(
+export function approveProposal(
   id: number,
   operatorId: string,
   notes?: string,
 ): Promise<{ alert_id: number; proposal_id: number; status: string }> {
-  const res = await fetch(`${BASE}/api/v1/proposals/${id}/approve`, {
-    method: "POST",
-    signal: AbortSignal.timeout(30_000),
-    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    body: JSON.stringify({ operator_id: operatorId, notes }),
-  });
-  if (!res.ok) throw new Error(`approve → ${res.status}`);
-  return res.json();
+  return post(`/api/v1/proposals/${id}/approve`, { operator_id: operatorId, notes });
 }
 
-export async function rejectProposal(
+export function rejectProposal(
   id: number,
   operatorId: string,
   notes?: string,
 ): Promise<{ proposal_id: number; status: string }> {
-  const res = await fetch(`${BASE}/api/v1/proposals/${id}/reject`, {
-    method: "POST",
-    signal: AbortSignal.timeout(30_000),
-    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    body: JSON.stringify({ operator_id: operatorId, notes }),
-  });
-  if (!res.ok) throw new Error(`reject → ${res.status}`);
-  return res.json();
+  return post(`/api/v1/proposals/${id}/reject`, { operator_id: operatorId, notes });
 }
 
 // ─── Field reports ────────────────────────────────────────────────────────────
@@ -842,18 +840,6 @@ export interface FieldReportResponse {
   status: string;
 }
 
-export async function submitFieldReport(
-  body: FieldReportPayload,
-): Promise<FieldReportResponse> {
-  const res = await fetch(`${BASE}/api/v1/social/field-report`, {
-    method: "POST",
-    signal: AbortSignal.timeout(30_000),
-    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const detail = await res.json().catch(() => ({}));
-    throw new Error((detail as { detail?: string }).detail ?? `field-report → ${res.status}`);
-  }
-  return res.json();
+export function submitFieldReport(body: FieldReportPayload): Promise<FieldReportResponse> {
+  return post<FieldReportResponse>("/api/v1/social/field-report", body);
 }

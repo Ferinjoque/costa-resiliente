@@ -294,7 +294,12 @@ export function AskPanel() {
       let answerText: string;
       let isRedacted = false;
       let isQuickMode = false;
-      if (res.status === 400) {
+      if (res.status === 401) {
+        useAuthStore.getState().logout();
+        useAuthStore.getState().setLoginModalOpen(true);
+        setLoading(false);
+        return;
+      } else if (res.status === 400) {
         const err = await res.json();
         answerText = err.detail ?? (es ? "Consulta no permitida." : "Query not allowed.");
       } else if (res.status === 503) {
