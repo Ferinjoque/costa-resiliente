@@ -20,6 +20,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt as _bcrypt_lib
+import redis.asyncio as aioredis
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -49,6 +50,57 @@ _ALGO = "HS256"
 _TTL_HOURS = 24
 
 TESTING = os.environ.get("TESTING", "0") == "1"
+
+# ─── Auth rate limiter ────────────────────────────────────────────────────────
+# 10 login attempts per IP per 60-second window.
+# Uses Redis sliding-window counter; fails open on Redis unavailability so a
+# Redis outage never blocks legitimate operators from logging in.
+
+_RATE_LIMIT = 10          # max attempts per window
+_RATE_WINDOW = 60         # window in seconds
+_rl_client: aioredis.Redis | None = None
+
+
+def _get_rl_client() -> aioredis.Redis | None:
+    global _rl_client
+    if _rl_client is None:
+        try:
+            from costa_api.config import settings as _cfg
+            _rl_client = aioredis.from_url(
+                _cfg.redis_url,
+                encoding="utf-8",
+                decode_responses=True,
+                socket_connect_timeout=1,
+                socket_timeout=1,
+            )
+        except Exception as exc:
+            logger.warning("[auth] Redis rate-limiter init failed: %s", exc)
+    return _rl_client
+
+
+async def _check_rate_limit(request: Request) -> None:
+    """Raise 429 if the IP has exceeded _RATE_LIMIT login attempts in _RATE_WINDOW."""
+    if TESTING or os.environ.get("TESTING", "0") == "1":
+        return
+    client = _get_rl_client()
+    if client is None:
+        return  # fail open: never block logins due to Redis outage
+    ip = (request.headers.get("X-Forwarded-For") or request.client.host or "unknown").split(",")[0].strip()
+    key = f"costa:auth:rate:{ip}"
+    try:
+        count = await client.incr(key)
+        if count == 1:
+            await client.expire(key, _RATE_WINDOW)
+        if count > _RATE_LIMIT:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Demasiados intentos de autenticación. Espere 60 segundos.",
+                headers={"Retry-After": str(_RATE_WINDOW)},
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("[auth] Rate-limit check failed (fail-open): %s", exc)
 
 
 # ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -211,8 +263,10 @@ async def seed_demo_operators() -> None:
 
 @router.post("/token", response_model=TokenResponse)
 async def issue_token(
+    request: Request,
     form: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
+    _rl: None = Depends(_check_rate_limit),
 ) -> TokenResponse:
     """Issue a JWT for username+password."""
     result = await db.execute(
