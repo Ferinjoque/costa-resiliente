@@ -75,7 +75,9 @@ _QUICK_PATTERNS: list[tuple[list[str], str]] = [
     (["poblaci", "personas", "habitantes", "afectad", "riesgo pob",
       "cuántas personas", "cuántos", "cuantos"], "get_population_at_risk"),
     (["huayco", "quebrada", "deslizami", "flujo de barro", "lahar"], "get_huayco_risk"),
-    (["social", "señal", "vecin", "bluesky", "reddit", "telegram"], "get_social_clusters"),
+    (["social", "señal", "vecin", "bluesky", "reddit", "telegram",
+      "reporte de campo", "campo", "huayco_observ", "flood_observ",
+      "avistamiento", "reportes reciente"], "get_social_clusters"),
     (["hospital", "escuela", "puente", "infraestructura", "vial"], "get_infrastructure_impact"),
     (["protocolo", "indeci", "sinagerd", "procedimiento", "evacu"], "search_protocols"),
 ]
