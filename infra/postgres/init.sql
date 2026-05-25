@@ -236,6 +236,8 @@ $$;
 CREATE TRIGGER decision_log_no_update
     BEFORE UPDATE OR DELETE ON ops.decision_log
     FOR EACH ROW EXECUTE FUNCTION ops.prevent_decision_log_mutation();
+CREATE INDEX IF NOT EXISTS decision_log_ts_idx    ON ops.decision_log (logged_at DESC);
+CREATE INDEX IF NOT EXISTS decision_log_op_ts_idx ON ops.decision_log (operator_id, logged_at DESC);
 
 -- ─── ops: Share tokens ───────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS ops.share_tokens (

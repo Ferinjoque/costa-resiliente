@@ -143,7 +143,7 @@
 
 ### Spanish Signal Triage (LLM)
 - **Model**: qwen2.5:7b-instruct-q4_K_M via Ollama
-- **Labels**: needs_help, infrastructure_damage, road_blocked, weather_observation, false_alarm, irrelevant
+- **Labels**: needs_help, infrastructure_damage, road_blocked, huayco_observation, flood_observation, weather_observation, false_alarm, irrelevant
 - **Output**: `social.signals.triage_label` + `triage_confidence`
 - **Status**: ✅ Implemented; all ingested signals are triaged
 
