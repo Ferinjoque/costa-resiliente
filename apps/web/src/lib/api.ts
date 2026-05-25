@@ -6,6 +6,9 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const LS_TOKEN = "cr_auth_token";
 
+/** Browser-session identifier for decision log grouping (changes on page reload). */
+export const BROWSER_SESSION_ID = `cr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+
 /** Registered by the auth store on mount; called whenever any request returns 401. */
 let _on401: (() => void) | null = null;
 export function register401Handler(cb: () => void) {
