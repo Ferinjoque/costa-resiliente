@@ -35,7 +35,14 @@ SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 _NOTIFY_SEVERITIES = {"critical", "high"}  # auto-notify on these; operators see medium/low in UI
 
 
-async def _auto_notify(pool, alert_id: int, severity: str, title: str, alert_type: str) -> None:
+async def _auto_notify(
+    pool,
+    alert_id: int,
+    severity: str,
+    title: str,
+    alert_type: str,
+    district_ubigeo: str | None = None,
+) -> None:
     """
     Fan out to notification_subscribers for newly generated alerts.
     Only fires for critical/high — medium/low visible in dashboard only.
@@ -47,7 +54,7 @@ async def _auto_notify(pool, alert_id: int, severity: str, title: str, alert_typ
         sev_rank = SEVERITY_RANK[severity]
         subscribers = await pool.fetch(
             """
-            SELECT id, channel, target, label, severity_min
+            SELECT id, channel, target, label, severity_min, district_filter
             FROM ops.notification_subscribers
             WHERE active = TRUE
             """
@@ -56,6 +63,9 @@ async def _auto_notify(pool, alert_id: int, severity: str, title: str, alert_typ
             sub_min_rank = SEVERITY_RANK.get(sub["severity_min"], 2)
             if sev_rank < sub_min_rank:
                 continue
+            if sub["district_filter"] and district_ubigeo:
+                if not district_ubigeo.startswith(sub["district_filter"]):
+                    continue
             payload = {
                 "event": "new_alert",
                 "alert_id": alert_id,
@@ -132,10 +142,16 @@ async def generate_flood_alerts(db_dsn: str = DB_DSN) -> int:
         rows = await pool.fetch(
             """
             SELECT fp.id, fp.acquired_at, fp.area_km2, fp.confidence,
-                   fp.affected_districts,
                    (SELECT d.id FROM geo.districts d
-                    WHERE d.id = ANY(fp.affected_districts)
-                    LIMIT 1) AS primary_district_id
+                    WHERE ST_Intersects(ST_MakeValid(d.geom), ST_MakeValid(fp.geom))
+                    ORDER BY ST_Area(ST_Intersection(
+                        ST_MakeValid(d.geom), ST_MakeValid(fp.geom))) DESC
+                    LIMIT 1) AS primary_district_id,
+                   (SELECT d.ubigeo FROM geo.districts d
+                    WHERE ST_Intersects(ST_MakeValid(d.geom), ST_MakeValid(fp.geom))
+                    ORDER BY ST_Area(ST_Intersection(
+                        ST_MakeValid(d.geom), ST_MakeValid(fp.geom))) DESC
+                    LIMIT 1) AS primary_district_ubigeo
             FROM ml.flood_polygons fp
             WHERE fp.geom IS NOT NULL
               AND fp.area_km2 >= $1
@@ -175,7 +191,8 @@ async def generate_flood_alerts(db_dsn: str = DB_DSN) -> int:
                 source_refs,
             )
             inserted += 1
-            await _auto_notify(pool, new_id, severity, title, "flood")
+            await _auto_notify(pool, new_id, severity, title, "flood",
+                               district_ubigeo=row["primary_district_ubigeo"])
 
     logger.info("Flood alerts generated: %d", inserted)
     return inserted
@@ -286,7 +303,7 @@ async def generate_social_alerts(db_dsn: str = DB_DSN) -> int:
         for cfg in _SOCIAL_CLUSTER_CONFIGS:
             clusters = await pool.fetch(
                 """
-                SELECT s.district_id, d.name AS district_name,
+                SELECT s.district_id, d.name AS district_name, d.ubigeo AS district_ubigeo,
                        COUNT(*) AS signal_count,
                        MAX(s.ingested_at) AS latest_signal,
                        ARRAY_AGG(s.id ORDER BY s.ingested_at DESC) AS signal_ids,
@@ -295,7 +312,7 @@ async def generate_social_alerts(db_dsn: str = DB_DSN) -> int:
                 JOIN geo.districts d ON d.id = s.district_id
                 WHERE s.triage_label = ANY($1::text[])
                   AND s.ingested_at >= $2
-                GROUP BY s.district_id, d.name, s.triage_label
+                GROUP BY s.district_id, d.name, d.ubigeo, s.triage_label
                 HAVING COUNT(*) >= $3
                 """,
                 cfg["labels"], window, cfg["min"],
@@ -342,7 +359,8 @@ async def generate_social_alerts(db_dsn: str = DB_DSN) -> int:
                     cluster["district_id"], source_refs,
                 )
                 inserted += 1
-                await _auto_notify(pool, new_id, severity, title, cfg["alert_type"])
+                await _auto_notify(pool, new_id, severity, title, cfg["alert_type"],
+                                   district_ubigeo=cluster["district_ubigeo"])
 
     logger.info("Social cluster alerts generated: %d", inserted)
     return inserted
