@@ -63,6 +63,26 @@ CREATE TABLE IF NOT EXISTS geo.quebradas (
 );
 CREATE INDEX IF NOT EXISTS quebradas_geom_idx ON geo.quebradas USING GIST (geom);
 
+-- ─── geo: INDECI Evacuation Shelters ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS geo.shelters (
+    id           SERIAL PRIMARY KEY,
+    name         TEXT NOT NULL,
+    district_id  INTEGER REFERENCES geo.districts(id),
+    ubigeo       CHAR(6),
+    shelter_type TEXT NOT NULL DEFAULT 'coliseo',
+    capacity     INTEGER,
+    lat          DOUBLE PRECISION NOT NULL,
+    lng          DOUBLE PRECISION NOT NULL,
+    geom         GEOMETRY(POINT, 4326) GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(lng, lat), 4326)) STORED,
+    address      TEXT,
+    indeci_code  TEXT,
+    active       BOOLEAN NOT NULL DEFAULT TRUE,
+    notes        TEXT,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS shelters_geom_idx   ON geo.shelters USING GIST (geom);
+CREATE INDEX IF NOT EXISTS shelters_ubigeo_idx ON geo.shelters (ubigeo);
+
 -- ─── geo: Critical Infrastructure ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS geo.infrastructure (
     id          BIGSERIAL PRIMARY KEY,
@@ -100,6 +120,7 @@ CREATE TABLE IF NOT EXISTS hydro.imerg_accumulations (
     acc_12h_mm      DOUBLE PRECISION,
     acc_24h_mm      DOUBLE PRECISION,
     acc_72h_mm      DOUBLE PRECISION,
+    acc_168h_mm     DOUBLE PRECISION,
     source_scenes   TEXT[],   -- IMERG file names used
     PRIMARY KEY (time, watershed_id)
 );
@@ -390,6 +411,8 @@ GRANT SELECT ON ALL TABLES IN SCHEMA rag     TO costa_ai_ro;
 GRANT SELECT ON ALL TABLES IN SCHEMA social TO costa_ai_ro;
 -- ops: alerts + decision_log read-only; NO write access whatsoever
 GRANT SELECT ON ops.alerts, ops.decision_log, ops.alert_proposals TO costa_ai_ro;
+-- shelters: read access for AI copilot evacuation queries
+GRANT SELECT ON geo.shelters TO costa_ai_ro;
 
 -- Future tables auto-granted (run after each migration)
 ALTER DEFAULT PRIVILEGES IN SCHEMA geo     GRANT SELECT ON TABLES TO costa_ai_ro;
