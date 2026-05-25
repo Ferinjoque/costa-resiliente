@@ -64,11 +64,11 @@ if __name__ == "__main__":
             parameters={"lookback_days": 3},
             tags=["ingest", "satellite"],
         ),
-        # Rainfall — every hour, 25h lookback covers IMERG lag
+        # Rainfall — every hour, 73h lookback ensures accurate 72h accumulations
         ingest_imerg_flow.to_deployment(
             name="imerg-hourly",
             interval=3600,
-            parameters={"lookback_hours": 25},
+            parameters={"lookback_hours": 73},
             tags=["ingest", "rainfall"],
         ),
         # Hydro stations (ANA + SENAMHI) — every 30 minutes
