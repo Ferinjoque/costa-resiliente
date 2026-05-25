@@ -150,8 +150,8 @@ class TestOverallRisk:
     def test_moderado_on_small_flood(self):
         assert self._risk(flood_km2=0.1) == "moderado"
 
-    def test_moderado_on_moderate_huayco(self):
-        assert self._risk(huayco="moderate") == "moderado"
+    def test_moderado_on_medium_huayco(self):
+        assert self._risk(huayco="medium") == "moderado"
 
     def test_moderado_on_2_urgent_signals(self):
         assert self._risk(social=2) == "moderado"
