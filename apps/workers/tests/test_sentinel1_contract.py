@@ -89,6 +89,7 @@ def test_accumulation_keys():
         "acc_12h_mm": 12.0,
         "acc_24h_mm": 20.3,
         "acc_72h_mm": 45.0,
+        "acc_168h_mm": 85.0,
     }
     required = {"time", "watershed_id"} | {f"acc_{h}h_mm" for h in ACCUMULATION_HOURS}
     assert required == set(record.keys())
