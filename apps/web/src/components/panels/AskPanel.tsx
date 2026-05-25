@@ -516,6 +516,7 @@ export function AskPanel() {
           <textarea
             ref={inputRef}
             rows={1}
+            maxLength={5000}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
