@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 import logging
 import os
 import textwrap
@@ -132,7 +133,7 @@ async def upsert_chunk(
         ON CONFLICT (content_hash) DO NOTHING
         """,
         source, title, lang, chunk_index, chunk, vec_str, content_hash,
-        str(meta).replace("'", '"'),  # rough jsonb encoding; replace with json.dumps in prod
+        json.dumps(meta),
     )
     return True
 
@@ -144,8 +145,6 @@ async def index_protocols(dry_run: bool = False) -> dict:
     Read all .txt files in data/protocols/, chunk + embed, upsert to DB.
     Returns stats dict.
     """
-    import json
-
     conn = await asyncpg.connect(_DB_DSN)
     try:
         stats = {"total_files": 0, "total_chunks": 0, "new_chunks": 0, "skipped": 0}
@@ -171,7 +170,6 @@ async def index_protocols(dry_run: bool = False) -> dict:
                 if embedding is None:
                     stats["skipped"] += 1
                     continue
-                meta = json.dumps({"chunk_index": i, "total_chunks": len(chunks)})
                 inserted = await upsert_chunk(
                     conn, source, title, lang, i, chunk, embedding,
                     {"chunk_index": i, "total_chunks": len(chunks)},
