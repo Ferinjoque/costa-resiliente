@@ -349,6 +349,7 @@ async def get_infrastructure_impact(db: AsyncSession, hours_back: int = 240) -> 
         JOIN ml.flood_polygons fp ON ST_Intersects(ST_MakeValid(i.geom), ST_MakeValid(fp.geom))
         LEFT JOIN geo.districts d ON d.id = i.district_id
         WHERE fp.acquired_at >= NOW() - make_interval(hours => :hours)
+          AND NOT ST_IsEmpty(fp.geom)
         ORDER BY fp.acquired_at DESC LIMIT 20
     """)
     result = await db.execute(sql, {"hours": hours_back})
@@ -438,6 +439,7 @@ async def get_population_at_risk(db: AsyncSession, hours_back: int = 240) -> lis
         JOIN ml.flood_polygons fp
           ON ST_Intersects(ST_MakeValid(d.geom), ST_MakeValid(fp.geom))
         WHERE fp.acquired_at >= NOW() - make_interval(hours => :hours)
+          AND NOT ST_IsEmpty(fp.geom)
           AND d.population IS NOT NULL
         GROUP BY d.ubigeo, d.name, d.population, d.geom
         ORDER BY estimated_population_at_risk DESC NULLS LAST

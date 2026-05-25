@@ -24,7 +24,7 @@ import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useAlerts, useFloodExposure } from "@/lib/queries";
-import { actOnAlert, logDecision, RateLimitError, BROWSER_SESSION_ID } from "@/lib/api";
+import { actOnAlert, logDecision, RateLimitError, AuthError, BROWSER_SESSION_ID } from "@/lib/api";
 import type { LiveToast } from "@/store/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Alert, DecisionLogEntry } from "@/lib/api";
@@ -312,10 +312,15 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
         old ? old.map((a) => (a.id === alert.id ? { ...a, status: alert.status } : a)) : old,
       );
       const isRateLimit = e instanceof RateLimitError;
+      const isAuthError = e instanceof AuthError;
       const errMsg = isRateLimit
         ? (locale === "es"
             ? `Límite de solicitudes alcanzado. Espera ${(e as RateLimitError).retryAfter}s.`
             : `Rate limited. Wait ${(e as RateLimitError).retryAfter}s before retrying.`)
+        : isAuthError
+        ? (locale === "es"
+            ? `Sesión expirada. Por favor, inicia sesión nuevamente.`
+            : `Session expired. Please sign in again.`)
         : (locale === "es"
             ? `No se pudo registrar la acción. Verifica conectividad e inténtalo de nuevo.`
             : `Could not register the action. Check connectivity and retry.`);

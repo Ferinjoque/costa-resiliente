@@ -25,6 +25,14 @@ export class RateLimitError extends Error {
   }
 }
 
+/** Thrown when the server returns 401 Unauthorized (session expired / invalid token). */
+export class AuthError extends Error {
+  constructor(path = "") {
+    super(`Unauthorized${path ? `: ${path}` : ""}`);
+    this.name = "AuthError";
+  }
+}
+
 function getAuthHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
   const token = localStorage.getItem(LS_TOKEN);
@@ -39,7 +47,7 @@ async function get<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (res.status === 401) {
     _on401?.();
-    throw new Error(`API ${path} → 401 Unauthorized`);
+    throw new AuthError(path);
   }
   if (res.status === 429) {
     const retryAfter = parseInt(res.headers.get("Retry-After") ?? "60", 10);
@@ -63,7 +71,7 @@ async function post<T>(
     headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders(), ...extraHeaders },
     body: JSON.stringify(body),
   });
-  if (res.status === 401) { _on401?.(); throw new Error(`API ${path} → 401 Unauthorized`); }
+  if (res.status === 401) { _on401?.(); throw new AuthError(path); }
   if (res.status === 429) {
     const retryAfter = parseInt(res.headers.get("Retry-After") ?? "60", 10);
     throw new RateLimitError(retryAfter);
@@ -335,7 +343,7 @@ export async function actOnAlert(
     headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
     body: JSON.stringify({ operator_id: operatorId, action, note }),
   });
-  if (res.status === 401) { _on401?.(); throw new Error("actOnAlert → 401"); }
+  if (res.status === 401) { _on401?.(); throw new AuthError("actOnAlert"); }
   if (!res.ok) throw new Error(`actOnAlert → ${res.status}`);
   return res.json();
 }
@@ -517,7 +525,7 @@ export async function mintShareToken(
     headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
     body: JSON.stringify({ scenario }),
   });
-  if (res.status === 401) { _on401?.(); throw new Error("mintShareToken → 401"); }
+  if (res.status === 401) { _on401?.(); throw new AuthError("mintShareToken"); }
   if (!res.ok) throw new Error(`mintShareToken → ${res.status}`);
   return res.json();
 }
@@ -762,7 +770,7 @@ export async function deleteNotificationSubscriber(id: number): Promise<void> {
     signal: AbortSignal.timeout(30_000),
     headers: getAuthHeaders(),
   });
-  if (res.status === 401) { _on401?.(); throw new Error("deleteSubscriber → 401"); }
+  if (res.status === 401) { _on401?.(); throw new AuthError("deleteSubscriber"); }
   if (!res.ok) throw new Error(`deleteSubscriber → ${res.status}`);
 }
 
