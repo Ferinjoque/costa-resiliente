@@ -112,60 +112,78 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
         "SELECT COUNT(*) as count, MAX(created_at) as last_seen_at FROM ops.alerts"
     )
 
-    # Merge Redis scraper health (written by workers after each run)
-    async def _redis_scraper_status(source_key: str) -> dict:
-        try:
-            import redis.asyncio as aioredis
-            r = aioredis.from_url(settings.redis_url, decode_responses=True, socket_timeout=1)
-            raw = await r.get(f"costa:scraper:status:{source_key}")
-            await r.aclose()
-            if raw:
-                d = json.loads(raw)
-                stations_ok = d.get("stations_ok", 0)
-                total = d.get("total", 1)
-                ok_pct = stations_ok / max(total, 1)
-                scraper_status = "ok" if ok_pct >= 0.5 else ("stale" if ok_pct > 0 else "offline")
-                return {"scraper_live_stations": stations_ok, "scraper_total": total, "scraper_status": scraper_status}
-        except Exception as exc:
-            log.warning("health: Redis scraper-status read failed for %r: %s", source_key, exc)
-        return {}
-
-    async def _redis_last_run_status(source_key: str, stale_min: int = 20) -> dict:
-        """Read per-source last-run heartbeat written by the social worker after each cycle.
-        Returns a status override dict: status='ok'/'stale'/'offline' + scraper_last_run_at."""
-        try:
-            import redis.asyncio as aioredis
-            r = aioredis.from_url(settings.redis_url, decode_responses=True, socket_timeout=1)
-            raw = await r.get(f"costa:scraper:last_run:{source_key}")
-            await r.aclose()
-            if raw:
-                from datetime import datetime, timezone
-                last_run = datetime.fromisoformat(raw)
-                age_min = (now - last_run).total_seconds() / 60
-                run_status = "ok" if age_min < stale_min else ("stale" if age_min < 120 else "offline")
-                return {"scraper_last_run_at": raw, "status": run_status}
-        except Exception as exc:
-            log.warning("health: Redis last-run read failed for %r: %s", source_key, exc)
-        return {}
-
-    ana_scraper = await _redis_scraper_status("ana")
-    senamhi_scraper = await _redis_scraper_status("senamhi")
-    bluesky_run = await _redis_last_run_status("bluesky", stale_min=20)
-    rss_run = await _redis_last_run_status("rss", stale_min=20)
-    alerts_run = await _redis_last_run_status("alerts", stale_min=8)    # 5min schedule + 3min grace
-    imerg_run = await _redis_last_run_status("imerg", stale_min=70)     # 30-60min actual interval + grace
-    stations_run = await _redis_last_run_status("stations", stale_min=70)  # 30-60min actual interval + grace
-
-    # Redis connectivity probe — rate-limiters + scraper heartbeats require Redis
+    # Merge Redis scraper health (written by workers after each run).
+    # One shared client for all reads + ping — avoids 9 separate connection opens.
+    ana_scraper: dict = {}
+    senamhi_scraper: dict = {}
+    bluesky_run: dict = {}
+    rss_run: dict = {}
+    alerts_run: dict = {}
+    imerg_run: dict = {}
+    stations_run: dict = {}
     redis_ok = False
+
     try:
-        import redis.asyncio as _aioredis
-        _r = _aioredis.from_url(settings.redis_url, decode_responses=True, socket_connect_timeout=1, socket_timeout=1)
-        await _r.ping()
-        await _r.aclose()
-        redis_ok = True
+        import redis.asyncio as aioredis
+        r = aioredis.from_url(
+            settings.redis_url,
+            decode_responses=True,
+            socket_connect_timeout=1,
+            socket_timeout=1,
+        )
+        try:
+            await r.ping()
+            redis_ok = True
+
+            # Bulk-fetch all keys in one pipeline pass
+            async with r.pipeline(transaction=False) as pipe:
+                pipe.get("costa:scraper:status:ana")
+                pipe.get("costa:scraper:status:senamhi")
+                pipe.get("costa:scraper:last_run:bluesky")
+                pipe.get("costa:scraper:last_run:rss")
+                pipe.get("costa:scraper:last_run:alerts")
+                pipe.get("costa:scraper:last_run:imerg")
+                pipe.get("costa:scraper:last_run:stations")
+                results = await pipe.execute()
+
+            raw_ana, raw_senamhi, raw_bluesky, raw_rss, raw_alerts, raw_imerg, raw_stations = results
+
+            def _parse_scraper_status(raw: str | None) -> dict:
+                if not raw:
+                    return {}
+                try:
+                    d = json.loads(raw)
+                    stations_ok = d.get("stations_ok", 0)
+                    total = d.get("total", 1)
+                    ok_pct = stations_ok / max(total, 1)
+                    status = "ok" if ok_pct >= 0.5 else ("stale" if ok_pct > 0 else "offline")
+                    return {"scraper_live_stations": stations_ok, "scraper_total": total, "scraper_status": status}
+                except Exception:
+                    return {}
+
+            def _parse_last_run(raw: str | None, stale_min: int) -> dict:
+                if not raw:
+                    return {}
+                try:
+                    last_run = datetime.fromisoformat(raw)
+                    age_min = (now - last_run).total_seconds() / 60
+                    status = "ok" if age_min < stale_min else ("stale" if age_min < 120 else "offline")
+                    return {"scraper_last_run_at": raw, "status": status}
+                except Exception:
+                    return {}
+
+            ana_scraper = _parse_scraper_status(raw_ana)
+            senamhi_scraper = _parse_scraper_status(raw_senamhi)
+            bluesky_run = _parse_last_run(raw_bluesky, stale_min=20)
+            rss_run = _parse_last_run(raw_rss, stale_min=20)
+            alerts_run = _parse_last_run(raw_alerts, stale_min=8)
+            imerg_run = _parse_last_run(raw_imerg, stale_min=70)
+            stations_run = _parse_last_run(raw_stations, stale_min=70)
+
+        finally:
+            await r.aclose()
     except Exception as exc:
-        log.warning("health: Redis ping failed: %s", exc)
+        log.warning("health: Redis unavailable: %s", exc)
 
     sources = {
         # Merge Redis last-run status into bluesky/rss so health reflects scraper
