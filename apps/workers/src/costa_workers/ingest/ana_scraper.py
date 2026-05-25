@@ -536,7 +536,7 @@ async def ingest_hydro_stations_flow() -> dict:
         await r.set(
             "costa:scraper:last_run:stations",
             datetime.now(timezone.utc).isoformat(),
-            ex=1800,  # 30min — 2× the 15min schedule
+            ex=7200,  # 2h — covers actual observed 30-60min schedule intervals
         )
         await r.aclose()
     except Exception:
