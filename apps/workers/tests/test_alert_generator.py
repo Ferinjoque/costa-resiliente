@@ -138,3 +138,67 @@ class TestConstants:
         assert "critical" in _NOTIFY_SEVERITIES
         assert "high" in _NOTIFY_SEVERITIES
         assert "medium" not in _NOTIFY_SEVERITIES
+
+    def test_fan_out_cap_positive(self):
+        from costa_workers.ml.alert_generator import _FAN_OUT_SUBSCRIBER_CAP
+        assert _FAN_OUT_SUBSCRIBER_CAP > 0
+        assert _FAN_OUT_SUBSCRIBER_CAP <= 200  # sanity upper bound
+
+
+# ─── SSRF guard (worker _reject_private_host) ─────────────────────────────────
+
+class TestRejectPrivateHost:
+    def test_blocks_private_ip_directly(self):
+        from costa_workers.ml.alert_generator import _reject_private_host
+        import pytest
+        with pytest.raises(ValueError, match="private IP"):
+            _reject_private_host("10.0.0.1")
+
+    def test_blocks_loopback(self):
+        from costa_workers.ml.alert_generator import _reject_private_host
+        import pytest
+        with pytest.raises(ValueError, match="private IP"):
+            _reject_private_host("127.0.0.1")
+
+    def test_blocks_link_local(self):
+        from costa_workers.ml.alert_generator import _reject_private_host
+        import pytest
+        with pytest.raises(ValueError, match="private IP"):
+            _reject_private_host("169.254.169.254")
+
+    def test_blocks_rfc1918_192168(self):
+        from costa_workers.ml.alert_generator import _reject_private_host
+        import pytest
+        with pytest.raises(ValueError, match="private IP"):
+            _reject_private_host("192.168.1.1")
+
+    def test_allows_public_ip(self):
+        from costa_workers.ml.alert_generator import _reject_private_host
+        _reject_private_host("1.1.1.1")  # Cloudflare — must not raise
+
+    def test_blocks_hostname_resolving_to_private_ip(self):
+        from unittest.mock import patch
+        from costa_workers.ml.alert_generator import _reject_private_host
+        import pytest
+        fake_addrinfo = [(None, None, None, None, ("10.0.0.1", 0))]
+        with patch("costa_workers.ml.alert_generator.socket.getaddrinfo", return_value=fake_addrinfo):
+            with pytest.raises(ValueError, match="private IP"):
+                _reject_private_host("internal.corp.local")
+
+    def test_blocks_aws_metadata_endpoint(self):
+        from unittest.mock import patch
+        from costa_workers.ml.alert_generator import _reject_private_host
+        import pytest
+        fake_addrinfo = [(None, None, None, None, ("169.254.169.254", 0))]
+        with patch("costa_workers.ml.alert_generator.socket.getaddrinfo", return_value=fake_addrinfo):
+            with pytest.raises(ValueError, match="private IP"):
+                _reject_private_host("metadata.example.com")
+
+    def test_blocks_unresolvable_hostname(self):
+        from unittest.mock import patch
+        import socket as _socket
+        from costa_workers.ml.alert_generator import _reject_private_host
+        import pytest
+        with patch("costa_workers.ml.alert_generator.socket.getaddrinfo", side_effect=_socket.gaierror("NXDOMAIN")):
+            with pytest.raises(ValueError, match="could not be resolved"):
+                _reject_private_host("does-not-exist.invalid")
