@@ -59,6 +59,20 @@ async function get<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function del(path: string): Promise<void> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "DELETE",
+    signal: AbortSignal.timeout(30_000),
+    headers: { Accept: "application/json", ...getAuthHeaders() },
+  });
+  if (res.status === 401) { _on401?.(); throw new AuthError(path); }
+  if (res.status === 429) {
+    const retryAfter = parseInt(res.headers.get("Retry-After") ?? "60", 10);
+    throw new RateLimitError(retryAfter);
+  }
+  if (!res.ok) throw new Error(`DELETE ${path} → ${res.status} ${res.statusText}`);
+}
+
 async function post<T>(
   path: string,
   body: unknown,
@@ -331,21 +345,13 @@ export function fetchAlerts(filters?: AlertFilters): Promise<Alert[]> {
   return get<Alert[]>(`/api/v1/alerts${q}`);
 }
 
-export async function actOnAlert(
+export function actOnAlert(
   alertId: number,
   action: "acknowledge" | "escalate" | "false_positive" | "close",
   operatorId: string,
   note?: string,
 ): Promise<{ alert_id: number; new_status: string }> {
-  const res = await fetch(`${BASE}/api/v1/alerts/${alertId}/action`, {
-    method: "POST",
-    signal: AbortSignal.timeout(30_000),
-    headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
-    body: JSON.stringify({ operator_id: operatorId, action, note }),
-  });
-  if (res.status === 401) { _on401?.(); throw new AuthError("actOnAlert"); }
-  if (!res.ok) throw new Error(`actOnAlert → ${res.status}`);
-  return res.json();
+  return post(`/api/v1/alerts/${alertId}/action`, { operator_id: operatorId, action, note });
 }
 
 export async function logDecision(entry: {
@@ -401,7 +407,7 @@ export async function downloadAuthenticatedFile(
   const headers: Record<string, string> = { ...getAuthHeaders() };
   if (mimeHint) headers["Accept"] = mimeHint;
   try {
-    const res = await fetch(`${BASE}${path}`, { headers });
+    const res = await fetch(`${BASE}${path}`, { headers, signal: AbortSignal.timeout(60_000) });
     if (!res.ok) {
       if (res.status === 401) _on401?.();
       console.error(`downloadAuthenticatedFile: ${path} → ${res.status}`);
@@ -516,18 +522,8 @@ export interface ResolveShareResponse {
   expires_at: string;
 }
 
-export async function mintShareToken(
-  scenario: ScenarioSnapshot,
-): Promise<MintShareResponse> {
-  const res = await fetch(`${BASE}/api/v1/share`, {
-    method: "POST",
-    signal: AbortSignal.timeout(30_000),
-    headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
-    body: JSON.stringify({ scenario }),
-  });
-  if (res.status === 401) { _on401?.(); throw new AuthError("mintShareToken"); }
-  if (!res.ok) throw new Error(`mintShareToken → ${res.status}`);
-  return res.json();
+export function mintShareToken(scenario: ScenarioSnapshot): Promise<MintShareResponse> {
+  return post<MintShareResponse>("/api/v1/share", { scenario }, 30_000);
 }
 
 export function fetchShareToken(token: string): Promise<ResolveShareResponse> {
@@ -764,14 +760,8 @@ export function createNotificationSubscriber(
   return post<NotificationSubscriber>("/api/v1/notifications", body);
 }
 
-export async function deleteNotificationSubscriber(id: number): Promise<void> {
-  const res = await fetch(`${BASE}/api/v1/notifications/${id}`, {
-    method: "DELETE",
-    signal: AbortSignal.timeout(30_000),
-    headers: getAuthHeaders(),
-  });
-  if (res.status === 401) { _on401?.(); throw new AuthError("deleteSubscriber"); }
-  if (!res.ok) throw new Error(`deleteSubscriber → ${res.status}`);
+export function deleteNotificationSubscriber(id: number): Promise<void> {
+  return del(`/api/v1/notifications/${id}`);
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
