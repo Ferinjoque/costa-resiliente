@@ -25,6 +25,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.db import get_db
+from costa_api.routers.auth import require_operator, CurrentOperator
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/social", tags=["social"])
@@ -50,13 +51,20 @@ class FieldReport(BaseModel):
 
 
 @router.post("/field-report", status_code=201)
-async def submit_field_report(body: FieldReport, db: AsyncSession = Depends(get_db)) -> dict:
+async def submit_field_report(
+    body: FieldReport,
+    db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
+) -> dict:
     if body.label not in _ALLOWED_LABELS:
         raise HTTPException(400, f"Invalid label. Must be one of: {sorted(_ALLOWED_LABELS)}")
 
     text_clean = body.text.strip()
     if not text_clean:
         raise HTTPException(400, "Empty report text")
+
+    # Use JWT identity so reports cannot be forged under another operator's name
+    operator_id = op.username
 
     # Lookup district by ubigeo
     district_id: Optional[int] = None
@@ -73,7 +81,7 @@ async def submit_field_report(body: FieldReport, db: AsyncSession = Depends(get_
     # Hash excludes timestamp so identical text from same operator deduplicates
     # even if submitted multiple times (e.g., double-click or network retry).
     content_hash = hashlib.sha256(
-        f"campo:{body.operator_id}:{text_clean}".encode()
+        f"campo:{operator_id}:{text_clean}".encode()
     ).hexdigest()
     expires_at = datetime.now(timezone.utc) + timedelta(days=30)
 
@@ -92,7 +100,7 @@ async def submit_field_report(body: FieldReport, db: AsyncSession = Depends(get_
             """
         ),
         {
-            "operator_id": body.operator_id,
+            "operator_id": operator_id,
             "hash": content_hash,
             "body": text_clean,
             "loc": body.district_ubigeo,
@@ -133,7 +141,7 @@ async def submit_field_report(body: FieldReport, db: AsyncSession = Depends(get_
             """
         ),
         {
-            "op": body.operator_id,
+            "op": operator_id,
             "payload": json.dumps(payload, default=str, ensure_ascii=False),
             "session": body.session_id,
         },
