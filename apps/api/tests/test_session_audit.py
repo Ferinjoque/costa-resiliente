@@ -693,6 +693,18 @@ class TestCopilot:
         "session_id": "sess-audit-01",
     }
 
+    def setup_method(self, _method):
+        # Flush copilot rate-limit keys for all demo operators before each test so
+        # the 6 req/60s window doesn't cause spurious 429s across the test class.
+        try:
+            import redis as _redis
+            _r = _redis.from_url("redis://costa-redis:6379/0", socket_connect_timeout=1, socket_timeout=1)
+            for op in ("coer_lima", "coen_lima", "coel_sjl"):
+                _r.delete(f"costa:copilot:rate:{op}")
+            _r.close()
+        except Exception:
+            pass
+
     def test_ask_valid_query_returns_200(self, client):
         r = client.post("/copilot/ask", json=self.VALID_QUERY, timeout=60.0)
         assert r.status_code == 200

@@ -7,9 +7,12 @@ rejected before the agent runs.
 
 Session 16 adds auth guard to /copilot/ask; write tests include AUTH header,
 and a 401 test verifies the guard fires for unauthenticated callers.
+Session 18 adds per-operator rate limiter; 429 test uses mocked Redis.
 """
 
 from __future__ import annotations
+
+import os
 
 import pytest
 from httpx import AsyncClient, ASGITransport
@@ -104,3 +107,44 @@ async def test_copilot_district_ubigeo_over_12_chars_rejected():
             headers=AUTH,
         )
     assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_copilot_rate_limiter_raises_429_when_limit_exceeded():
+    """_check_copilot_rate must raise 429 when Redis counter exceeds _COPILOT_RATE_LIMIT."""
+    from fastapi import HTTPException
+    from unittest.mock import AsyncMock, patch
+    from costa_api.routers.copilot import _check_copilot_rate, _COPILOT_RATE_LIMIT
+
+    mock_redis = AsyncMock()
+    mock_redis.incr = AsyncMock(return_value=_COPILOT_RATE_LIMIT + 1)
+    mock_redis.expire = AsyncMock()
+
+    with (
+        patch("costa_api.routers.copilot.TESTING", False),
+        patch("costa_api.routers.copilot._get_copilot_rl_client", return_value=mock_redis),
+        patch.dict(os.environ, {"TESTING": "0"}),
+    ):
+        with pytest.raises(HTTPException) as exc_info:
+            await _check_copilot_rate("test_operator")
+
+    assert exc_info.value.status_code == 429
+    assert "Retry-After" in exc_info.value.headers
+
+
+@pytest.mark.asyncio
+async def test_copilot_rate_limiter_fails_open_on_redis_error():
+    """Redis unavailability must never block legitimate operators (fail-open)."""
+    from unittest.mock import AsyncMock, patch
+    from costa_api.routers.copilot import _check_copilot_rate
+
+    mock_redis = AsyncMock()
+    mock_redis.incr = AsyncMock(side_effect=ConnectionError("Redis down"))
+
+    with (
+        patch("costa_api.routers.copilot.TESTING", False),
+        patch("costa_api.routers.copilot._get_copilot_rl_client", return_value=mock_redis),
+        patch.dict(os.environ, {"TESTING": "0"}),
+    ):
+        # Should not raise — fail-open means Redis errors are swallowed
+        await _check_copilot_rate("test_operator")
