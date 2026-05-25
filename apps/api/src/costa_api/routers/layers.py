@@ -329,9 +329,11 @@ async def infrastructure(
         text(f"""
             SELECT
                 i.id, i.osm_id, i.type, i.name,
-                i.district_id, i.properties,
+                i.district_id, d.name AS district_name,
+                i.properties,
                 ST_AsGeoJSON(i.geom)::json AS geometry
             FROM geo.infrastructure i
+            LEFT JOIN geo.districts d ON d.id = i.district_id
             {where}
             ORDER BY i.type, i.name
             LIMIT 2000
@@ -353,6 +355,7 @@ async def infrastructure(
                     "type": r["type"],
                     "name": r["name"],
                     "district_id": r["district_id"],
+                    "district_name": r["district_name"],
                     **(r["properties"] or {}),
                 },
                 "geometry": r["geometry"],

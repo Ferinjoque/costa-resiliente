@@ -440,9 +440,13 @@ function EDANReportButton() {
   }
 
   async function handleCopyText() {
-    await navigator.clipboard.writeText(buildMarkdown(reportData));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    try {
+      await navigator.clipboard.writeText(buildMarkdown(reportData));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setCopied(false);
+    }
   }
 
   if (step === "idle") {
