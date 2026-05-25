@@ -40,7 +40,9 @@ class ProposalCreate(BaseModel):
 
 
 class ProposalReview(BaseModel):
-    operator_id: str = Field(..., min_length=1, max_length=100)
+    # operator_id accepted for backwards-compatibility but IGNORED — JWT identity
+    # (op.username) is always used to prevent review forgery.
+    operator_id: Optional[str] = Field(None, max_length=100)
     notes: Optional[str] = Field(None, max_length=2000)
 
 

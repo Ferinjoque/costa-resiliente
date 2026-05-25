@@ -355,7 +355,7 @@ async def list_decision_log(
     operator_id: Optional[str] = Query(None),
     since: Optional[str] = Query(None, description="ISO-8601 start datetime (inclusive)"),
     until: Optional[str] = Query(None, description="ISO-8601 end datetime (inclusive)"),
-    limit: int = Query(100, ge=0, le=500),
+    limit: int = Query(100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     op: CurrentOperator = Depends(require_operator),
 ) -> list[DecisionLogEntry]:
@@ -399,7 +399,7 @@ async def export_decision_log(
     operator_id: Optional[str] = Query(None),
     since: Optional[str] = Query(None, description="ISO-8601 start datetime (inclusive)"),
     until: Optional[str] = Query(None, description="ISO-8601 end datetime (inclusive)"),
-    limit: int = Query(500, ge=0, le=2000),
+    limit: int = Query(500, ge=1, le=2000),
     db: AsyncSession = Depends(get_db),
     op: CurrentOperator = Depends(require_operator),
 ) -> StreamingResponse:
