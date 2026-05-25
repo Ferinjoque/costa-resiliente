@@ -197,6 +197,9 @@ CREATE INDEX IF NOT EXISTS signals_source_idx ON social.signals (source, ingeste
 CREATE INDEX IF NOT EXISTS signals_label_idx ON social.signals (triage_label, ingested_at DESC);
 CREATE INDEX IF NOT EXISTS signals_district_idx ON social.signals (district_id, ingested_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS signals_content_hash_uniq ON social.signals (content_hash);
+-- Partial index for triage worker: scans untriaged rows ordered by ingested_at ASC
+CREATE INDEX IF NOT EXISTS signals_triage_pending_idx ON social.signals (ingested_at ASC)
+    WHERE triage_at IS NULL;
 
 -- ─── ops: Alerts ──────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS ops.alerts (
