@@ -113,7 +113,7 @@ function payloadPreview(entry: DecisionLogEntry): string | null {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function DecisionLogPanel() {
-  const { activePanel, setActivePanel, locale } = useUIStore();
+  const { activePanel, setActivePanel, locale, addToast } = useUIStore();
   const { data: entries = [], isLoading, isError, dataUpdatedAt, refetch, isFetching } = useDecisionLog(100);
   const { data: health, isError: apiDown } = useApiHealth();
   const online = health?.status === "ok" && !apiDown;
@@ -170,15 +170,18 @@ export function DecisionLogPanel() {
         <Button
           variant="ghost"
           size="xs"
-          onClick={() =>
-            online
-              ? downloadAuthenticatedFile(
-                  "/api/v1/alerts/decision-log/export",
-                  `costa_resiliente_decision_log_${new Date().toISOString().slice(0, 10)}.csv`,
-                  "text/csv",
-                )
-              : downloadCsv(entries)
-          }
+          onClick={async () => {
+            if (online) {
+              const ok = await downloadAuthenticatedFile(
+                "/api/v1/alerts/decision-log/export",
+                `costa_resiliente_decision_log_${new Date().toISOString().slice(0, 10)}.csv`,
+                "text/csv",
+              );
+              if (!ok) addToast({ message: locale === "es" ? "Error al exportar CSV — reintenta" : "CSV export failed — please retry", variant: "danger" });
+            } else {
+              downloadCsv(entries);
+            }
+          }}
           aria-label={exportLabel}
           className="gap-1"
         >
@@ -191,13 +194,14 @@ export function DecisionLogPanel() {
           <Button
             variant="ghost"
             size="xs"
-            onClick={() =>
-              downloadAuthenticatedFile(
+            onClick={async () => {
+              const ok = await downloadAuthenticatedFile(
                 "/api/v1/alerts/decision-log/report",
                 `costa_resiliente_report_${new Date().toISOString().slice(0, 10)}.pdf`,
                 "application/pdf",
-              )
-            }
+              );
+              if (!ok) addToast({ message: locale === "es" ? "Error al exportar PDF — reintenta" : "PDF export failed — please retry", variant: "danger" });
+            }}
             aria-label={locale === "es" ? "Exportar informe PDF" : "Export PDF report"}
             title={locale === "es" ? "Informe situacional EDAN-Perú (PDF)" : "EDAN-Perú situational report (PDF)"}
             className="gap-1"
