@@ -168,8 +168,12 @@ async def get_current_operator(
         header = request.headers.get("X-Testing-Operator")
         if header:
             parts = header.split(":", 3)
+            try:
+                op_id = int(parts[0])
+            except (ValueError, IndexError):
+                op_id = 0
             return CurrentOperator(
-                id=int(parts[0]),
+                id=op_id,
                 username=parts[1] if len(parts) > 1 else "test",
                 role=parts[2] if len(parts) > 2 else "coer",
                 district_ubigeo=parts[3] if len(parts) > 3 else None,
@@ -322,6 +326,8 @@ async def create_operator(
     _op: CurrentOperator = Depends(require_operator),
     db: AsyncSession = Depends(get_db),
 ) -> OperatorOut:
+    if _op.role not in {"coen", "coer"}:
+        raise HTTPException(status_code=403, detail="Solo operadores COEN/COER pueden crear cuentas de operador.")
     valid_roles = {"coen", "coer", "coel"}
     if body.role not in valid_roles:
         raise HTTPException(status_code=422, detail=f"role must be one of: {', '.join(sorted(valid_roles))}")
