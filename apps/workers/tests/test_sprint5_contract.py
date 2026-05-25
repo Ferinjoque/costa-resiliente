@@ -14,6 +14,7 @@ class TestTriageSchema:
         from costa_workers.ml.triage import TriageLabel
         expected = {
             "needs_help", "infrastructure_damage", "road_blocked",
+            "huayco_observation", "flood_observation",
             "weather_observation", "false_alarm", "irrelevant",
         }
         assert {l.value for l in TriageLabel} == expected

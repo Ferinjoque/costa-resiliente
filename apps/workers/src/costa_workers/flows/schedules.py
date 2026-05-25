@@ -22,7 +22,8 @@ async def triage_flow() -> dict:
     return await run_triage_pipeline(
         db_dsn=os.getenv("DATABASE_URL", f"postgresql://{os.getenv('POSTGRES_USER','costa')}:{os.getenv('POSTGRES_PASSWORD','change_me_in_production')}@{os.getenv('POSTGRES_HOST','postgres')}:{os.getenv('POSTGRES_PORT','5432')}/{os.getenv('POSTGRES_DB','costa_resiliente')}"),
         ollama_host=os.getenv("LLM_BASE_URL", "http://ollama:11434"),
-        model=os.getenv("LLM_FAST_MODEL", "gemma2:2b"),
+        # Use TRIAGE_MODEL if set, fall back to LLM_PRIMARY_MODEL then gemma2:2b
+        model=os.getenv("TRIAGE_MODEL", os.getenv("LLM_PRIMARY_MODEL", "gemma2:2b")),
     )
 
 
