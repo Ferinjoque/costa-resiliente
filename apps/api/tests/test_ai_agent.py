@@ -378,3 +378,33 @@ async def test_parallel_tool_execution():
     tools_used = [tc["tool"] for tc in result.tool_calls]
     assert "get_flood_polygons" in tools_used
     assert "get_active_alerts" in tools_used
+
+
+# ─── _build_answer rainfall threshold labelling ───────────────────────────────
+
+def test_build_answer_rainfall_critical_threshold():
+    """≥50mm/72h must be labelled EMERGENCIA (matches alert_generator.RAIN_CRITICAL_72H_MM)."""
+    from costa_api.ai.agent import _build_answer
+    rows = [{"watershed": "Rímac", "acc_72h_mm": 55.0, "acc_24h_mm": 20.0}]
+    answer = _build_answer([], rows, "lluvia")
+    assert "EMERGENCIA" in answer
+    assert "50" in answer
+
+
+def test_build_answer_rainfall_high_threshold():
+    """≥25mm and <50mm must be labelled ALERTA (matches alert_generator.RAIN_HIGH_72H_MM)."""
+    from costa_api.ai.agent import _build_answer
+    rows = [{"watershed": "Chillón", "acc_72h_mm": 30.0, "acc_24h_mm": 10.0}]
+    answer = _build_answer([], rows, "lluvia")
+    assert "ALERTA" in answer
+    assert "25" in answer
+
+
+def test_build_answer_rainfall_below_threshold():
+    """<25mm must be labelled as below threshold."""
+    from costa_api.ai.agent import _build_answer
+    rows = [{"watershed": "Lurín", "acc_72h_mm": 10.0, "acc_24h_mm": 3.0}]
+    answer = _build_answer([], rows, "lluvia")
+    assert "debajo" in answer.lower() or "umbral" in answer.lower()
+    assert "EMERGENCIA" not in answer
+    assert "ALERTA" not in answer
