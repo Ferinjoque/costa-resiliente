@@ -396,6 +396,7 @@ async def upsert_observations(observations: list[dict], stations_meta: dict[str,
         for obs in observations:
             station_meta = stations_meta.get(obs["station_code"])
             if not station_meta:
+                logger.warning("upsert_observations: unknown station_code %r — skipping observation", obs.get("station_code"))
                 continue
             # Get station DB id
             station_id = await pool.fetchval(

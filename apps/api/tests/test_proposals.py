@@ -119,6 +119,32 @@ async def test_approve_unknown_proposal_404():
 
 
 @pytest.mark.asyncio
+async def test_double_approve_second_returns_404():
+    """Approve the same proposal twice — second approval must return 404
+    (atomic UPDATE WHERE status='pending' only matches once)."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        created = await c.post(
+            "/api/v1/proposals",
+            json={
+                "severity": "medium",
+                "alert_type": "flood",
+                "district_ubigeo": "150101",
+                "title": "Double-approve race test",
+                "summary": "Automated test — double approve",
+            },
+            headers=AUTH,
+        )
+        assert created.status_code == 201
+        pid = created.json()["id"]
+
+        first = await c.post(f"/api/v1/proposals/{pid}/approve", json={}, headers=AUTH)
+        assert first.status_code == 200
+
+        second = await c.post(f"/api/v1/proposals/{pid}/approve", json={}, headers=AUTH)
+        assert second.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_create_proposal_rejects_oversized_title():
     """ProposalCreate.title has max_length=200; longer must be rejected."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
