@@ -361,7 +361,7 @@ async def get_rainfall_accumulation(db: AsyncSession, hours_back: int = 72) -> l
     sql = text("""
         SELECT w.name AS watershed, ia.time,
                ia.acc_1h_mm, ia.acc_3h_mm, ia.acc_6h_mm,
-               ia.acc_12h_mm, ia.acc_24h_mm, ia.acc_72h_mm
+               ia.acc_12h_mm, ia.acc_24h_mm, ia.acc_72h_mm, ia.acc_168h_mm
         FROM hydro.imerg_accumulations ia
         JOIN geo.watersheds w ON w.id = ia.watershed_id
         WHERE ia.time >= NOW() - make_interval(hours => :hours)

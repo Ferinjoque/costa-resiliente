@@ -326,7 +326,9 @@ async def list_operators(
     _op: CurrentOperator = Depends(require_operator),
     db: AsyncSession = Depends(get_db),
 ) -> list[OperatorOut]:
-    """List all operators (COEN/COER only in production; any authenticated in demo)."""
+    """List all operators (COEN/COER only)."""
+    if _op.role not in {"coen", "coer"}:
+        raise HTTPException(status_code=403, detail="Solo operadores COEN/COER pueden listar operadores.")
     await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     result = await db.execute(
         text("SELECT id, username, full_name, role, district_ubigeo, active, created_at FROM ops.operators ORDER BY role, id")
