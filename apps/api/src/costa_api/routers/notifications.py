@@ -208,6 +208,7 @@ async def list_subscribers(
     db: AsyncSession = Depends(get_db),
     op: CurrentOperator = Depends(require_operator),
 ) -> list[SubscriberOut]:
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     result = await db.execute(
         text(
             "SELECT * FROM ops.notification_subscribers"
@@ -226,6 +227,7 @@ async def create_subscriber(
     op: CurrentOperator = Depends(require_operator),
 ) -> SubscriberOut:
     await _check_notif_create_rate(op.username)
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     row = await db.execute(
         text("""
             INSERT INTO ops.notification_subscribers
@@ -252,6 +254,7 @@ async def delete_subscriber(
     db: AsyncSession = Depends(get_db),
     op: CurrentOperator = Depends(require_operator),
 ) -> None:
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     result = await db.execute(
         text("UPDATE ops.notification_subscribers SET active = FALSE WHERE id = :id RETURNING id"),
         {"id": sub_id},
@@ -267,6 +270,7 @@ async def list_deliveries(
     db: AsyncSession = Depends(get_db),
     op: CurrentOperator = Depends(require_operator),
 ) -> list[DeliveryOut]:
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     result = await db.execute(
         text("SELECT * FROM ops.notification_deliveries ORDER BY created_at DESC LIMIT :limit"),
         {"limit": limit},
