@@ -325,6 +325,7 @@ async def infrastructure(
 
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     result = await db.execute(
         text(f"""
             SELECT
@@ -382,6 +383,7 @@ async def stations(
         where = "WHERE s.source = :source"
         params["source"] = source
 
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     result = await db.execute(
         text(f"""
             SELECT
@@ -568,6 +570,7 @@ async def social_signals(
         params["label"] = label
 
     where = " AND ".join(conditions)
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     result = await db.execute(
         text(f"""
             SELECT
@@ -634,6 +637,7 @@ async def shelters(
     evacuation destination after population-at-risk alerts.
     """
     where = "WHERE s.active = TRUE" if active_only else ""
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     result = await db.execute(
         text(f"""
             SELECT
