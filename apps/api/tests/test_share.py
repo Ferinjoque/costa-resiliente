@@ -13,6 +13,7 @@ from httpx import AsyncClient, ASGITransport
 from costa_api.main import app
 
 BASE = "http://test"
+AUTH = {"X-Testing-Operator": "1:test-op:coer"}
 
 VALID_SCENARIO = {
     "scenario": {
@@ -30,13 +31,19 @@ class TestMintShareToken:
     @pytest.mark.asyncio
     async def test_mint_returns_201(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.post("/api/v1/share", json=VALID_SCENARIO)
+            resp = await c.post("/api/v1/share", json=VALID_SCENARIO, headers=AUTH)
         assert resp.status_code == 201
+
+    @pytest.mark.asyncio
+    async def test_mint_unauthenticated_returns_401(self):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.post("/api/v1/share", json=VALID_SCENARIO)
+        assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_mint_response_shape(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.post("/api/v1/share", json=VALID_SCENARIO)
+            resp = await c.post("/api/v1/share", json=VALID_SCENARIO, headers=AUTH)
         body = resp.json()
         assert "token" in body
         assert "url" in body
@@ -46,7 +53,7 @@ class TestMintShareToken:
     @pytest.mark.asyncio
     async def test_mint_url_contains_token(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.post("/api/v1/share", json=VALID_SCENARIO)
+            resp = await c.post("/api/v1/share", json=VALID_SCENARIO, headers=AUTH)
         body = resp.json()
         assert body["token"] in body["url"]
 
@@ -56,7 +63,7 @@ class TestMintShareToken:
             "scenario": {**VALID_SCENARIO["scenario"], "activeLayers": ["districts", "bogus_layer"]}
         }
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.post("/api/v1/share", json=body)
+            resp = await c.post("/api/v1/share", json=body, headers=AUTH)
         assert resp.status_code == 400
 
     @pytest.mark.asyncio
@@ -65,7 +72,7 @@ class TestMintShareToken:
             "scenario": {**VALID_SCENARIO["scenario"], "timeWindowHours": 99}
         }
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.post("/api/v1/share", json=body)
+            resp = await c.post("/api/v1/share", json=body, headers=AUTH)
         assert resp.status_code == 400
 
     @pytest.mark.asyncio
@@ -73,7 +80,7 @@ class TestMintShareToken:
         for hours in (1, 3, 6, 12, 24, 72):
             body = {"scenario": {**VALID_SCENARIO["scenario"], "timeWindowHours": hours}}
             async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-                resp = await c.post("/api/v1/share", json=body)
+                resp = await c.post("/api/v1/share", json=body, headers=AUTH)
             assert resp.status_code == 201, f"timeWindowHours={hours} rejected"
 
     @pytest.mark.asyncio
@@ -86,7 +93,7 @@ class TestMintShareToken:
             }
         }
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.post("/api/v1/share", json=body)
+            resp = await c.post("/api/v1/share", json=body, headers=AUTH)
         assert resp.status_code == 201
 
 
@@ -94,7 +101,7 @@ class TestResolveShareToken:
     @pytest.mark.asyncio
     async def test_resolve_valid_token(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            mint = await c.post("/api/v1/share", json=VALID_SCENARIO)
+            mint = await c.post("/api/v1/share", json=VALID_SCENARIO, headers=AUTH)
             token = mint.json()["token"]
             resolve = await c.get(f"/api/v1/share/{token}")
         assert resolve.status_code == 200
@@ -102,7 +109,7 @@ class TestResolveShareToken:
     @pytest.mark.asyncio
     async def test_resolve_returns_scenario(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            mint = await c.post("/api/v1/share", json=VALID_SCENARIO)
+            mint = await c.post("/api/v1/share", json=VALID_SCENARIO, headers=AUTH)
             token = mint.json()["token"]
             resolve = await c.get(f"/api/v1/share/{token}")
         body = resolve.json()
@@ -113,7 +120,7 @@ class TestResolveShareToken:
     @pytest.mark.asyncio
     async def test_resolve_scenario_matches_minted(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            mint = await c.post("/api/v1/share", json=VALID_SCENARIO)
+            mint = await c.post("/api/v1/share", json=VALID_SCENARIO, headers=AUTH)
             token = mint.json()["token"]
             resolve = await c.get(f"/api/v1/share/{token}")
         scenario = resolve.json()["scenario"]
@@ -140,21 +147,21 @@ class TestScenarioSnapshotConstraints:
     async def test_district_ubigeo_over_12_chars_rejected(self):
         body = {"scenario": {**VALID_SCENARIO["scenario"], "districtUbigeo": "1" * 13}}
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.post("/api/v1/share", json=body)
+            resp = await c.post("/api/v1/share", json=body, headers=AUTH)
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
     async def test_district_name_over_200_chars_rejected(self):
         body = {"scenario": {**VALID_SCENARIO["scenario"], "districtName": "N" * 201}}
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.post("/api/v1/share", json=body)
+            resp = await c.post("/api/v1/share", json=body, headers=AUTH)
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
     async def test_replay_date_over_32_chars_rejected(self):
         body = {"scenario": {**VALID_SCENARIO["scenario"], "replayDate": "D" * 33}}
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.post("/api/v1/share", json=body)
+            resp = await c.post("/api/v1/share", json=body, headers=AUTH)
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
@@ -162,5 +169,5 @@ class TestScenarioSnapshotConstraints:
         """activeLayers has max_length=20 items."""
         body = {"scenario": {**VALID_SCENARIO["scenario"], "activeLayers": ["districts"] * 21}}
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.post("/api/v1/share", json=body)
+            resp = await c.post("/api/v1/share", json=body, headers=AUTH)
         assert resp.status_code == 422
