@@ -155,6 +155,17 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     imerg_run = await _redis_last_run_status("imerg", stale_min=70)     # 30-60min actual interval + grace
     stations_run = await _redis_last_run_status("stations", stale_min=70)  # 30-60min actual interval + grace
 
+    # Redis connectivity probe — rate-limiters + scraper heartbeats require Redis
+    redis_ok = False
+    try:
+        import redis.asyncio as _aioredis
+        _r = _aioredis.from_url(settings.redis_url, decode_responses=True, socket_connect_timeout=1, socket_timeout=1)
+        await _r.ping()
+        await _r.aclose()
+        redis_ok = True
+    except Exception as exc:
+        log.warning("health: Redis ping failed: %s", exc)
+
     sources = {
         # Merge Redis last-run status into bluesky/rss so health reflects scraper
         # liveness rather than content publication density (quiet periods have no
@@ -185,6 +196,7 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     return {
         "retrieved_at": now.isoformat(),
         "overall_status": overall,
+        "redis": {"status": "ok" if redis_ok else "offline"},
         "sources": sources,
     }
 
