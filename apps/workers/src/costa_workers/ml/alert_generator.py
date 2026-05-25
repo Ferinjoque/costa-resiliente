@@ -238,72 +238,111 @@ async def generate_huayco_alerts(db_dsn: str = DB_DSN) -> int:
     return inserted
 
 
+HUAYCO_CLUSTER_MIN = 3          # huaycos are immediately life-threatening — lower threshold
+
+# Per-label cluster config: (min_signals, alert_type_suffix, severity_fn, title_template, desc_template)
+_SOCIAL_CLUSTER_CONFIGS = [
+    {
+        "labels":    ["needs_help"],
+        "min":       SOCIAL_CLUSTER_MIN,
+        "alert_type": "social_cluster",
+        "title_fn":  lambda count, name, _lbl: f"{count} señales de ayuda — {name}",
+        "desc_fn":   lambda count, _name, _lbl: f"Clúster de {count} señales 'needs_help' en la última hora.",
+        "severity_fn": _social_severity,
+    },
+    {
+        "labels":    ["huayco_observation"],
+        "min":       HUAYCO_CLUSTER_MIN,
+        "alert_type": "social_cluster",
+        "title_fn":  lambda count, name, _lbl: f"{count} avistamientos de huayco — {name}",
+        "desc_fn":   lambda count, _name, _lbl: f"{count} reportes de campo 'huayco_observation' en la última hora. Activar protocolo de evacuación de quebradas.",
+        "severity_fn": lambda count: "critical" if count >= 3 else "high",
+    },
+    {
+        "labels":    ["flood_observation"],
+        "min":       SOCIAL_CLUSTER_MIN,
+        "alert_type": "social_cluster",
+        "title_fn":  lambda count, name, _lbl: f"{count} avistamientos de inundación — {name}",
+        "desc_fn":   lambda count, _name, _lbl: f"{count} reportes de campo 'flood_observation' en la última hora.",
+        "severity_fn": _social_severity,
+    },
+]
+
+
 @task(retries=2, retry_delay_seconds=30, log_prints=True)
 async def generate_social_alerts(db_dsn: str = DB_DSN) -> int:
     """
-    Generate ops.alerts when ≥ SOCIAL_CLUSTER_MIN needs_help signals
-    appear from the same district within SOCIAL_CLUSTER_WINDOW_H hours.
+    Generate ops.alerts when signal clusters exceed thresholds per label type.
+    - needs_help:         ≥5 in 1h → social_cluster alert
+    - huayco_observation: ≥3 in 1h → critical social_cluster (lower threshold, immediate threat)
+    - flood_observation:  ≥5 in 1h → social_cluster alert
     """
     import asyncpg
 
     window = datetime.now(timezone.utc) - timedelta(hours=SOCIAL_CLUSTER_WINDOW_H)
+    inserted = 0
 
     async with asyncpg.create_pool(db_dsn, min_size=1, max_size=2) as pool:
-        clusters = await pool.fetch(
-            """
-            SELECT s.district_id, d.name AS district_name,
-                   COUNT(*) AS signal_count,
-                   MAX(s.ingested_at) AS latest_signal,
-                   ARRAY_AGG(s.id ORDER BY s.ingested_at DESC) AS signal_ids
-            FROM social.signals s
-            JOIN geo.districts d ON d.id = s.district_id
-            WHERE s.triage_label = 'needs_help'
-              AND s.ingested_at >= $1
-            GROUP BY s.district_id, d.name
-            HAVING COUNT(*) >= $2
-            """,
-            window, SOCIAL_CLUSTER_MIN,
-        )
-
-        inserted = 0
-        for cluster in clusters:
-            count = int(cluster["signal_count"])
-            severity = _social_severity(count)
-            sig_ids = list(cluster["signal_ids"][:20])
-            source_refs = json.dumps({
-                "signal_ids": [str(i) for i in sig_ids],
-                "district_id": str(cluster["district_id"]),
-                "window_start": window.isoformat(),
-            })
-
-            # Skip if an active social alert already exists for this district
-            existing = await pool.fetchval(
+        for cfg in _SOCIAL_CLUSTER_CONFIGS:
+            clusters = await pool.fetch(
                 """
-                SELECT id FROM ops.alerts
-                WHERE type = 'social_cluster'
-                  AND district_id = $1
-                  AND status = 'active'
-                  AND created_at >= $2
-                LIMIT 1
+                SELECT s.district_id, d.name AS district_name,
+                       COUNT(*) AS signal_count,
+                       MAX(s.ingested_at) AS latest_signal,
+                       ARRAY_AGG(s.id ORDER BY s.ingested_at DESC) AS signal_ids,
+                       s.triage_label AS label
+                FROM social.signals s
+                JOIN geo.districts d ON d.id = s.district_id
+                WHERE s.triage_label = ANY($1::text[])
+                  AND s.ingested_at >= $2
+                GROUP BY s.district_id, d.name, s.triage_label
+                HAVING COUNT(*) >= $3
                 """,
-                cluster["district_id"], window,
+                cfg["labels"], window, cfg["min"],
             )
-            if existing:
-                continue
 
-            title = f"{count} señales de ayuda — {cluster['district_name']}"
-            desc = f"Clúster de {count} señales 'needs_help' en la última hora."
-            await pool.execute(
-                """
-                INSERT INTO ops.alerts
-                    (type, severity, status, title, description,
-                     district_id, source_refs)
-                VALUES ('social_cluster', $1, 'active', $2, $3, $4, $5::jsonb)
-                """,
-                severity, title, desc,
-                cluster["district_id"], source_refs,
-            )
-            inserted += 1
+            for cluster in clusters:
+                count = int(cluster["signal_count"])
+                label = cluster["label"]
+                severity = cfg["severity_fn"](count)
+                sig_ids = list(cluster["signal_ids"][:20])
+                source_refs = json.dumps({
+                    "signal_ids": [str(i) for i in sig_ids],
+                    "district_id": str(cluster["district_id"]),
+                    "window_start": window.isoformat(),
+                    "trigger_label": label,
+                })
+
+                existing = await pool.fetchval(
+                    """
+                    SELECT id FROM ops.alerts
+                    WHERE type = $1
+                      AND district_id = $2
+                      AND status = 'active'
+                      AND created_at >= $3
+                      AND source_refs->>'trigger_label' = $4
+                    LIMIT 1
+                    """,
+                    cfg["alert_type"], cluster["district_id"], window, label,
+                )
+                if existing:
+                    continue
+
+                title = cfg["title_fn"](count, cluster["district_name"], label)
+                desc = cfg["desc_fn"](count, cluster["district_name"], label)
+                new_id = await pool.fetchval(
+                    """
+                    INSERT INTO ops.alerts
+                        (type, severity, status, title, description,
+                         district_id, source_refs)
+                    VALUES ($1, $2, 'active', $3, $4, $5, $6::jsonb)
+                    RETURNING id
+                    """,
+                    cfg["alert_type"], severity, title, desc,
+                    cluster["district_id"], source_refs,
+                )
+                inserted += 1
+                await _auto_notify(pool, new_id, severity, title, cfg["alert_type"])
 
     logger.info("Social cluster alerts generated: %d", inserted)
     return inserted
