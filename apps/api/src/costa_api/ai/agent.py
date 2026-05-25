@@ -203,7 +203,9 @@ async def run(
     quick_tool = _detect_quick(query)
     if quick_tool:
         try:
-            result = await dispatch(quick_tool, {}, db, rag_fn=rag_fn)
+            # search_protocols requires the query string in args (rag_fn needs it to embed)
+            quick_args = {"query": query} if quick_tool == "search_protocols" else {}
+            result = await dispatch(quick_tool, quick_args, db, rag_fn=rag_fn)
             rows = result.get("rows", [])
             answer = _build_answer([], rows, query)
             clean_answer, triggered = sanitise(answer, rows)
@@ -224,7 +226,7 @@ async def run(
     if multi_tools:
         try:
             results = await asyncio.gather(
-                *[dispatch(t, {}, db, rag_fn=rag_fn) for t in multi_tools],
+                *[dispatch(t, {"query": query} if t == "search_protocols" else {}, db, rag_fn=rag_fn) for t in multi_tools],
                 return_exceptions=True,
             )
             all_rows: list[dict] = []
@@ -415,5 +417,11 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             f"Estimado {total:,} personas en zonas inundadas ({n} distrito{'s' if n != 1 else ''}). "
             f"Distrito más afectado: {top_d} (~{top_p:,} personas)."
         )
+
+    if "chunk" in first:
+        # Protocol/RAG rows — synthesise top excerpt
+        top = first.get("title", "protocolo")
+        excerpt = (first.get("chunk") or "")[:200].strip()
+        return f"Protocolo encontrado: {top}. {excerpt}{'…' if len(first.get('chunk','')) > 200 else ''}"
 
     return f"Se recuperaron {n} registros. Revise los datos adjuntos."
