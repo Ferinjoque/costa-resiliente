@@ -152,6 +152,7 @@ async def flood_latest(
                 ST_AsGeoJSON(geom)::json AS geometry
             FROM ml.flood_polygons
             WHERE acquired_at <= :ref_time
+              AND NOT ST_IsEmpty(geom)
             ORDER BY acquired_at DESC
             LIMIT :limit
         """),

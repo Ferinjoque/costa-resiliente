@@ -235,6 +235,7 @@ async def get_flood_polygons(db: AsyncSession, hours_back: int = 168, district_n
                ST_AsGeoJSON(fp.geom)::jsonb AS geojson
         FROM ml.flood_polygons fp
         WHERE fp.acquired_at >= NOW() - make_interval(hours => :hours)
+          AND NOT ST_IsEmpty(fp.geom)
         ORDER BY fp.acquired_at DESC
         LIMIT 10
     """)
