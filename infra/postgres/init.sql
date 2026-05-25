@@ -154,6 +154,7 @@ CREATE TABLE IF NOT EXISTS ml.flood_polygons (
 );
 CREATE INDEX IF NOT EXISTS flood_geom_idx ON ml.flood_polygons USING GIST (geom);
 CREATE INDEX IF NOT EXISTS flood_acquired_idx ON ml.flood_polygons (acquired_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS flood_polygons_scene_id_uniq ON ml.flood_polygons (scene_id);
 
 -- ─── ml: Huayco Susceptibility ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS ml.huayco_susceptibility (
