@@ -426,7 +426,14 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         return f"Hay {total} alerta{'s' if total != 1 else ''} activa{'s' if total != 1 else ''} en el sistema{capped}.{suffix}"
     if "acc_72h_mm" in first:
         mx = max((r.get("acc_72h_mm") or 0) for r in rows)
-        return f"Acumulación máxima en 72h: {mx:.1f} mm. {'⚠ Umbral SUPERADO (>42mm)' if mx > 42 else 'Por debajo del umbral de alerta'}."
+        mx_ws = next((r.get("watershed") for r in rows if (r.get("acc_72h_mm") or 0) == mx), "cuenca")
+        if mx >= 50.0:
+            status = f"⚠ EMERGENCIA — supera umbral CRÍTICO ANA (>{50:.0f} mm/72h)"
+        elif mx >= 25.0:
+            status = f"⚠ ALERTA — supera umbral ALTO ANA (>{25:.0f} mm/72h)"
+        else:
+            status = "Por debajo del umbral de alerta SENAMHI (25 mm/72h)"
+        return f"Lluvia máxima 72h: {mx:.1f} mm en cuenca {mx_ws}. {status}."
     if "estimated_population_at_risk" in first:
         total = sum(int(r.get("estimated_population_at_risk") or 0) for r in rows)
         top_d = rows[0].get("district", "?")
