@@ -804,7 +804,7 @@ export function AlertsPanel() {
     ...(district ? { district } : {}),
   };
 
-  const { data: alerts = [], isLoading, isError, dataUpdatedAt } = useAlerts(
+  const { data: alerts = [], isLoading, isError, dataUpdatedAt, refetch } = useAlerts(
     Object.keys(filters).length > 0 ? filters : undefined,
   );
   const { data: exposure } = useFloodExposure();
@@ -974,8 +974,14 @@ export function AlertsPanel() {
             </li>
           )}
           {isError && (
-            <li className="px-4 py-10 text-xs text-danger text-center" role="alert">
-              {tr("alerts", "error")}
+            <li className="px-4 py-8 flex flex-col items-center gap-2" role="alert">
+              <span className="text-xs text-danger text-center">{tr("alerts", "error")}</span>
+              <button
+                onClick={() => refetch()}
+                className="text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"
+              >
+                {locale === "es" ? "Reintentar" : "Retry"}
+              </button>
             </li>
           )}
           {!isLoading && !isError && displayed.length === 0 && tab === "active" && (
