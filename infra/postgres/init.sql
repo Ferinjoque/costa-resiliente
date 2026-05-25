@@ -347,7 +347,7 @@ CREATE TABLE IF NOT EXISTS rag.documents (
     indexed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS rag_documents_source_idx    ON rag.documents (source);
-CREATE INDEX IF NOT EXISTS rag_documents_hash_idx      ON rag.documents (content_hash);
+CREATE UNIQUE INDEX IF NOT EXISTS rag_documents_content_hash_unique ON rag.documents (content_hash);
 -- HNSW index for fast ANN search (created after first data load)
 -- CREATE INDEX rag_documents_embedding_hnsw ON rag.documents
 --     USING hnsw (embedding vector_cosine_ops) WITH (m=16, ef_construction=64);

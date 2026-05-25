@@ -1,4 +1,5 @@
 """District and geographic reference endpoints."""
+import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -7,6 +8,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.db import get_db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/districts", tags=["geo"])
 
@@ -342,7 +345,8 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
             {"name": district["name"]},
         )
         historical_count = int((sinpad_result.scalar() or 0))
-    except Exception:
+    except Exception as exc:
+        logger.debug("SINPAD table not available (run load_sinpad.py to enable): %s", exc)
         historical_count = 0
 
     return {

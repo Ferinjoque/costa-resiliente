@@ -94,6 +94,8 @@ async def create_proposal(body: ProposalCreate, db: AsyncSession = Depends(get_d
     )
     await db.commit()
     row = result.fetchone()
+    if not row:
+        raise HTTPException(500, "Failed to create proposal")
     return {"id": row.id, "status": "pending", "created_at": row.created_at}
 
 
@@ -105,14 +107,22 @@ async def approve_proposal(
     review: ProposalReview,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    row = (await db.execute(
-        text("SELECT * FROM ops.alert_proposals WHERE id=:id AND status='pending'"),
-        {"id": proposal_id},
-    )).fetchone()
-    if not row:
+    # Atomically claim the proposal — prevents double-approve race condition.
+    # If two requests arrive simultaneously, only one UPDATE sees status='pending'.
+    claimed = await db.execute(
+        text("""
+            UPDATE ops.alert_proposals
+            SET status='approved', reviewed_by=:op, reviewed_at=NOW()
+            WHERE id=:id AND status='pending'
+            RETURNING *
+        """),
+        {"op": review.operator_id, "id": proposal_id},
+    )
+    p_row = claimed.fetchone()
+    if not p_row:
         raise HTTPException(404, "Proposal not found or already reviewed")
 
-    p = dict(row._mapping)
+    p = dict(p_row._mapping)
     refs_json = json.dumps(p.get("source_refs") or [], default=str)
 
     alert_result = await db.execute(
@@ -135,16 +145,10 @@ async def approve_proposal(
             "refs": refs_json,
         },
     )
-    alert_id = alert_result.fetchone().id
-
-    await db.execute(
-        text("""
-            UPDATE ops.alert_proposals
-            SET status='approved', reviewed_by=:op, reviewed_at=NOW()
-            WHERE id=:id
-        """),
-        {"op": review.operator_id, "id": proposal_id},
-    )
+    alert_row = alert_result.fetchone()
+    if not alert_row:
+        raise HTTPException(500, "Failed to create alert from proposal")
+    alert_id = alert_row.id
 
     payload_json = json.dumps(
         {"proposal_id": proposal_id, "alert_id": alert_id, "notes": review.notes},
