@@ -206,6 +206,7 @@ async def generate_flood_alerts(db_dsn: str = DB_DSN) -> int:
                     LIMIT 1) AS primary_district_ubigeo
             FROM ml.flood_polygons fp
             WHERE fp.geom IS NOT NULL
+              AND NOT ST_IsEmpty(fp.geom)
               AND fp.area_km2 >= $1
               AND NOT EXISTS (
                   SELECT 1 FROM ops.alerts a
