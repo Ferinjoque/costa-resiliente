@@ -25,7 +25,20 @@ SESSION_LOG = "/session_log_results.jsonl"  # written inside container
 
 @pytest.fixture(scope="module")
 def client():
-    with httpx.Client(base_url=BASE, timeout=30.0) as c:
+    # Authenticate with demo credentials to get a JWT for write-gated endpoints.
+    # Falls back to no auth if token endpoint is unavailable.
+    auth_headers: dict = {}
+    try:
+        with httpx.Client(base_url=BASE, timeout=10.0) as boot:
+            r = boot.post(
+                "/auth/token",
+                data={"username": "coer_lima", "password": "demo1234", "grant_type": "password"},
+            )
+            if r.status_code == 200:
+                auth_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    except Exception:
+        pass
+    with httpx.Client(base_url=BASE, timeout=30.0, headers=auth_headers) as c:
         yield c
 
 
@@ -1163,8 +1176,8 @@ class TestSecurity:
         r = client.get(f"/districts/{'a' * 500}")
         assert r.status_code in {400, 404, 422}
 
-    def test_alert_action_no_auth_still_works(self, client):
-        # System currently has no auth — verify endpoints are accessible
+    def test_alert_list_accessible_without_write_auth(self, client):
+        # Read-only endpoints require no auth — verify they remain accessible
         r = client.get("/alerts")
         assert r.status_code == 200
 

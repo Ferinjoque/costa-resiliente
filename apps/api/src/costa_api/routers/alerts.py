@@ -33,6 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.db import get_db, engine
 from costa_api.routers.notifications import fan_out_notifications
+from costa_api.routers.auth import require_operator, CurrentOperator
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -160,6 +161,7 @@ async def act_on_alert(
     action: AlertAction,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
 ) -> dict:
     """
     Acknowledge, escalate, false_positive, or close an alert.
@@ -218,7 +220,7 @@ async def act_on_alert(
             VALUES (:op, :atype, :aid, CAST(:payload AS jsonb), :session)
         """),
         {
-            "op": action.operator_id,
+            "op": op.username,
             "atype": f"alert_{action.action}",
             "aid": alert_id,
             "payload": json.dumps(payload, ensure_ascii=False),
@@ -244,7 +246,11 @@ async def act_on_alert(
 # ─── Free-form decision log entry ────────────────────────────────────────────
 
 @router.post("/log")
-async def log_decision(entry: LogEntry, db: AsyncSession = Depends(get_db)) -> dict:
+async def log_decision(
+    entry: LogEntry,
+    db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
+) -> dict:
     """Append a free-form entry to the decision log (dispatch, protocol step, note)."""
     await db.execute(
         text("""
@@ -253,7 +259,7 @@ async def log_decision(entry: LogEntry, db: AsyncSession = Depends(get_db)) -> d
             VALUES (:op, :atype, :aid, CAST(:payload AS jsonb), :session)
         """),
         {
-            "op": entry.operator_id,
+            "op": op.username,
             "atype": entry.action_type,
             "aid": entry.alert_id,
             "payload": json.dumps(entry.payload, ensure_ascii=False),

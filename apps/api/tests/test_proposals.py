@@ -2,6 +2,7 @@
 
 Session 6 adds frontend UI for review + filters test-residue rows from the
 operator-facing list. These tests pin both behaviors so we don't regress.
+Session 15 adds auth guards to approve/reject; write tests use AUTH header.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from httpx import AsyncClient, ASGITransport
 from costa_api.main import app
 
 BASE = "http://test"
+AUTH = {"X-Testing-Operator": "1:test-op:coer"}
 
 
 @pytest.mark.asyncio
@@ -45,15 +47,16 @@ async def test_create_proposal_then_approve_inserts_alert():
         "source_refs": [{"source": "sentinel1"}, {"source": "social_cluster"}],
     }
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-        # Create
+        # Create (internal — no auth required)
         created = await c.post("/api/v1/proposals", json=proposal_body)
         assert created.status_code == 201
         pid = created.json()["id"]
 
-        # Approve
+        # Approve (operator-gated — requires auth)
         approve = await c.post(
             f"/api/v1/proposals/{pid}/approve",
             json={"operator_id": "coen_lima", "notes": "Session 6 audit"},
+            headers=AUTH,
         )
         assert approve.status_code == 200
         approved = approve.json()
@@ -64,11 +67,34 @@ async def test_create_proposal_then_approve_inserts_alert():
 
 
 @pytest.mark.asyncio
+async def test_approve_unauthenticated_returns_401():
+    """No auth header → 401 before any DB operations."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/proposals/1/approve",
+            json={"operator_id": "attacker"},
+        )
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_reject_unauthenticated_returns_401():
+    """No auth header → 401 before any DB operations."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/proposals/1/reject",
+            json={"operator_id": "attacker"},
+        )
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
 async def test_approve_unknown_proposal_404():
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         resp = await c.post(
             "/api/v1/proposals/99999999/approve",
             json={"operator_id": "coen_lima"},
+            headers=AUTH,
         )
     assert resp.status_code == 404
 
@@ -125,6 +151,7 @@ async def test_reject_proposal_locks_status():
         rej = await c.post(
             f"/api/v1/proposals/{pid}/reject",
             json={"operator_id": "coer_lima", "notes": "Falso positivo"},
+            headers=AUTH,
         )
         assert rej.status_code == 200
 
@@ -132,5 +159,6 @@ async def test_reject_proposal_locks_status():
         again = await c.post(
             f"/api/v1/proposals/{pid}/approve",
             json={"operator_id": "coen_lima"},
+            headers=AUTH,
         )
         assert again.status_code == 404

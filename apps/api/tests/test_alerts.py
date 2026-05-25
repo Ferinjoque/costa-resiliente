@@ -16,6 +16,7 @@ from httpx import AsyncClient, ASGITransport
 from costa_api.main import app
 
 BASE = "http://test"
+AUTH = {"X-Testing-Operator": "1:test-op:coer"}
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -108,11 +109,25 @@ class TestAlertAction:
                     "note": "unit test ack",
                     "session_id": "test-session",
                 },
+                headers=AUTH,
             )
         assert resp.status_code == 200
         body = resp.json()
         assert body["alert_id"] == alert_id
         assert body["new_status"] == "acknowledged"
+
+    @pytest.mark.asyncio
+    async def test_action_unauthenticated_returns_401(self):
+        """No auth header → 401 before any DB operations."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            alerts = (await c.get("/api/v1/alerts?limit=1")).json()
+            if not alerts:
+                pytest.skip("no alerts available")
+            resp = await c.post(
+                f"/api/v1/alerts/{alerts[0]['id']}/action",
+                json={"operator_id": "attacker", "action": "close"},
+            )
+        assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_reject_invalid_action(self):
@@ -124,6 +139,7 @@ class TestAlertAction:
             resp = await c.post(
                 f"/api/v1/alerts/{alert_id}/action",
                 json={"operator_id": "test-op", "action": "delete_everything"},
+                headers=AUTH,
             )
         assert resp.status_code == 422
 
@@ -133,6 +149,7 @@ class TestAlertAction:
             resp = await c.post(
                 "/api/v1/alerts/999999999/action",
                 json={"operator_id": "test-op", "action": "acknowledge"},
+                headers=AUTH,
             )
         assert resp.status_code == 404
 
@@ -149,6 +166,7 @@ class TestAlertAction:
                 resp = await c.post(
                     f"/api/v1/alerts/{alert_id}/action",
                     json={"operator_id": "test-op", "action": action},
+                    headers=AUTH,
                 )
                 assert resp.status_code == 200, f"action={action!r} returned {resp.status_code}"
 
@@ -162,6 +180,7 @@ class TestAlertAction:
             resp = await c.post(
                 f"/api/v1/alerts/{alerts[0]['id']}/action",
                 json={"operator_id": "test-op", "action": "acknowledge", "note": "N" * 2001},
+                headers=AUTH,
             )
         assert resp.status_code == 422
 
@@ -175,6 +194,7 @@ class TestAlertAction:
             resp = await c.post(
                 f"/api/v1/alerts/{alerts[0]['id']}/action",
                 json={"operator_id": "x" * 101, "action": "acknowledge"},
+                headers=AUTH,
             )
         assert resp.status_code == 422
 
@@ -194,6 +214,7 @@ class TestLogDecision:
                     "payload": {"resource_name": "Unidad COEN Lima-Sur", "destination": "Lurigancho"},
                     "session_id": "test-session",
                 },
+                headers=AUTH,
             )
         assert resp.status_code == 200
         assert resp.json()["ok"] is True
@@ -208,6 +229,7 @@ class TestLogDecision:
                     "action_type": "protocol_step",
                     "payload": {"step": "Activar COE distrital", "protocol": "INDECI-flood-v2"},
                 },
+                headers=AUTH,
             )
         assert resp.status_code == 200
 
@@ -222,8 +244,23 @@ class TestLogDecision:
                     "action_type": "note",
                     "payload": {"note": "Reporte verbal del alcalde de Chosica"},
                 },
+                headers=AUTH,
             )
         assert resp.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_log_unauthenticated_returns_401(self):
+        """No auth header → 401."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.post(
+                "/api/v1/alerts/log",
+                json={
+                    "operator_id": "attacker",
+                    "action_type": "note",
+                    "payload": {"note": "unauthorized entry"},
+                },
+            )
+        assert resp.status_code == 401
 
 
 # ─── GET /api/v1/alerts/decision-log ─────────────────────────────────────────
@@ -247,6 +284,7 @@ class TestDecisionLog:
                     "action_type": "note",
                     "payload": {"note": "shape test"},
                 },
+                headers=AUTH,
             )
             resp = await c.get("/api/v1/alerts/decision-log?limit=10")
         entries = resp.json()
@@ -268,7 +306,9 @@ class TestDecisionLog:
                     "action_type": "note",
                     "payload": {"note": "operator filter test"},
                 },
+                headers=AUTH,
             )
+            # AUTH header username is "test-op" — that's what gets stored
             resp = await c.get("/api/v1/alerts/decision-log?operator_id=test-op&limit=20")
         entries = resp.json()
         for e in entries:
@@ -341,6 +381,7 @@ class TestDecisionLogExport:
                     "action_type": "export",
                     "payload": {"note": "CSV parse test"},
                 },
+                headers=AUTH,
             )
             resp = await c.get("/api/v1/alerts/decision-log/export?limit=20")
         reader = csv.DictReader(io.StringIO(resp.text))

@@ -309,7 +309,7 @@ export async function logDecision(entry: {
     await fetch(`${BASE}/api/v1/alerts/log`, {
       method: "POST",
       signal: AbortSignal.timeout(5_000),
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
       body: JSON.stringify(entry),
     });
   } catch {

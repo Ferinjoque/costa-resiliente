@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.db import get_db
 from costa_api.routers.notifications import fan_out_notifications
+from costa_api.routers.auth import require_operator, CurrentOperator
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/proposals", tags=["proposals"])
@@ -108,6 +109,7 @@ async def approve_proposal(
     review: ProposalReview,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
 ) -> dict:
     # Atomically claim the proposal — prevents double-approve race condition.
     # If two requests arrive simultaneously, only one UPDATE sees status='pending'.
@@ -118,7 +120,7 @@ async def approve_proposal(
             WHERE id=:id AND status='pending'
             RETURNING *
         """),
-        {"op": review.operator_id, "id": proposal_id},
+        {"op": op.username, "id": proposal_id},
     )
     p_row = claimed.fetchone()
     if not p_row:
@@ -161,7 +163,7 @@ async def approve_proposal(
             INSERT INTO ops.decision_log (operator_id, action_type, payload)
             VALUES (:op, 'approve_proposal', CAST(:payload AS jsonb))
         """),
-        {"op": review.operator_id, "payload": payload_json},
+        {"op": op.username, "payload": payload_json},
     )
     await db.commit()
 
@@ -186,6 +188,7 @@ async def reject_proposal(
     proposal_id: int,
     review: ProposalReview,
     db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
 ) -> dict:
     result = await db.execute(
         text("""
@@ -194,7 +197,7 @@ async def reject_proposal(
             WHERE id=:id AND status='pending'
             RETURNING id
         """),
-        {"op": review.operator_id, "id": proposal_id},
+        {"op": op.username, "id": proposal_id},
     )
     if not result.fetchone():
         raise HTTPException(404, "Proposal not found or already reviewed")
@@ -207,7 +210,7 @@ async def reject_proposal(
             INSERT INTO ops.decision_log (operator_id, action_type, payload)
             VALUES (:op, 'reject_proposal', CAST(:payload AS jsonb))
         """),
-        {"op": review.operator_id, "payload": payload_json},
+        {"op": op.username, "payload": payload_json},
     )
     await db.commit()
     return {"proposal_id": proposal_id, "status": "rejected"}
