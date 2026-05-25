@@ -15,24 +15,44 @@ Channels:
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import json
 import logging
 from datetime import datetime
 from typing import Optional
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.db import get_db, engine
 from costa_api.config import settings
+from costa_api.routers.auth import require_operator, CurrentOperator
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+
+_PRIVATE_NETS = [
+    ipaddress.ip_network(cidr) for cidr in (
+        "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16",
+        "127.0.0.0/8", "169.254.0.0/16", "::1/128", "fc00::/7",
+    )
+]
+
+
+def _reject_private_host(host: str) -> None:
+    """Raise ValueError if host resolves to a private/internal IP (SSRF guard)."""
+    try:
+        addr = ipaddress.ip_address(host)
+    except ValueError:
+        return  # hostname — checked at dispatch time via httpx
+    if any(addr in net for net in _PRIVATE_NETS):
+        raise ValueError(f"webhook target must be a public URL (private IP blocked: {host})")
 
 
 # ─── Schema ───────────────────────────────────────────────────────────────────
@@ -66,6 +86,17 @@ class SubscriberCreate(BaseModel):
         if not v:
             raise ValueError("target cannot be empty")
         return v
+
+    @model_validator(mode="after")
+    def check_webhook_url_safe(self) -> "SubscriberCreate":
+        if self.channel != "webhook":
+            return self
+        parsed = urlparse(self.target)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("webhook target must use http or https")
+        host = parsed.hostname or ""
+        _reject_private_host(host)
+        return self
 
 
 class SubscriberOut(BaseModel):
@@ -105,7 +136,11 @@ async def list_subscribers(
 
 
 @router.post("", response_model=SubscriberOut, status_code=201)
-async def create_subscriber(body: SubscriberCreate, db: AsyncSession = Depends(get_db)) -> SubscriberOut:
+async def create_subscriber(
+    body: SubscriberCreate,
+    db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
+) -> SubscriberOut:
     row = await db.execute(
         text("""
             INSERT INTO ops.notification_subscribers
@@ -119,7 +154,7 @@ async def create_subscriber(body: SubscriberCreate, db: AsyncSession = Depends(g
             "label": body.label,
             "sev": body.severity_min,
             "dist": body.district_filter,
-            "by": body.created_by,
+            "by": op.username,
         },
     )
     await db.commit()
@@ -127,7 +162,11 @@ async def create_subscriber(body: SubscriberCreate, db: AsyncSession = Depends(g
 
 
 @router.delete("/{sub_id}", status_code=204)
-async def delete_subscriber(sub_id: int, db: AsyncSession = Depends(get_db)) -> None:
+async def delete_subscriber(
+    sub_id: int,
+    db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
+) -> None:
     result = await db.execute(
         text("UPDATE ops.notification_subscribers SET active = FALSE WHERE id = :id RETURNING id"),
         {"id": sub_id},
@@ -181,6 +220,13 @@ async def _record_delivery(
 
 async def _send_webhook(target: str, payload: dict, timeout: float = 5.0, retries: int = 3) -> tuple[bool, str, int]:
     """POST payload to webhook URL. Returns (success, error_message, attempt_count)."""
+    parsed = urlparse(target)
+    host = parsed.hostname or ""
+    try:
+        _reject_private_host(host)
+    except ValueError as exc:
+        return False, str(exc), 0
+
     last_err = ""
     async with httpx.AsyncClient(timeout=timeout) as client:
         for attempt in range(1, retries + 1):

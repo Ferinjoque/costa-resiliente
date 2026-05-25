@@ -8,6 +8,7 @@ from httpx import AsyncClient, ASGITransport
 from costa_api.main import app
 
 BASE = "http://test"
+AUTH = {"X-Testing-Operator": "1:test_op:coer"}
 
 
 # ─── GET /notifications ───────────────────────────────────────────────────────
@@ -30,14 +31,26 @@ async def test_create_webhook_subscriber():
             "target": "https://example.com/hook",
             "label": "Test webhook",
             "severity_min": "high",
-        })
+        }, headers=AUTH)
         assert resp.status_code == 201
         sub = resp.json()
         assert sub["channel"] == "webhook"
         assert sub["active"] is True
         assert "id" in sub
         # cleanup
-        await c.delete(f"/api/v1/notifications/{sub['id']}")
+        await c.delete(f"/api/v1/notifications/{sub['id']}", headers=AUTH)
+
+
+@pytest.mark.asyncio
+async def test_create_subscriber_unauthenticated_returns_401():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post("/api/v1/notifications", json={
+            "channel": "webhook",
+            "target": "https://example.com/hook",
+            "label": "No auth",
+            "severity_min": "high",
+        })
+    assert resp.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -48,7 +61,7 @@ async def test_create_subscriber_invalid_channel_returns_422():
             "target": "some-target",
             "label": "Bad channel",
             "severity_min": "high",
-        })
+        }, headers=AUTH)
     assert resp.status_code == 422
 
 
@@ -60,7 +73,7 @@ async def test_create_subscriber_invalid_severity_returns_422():
             "target": "https://example.com/hook",
             "label": "Bad sev",
             "severity_min": "apocalyptic",
-        })
+        }, headers=AUTH)
     assert resp.status_code == 422
 
 
@@ -72,7 +85,33 @@ async def test_create_subscriber_empty_target_returns_422():
             "target": "   ",
             "label": "Empty target",
             "severity_min": "high",
-        })
+        }, headers=AUTH)
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_webhook_private_ip_target_rejected():
+    """SSRF guard: webhook target pointing to private IP must return 422."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post("/api/v1/notifications", json={
+            "channel": "webhook",
+            "target": "http://192.168.1.1/evil",
+            "label": "SSRF test",
+            "severity_min": "high",
+        }, headers=AUTH)
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_webhook_localhost_target_rejected():
+    """SSRF guard: localhost webhook target must return 422."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post("/api/v1/notifications", json={
+            "channel": "webhook",
+            "target": "http://127.0.0.1/internal",
+            "label": "Localhost SSRF",
+            "severity_min": "high",
+        }, headers=AUTH)
     assert resp.status_code == 422
 
 
@@ -86,11 +125,11 @@ async def test_delete_subscriber_soft_deactivates():
             "target": "+51999000000",
             "label": "SMS test",
             "severity_min": "critical",
-        })
+        }, headers=AUTH)
         assert create_resp.status_code == 201
         sub_id = create_resp.json()["id"]
 
-        del_resp = await c.delete(f"/api/v1/notifications/{sub_id}")
+        del_resp = await c.delete(f"/api/v1/notifications/{sub_id}", headers=AUTH)
         assert del_resp.status_code == 204
 
         subs = (await c.get("/api/v1/notifications")).json()
@@ -100,7 +139,7 @@ async def test_delete_subscriber_soft_deactivates():
 @pytest.mark.asyncio
 async def test_delete_nonexistent_subscriber_returns_404():
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-        resp = await c.delete("/api/v1/notifications/999999999")
+        resp = await c.delete("/api/v1/notifications/999999999", headers=AUTH)
     assert resp.status_code == 404
 
 
@@ -133,7 +172,7 @@ async def test_subscriber_label_over_100_chars_rejected():
             "target": "https://example.com/hook",
             "label": "L" * 101,
             "severity_min": "high",
-        })
+        }, headers=AUTH)
     assert resp.status_code == 422
 
 
@@ -146,7 +185,7 @@ async def test_subscriber_target_over_500_chars_rejected():
             "target": "https://example.com/" + "x" * 490,
             "label": "Big target",
             "severity_min": "high",
-        })
+        }, headers=AUTH)
     assert resp.status_code == 422
 
 
@@ -160,5 +199,5 @@ async def test_subscriber_district_filter_over_12_chars_rejected():
             "label": "District test",
             "severity_min": "high",
             "district_filter": "1" * 13,
-        })
+        }, headers=AUTH)
     assert resp.status_code == 422
