@@ -37,22 +37,22 @@ async def search_protocols(query: str, top_k: int = 3) -> list[dict]:
 
     vec_str = "[" + ",".join(f"{v:.6f}" for v in embedding) + "]"
 
-    # 2. Query pgvector — inline vec_str as a literal because SQLAlchemy
-    # doesn't parse the :param::vector cast shorthand correctly (f405 error).
-    # vec_str is safe to inline: it's a float array we generated ourselves.
-    sql = text(f"""
+    # 2. Query pgvector — use CAST(:vec AS vector) so vec_str is a bound
+    # parameter rather than interpolated SQL. The :: shorthand triggers an
+    # SQLAlchemy false-parse of the colon; CAST() is the standard workaround.
+    sql = text("""
         SELECT source, title, chunk, meta,
-               1 - (embedding <=> '{vec_str}'::vector) AS similarity
+               1 - (embedding <=> CAST(:vec AS vector)) AS similarity
         FROM rag.documents
         WHERE embedding IS NOT NULL
-        ORDER BY embedding <=> '{vec_str}'::vector
+        ORDER BY embedding <=> CAST(:vec AS vector)
         LIMIT :k
     """)
 
     try:
         async with get_ai_db_session() as session:
             await session.execute(text("SET LOCAL statement_timeout = '10000'"))
-            result = await session.execute(sql, {"k": top_k})
+            result = await session.execute(sql, {"vec": vec_str, "k": top_k})
             rows = [dict(r._mapping) for r in result]
             return rows
     except Exception as exc:

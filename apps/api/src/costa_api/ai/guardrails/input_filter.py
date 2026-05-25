@@ -60,7 +60,7 @@ _INJECTION_PATTERNS: list[tuple[str, str]] = [
     (r"\bsin\s+(restricciones?|l[íi]mites?|filtros?)\b", "jailbreak"),
 ]
 
-_COMPILED = [(re.compile(p, re.IGNORECASE), label) for p, label in _INJECTION_PATTERNS]
+_COMPILED = [(re.compile(p, re.IGNORECASE | re.DOTALL), label) for p, label in _INJECTION_PATTERNS]
 
 # Minimum query length — reject empty/trivial
 _MIN_LEN = 3
