@@ -56,6 +56,15 @@ function formatSource(src: string): string {
   return SOURCE_LABEL[key] ?? src.charAt(0).toUpperCase() + src.slice(1);
 }
 
+function isSafeUrl(url: string): boolean {
+  try {
+    const p = new URL(url);
+    return p.protocol === "https:" || p.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 function buildSourceUrl(source: string, sourceId?: string | null): string | null {
   if (!sourceId) return null;
   const s = source.toLowerCase();
@@ -69,11 +78,11 @@ function buildSourceUrl(source: string, sourceId?: string | null): string | null
     }
   }
   if (s === "reddit") return `https://reddit.com/${sourceId}`;
-  // All RSS sources store the article URL as source_id
-  if (s.startsWith("rss")) return sourceId;
-  // Telegram stores "ChannelName/messageId"
+  // RSS: sourceId is the article URL — only allow http/https
+  if (s.startsWith("rss")) return isSafeUrl(sourceId) ? sourceId : null;
+  // Telegram stores "ChannelName/messageId" or a full https URL
   if (s === "telegram") {
-    if (sourceId.startsWith("https://")) return sourceId;
+    if (sourceId.startsWith("https://")) return isSafeUrl(sourceId) ? sourceId : null;
     return `https://t.me/${sourceId}`;
   }
   return null;
