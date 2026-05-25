@@ -1,11 +1,11 @@
 """Output guardrail — scans LLM responses before they reach the operator.
 
 Scans for:
-  - Leaked API keys / tokens (sk-*, Bearer, JWT signatures)
+  - Leaked API keys / tokens (sk-*, Bearer, JWT signatures, AWS keys)
+  - Connection strings with embedded credentials
   - Peru DNI patterns (8 digits)
-  - Email addresses in responses (only flag if not in source data context)
+  - Email addresses
   - System-prompt echoes (model repeating its own instructions)
-  - Suspicious coordinate fabrication (coordinates outside Lima bbox)
 
 Returns the text as-is if clean, or a sanitised version with redactions.
 """
@@ -39,10 +39,6 @@ _COMPILED_REDACT = [
     (re.compile(p), repl, label)
     for p, repl, label in _REDACT_PATTERNS
 ]
-
-# Lima bounding box for coordinate sanity check
-_LIMA_LAT_MIN, _LIMA_LAT_MAX = -12.5, -11.7
-_LIMA_LON_MIN, _LIMA_LON_MAX = -77.2, -76.7
 
 # Detect system-prompt echo: model repeating instruction-style sentences
 _SYS_PROMPT_ECHO = re.compile(
