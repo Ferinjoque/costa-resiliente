@@ -54,6 +54,42 @@ def _risk_prose_es(
     return f"{district_name}: " + " · ".join(parts) + "."
 
 
+def _risk_prose_en(
+    population: int | None,
+    flood_area_km2: float,
+    flood_polygon_count: int,
+    huayco_risk: str | None,
+    huayco_prob: float | None,
+    social_urgent: int,
+    social_total: int,
+    district_name: str,
+) -> str:
+    parts: list[str] = []
+
+    if flood_polygon_count > 0 and flood_area_km2 > 0:
+        pop_str = f"; ~{population:,} people in affected zone" if population else ""
+        parts.append(
+            f"{flood_polygon_count} active SAR flood polygon(s) "
+            f"({flood_area_km2:.1f} km² detected{pop_str})"
+        )
+    else:
+        parts.append("No active SAR flood extents detected")
+
+    if huayco_risk and huayco_prob is not None:
+        RISK_EN = {"low": "low", "moderate": "moderate", "high": "high", "very_high": "very high"}
+        parts.append(
+            f"{RISK_EN.get(huayco_risk, huayco_risk)} mudslide risk "
+            f"(probability {huayco_prob * 100:.0f}%)"
+        )
+
+    if social_total > 0:
+        parts.append(
+            f"{social_urgent} urgent signal(s) from {social_total} citizen reports (last 3 h)"
+        )
+
+    return f"{district_name}: " + " · ".join(parts) + "."
+
+
 def _overall_risk(
     flood_area_km2: float,
     huayco_risk: str | None,
@@ -177,7 +213,13 @@ async def district_fusion(
 
     # ── Compose ──────────────────────────────────────────────────────────────
     risk_level = _overall_risk(flood_area, huayco_risk, social_urgent)
-    prose = _risk_prose_es(
+    prose_es = _risk_prose_es(
+        population, flood_area, flood_count,
+        huayco_risk, huayco_prob,
+        social_urgent, social_total,
+        district_name,
+    )
+    prose_en = _risk_prose_en(
         population, flood_area, flood_count,
         huayco_risk, huayco_prob,
         social_urgent, social_total,
@@ -192,7 +234,8 @@ async def district_fusion(
             "population": population,
         },
         "risk_level": risk_level,
-        "prose_es": prose,
+        "prose_es": prose_es,
+        "prose_en": prose_en,
         "flood": {
             "active_polygon_count": flood_count,
             "overlap_km2": round(flood_area, 3),
