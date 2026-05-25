@@ -25,6 +25,8 @@ _REDACT_PATTERNS: list[tuple[str, str, str]] = [
     (r"Bearer\s+[A-Za-z0-9\-_.~+/]+=*", "Bearer [REDACTED]", "bearer_token"),
     # JWT: three base64url segments separated by dots
     (r"eyJ[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+", "[REDACTED_JWT]", "jwt"),
+    # AWS IAM access key IDs (AKIA/ASIA prefix + 16 uppercase alphanumeric chars)
+    (r"\b(AKIA|ASIA|AROA|AIDA|ANPA|ANVA|APKA)[A-Z0-9]{16}\b", "[REDACTED_AWS_KEY]", "aws_key"),
     # Postgres / Redis / Minio connection strings with passwords
     (r"(postgresql|redis|mysql|amqp)://[^:]+:[^@\s]+@", r"\1://[REDACTED]@", "conn_string"),
     # Peru DNI: exactly 8 digits (not part of larger number)
