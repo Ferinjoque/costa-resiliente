@@ -408,3 +408,115 @@ def test_build_answer_rainfall_below_threshold():
     assert "debajo" in answer.lower() or "umbral" in answer.lower()
     assert "EMERGENCIA" not in answer
     assert "ALERTA" not in answer
+
+
+# ─── _detect_quick: single-pattern matching ───────────────────────────────────
+
+def test_detect_quick_alerts_query():
+    """'alertas activas ahora' matches only get_active_alerts."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("¿Cuáles son las alertas activas ahora?") == "get_active_alerts"
+
+
+def test_detect_quick_river_level():
+    """River level query matches only get_river_levels."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("¿Cuál es el nivel del río Rímac en Chosica?") == "get_river_levels"
+
+
+def test_detect_quick_ambiguous_returns_none():
+    """Query matching 2+ patterns returns None (falls to LLM)."""
+    from costa_api.ai.agent import _detect_quick
+    # 'lluvia' (rainfall) + 'inundaci' (flood) → 2 patterns → None
+    result = _detect_quick("¿La lluvia causó inundaciones en Lima?")
+    assert result is None
+
+
+def test_detect_quick_rainfall():
+    """Precipitation keyword triggers get_rainfall_accumulation."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("¿Cuánta lluvia acumulada hay en las últimas 72h?") == "get_rainfall_accumulation"
+
+
+# ─── _detect_multi_quick: 2-3 simultaneous pattern match ─────────────────────
+
+def test_detect_multi_quick_two_patterns():
+    """Query with 2 signal types returns list of 2 tools."""
+    from costa_api.ai.agent import _detect_multi_quick
+    tools = _detect_multi_quick("nivel del río y lluvia acumulada en Rímac")
+    assert len(tools) == 2
+    assert "get_river_levels" in tools
+    assert "get_rainfall_accumulation" in tools
+
+
+def test_detect_multi_quick_no_match():
+    """Single-pattern query returns empty list (handled by quick_mode)."""
+    from costa_api.ai.agent import _detect_multi_quick
+    tools = _detect_multi_quick("¿cuántas alertas activas hay?")
+    assert tools == []
+
+
+def test_detect_multi_quick_deduplicates():
+    """Multiple keywords for the same tool produce only one entry per tool."""
+    from costa_api.ai.agent import _detect_multi_quick
+    # "río rímac" + "lluvia" → two distinct tools, each at most once
+    tools = _detect_multi_quick("nivel del río rímac y cuánta lluvia acumulada")
+    assert tools.count("get_river_levels") == 1
+    assert tools.count("get_rainfall_accumulation") == 1
+
+
+# ─── Quick-mode integration: bypass LLM, return quick_mode=True ──────────────
+
+@pytest.mark.asyncio
+async def test_quick_mode_returns_quick_mode_flag():
+    """Single quick-pattern query must return quick_mode=True without calling LLM."""
+    db = AsyncMock()
+    fake_alerts = [{"id": 1, "severity": "critical", "_total_active": 3}]
+
+    async def _fake_alerts(db, **kwargs):
+        return fake_alerts
+
+    with (
+        patch("costa_api.ai.agent.gateway") as mock_gw,
+        patch.dict(db_tools._TOOL_MAP, {"get_active_alerts": _fake_alerts}),
+        patch("costa_api.ai.tools.db_tools.get_cached", AsyncMock(return_value=None)),
+        patch("costa_api.ai.tools.db_tools.set_cached", AsyncMock()),
+    ):
+        mock_gw.chat = AsyncMock(side_effect=AssertionError("LLM must not be called in quick mode"))
+        result = await agent_run(
+            query="¿Cuántas alertas activas hay en Lima?",
+            operator_id="op1",
+            db=db,
+        )
+
+    assert result.quick_mode is True
+    assert not result.blocked
+    assert not mock_gw.chat.called
+
+
+@pytest.mark.asyncio
+async def test_quick_mode_dispatch_raises_falls_through_to_llm():
+    """When dispatch itself raises (escaping its own try/except), agent falls to LLM."""
+    db = AsyncMock()
+
+    direct_response = _make_llm_response("Hay 3 alertas activas.")
+
+    with (
+        patch("costa_api.ai.agent.gateway") as mock_gw,
+        # Patch dispatch at the agent module level so the quick-mode try/except catches it
+        patch("costa_api.ai.agent.dispatch", AsyncMock(side_effect=RuntimeError("dispatch bug"))),
+        patch("costa_api.ai.agent._keyword_dispatch", AsyncMock(return_value={"tool": "get_active_alerts", "rows": [], "count": 0})),
+    ):
+        mock_gw.chat = AsyncMock(return_value=direct_response)
+        mock_gw.extract_tool_calls = MagicMock(return_value=[])
+        mock_gw.extract_text = MagicMock(return_value="Hay 3 alertas activas.")
+
+        result = await agent_run(
+            query="¿Cuántas alertas activas hay en Lima?",
+            operator_id="op1",
+            db=db,
+        )
+
+    # dispatch raised at the agent level — fell through to LLM — quick_mode=False
+    assert result.quick_mode is False
+    assert not result.blocked
