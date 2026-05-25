@@ -123,3 +123,50 @@ def test_field_report_accepts_flood_observation(client):
     )
     assert resp.status_code == 201
     assert resp.json()["signal_id"] > 0
+
+
+# ─── Pydantic constraint enforcement ─────────────────────────────────────────
+
+def test_field_report_rejects_text_over_2000_chars(client):
+    """FieldReport.text has max_length=2000; longer should be rejected."""
+    resp = client.post(
+        "/social/field-report",
+        json={
+            "operator_id": "coen_lima",
+            "text": "X" * 2001,
+            "label": "needs_help",
+        },
+    )
+    assert resp.status_code == 422
+
+
+def test_field_report_rejects_empty_operator_id(client):
+    """FieldReport.operator_id has min_length=1; empty should be rejected."""
+    resp = client.post(
+        "/social/field-report",
+        json={
+            "operator_id": "",
+            "text": "Válido texto de reporte",
+            "label": "needs_help",
+        },
+    )
+    assert resp.status_code == 422
+
+
+# ─── Idempotent duplicate behavior ────────────────────────────────────────────
+
+def test_field_report_duplicate_returns_existing_signal(client):
+    """Submitting identical text from same operator twice returns existing signal, not 409."""
+    payload = {
+        "operator_id": "test_dedup_operator",
+        "text": "Prueba deduplicación de reporte campo exacto",
+        "label": "needs_help",
+    }
+    r1 = client.post("/social/field-report", json=payload)
+    r2 = client.post("/social/field-report", json=payload)
+    assert r1.status_code == 201
+    assert r2.status_code == 201
+    b1, b2 = r1.json(), r2.json()
+    # Both must return a valid signal_id; second must match first (same DB row)
+    assert b1["signal_id"] == b2["signal_id"]
+    assert b2["status"] == "duplicate"
