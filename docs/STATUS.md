@@ -1,7 +1,7 @@
 # Costa Resiliente — Project Status
 
 > **This is the single source of truth for what's built, what's pending, and the current rubric score.**
-> Last updated: 2026-05-25 (Session 17)
+> Last updated: 2026-05-25 (Session 18)
 > Branch: `develop`
 
 For competition context, see [`COMPETITION.md`](COMPETITION.md).
@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **547 passed, 0 errors** (Session 17). Up from 445 (102 new tests: auth guards on 6 GET endpoints, 3 new 401 tests per newly-protected route, field-constraint tests for proposals/notifications, SSRF guard tests).
+- **API**: **548 passed, 0 errors** (Session 18). Up from 547 (+1: share mint 401 test). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB (Session 5: 153 → 173 → 175 with new ProposalsPanel)
@@ -464,6 +464,27 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
   traceable.
 
 **Tests:** 445 API passed (↑20 from 425), 240 worker passed 16 skipped. TypeScript: 0 errors.
+
+---
+
+### Session 18 — 2026-05-25 — Auth completeness + frontend 401 centralization
+
+Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
+
+**Token response completeness:**
+- `feat(auth)`: `TokenResponse` now returns `username` and `full_name` from DB. Frontend auth store was showing username as both username and display name. Updated `OperatorTokenResponse` interface in `api.ts`, `auth.ts` login(), and added assertions in `test_auth.py`.
+
+**Share token auth guard:**
+- `feat(share)`: `POST /share` now requires `require_operator`. Previously anyone could create share links with no identity trace (spam vector). `GET /share/{token}` remains public so link recipients don't need accounts.
+- `test(share)`: All POST calls updated with `headers=AUTH`; new 401 test for unauthenticated mint.
+
+**Frontend 401 handling centralized:**
+- `fix(frontend)`: Added `post()` helper to `api.ts` mirroring `get()` — includes auth headers and calls `_on401` on 401. Refactored `approveProposal`, `rejectProposal`, `submitFieldReport`, `createNotificationSubscriber` to use it.
+- `fix(frontend)`: `actOnAlert` and `deleteNotificationSubscriber` now call `_on401` on 401.
+- `fix(frontend)`: `mintShareToken` now includes auth headers + 401 handler.
+- `fix(AskPanel)`: Copilot panel now triggers `logout()` + `setLoginModalOpen(true)` on 401 instead of showing a generic server error.
+
+**Tests:** 548 API passed (↑1 from 547), 148 worker tests passed, 0 failed. TypeScript: 0 errors.
 
 ---
 
