@@ -53,6 +53,7 @@ async def list_proposals(
     db: AsyncSession = Depends(get_db),
     op: CurrentOperator = Depends(require_operator),
 ) -> list[dict]:
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     # Excludes obvious test residue (XSS/SQL-injection seeds, empty titles,
     # 'Test Flood Alert' fixtures) from the operator-facing list. The rows
     # remain in the table for audit; they're just hidden from the duty
@@ -120,6 +121,7 @@ async def approve_proposal(
     db: AsyncSession = Depends(get_db),
     op: CurrentOperator = Depends(require_operator),
 ) -> dict:
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     # Atomically claim the proposal — prevents double-approve race condition.
     # If two requests arrive simultaneously, only one UPDATE sees status='pending'.
     claimed = await db.execute(
@@ -199,6 +201,7 @@ async def reject_proposal(
     db: AsyncSession = Depends(get_db),
     op: CurrentOperator = Depends(require_operator),
 ) -> dict:
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     result = await db.execute(
         text("""
             UPDATE ops.alert_proposals
