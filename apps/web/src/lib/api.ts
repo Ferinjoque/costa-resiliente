@@ -351,8 +351,9 @@ export async function logDecision(entry: {
       headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
       body: JSON.stringify(entry),
     });
-  } catch {
+  } catch (err) {
     // best-effort — decision log failures don't block operator actions
+    console.warn("[logDecision] failed (best-effort, not blocking):", err);
   }
 }
 
@@ -378,14 +379,14 @@ export function decisionLogCsvUrl(): string {
 
 /**
  * Fetch a protected file endpoint with the stored Bearer token and trigger a
- * browser download via a temporary object URL. Falls back silently if the
- * download fails (caller shows no error — log only).
+ * browser download via a temporary object URL.
+ * Returns true on success, false on any failure (caller can show toast).
  */
 export async function downloadAuthenticatedFile(
   path: string,
   filename: string,
   mimeHint?: string,
-): Promise<void> {
+): Promise<boolean> {
   const headers: Record<string, string> = { ...getAuthHeaders() };
   if (mimeHint) headers["Accept"] = mimeHint;
   try {
@@ -393,7 +394,7 @@ export async function downloadAuthenticatedFile(
     if (!res.ok) {
       if (res.status === 401) _on401?.();
       console.error(`downloadAuthenticatedFile: ${path} → ${res.status}`);
-      return;
+      return false;
     }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -402,8 +403,10 @@ export async function downloadAuthenticatedFile(
     a.download = filename;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 3000);
+    return true;
   } catch (err) {
     console.error("downloadAuthenticatedFile failed:", err);
+    return false;
   }
 }
 
