@@ -27,6 +27,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from pydantic import BaseModel, Field
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.config import settings
@@ -350,19 +351,23 @@ async def create_operator(
     if body.role == "coel" and not body.district_ubigeo:
         raise HTTPException(status_code=422, detail="COEL operators require a district_ubigeo.")
     await db.execute(text("SET LOCAL statement_timeout = '5000'"))
-    row = await db.execute(
-        text("""
-            INSERT INTO ops.operators (username, full_name, role, district_ubigeo, password_hash)
-            VALUES (:u, :fn, :role, :dist, :ph)
-            RETURNING id, username, full_name, role, district_ubigeo, active, created_at
-        """),
-        {
-            "u": body.username,
-            "fn": body.full_name,
-            "role": body.role,
-            "dist": body.district_ubigeo,
-            "ph": _hash_password(body.password),
-        },
-    )
-    await db.commit()
+    try:
+        row = await db.execute(
+            text("""
+                INSERT INTO ops.operators (username, full_name, role, district_ubigeo, password_hash)
+                VALUES (:u, :fn, :role, :dist, :ph)
+                RETURNING id, username, full_name, role, district_ubigeo, active, created_at
+            """),
+            {
+                "u": body.username,
+                "fn": body.full_name,
+                "role": body.role,
+                "dist": body.district_ubigeo,
+                "ph": _hash_password(body.password),
+            },
+        )
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Ya existe un operador con ese nombre de usuario.")
     return OperatorOut(**dict(row.mappings().one()))
