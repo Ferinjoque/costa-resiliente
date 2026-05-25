@@ -410,6 +410,130 @@ def test_build_answer_rainfall_below_threshold():
     assert "ALERTA" not in answer
 
 
+# ─── _build_answer: all row-type branches ────────────────────────────────────
+
+def test_build_answer_no_rows():
+    from costa_api.ai.agent import _build_answer
+    answer = _build_answer([], [], "consulta genérica")
+    assert "No se encontraron" in answer
+
+
+def test_build_answer_flood_polygons():
+    """area_km2 rows → plural polygon count + total area."""
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"scene_id": "S1A_001", "area_km2": 2.5, "confidence": 0.88},
+        {"scene_id": "S1A_002", "area_km2": 1.3, "confidence": 0.81},
+    ]
+    answer = _build_answer([], rows, "inundaciones")
+    assert "2" in answer
+    assert "polígono" in answer.lower()
+    assert "3.8" in answer  # 2.5 + 1.3
+
+
+def test_build_answer_single_flood_polygon():
+    """Singular 'polígono' (no trailing 's') for a single row."""
+    from costa_api.ai.agent import _build_answer
+    rows = [{"area_km2": 4.0, "confidence": 0.9}]
+    answer = _build_answer([], rows, "inundaciones")
+    assert "1" in answer
+    # Must not be 'polígonos' (plural)
+    assert "polígonos" not in answer or "1 polígono" in answer
+
+
+def test_build_answer_huayco_risk():
+    """risk_level rows → quebrada count + top name."""
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"name": "Jicamarca", "risk_level": "very_high", "probability": 0.91},
+        {"name": "Pedregal", "risk_level": "high", "probability": 0.74},
+    ]
+    answer = _build_answer([], rows, "huayco")
+    assert "quebrada" in answer.lower()
+    assert "Jicamarca" in answer
+
+
+def test_build_answer_river_levels_rising():
+    """Rising trend rows must flag the rising station with ⚠."""
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"name": "Chosica", "level_m": 2.8, "flow_m3s": 210, "trend": "rising", "level_change_1h_m": 0.3},
+        {"name": "Chaclacayo", "level_m": 1.9, "flow_m3s": 145, "trend": "stable", "level_change_1h_m": 0.0},
+    ]
+    answer = _build_answer([], rows, "río")
+    assert "⚠" in answer
+    assert "Chosica" in answer
+    assert "ascenso" in answer.lower()
+
+
+def test_build_answer_river_levels_no_rising():
+    """Stable/falling trends → plain reading, no ⚠."""
+    from costa_api.ai.agent import _build_answer
+    rows = [{"name": "Chosica", "level_m": 2.1, "flow_m3s": 150, "trend": "stable", "level_change_1h_m": 0.0}]
+    answer = _build_answer([], rows, "río")
+    assert "⚠" not in answer
+    assert "2.1" in answer
+
+
+def test_build_answer_active_alerts_with_critical():
+    """severity rows → total + critical/high breakdown."""
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"id": 1, "severity": "critical", "_total_active": 4},
+        {"id": 2, "severity": "high", "_total_active": 4},
+        {"id": 3, "severity": "high", "_total_active": 4},
+    ]
+    answer = _build_answer([], rows, "alertas")
+    assert "4" in answer  # total active
+    assert "crítica" in answer.lower()
+    assert "alta" in answer.lower()
+
+
+def test_build_answer_social_signals_breakdown():
+    """triage_label rows → total + label breakdown."""
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"triage_label": "needs_help", "count": 8, "district": "Lurigancho"},
+        {"triage_label": "huayco_observation", "count": 3, "district": "Lurigancho"},
+    ]
+    answer = _build_answer([], rows, "social")
+    assert "señal" in answer.lower()
+    assert "ayuda" in answer.lower() or "huayco" in answer.lower()
+
+
+def test_build_answer_population_at_risk():
+    """estimated_population_at_risk rows → total + top district."""
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"district": "Ate", "estimated_population_at_risk": 24000, "flood_scenes": 2},
+        {"district": "Lurigancho", "estimated_population_at_risk": 15000, "flood_scenes": 1},
+    ]
+    answer = _build_answer([], rows, "personas")
+    assert "39,000" in answer or "39000" in answer.replace(",", "")
+    assert "Ate" in answer
+
+
+def test_build_answer_protocol_rag():
+    """chunk rows → protocol title + excerpt."""
+    from costa_api.ai.agent import _build_answer
+    rows = [{"title": "Protocolo EDAN", "chunk": "Paso 1: Notificar al COER Lima.", "similarity": 0.82}]
+    answer = _build_answer([], rows, "protocolo")
+    assert "Protocolo" in answer
+    assert "COER" in answer
+
+
+def test_build_answer_uses_last_assistant_message():
+    """If messages contains an assistant reply, it takes precedence over rows."""
+    from costa_api.ai.agent import _build_answer
+    messages = [
+        {"role": "user", "content": "¿cuántas alertas?"},
+        {"role": "assistant", "content": "Hay 3 alertas activas en Lima."},
+    ]
+    rows = [{"area_km2": 5.0}]  # would produce different answer
+    answer = _build_answer(messages, rows, "alertas")
+    assert "3 alertas" in answer
+
+
 # ─── _detect_quick: single-pattern matching ───────────────────────────────────
 
 def test_detect_quick_alerts_query():
