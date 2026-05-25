@@ -24,7 +24,7 @@ import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useAlerts, useFloodExposure } from "@/lib/queries";
-import { actOnAlert, logDecision } from "@/lib/api";
+import { actOnAlert, logDecision, RateLimitError } from "@/lib/api";
 import type { LiveToast } from "@/store/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Alert, DecisionLogEntry } from "@/lib/api";
@@ -311,9 +311,14 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
       qc.setQueriesData<Alert[]>({ queryKey: ["alerts"] }, (old) =>
         old ? old.map((a) => (a.id === alert.id ? { ...a, status: alert.status } : a)) : old,
       );
-      const errMsg = locale === "es"
-        ? `No se pudo registrar la acción. Verifica conectividad e inténtalo de nuevo.`
-        : `Could not register the action. Check connectivity and retry.`;
+      const isRateLimit = e instanceof RateLimitError;
+      const errMsg = isRateLimit
+        ? (locale === "es"
+            ? `Límite de solicitudes alcanzado. Espera ${(e as RateLimitError).retryAfter}s.`
+            : `Rate limited. Wait ${(e as RateLimitError).retryAfter}s before retrying.`)
+        : (locale === "es"
+            ? `No se pudo registrar la acción. Verifica conectividad e inténtalo de nuevo.`
+            : `Could not register the action. Check connectivity and retry.`);
       addToast({
         message: errMsg,
         variant: "danger",
