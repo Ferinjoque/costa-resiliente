@@ -50,6 +50,7 @@ class ResolveResponse(BaseModel):
 _ALLOWED_LAYERS = {
     "districts", "imerg", "flood", "huayco",
     "hazard", "infrastructure", "social",
+    "stations", "shelters",
 }
 
 def _validate_scenario(s: ScenarioSnapshot) -> None:
