@@ -768,7 +768,8 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                         {"lon": a["lon"], "lat": a["lat"]},
                     )
                 ).scalar_one_or_none()
-            except Exception:
+            except Exception as exc:
+                logger.debug("auto_seed: district lookup failed for alert lon=%s lat=%s: %s", a["lon"], a["lat"], exc)
                 district_id = None
 
             existing = (
@@ -827,7 +828,8 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                         {"lon": s["lon"], "lat": s["lat"]},
                     )
                 ).scalar_one_or_none()
-            except Exception:
+            except Exception as exc:
+                logger.debug("auto_seed: district lookup failed for signal lon=%s lat=%s: %s", s["lon"], s["lat"], exc)
                 district_id = None
 
             try:
@@ -913,8 +915,8 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                         "rain": obs["rain"],
                     },
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("auto_seed: skip station observation sid=%s: %s", sid, exc)
 
         # ── 7. Quebradas + huayco susceptibility ─────────────────────────────
         qbr_count = (
@@ -996,7 +998,8 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                             {"lon": inf["lon"], "lat": inf["lat"]},
                         )
                     ).scalar_one_or_none()
-                except Exception:
+                except Exception as exc:
+                    logger.debug("auto_seed: district lookup failed for infra lon=%s lat=%s: %s", inf["lon"], inf["lat"], exc)
                     district_id = None
                 await conn.execute(
                     text("""
