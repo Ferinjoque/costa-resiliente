@@ -10,6 +10,8 @@ using demo credentials (coer_lima:demo1234) for write calls.
 
 from __future__ import annotations
 
+import os
+
 import httpx
 import pytest
 
@@ -260,3 +262,43 @@ def test_field_report_duplicate_returns_existing_signal(client):
     b1, b2 = r1.json(), r2.json()
     assert b1["signal_id"] == b2["signal_id"]
     assert b2["status"] == "duplicate"
+
+
+# ─── Field-report rate limiter unit tests ────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_field_report_rate_limiter_raises_429_when_limit_exceeded():
+    """_check_field_report_rate must raise 429 when Redis counter exceeds limit."""
+    from fastapi import HTTPException
+    from unittest.mock import AsyncMock, patch
+    from costa_api.routers.social import _check_field_report_rate, _FIELD_REPORT_RATE_LIMIT
+
+    mock_redis = AsyncMock()
+    mock_redis.incr = AsyncMock(return_value=_FIELD_REPORT_RATE_LIMIT + 1)
+    mock_redis.expire = AsyncMock()
+
+    with (
+        patch("costa_api.routers.social._get_social_rl_client", return_value=mock_redis),
+        patch.dict(os.environ, {"TESTING": "0"}),
+    ):
+        with pytest.raises(HTTPException) as exc_info:
+            await _check_field_report_rate("test_operator")
+
+    assert exc_info.value.status_code == 429
+    assert "Retry-After" in exc_info.value.headers
+
+
+@pytest.mark.asyncio
+async def test_field_report_rate_limiter_fails_open_on_redis_error():
+    """Redis unavailability must never block legitimate field reports (fail-open)."""
+    from unittest.mock import AsyncMock, patch
+    from costa_api.routers.social import _check_field_report_rate
+
+    mock_redis = AsyncMock()
+    mock_redis.incr = AsyncMock(side_effect=ConnectionError("Redis down"))
+
+    with (
+        patch("costa_api.routers.social._get_social_rl_client", return_value=mock_redis),
+        patch.dict(os.environ, {"TESTING": "0"}),
+    ):
+        await _check_field_report_rate("test_operator")  # must not raise
