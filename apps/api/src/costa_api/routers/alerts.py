@@ -61,7 +61,9 @@ _VALID_ACTIONS = {"acknowledge", "escalate", "false_positive", "close"}
 
 
 class LogEntry(BaseModel):
-    operator_id: str = Field(..., min_length=1, max_length=100)
+    # operator_id accepted for backwards-compatibility but IGNORED — the JWT
+    # identity (op.username) is always used to prevent forgery.
+    operator_id: Optional[str] = Field(None, max_length=100)
     action_type: str = Field(..., min_length=1, max_length=100)
     alert_id: Optional[int] = None
     payload: dict
@@ -69,7 +71,9 @@ class LogEntry(BaseModel):
 
 
 class AlertAction(BaseModel):
-    operator_id: str = Field(..., min_length=1, max_length=100)
+    # operator_id accepted for backwards-compatibility but IGNORED — the JWT
+    # identity (op.username) is always used to prevent forgery.
+    operator_id: Optional[str] = Field(None, max_length=100)
     action: str = Field(..., min_length=1, max_length=32)
     note: Optional[str] = Field(None, max_length=2000)
     session_id: Optional[str] = Field(None, max_length=64)
@@ -130,6 +134,7 @@ async def list_alerts(
         params["district"] = district
 
     where = " AND ".join(conditions)
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     rows = await db.execute(
         text(f"""
             SELECT a.id, a.type, a.severity, a.status, a.title, a.description,
