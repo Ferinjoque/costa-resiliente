@@ -37,6 +37,8 @@ ai_engine = create_async_engine(
     echo=False,
     pool_size=3,
     max_overflow=5,
+    pool_pre_ping=True,
+    pool_recycle=300,
 )
 AiSessionFactory = async_sessionmaker(ai_engine, expire_on_commit=False)
 
