@@ -394,7 +394,22 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         return f"Última lectura: {r.get('name','?')} — nivel {r.get('level_m','—')} m ({trend_es}{change_str}), caudal {r.get('flow_m3s','—')} m³/s."
     if "triage_label" in first:
         total = sum(r.get("count") or 0 for r in rows)
-        return f"Se registraron {total} señales sociales en el período consultado."
+        # Highlight urgent label breakdown (huayco > needs_help > flood > infra > road)
+        _URGENT_ORDER = ["huayco_observation", "needs_help", "flood_observation", "infrastructure_damage", "road_blocked"]
+        _LABEL_ES = {
+            "huayco_observation": "avistamientos huayco",
+            "needs_help": "solicitudes de ayuda",
+            "flood_observation": "avistamientos inundación",
+            "infrastructure_damage": "daños infraestructura",
+            "road_blocked": "vías bloqueadas",
+        }
+        urgent_parts = []
+        for lbl in _URGENT_ORDER:
+            cnt = next((r.get("count", 0) for r in rows if r.get("triage_label") == lbl), 0)
+            if cnt:
+                urgent_parts.append(f"{cnt} {_LABEL_ES.get(lbl, lbl)}")
+        breakdown = f" ({', '.join(urgent_parts)})" if urgent_parts else ""
+        return f"Se registraron {total} señales sociales en el período consultado{breakdown}."
     if "severity" in first:
         total = first.get("_total_active", n)
         # Break down by severity from sample (truthful even if capped at 20)
