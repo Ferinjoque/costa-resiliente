@@ -26,7 +26,9 @@ const RISK_ITEMS: { color: string; label: { es: string; en: string } }[] = [
 ];
 
 const SOCIAL_ITEMS: { color: string; label: { es: string; en: string } }[] = [
-  { color: SOCIAL_LABEL_COLOR.needs_help,            label: { es: "Ayuda",           en: "Needs help" } },
+  { color: SOCIAL_LABEL_COLOR.needs_help,            label: { es: "Ayuda urgente",   en: "Needs help" } },
+  { color: SOCIAL_LABEL_COLOR.huayco_observation,    label: { es: "Huayco",          en: "Huayco" } },
+  { color: SOCIAL_LABEL_COLOR.flood_observation,     label: { es: "Inundación",      en: "Flood" } },
   { color: SOCIAL_LABEL_COLOR.infrastructure_damage, label: { es: "Infraestructura", en: "Infrastructure" } },
   { color: SOCIAL_LABEL_COLOR.road_blocked,          label: { es: "Vía bloqueada",   en: "Road blocked" } },
   { color: SOCIAL_LABEL_COLOR.weather_observation,   label: { es: "Meteorología",    en: "Weather" } },

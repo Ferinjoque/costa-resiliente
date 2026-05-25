@@ -9,6 +9,8 @@ import type { LiveToast as LiveToastType } from "@/store/ui";
 const LABEL_ES: Record<string, string> = {
   needs_help:            "Ayuda urgente",
   road_blocked:          "Vía bloqueada",
+  huayco_observation:    "Avistamiento de huayco",
+  flood_observation:     "Avistamiento de inundación",
   infrastructure_damage: "Daño en infraestructura",
   weather_observation:   "Observación meteorológica",
 };

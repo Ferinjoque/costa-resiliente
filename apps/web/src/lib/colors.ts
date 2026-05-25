@@ -50,6 +50,8 @@ export const SOCIAL_LABEL_COLOR = {
   needs_help:            SEVERITY_CRITICAL,
   infrastructure_damage: SEVERITY_HIGH,
   road_blocked:          SEVERITY_MEDIUM,
+  huayco_observation:    SEVERITY_CRITICAL,  // huayco sighting = same urgency as help request
+  flood_observation:     SEVERITY_HIGH,      // flood sighting = high priority situational awareness
   weather_observation:   COSTA_300,
 } as const;
 
