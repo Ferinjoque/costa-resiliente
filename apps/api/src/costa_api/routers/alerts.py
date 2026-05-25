@@ -24,7 +24,10 @@ def _parse_iso_dt(s: str | None) -> datetime | None:
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+import logging
+from pydantic import BaseModel, Field
+
+log = logging.getLogger(__name__)
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,19 +56,22 @@ class AlertSummary(BaseModel):
     updated_at: datetime
 
 
+_VALID_ACTIONS = {"acknowledge", "escalate", "false_positive", "close"}
+
+
 class LogEntry(BaseModel):
-    operator_id: str
-    action_type: str   # resource_dispatch | protocol_step | note
+    operator_id: str = Field(..., min_length=1, max_length=100)
+    action_type: str = Field(..., min_length=1, max_length=100)
     alert_id: Optional[int] = None
     payload: dict
-    session_id: Optional[str] = None
+    session_id: Optional[str] = Field(None, max_length=64)
 
 
 class AlertAction(BaseModel):
-    operator_id: str
-    action: str          # acknowledge | escalate | false_positive | close
-    note: Optional[str] = None
-    session_id: Optional[str] = None
+    operator_id: str = Field(..., min_length=1, max_length=100)
+    action: str = Field(..., min_length=1, max_length=32)
+    note: Optional[str] = Field(None, max_length=2000)
+    session_id: Optional[str] = Field(None, max_length=64)
 
 
 class DecisionLogEntry(BaseModel):
@@ -159,11 +165,10 @@ async def act_on_alert(
     Acknowledge, escalate, false_positive, or close an alert.
     Updates ops.alerts.status and appends to ops.decision_log (append-only).
     """
-    valid_actions = {"acknowledge", "escalate", "false_positive", "close"}
-    if action.action not in valid_actions:
+    if action.action not in _VALID_ACTIONS:
         raise HTTPException(
             status_code=422,
-            detail=f"action must be one of: {', '.join(sorted(valid_actions))}",
+            detail=f"action must be one of: {', '.join(sorted(_VALID_ACTIONS))}",
         )
 
     status_map = {
@@ -285,8 +290,12 @@ async def alerts_stream(request: Request) -> StreamingResponse:
             try:
                 payload = await asyncio.wait_for(_fetch_alerts(), timeout=8.0)
                 yield f"data: {payload}\n\n"
-            except (asyncio.TimeoutError, Exception):
-                pass
+            except asyncio.TimeoutError:
+                log.warning("alerts_stream: DB fetch timed out (>8s)")
+                yield 'data: {"error":"db_timeout"}\n\n'
+            except Exception as exc:
+                log.warning("alerts_stream: fetch error: %s", exc)
+                yield 'data: {"error":"db_error"}\n\n'
             for _ in range(10):
                 if await request.is_disconnected():
                     return

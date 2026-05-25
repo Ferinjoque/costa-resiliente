@@ -320,8 +320,8 @@ export function useSocialSignals(
         return DEMO_SOCIAL_SIGNALS;
       }
     },
-    staleTime: 5 * MIN,
-    refetchInterval: 5 * MIN,
+    staleTime: 90 * 1000,
+    refetchInterval: 90 * 1000,
     ...opts,
   });
 }
