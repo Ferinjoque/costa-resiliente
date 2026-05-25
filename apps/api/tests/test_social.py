@@ -14,6 +14,25 @@ import httpx
 import pytest
 
 BASE = "http://localhost:8000/api/v1"
+_RATE_KEY = "costa:social:fieldreport:coer_lima"
+
+
+@pytest.fixture(autouse=True)
+def _flush_social_rate_limit():
+    """Flush the field-report rate-limit key before each test so the 30 req/hr
+    window doesn't cause spurious 429s when running the full suite."""
+    try:
+        import redis as _redis
+        _r = _redis.from_url(
+            "redis://costa-redis:6379/0",
+            socket_connect_timeout=1,
+            socket_timeout=1,
+        )
+        _r.delete(_RATE_KEY)
+        _r.close()
+    except Exception:
+        pass
+    yield
 
 
 @pytest.fixture(scope="module")
@@ -170,17 +189,18 @@ def test_field_report_rejects_text_over_2000_chars(client):
     assert resp.status_code == 422
 
 
-def test_field_report_rejects_empty_operator_id(client):
-    """FieldReport.operator_id has min_length=1; empty should be rejected."""
+def test_field_report_empty_operator_id_is_ignored(client):
+    """operator_id is Optional and always ignored — JWT identity is used.
+    Empty string is accepted by Pydantic and the request succeeds."""
     resp = client.post(
         "/social/field-report",
         json={
             "operator_id": "",
-            "text": "Válido texto de reporte",
+            "text": "Válido texto de reporte operador ignorado",
             "label": "needs_help",
         },
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 201
 
 
 def test_field_report_rejects_label_over_40_chars(client):
