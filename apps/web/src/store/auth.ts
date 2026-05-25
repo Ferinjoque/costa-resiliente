@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { loginOperator } from "@/lib/api";
+import { loginOperator, register401Handler } from "@/lib/api";
 
 export interface Operator {
   id: number;
@@ -40,6 +40,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch {
       // corrupted storage — ignore
     }
+    // Register the 401 handler so a stale/expired token triggers auto-logout
+    // and the login modal instead of a confusing "unauthorized" error toast.
+    register401Handler(() => {
+      if (typeof window === "undefined") return;
+      localStorage.removeItem(LS_TOKEN);
+      localStorage.removeItem(LS_OPERATOR);
+      set({ token: null, operator: null, loginModalOpen: true });
+    });
   },
 
   login: async (username, password) => {

@@ -6,6 +6,12 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const LS_TOKEN = "cr_auth_token";
 
+/** Registered by the auth store on mount; called whenever any request returns 401. */
+let _on401: (() => void) | null = null;
+export function register401Handler(cb: () => void) {
+  _on401 = cb;
+}
+
 function getAuthHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
   const token = localStorage.getItem(LS_TOKEN);
@@ -18,6 +24,10 @@ async function get<T>(path: string, init?: RequestInit): Promise<T> {
     signal: AbortSignal.timeout(4_000),
     headers: { Accept: "application/json", ...getAuthHeaders(), ...init?.headers },
   });
+  if (res.status === 401) {
+    _on401?.();
+    throw new Error(`API ${path} → 401 Unauthorized`);
+  }
   if (!res.ok) {
     throw new Error(`API ${path} → ${res.status} ${res.statusText}`);
   }
