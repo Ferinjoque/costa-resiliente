@@ -342,7 +342,9 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   const statusVariant = STATUS_VARIANT[alert.status]            ?? "default";
 
   const src    = alert.source_refs?.source ?? null;
-  const srcUrl = alert.source_refs?.url    ?? null;
+  const rawUrl = alert.source_refs?.url    ?? null;
+  // Only allow http/https — blocks javascript: and data: URL injection from scraped content
+  const srcUrl = rawUrl && /^https?:\/\//i.test(rawUrl) ? rawUrl : null;
 
   return (
     <li className="hover:bg-surface-hover transition-colors relative">
