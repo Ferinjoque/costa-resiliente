@@ -27,6 +27,10 @@ from costa_api.ai.guardrails.input_filter import check_input, GuardResult
     "Compara la magnitud de esta emergencia con el evento de 1998",
     "¿Qué distritos debo evacuar primero?",
     "¿Cuántos recursos de respuesta están desplegados?",
+    "¿Hubo desborde del río Rímac en Chosica?",
+    "La calle está anegada, ¿qué sectores están afectados?",
+    "Reportan colapso de viviendas en quebrada Jicamarca",
+    "Monitorear si hay rotura de dique en el Chillón",
 ])
 def test_legitimate_queries_pass(query: str):
     result = check_input(query, "op1")
