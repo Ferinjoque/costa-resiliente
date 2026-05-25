@@ -89,6 +89,24 @@ class TestListAlerts:
             assert "<script" not in title.lower(), f"XSS seed in list: {title!r}"
             assert "drop table" not in title.lower(), f"SQLi seed in list: {title!r}"
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("valid_status", ["active", "acknowledged", "escalated", "closed", "false_positive"])
+    async def test_valid_status_filter_accepted(self, valid_status: str):
+        """All DB-valid status values must return 200, not 400."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get(f"/api/v1/alerts?status={valid_status}")
+        assert resp.status_code == 200, f"status={valid_status!r} should be valid, got {resp.status_code}"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("invalid_status", ["resolved", "dismissed", "unknown", ""])
+    async def test_invalid_status_filter_rejected(self, invalid_status: str):
+        """Non-DB statuses must be rejected with 400."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get(f"/api/v1/alerts?status={invalid_status}")
+        # Empty string passes (no filter applied); non-empty invalid strings → 400
+        if invalid_status:
+            assert resp.status_code == 400, f"status={invalid_status!r} should be invalid, got {resp.status_code}"
+
 
 # ─── POST /api/v1/alerts/{id}/action ─────────────────────────────────────────
 
