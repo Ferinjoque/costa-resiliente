@@ -24,10 +24,12 @@ const TYPE_TAG: Record<string, { es: string; en: string }> = {
 
 // Social triage → tag + color
 const SOCIAL_META: Record<string, { es: string; en: string; color: string }> = {
-  needs_help:            { es: "AYUDA",  en: "HELP",  color: "text-danger"    },
-  road_blocked:          { es: "BLOQ",   en: "ROAD",  color: "text-warn-muted" },
-  infrastructure_damage: { es: "INFRA",  en: "INFRA", color: "text-warn-muted" },
-  weather_observation:   { es: "METEO",  en: "METEO", color: "text-accent"     },
+  needs_help:            { es: "AYUDA",   en: "HELP",   color: "text-danger"    },
+  road_blocked:          { es: "BLOQ",    en: "ROAD",   color: "text-warn-muted" },
+  huayco_observation:    { es: "HUAYCO",  en: "HUAYCO", color: "text-danger"    },
+  flood_observation:     { es: "INUND",   en: "FLOOD",  color: "text-accent"    },
+  infrastructure_damage: { es: "INFRA",   en: "INFRA",  color: "text-warn-muted" },
+  weather_observation:   { es: "METEO",   en: "METEO",  color: "text-accent"    },
 };
 
 function timeShort(iso: string): string {
