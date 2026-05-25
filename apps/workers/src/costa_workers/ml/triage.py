@@ -104,7 +104,7 @@ async def triage_signal(
     Classify one social signal. Returns None if quarantined after max_retries.
     Content is sandboxed in <SEÑAL> XML tags — never interpolated into system prompt.
     """
-    user_msg = TRIAGE_USER_TEMPLATE.format(content=content)
+    user_msg = f"<SEÑAL>{content}</SEÑAL>"
 
     for attempt in range(max_retries):
         # Exponential backoff: 0s, 3s, 9s — give copilot/other Ollama callers a turn
@@ -262,6 +262,13 @@ async def run_triage_pipeline(
             except Exception as exc:
                 logger.error("Signal %d failed processing, skipping: %s", row["id"], exc)
                 quarantined += 1
+                try:
+                    await pool.execute(
+                        "UPDATE social.signals SET triage_at = $1, triage_model = $2 WHERE id = $3",
+                        datetime.now(timezone.utc), model, row["id"],
+                    )
+                except Exception as db_exc:
+                    logger.error("Failed to quarantine signal %d in DB: %s", row["id"], db_exc)
 
         logger.info(
             "Triage pipeline: %d processed, %d labelled, %d quarantined",

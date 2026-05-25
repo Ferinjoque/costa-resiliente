@@ -211,7 +211,13 @@ async def generate_huayco_alerts(db_dsn: str = DB_DSN) -> int:
             """
             SELECT hs.id, hs.quebrada_id, hs.probability, hs.risk_level,
                    hs.computed_at, hs.trigger_rain_24h_mm,
-                   q.name AS quebrada_name
+                   q.name AS quebrada_name,
+                   (SELECT d.id FROM geo.districts d
+                    WHERE ST_Intersects(d.geom, ST_Centroid(q.geom::geometry))
+                    LIMIT 1) AS district_id,
+                   (SELECT d.ubigeo FROM geo.districts d
+                    WHERE ST_Intersects(d.geom, ST_Centroid(q.geom::geometry))
+                    LIMIT 1) AS district_ubigeo
             FROM ml.huayco_susceptibility hs
             JOIN geo.quebradas q ON q.id = hs.quebrada_id
             WHERE hs.risk_level = ANY($1::text[])
@@ -241,15 +247,19 @@ async def generate_huayco_alerts(db_dsn: str = DB_DSN) -> int:
                 f"Susceptibilidad: {float(row['probability']):.0%} ({row['risk_level']}). "
                 + (f"Lluvia 24h: {float(rain):.1f} mm." if rain else "")
             )
-            await pool.execute(
+            new_id = await pool.fetchval(
                 """
                 INSERT INTO ops.alerts
-                    (type, severity, status, title, description, source_refs)
-                VALUES ('huayco', $1, 'active', $2, $3, $4::jsonb)
+                    (type, severity, status, title, description,
+                     district_id, source_refs)
+                VALUES ('huayco', $1, 'active', $2, $3, $4, $5::jsonb)
+                RETURNING id
                 """,
-                severity, title, desc, source_refs,
+                severity, title, desc, row["district_id"], source_refs,
             )
             inserted += 1
+            await _auto_notify(pool, new_id, severity, title, "huayco",
+                               district_ubigeo=row["district_ubigeo"])
 
     logger.info("Huayco alerts generated: %d", inserted)
     return inserted

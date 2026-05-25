@@ -33,6 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from costa_api.db import get_db, get_ai_db
 from costa_api.ai.agent import run as agent_run, AgentResult
 from costa_api.ai.rag import search_protocols
+from costa_api.routers.auth import require_operator, CurrentOperator
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/copilot", tags=["copilot"])
@@ -136,23 +137,27 @@ async def ask(
     query: CopilotQuery,
     db: AsyncSession = Depends(get_db),
     ai_db: AsyncSession = Depends(get_ai_db),
+    op: CurrentOperator = Depends(require_operator),
 ) -> CopilotResponse:
     """
     Operator NL query → agentic tool loop → Spanish answer.
     LLM never fabricates: all claims trace to DB rows in sources[].
     """
+    # Use JWT identity for decision log (prevents operator_id spoofing)
+    operator_id = op.username
+
     try:
         result: AgentResult = await asyncio.wait_for(
             agent_run(
                 query=query.query,
-                operator_id=query.operator_id,
+                operator_id=operator_id,
                 db=ai_db,
                 rag_fn=search_protocols,
             ),
             timeout=90.0,
         )
     except asyncio.TimeoutError:
-        logger.error("copilot/ask: agent_run timed out (>90s) for operator=%s", query.operator_id)
+        logger.error("copilot/ask: agent_run timed out (>90s) for operator=%s", operator_id)
         raise HTTPException(
             status_code=503,
             detail="El asistente no respondió a tiempo. Reintenta en unos segundos.",
@@ -160,10 +165,10 @@ async def ask(
 
     # Log security event if blocked
     if result.blocked:
-        await _log_security_event(db, query.operator_id, "input_blocked", result.block_reason)
+        await _log_security_event(db, operator_id, "input_blocked", result.block_reason)
 
     # Log decision (always, even for blocked queries so operators can review)
-    await _log_decision(db, query.operator_id, query.query, result, query.session_id)
+    await _log_decision(db, operator_id, query.query, result, query.session_id)
 
     if result.blocked:
         raise HTTPException(
