@@ -107,7 +107,7 @@ function FirstRunTrigger() {
   const { setTutorialOpen, setScenario } = useUIStore();
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (window.location.search.includes("token=") || window.location.search.includes("state=")) return;
+    if (window.location.search.includes("share=") || window.location.search.includes("state=")) return;
     if (localStorage.getItem(FIRST_VISIT_KEY)) return;
     localStorage.setItem(FIRST_VISIT_KEY, "1");
     const t = setTimeout(() => {
