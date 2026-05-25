@@ -54,8 +54,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     const resp = await loginOperator(username, password);
     const operator: Operator = {
       id: resp.operator_id,
-      username,
-      full_name: username,
+      username: resp.username,
+      full_name: resp.full_name,
       role: resp.role as Operator["role"],
       district_ubigeo: resp.district_ubigeo,
     };
