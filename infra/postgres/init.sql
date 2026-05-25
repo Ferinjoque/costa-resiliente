@@ -361,9 +361,9 @@ CREATE TABLE IF NOT EXISTS rag.documents (
 );
 CREATE INDEX IF NOT EXISTS rag_documents_source_idx    ON rag.documents (source);
 CREATE UNIQUE INDEX IF NOT EXISTS rag_documents_content_hash_unique ON rag.documents (content_hash);
--- HNSW index for fast ANN search (created after first data load)
--- CREATE INDEX rag_documents_embedding_hnsw ON rag.documents
---     USING hnsw (embedding vector_cosine_ops) WITH (m=16, ef_construction=64);
+-- HNSW index for fast ANN search (safe to create on empty table)
+CREATE INDEX IF NOT EXISTS rag_documents_embedding_hnsw ON rag.documents
+    USING hnsw (embedding vector_cosine_ops) WITH (m=16, ef_construction=64);
 
 -- ─── Read-Only AI Database Role ──────────────────────────────────────────────
 -- Used by the agentic copilot. SELECT-only on data schemas, no write access.
