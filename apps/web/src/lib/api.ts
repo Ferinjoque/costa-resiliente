@@ -12,6 +12,16 @@ export function register401Handler(cb: () => void) {
   _on401 = cb;
 }
 
+/** Thrown by get()/post() when the server returns 429 Too Many Requests. */
+export class RateLimitError extends Error {
+  retryAfter: number;
+  constructor(retryAfterSecs = 60) {
+    super(`Rate limited — retry in ${retryAfterSecs}s`);
+    this.retryAfter = retryAfterSecs;
+    this.name = "RateLimitError";
+  }
+}
+
 function getAuthHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
   const token = localStorage.getItem(LS_TOKEN);
@@ -27,6 +37,10 @@ async function get<T>(path: string, init?: RequestInit): Promise<T> {
   if (res.status === 401) {
     _on401?.();
     throw new Error(`API ${path} → 401 Unauthorized`);
+  }
+  if (res.status === 429) {
+    const retryAfter = parseInt(res.headers.get("Retry-After") ?? "60", 10);
+    throw new RateLimitError(retryAfter);
   }
   if (!res.ok) {
     throw new Error(`API ${path} → ${res.status} ${res.statusText}`);
@@ -47,6 +61,10 @@ async function post<T>(
     body: JSON.stringify(body),
   });
   if (res.status === 401) { _on401?.(); throw new Error(`API ${path} → 401 Unauthorized`); }
+  if (res.status === 429) {
+    const retryAfter = parseInt(res.headers.get("Retry-After") ?? "60", 10);
+    throw new RateLimitError(retryAfter);
+  }
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
     throw new Error((detail as { detail?: string }).detail ?? `API ${path} → ${res.status}`);
