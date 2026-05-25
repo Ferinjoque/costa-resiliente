@@ -24,6 +24,8 @@ const LABEL_ES: Record<string, string> = {
   needs_help:            "Ayuda urgente",
   road_blocked:          "Vía bloqueada",
   infrastructure_damage: "Daño infraestructura",
+  huayco_observation:    "Observación huayco",
+  flood_observation:     "Observación inundación",
   weather_observation:   "Observación meteo",
   false_alarm:           "Falsa alarma",
   irrelevant:            "Irrelevante",
@@ -33,6 +35,8 @@ const LABEL_EN: Record<string, string> = {
   needs_help:            "Urgent help",
   road_blocked:          "Road blocked",
   infrastructure_damage: "Infrastructure damage",
+  huayco_observation:    "Huayco sighting",
+  flood_observation:     "Flood sighting",
   weather_observation:   "Weather observation",
   false_alarm:           "False alarm",
   irrelevant:            "Irrelevant",
@@ -104,8 +108,10 @@ function formatSignalDate(published_at: string | null | undefined, ingested_at: 
 const LABEL_PRIORITY: Record<string, number> = {
   needs_help:            0,
   road_blocked:          1,
-  infrastructure_damage: 2,
-  weather_observation:   3,
+  huayco_observation:    2,
+  flood_observation:     2,
+  infrastructure_damage: 3,
+  weather_observation:   4,
 };
 
 function labelPriority(label: string | null): number {
@@ -114,7 +120,7 @@ function labelPriority(label: string | null): number {
 
 function labelToPillVariant(label: string): "danger" | "warn" | "accent" | "default" {
   if (label === "needs_help") return "danger";
-  if (label === "road_blocked") return "warn";
+  if (label === "road_blocked" || label === "huayco_observation" || label === "flood_observation") return "warn";
   if (label === "infrastructure_damage") return "accent";
   return "default";
 }
@@ -127,7 +133,7 @@ function timeAgoShort(iso: string): string {
   return `${Math.round(s / 86400)}d`;
 }
 
-const ALL_LABELS = ["needs_help", "road_blocked", "infrastructure_damage", "weather_observation"] as const;
+const ALL_LABELS = ["needs_help", "road_blocked", "huayco_observation", "flood_observation", "infrastructure_damage", "weather_observation"] as const;
 type Label = typeof ALL_LABELS[number];
 
 // ─── ConfidenceBadge ──────────────────────────────────────────────────────────
@@ -429,11 +435,13 @@ export function SocialFeedPanel() {
   const urgentCount = features.filter((f) => f.properties.triage_label === "needs_help").length;
 
   const FILTER_TABS: Array<{ value: Label | "all"; es: string; en: string }> = [
-    { value: "all",                   es: "Todos",  en: "All"     },
-    { value: "needs_help",            es: "Ayuda",  en: "Help"    },
-    { value: "road_blocked",          es: "Vías",   en: "Roads"   },
-    { value: "infrastructure_damage", es: "Infra",  en: "Infra"   },
-    { value: "weather_observation",   es: "Meteo",  en: "Weather" },
+    { value: "all",                   es: "Todos",   en: "All"      },
+    { value: "needs_help",            es: "Ayuda",   en: "Help"     },
+    { value: "road_blocked",          es: "Vías",    en: "Roads"    },
+    { value: "huayco_observation",    es: "Huayco",  en: "Huayco"   },
+    { value: "flood_observation",     es: "Inund.",  en: "Flood"    },
+    { value: "infrastructure_damage", es: "Infra",   en: "Infra"    },
+    { value: "weather_observation",   es: "Meteo",   en: "Weather"  },
   ];
 
   return (

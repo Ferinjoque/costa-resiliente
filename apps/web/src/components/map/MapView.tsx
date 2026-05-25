@@ -253,6 +253,8 @@ export default function MapView() {
               needs_help:            "Solicitud de ayuda",
               infrastructure_damage: "Daño de infraestructura",
               road_blocked:          "Vía bloqueada",
+              huayco_observation:    "Avistamiento de huayco",
+              flood_observation:     "Avistamiento de inundación",
               weather_observation:   "Observación meteorológica",
               false_alarm:           "Falsa alarma",
               irrelevant:            "Irrelevante",
@@ -829,8 +831,13 @@ export default function MapView() {
     if (!m || !socialData) return;
     const labelColor: maplibregl.ExpressionSpecification = [
       "match", ["get", "triage_label"],
-      "needs_help", "#ef4444", "infrastructure_damage", "#f97316",
-      "road_blocked", "#f59e0b", "weather_observation", "#38bdf8", "#94a3b8",
+      "needs_help",            "#ef4444",   // red — urgent help
+      "infrastructure_damage", "#f97316",   // orange — infra
+      "road_blocked",          "#f59e0b",   // amber — road
+      "huayco_observation",    "#dc2626",   // dark red — huayco sighting (high priority)
+      "flood_observation",     "#3b82f6",   // blue — flood sighting
+      "weather_observation",   "#38bdf8",   // light blue — meteo
+      "#94a3b8",                            // default grey
     ];
     const v = vis("social");
     const setup = () => {
