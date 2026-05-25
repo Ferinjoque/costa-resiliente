@@ -103,6 +103,8 @@ def pytest_configure(config: pytest.Config) -> None:
     pytest-asyncio 1.x removed the event_loop fixture override; use ini cache instead.
     """
     config._inicache["asyncio_default_test_loop_scope"] = "session"  # type: ignore[attr-defined]
+    # Disable rate-limiting and other TESTING guards during the test suite.
+    os.environ.setdefault("TESTING", "1")
 
 
 @pytest.fixture(scope="session", autouse=True)
