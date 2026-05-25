@@ -5,57 +5,77 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useUIStore } from "@/store/ui";
 import { alertsStreamUrl } from "@/lib/api";
 
+const HEARTBEAT_TIMEOUT_MS = 30_000;
+const RECONNECT_DELAY_MS = 10_000;
+
 /**
  * Mounts a persistent SSE connection to /api/v1/alerts/stream.
  * Lives at the app-shell level so the map keeps refreshing even when
  * AlertsPanel is closed. Updates the TanStack Query cache on each push.
+ *
+ * Heartbeat guard: if no event arrives within HEARTBEAT_TIMEOUT_MS, the
+ * connection is treated as a zombie, closed, and reconnected after
+ * RECONNECT_DELAY_MS. This prevents stale "connected" state on network
+ * degradation where the TCP connection stays open but data stops flowing.
  */
 export function useAlertStream() {
   const qc = useQueryClient();
   const setConnected = useUIStore((s) => s.setAlertStreamConnected);
   const esRef = useRef<EventSource | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (esRef.current) return;
 
-    const es = new EventSource(alertsStreamUrl());
-    esRef.current = es;
+    function resetHeartbeat(es: EventSource) {
+      if (heartbeatRef.current) clearTimeout(heartbeatRef.current);
+      heartbeatRef.current = setTimeout(() => {
+        setConnected(false);
+        es.close();
+        esRef.current = null;
+        setTimeout(connect, RECONNECT_DELAY_MS);
+      }, HEARTBEAT_TIMEOUT_MS);
+    }
 
-    es.onopen = () => setConnected(true);
+    function connect() {
+      const es = new EventSource(alertsStreamUrl());
+      esRef.current = es;
 
-    es.onmessage = (evt) => {
-      try {
-        JSON.parse(evt.data); // validate frame
-        // Invalidate so the full list (all statuses) refetches from the API.
-        // Never use setQueryData here — SSE only carries active alerts and
-        // would silently overwrite the panel's full history view.
-        qc.invalidateQueries({ queryKey: ["alerts"] });
-        qc.invalidateQueries({ queryKey: ["district-risk-summary"] });
-        // flood-exposure is derived from polygon geometry, not alert counts —
-        // no need to invalidate on every 10-second SSE heartbeat.
-      } catch {
-        // malformed frame — ignore
-      }
-    };
+      es.onopen = () => {
+        setConnected(true);
+        resetHeartbeat(es);
+      };
 
-    es.onerror = () => {
-      setConnected(false);
-      es.close();
-      esRef.current = null;
-      // Reconnect after 10s
-      setTimeout(() => {
-        if (esRef.current === null) {
-          const next = new EventSource(alertsStreamUrl());
-          esRef.current = next;
-          next.onopen = () => setConnected(true);
-          next.onmessage = es.onmessage;
-          next.onerror = es.onerror;
+      es.onmessage = (evt) => {
+        resetHeartbeat(es);
+        try {
+          JSON.parse(evt.data); // validate frame
+          // Invalidate so the full list (all statuses) refetches from the API.
+          // Never use setQueryData here — SSE only carries active alerts and
+          // would silently overwrite the panel's full history view.
+          qc.invalidateQueries({ queryKey: ["alerts"] });
+          qc.invalidateQueries({ queryKey: ["district-risk-summary"] });
+          // flood-exposure is derived from polygon geometry, not alert counts —
+          // no need to invalidate on every 10-second SSE heartbeat.
+        } catch {
+          // malformed frame — ignore
         }
-      }, 10_000);
-    };
+      };
+
+      es.onerror = () => {
+        if (heartbeatRef.current) clearTimeout(heartbeatRef.current);
+        setConnected(false);
+        es.close();
+        esRef.current = null;
+        setTimeout(connect, RECONNECT_DELAY_MS);
+      };
+    }
+
+    connect();
 
     return () => {
-      es.close();
+      if (heartbeatRef.current) clearTimeout(heartbeatRef.current);
+      esRef.current?.close();
       esRef.current = null;
       setConnected(false);
     };
