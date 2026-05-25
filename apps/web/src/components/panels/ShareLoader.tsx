@@ -68,9 +68,10 @@ export function ShareLoader() {
       typeof r.districtName === "string" && r.districtName.length <= 120
         ? r.districtName
         : null;
-    const hours = typeof r.timeWindowHours === "number"
-      ? Math.min(Math.max(Math.round(r.timeWindowHours), 1), 168)
-      : 24;
+    const hours =
+      typeof r.timeWindowHours === "number" && isFinite(r.timeWindowHours)
+        ? Math.min(Math.max(Math.round(r.timeWindowHours), 1), 168)
+        : 24;
     const replay = r.isReplayMode === true;
     const replayDate =
       typeof r.replayDate === "string" && ISO_DATE_RE.test(r.replayDate)
