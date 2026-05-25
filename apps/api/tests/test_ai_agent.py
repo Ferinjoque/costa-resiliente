@@ -644,3 +644,105 @@ async def test_quick_mode_dispatch_raises_falls_through_to_llm():
     # dispatch raised at the agent level — fell through to LLM — quick_mode=False
     assert result.quick_mode is False
     assert not result.blocked
+
+
+# ─── DB tools: additional function tests ─────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_get_river_levels_does_not_crash():
+    """get_river_levels calls db.execute with hours param, returns list."""
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=MagicMock(__iter__=MagicMock(return_value=iter([]))))
+    from costa_api.ai.tools.db_tools import get_river_levels
+    result = await get_river_levels(db, hours_back=24)
+    assert db.execute.called
+    assert isinstance(result, list)
+
+
+@pytest.mark.asyncio
+async def test_get_river_levels_hours_clamped():
+    """get_river_levels clamps hours_back to [1, 168]."""
+    db = AsyncMock()
+    captured: dict = {}
+
+    async def _capture(sql, params=None):
+        captured["params"] = params
+        return MagicMock(__iter__=MagicMock(return_value=iter([])))
+
+    db.execute = _capture
+    from costa_api.ai.tools.db_tools import get_river_levels
+    await get_river_levels(db, hours_back=99999)
+    assert captured["params"]["hours"] == 168
+
+
+@pytest.mark.asyncio
+async def test_get_social_clusters_no_district():
+    """get_social_clusters without district executes global aggregate query."""
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=MagicMock(__iter__=MagicMock(return_value=iter([]))))
+    from costa_api.ai.tools.db_tools import get_social_clusters
+    result = await get_social_clusters(db, hours_back=24)
+    assert db.execute.called
+    assert isinstance(result, list)
+
+
+@pytest.mark.asyncio
+async def test_get_social_clusters_with_district():
+    """get_social_clusters with district passes dname param."""
+    db = AsyncMock()
+    captured: dict = {}
+
+    async def _capture(sql, params=None):
+        captured["params"] = params
+        return MagicMock(__iter__=MagicMock(return_value=iter([])))
+
+    db.execute = _capture
+    from costa_api.ai.tools.db_tools import get_social_clusters
+    await get_social_clusters(db, district_name="Lurigancho")
+    assert "dname" in (captured.get("params") or {})
+    assert "Lurigancho" in captured["params"]["dname"]
+
+
+@pytest.mark.asyncio
+async def test_get_active_alerts_no_severity():
+    """get_active_alerts without severity filter calls only one query."""
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=MagicMock(
+        scalar=MagicMock(return_value=3),
+        __iter__=MagicMock(return_value=iter([])),
+    ))
+    from costa_api.ai.tools.db_tools import get_active_alerts
+    result = await get_active_alerts(db)
+    assert isinstance(result, list)
+
+
+@pytest.mark.asyncio
+async def test_get_rainfall_accumulation_hours_clamped():
+    """get_rainfall_accumulation clamps hours_back to [1, 168]."""
+    db = AsyncMock()
+    captured: dict = {}
+
+    async def _capture(sql, params=None):
+        captured["params"] = params
+        return MagicMock(__iter__=MagicMock(return_value=iter([])))
+
+    db.execute = _capture
+    from costa_api.ai.tools.db_tools import get_rainfall_accumulation
+    await get_rainfall_accumulation(db, hours_back=999)
+    assert captured["params"]["hours"] == 168
+
+
+@pytest.mark.asyncio
+async def test_get_infrastructure_impact_hours_clamped():
+    """get_infrastructure_impact clamps hours_back to [1, 240]."""
+    db = AsyncMock()
+    captured: dict = {}
+
+    async def _capture(sql, params=None):
+        captured["params"] = params
+        return MagicMock(__iter__=MagicMock(return_value=iter([])))
+
+    db.execute = _capture
+    from costa_api.ai.tools.db_tools import get_infrastructure_impact
+    await get_infrastructure_impact(db, hours_back=99999)
+    assert captured["params"]["hours"] == 240
