@@ -18,6 +18,7 @@ import asyncio
 import ipaddress
 import json
 import logging
+import socket
 from datetime import datetime
 from typing import Optional
 from urllib.parse import urlparse
@@ -45,14 +46,43 @@ _PRIVATE_NETS = [
 ]
 
 
-def _reject_private_host(host: str) -> None:
-    """Raise ValueError if host resolves to a private/internal IP (SSRF guard)."""
+def _is_private_addr(addr_str: str) -> bool:
     try:
-        addr = ipaddress.ip_address(host)
+        addr = ipaddress.ip_address(addr_str)
+        return any(addr in net for net in _PRIVATE_NETS)
     except ValueError:
-        return  # hostname — checked at dispatch time via httpx
-    if any(addr in net for net in _PRIVATE_NETS):
-        raise ValueError(f"webhook target must be a public URL (private IP blocked: {host})")
+        return False
+
+
+def _reject_private_host(host: str) -> None:
+    """Raise ValueError if host is or resolves to a private/internal IP (SSRF guard).
+
+    Resolves DNS hostnames so that names like internal.corp.local or
+    169.254.169.254.nip.io are blocked even if the literal value is not an IP.
+    """
+    # Fast path: literal IP address
+    try:
+        ipaddress.ip_address(host)
+        if _is_private_addr(host):
+            raise ValueError(f"webhook target must be a public URL (private IP blocked: {host})")
+        return
+    except ValueError as exc:
+        if "webhook target" in str(exc):
+            raise
+        # Not a literal IP — fall through to DNS resolution
+
+    # DNS resolution path: resolve and check each returned address
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except OSError:
+        # DNS failure — conservatively block rather than allow unknown targets
+        raise ValueError(f"webhook hostname could not be resolved: {host}")
+    for info in infos:
+        addr_str = info[4][0]
+        if _is_private_addr(addr_str):
+            raise ValueError(
+                f"webhook target resolves to a private IP ({addr_str}) — blocked to prevent SSRF"
+            )
 
 
 # ─── Schema ───────────────────────────────────────────────────────────────────
@@ -268,6 +298,42 @@ async def _send_sms(to_number: str, body: str) -> tuple[bool, str]:
         return False, str(exc)
 
 
+_FAN_OUT_CONCURRENCY = 10  # max parallel webhook/SMS dispatches
+_FAN_OUT_SUBSCRIBER_CAP = 100  # never fan-out to more than N subscribers
+
+
+async def _dispatch_to_subscriber(
+    sub: dict,
+    payload: dict,
+    alert_id: Optional[int],
+    trigger_event: str,
+    semaphore: asyncio.Semaphore,
+) -> None:
+    """Dispatch a single notification; record delivery result. Bounded by semaphore."""
+    async with semaphore:
+        channel = sub["channel"]
+        if channel == "webhook":
+            success, err, attempts = await _send_webhook(sub["target"], payload)
+            status = "delivered" if success else "failed"
+            await _record_delivery(sub["id"], alert_id, trigger_event, status, attempts, err or None)
+        elif channel == "sms":
+            sms_body = (
+                f"[COSTA RESILIENTE] {payload['severity'].upper()}: {payload['title']}. "
+                f"Distrito: {payload.get('district_ubigeo', 'Lima')}. "
+                f"Evento: {trigger_event}."
+            )
+            success, err = await _send_sms(sub["target"], sms_body)
+            if err == "twilio_not_configured":
+                status = "skipped"
+            else:
+                status = "delivered" if success else "failed"
+            await _record_delivery(sub["id"], alert_id, trigger_event, status, 1, err or None)
+        else:
+            # sms_stub / email — log intent, no provider call
+            logger.info("[notifications] stub %s → %s: alert_id=%s event=%s", channel, sub["label"], alert_id, trigger_event)
+            await _record_delivery(sub["id"], alert_id, trigger_event, "skipped", 0, f"{channel} stub — not wired")
+
+
 async def fan_out_notifications(
     alert_id: Optional[int],
     alert_severity: str,
@@ -275,7 +341,7 @@ async def fan_out_notifications(
     alert_district_ubigeo: Optional[str],
     trigger_event: str,
 ) -> None:
-    """Background task: query matching subscribers and dispatch notifications."""
+    """Background task: query matching subscribers and dispatch notifications in parallel."""
     try:
         async with engine.connect() as conn:
             result = await conn.execute(
@@ -284,12 +350,24 @@ async def fan_out_notifications(
                     FROM ops.notification_subscribers
                     WHERE active = TRUE
                     ORDER BY id
-                """)
+                    LIMIT :cap
+                """),
+                {"cap": _FAN_OUT_SUBSCRIBER_CAP},
             )
             subscribers = result.mappings().all()
 
         sev_rank = SEVERITY_RANK.get(alert_severity, 0)
+        payload = {
+            "event": trigger_event,
+            "alert_id": alert_id,
+            "severity": alert_severity,
+            "title": alert_title,
+            "district_ubigeo": alert_district_ubigeo,
+            "source": "costa-resiliente",
+        }
 
+        semaphore = asyncio.Semaphore(_FAN_OUT_CONCURRENCY)
+        tasks = []
         for sub in subscribers:
             sub_min_rank = SEVERITY_RANK.get(sub["severity_min"], 2)
             if sev_rank < sub_min_rank:
@@ -297,36 +375,9 @@ async def fan_out_notifications(
             if sub["district_filter"] and alert_district_ubigeo:
                 if not alert_district_ubigeo.startswith(sub["district_filter"]):
                     continue
+            tasks.append(_dispatch_to_subscriber(dict(sub), payload, alert_id, trigger_event, semaphore))
 
-            payload = {
-                "event": trigger_event,
-                "alert_id": alert_id,
-                "severity": alert_severity,
-                "title": alert_title,
-                "district_ubigeo": alert_district_ubigeo,
-                "source": "costa-resiliente",
-            }
-
-            channel = sub["channel"]
-            if channel == "webhook":
-                success, err, attempts = await _send_webhook(sub["target"], payload)
-                status = "delivered" if success else "failed"
-                await _record_delivery(sub["id"], alert_id, trigger_event, status, attempts, err or None)
-            elif channel == "sms":
-                sms_body = (
-                    f"[COSTA RESILIENTE] {payload['severity'].upper()}: {payload['title']}. "
-                    f"Distrito: {payload.get('district_ubigeo', 'Lima')}. "
-                    f"Evento: {trigger_event}."
-                )
-                success, err = await _send_sms(sub["target"], sms_body)
-                if err == "twilio_not_configured":
-                    status = "skipped"
-                else:
-                    status = "delivered" if success else "failed"
-                await _record_delivery(sub["id"], alert_id, trigger_event, status, 1, err or None)
-            else:
-                # sms_stub / email — log intent, no provider call
-                logger.info("[notifications] stub %s → %s: alert_id=%s event=%s", channel, sub["label"], alert_id, trigger_event)
-                await _record_delivery(sub["id"], alert_id, trigger_event, "skipped", 0, f"{channel} stub — not wired")
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
     except Exception as exc:
         logger.exception("[notifications] fan_out error: %s", exc)
