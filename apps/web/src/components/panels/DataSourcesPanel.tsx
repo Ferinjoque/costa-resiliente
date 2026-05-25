@@ -282,7 +282,7 @@ function SourceRow({
 
 export function DataSourcesPanel() {
   const { activePanel, setActivePanel, locale } = useUIStore();
-  const { data: scraperHealth } = useScraperHealth();
+  const { data: scraperHealth, isError: healthError, isFetching: healthFetching, refetch: refetchHealth } = useScraperHealth();
 
   if (activePanel !== "sources") return null;
 
@@ -374,12 +374,19 @@ export function DataSourcesPanel() {
           <StatusDot color="bg-ok"          count={okCount}     label={locale === "es" ? "activas"    : "active"}  />
           <StatusDot color="bg-warn-muted"  count={warnCount}   label={locale === "es" ? "frágiles"   : "fragile"} />
           <StatusDot color="bg-danger"      count={dangerCount} label={locale === "es" ? "bloqueadas" : "blocked"} />
-          {scraperHealth && (
-            <span className="ml-auto flex items-center gap-1 text-[10px] text-ink-subtle">
-              <RefreshCw size={9} aria-hidden="true" />
-              {formatAgo(scraperHealth.retrieved_at, locale)}
-            </span>
-          )}
+          <button
+            onClick={() => refetchHealth()}
+            disabled={healthFetching}
+            className="ml-auto flex items-center gap-1 text-[10px] text-ink-subtle hover:text-ink transition-colors disabled:opacity-40 rounded focus-visible:outline-2 focus-visible:outline-accent"
+            aria-label={locale === "es" ? "Actualizar estado de fuentes" : "Refresh source status"}
+          >
+            <RefreshCw size={9} className={healthFetching ? "animate-spin" : ""} aria-hidden="true" />
+            {healthError
+              ? <span className="text-danger">{locale === "es" ? "error" : "error"}</span>
+              : scraperHealth
+                ? formatAgo(scraperHealth.retrieved_at, locale)
+                : (locale === "es" ? "actualizar" : "refresh")}
+          </button>
         </div>
         {/* Privacy / retention */}
         <p className="text-[10px] text-ink-subtle">
