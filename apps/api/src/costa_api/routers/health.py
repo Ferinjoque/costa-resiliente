@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Any
 
@@ -10,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from costa_api.db import get_db, engine
 from costa_api.auto_seed import maybe_seed
 from costa_api.config import settings
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(tags=["health"])
 
@@ -122,8 +125,8 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
                 ok_pct = stations_ok / max(total, 1)
                 scraper_status = "ok" if ok_pct >= 0.5 else ("stale" if ok_pct > 0 else "offline")
                 return {"scraper_live_stations": stations_ok, "scraper_total": total, "scraper_status": scraper_status}
-        except Exception:
-            pass
+        except Exception as exc:
+            log.warning("health: Redis scraper-status read failed for %r: %s", source_key, exc)
         return {}
 
     async def _redis_last_run_status(source_key: str, stale_min: int = 20) -> dict:
@@ -140,8 +143,8 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
                 age_min = (now - last_run).total_seconds() / 60
                 run_status = "ok" if age_min < stale_min else ("stale" if age_min < 120 else "offline")
                 return {"scraper_last_run_at": raw, "status": run_status}
-        except Exception:
-            pass
+        except Exception as exc:
+            log.warning("health: Redis last-run read failed for %r: %s", source_key, exc)
         return {}
 
     ana_scraper = await _redis_scraper_status("ana")
