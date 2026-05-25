@@ -194,6 +194,13 @@ const SUGGESTIONS: { es: string; en: string }[] = [
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
+const LS_TOKEN = "cr_auth_token";
+
+function getLocalToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(LS_TOKEN);
+}
+
 export function AskPanel() {
   const { activePanel, locale } = useUIStore();
   const operator = useAuthStore((s) => s.operator);
@@ -204,6 +211,14 @@ export function AskPanel() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Cancel in-flight request when the operator navigates away from the panel
+  useEffect(() => {
+    if (activePanel !== "ask") {
+      abortRef.current?.abort();
+    }
+  }, [activePanel]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -256,16 +271,25 @@ export function AskPanel() {
       return;
     }
 
+    // Cancel any previous in-flight request before starting a new one
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
+      const token = getLocalToken();
       const res = await fetch(`${BASE}/api/v1/copilot/ask`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           query: trimmed,
           operator_id: operator?.username ?? "demo",
           district_ubigeo: operator?.district_ubigeo ?? undefined,
         }),
-        signal: AbortSignal.timeout(55_000),
+        signal: controller.signal,
       });
       let answerText: string;
       let isRedacted = false;
@@ -292,7 +316,12 @@ export function AskPanel() {
       const asstId = Math.random().toString(36).slice(2);
       setMessages((prev) => [...prev, { id: asstId, role: "assistant", content: answerText, displayed: "", isRedacted, quickMode: isQuickMode }]);
       animateMessage(answerText, asstId);
-    } catch {
+    } catch (err: unknown) {
+      // AbortError = user sent a new question or navigated away; don't show error
+      if ((err as Error)?.name === "AbortError") {
+        setLoading(false);
+        return;
+      }
       const demoKey = findDemoResponse(trimmed);
       const demo = demoKey ? DEMO_COPILOT_RESPONSES[demoKey] : null;
       const answerText = demo?.answer ?? (es

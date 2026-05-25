@@ -727,8 +727,11 @@ export async function loginOperator(username: string, password: string): Promise
     body: form.toString(),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { detail?: string }).detail ?? `Error ${res.status}`);
+    const body = await res.json().catch(() => ({}));
+    const detail = (body as { detail?: string }).detail ?? "";
+    const e = new Error(detail || `Error ${res.status}`);
+    (e as Error & { httpStatus: number }).httpStatus = res.status;
+    throw e;
   }
   return res.json();
 }
