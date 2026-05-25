@@ -90,6 +90,14 @@ async def _do_restore(snap: dict) -> None:
             "DELETE FROM ops.alerts WHERE created_at >= $1",
             snap["test_start"],
         )
+
+        # 6. Delete operators created by tests (skip the 3 seeded demo operators).
+        demo_usernames = ("coer_lima", "coen_lima", "coel_sjl")
+        await pool.execute(
+            "DELETE FROM ops.operators WHERE created_at >= $1 AND username != ALL($2::text[])",
+            snap["test_start"],
+            list(demo_usernames),
+        )
     finally:
         await pool.close()
 
