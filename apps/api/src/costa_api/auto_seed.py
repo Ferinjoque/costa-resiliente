@@ -164,25 +164,27 @@ _IMERG_CURRENT = [
 # ─── Current flood polygons ───────────────────────────────────────────────────
 _FLOOD_CURRENT = [
     {
+        # Chillón river corridor — inside Puente Piedra district (362k pop)
         "scene_id": "S1A_IW_SLC__1SDV_DEMO-RIMAC-HUACHIPA",
         "offset_h": 2.5,
         "model_version": "flood-seg-v0.1-demo",
         "confidence": 0.87,
-        "area_km2": 1.83,
+        "area_km2": 9.2,
         "geom_wkt": (
-            "MULTIPOLYGON(((-76.8850 -11.9480,-76.8750 -11.9480,"
-            "-76.8750 -11.9540,-76.8850 -11.9540,-76.8850 -11.9480)))"
+            "MULTIPOLYGON(((-77.1070 -11.8920,-77.0870 -11.8920,"
+            "-77.0870 -11.9120,-77.1070 -11.9120,-77.1070 -11.8920)))"
         ),
     },
     {
+        # Rímac river corridor — inside Lurigancho district (213k pop)
         "scene_id": "S1B_IW_SLC__1SDV_DEMO-RIMAC-NANA",
         "offset_h": 8.0,
         "model_version": "flood-seg-v0.1-demo",
         "confidence": 0.79,
-        "area_km2": 0.64,
+        "area_km2": 6.5,
         "geom_wkt": (
-            "MULTIPOLYGON(((-76.8220 -11.9780,-76.8150 -11.9780,"
-            "-76.8150 -11.9840,-76.8220 -11.9840,-76.8220 -11.9780)))"
+            "MULTIPOLYGON(((-76.9500 -11.9500,-76.9200 -11.9500,"
+            "-76.9200 -11.9700,-76.9500 -11.9700,-76.9500 -11.9500)))"
         ),
     },
 ]
@@ -566,9 +568,11 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         _alerts = (await conn.execute(text("SELECT COUNT(*) FROM ops.alerts"))).scalar_one()
         _social = (await conn.execute(text("SELECT COUNT(*) FROM social.signals"))).scalar_one()
         _imerg  = (await conn.execute(
-            text("SELECT COUNT(*) FROM hydro.imerg_accumulations WHERE time > NOW() - INTERVAL '7 days'")
+            text("SELECT COUNT(*) FROM hydro.imerg_accumulations WHERE time > NOW() - INTERVAL '2 hours'")
         )).scalar_one()
-        _stobs  = (await conn.execute(text("SELECT COUNT(*) FROM hydro.station_observations"))).scalar_one()
+        _stobs  = (await conn.execute(
+            text("SELECT COUNT(*) FROM hydro.station_observations WHERE time > NOW() - INTERVAL '2 hours'")
+        )).scalar_one()
 
         operational_ok = _alerts > 0 and _social > 0 and _imerg > 0 and _stobs > 0
 
@@ -671,6 +675,8 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                 ws_ids.append(ws_ids[-1])
 
         # ── 2. Current flood polygons ─────────────────────────────────────────
+        # Upsert: always refresh acquired_at so polygons stay within the query
+        # window (168h default). Geometry only changes on first insert.
         for f in _FLOOD_CURRENT:
             await conn.execute(
                 text("""
@@ -678,7 +684,8 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                         (scene_id, acquired_at, model_version, confidence, area_km2, geom)
                     VALUES (:sid, :acq, :mv, :conf, :area,
                             ST_SetSRID(ST_GeomFromText(:wkt), 4326))
-                    ON CONFLICT DO NOTHING
+                    ON CONFLICT (scene_id) DO UPDATE
+                        SET acquired_at = EXCLUDED.acquired_at
                 """),
                 {
                     "sid": f["scene_id"],

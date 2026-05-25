@@ -7,27 +7,29 @@ an optimistic frontend update.
 
 from __future__ import annotations
 
+import httpx
 import pytest
-from httpx import AsyncClient, ASGITransport
 
-from costa_api.main import app
-
-BASE = "http://test"
+BASE = "http://localhost:8000/api/v1"
 
 
-@pytest.mark.asyncio
-async def test_field_report_stores_signal_and_decision_log():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-        resp = await c.post(
-            "/api/v1/social/field-report",
-            json={
-                "operator_id": "coen_lima",
-                "text": "Camion atrapado en quebrada Huaycoloro km 12",
-                "label": "road_blocked",
-                "district_ubigeo": "150133",
-                "session_id": "test-session",
-            },
-        )
+@pytest.fixture(scope="module")
+def client():
+    with httpx.Client(base_url=BASE, timeout=10.0) as c:
+        yield c
+
+
+def test_field_report_stores_signal_and_decision_log(client):
+    resp = client.post(
+        "/social/field-report",
+        json={
+            "operator_id": "coen_lima",
+            "text": "Camion atrapado en quebrada Huaycoloro km 12",
+            "label": "road_blocked",
+            "district_ubigeo": "150133",
+            "session_id": "test-session",
+        },
+    )
     assert resp.status_code == 201
     body = resp.json()
     assert body["status"] == "stored"
@@ -36,66 +38,58 @@ async def test_field_report_stores_signal_and_decision_log():
     assert body["ingested_at"] is not None
 
 
-@pytest.mark.asyncio
-async def test_field_report_rejects_invalid_label():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-        resp = await c.post(
-            "/api/v1/social/field-report",
-            json={
-                "operator_id": "coen_lima",
-                "text": "Vía bloqueada",
-                "label": "bogus_label",
-                "district_ubigeo": "150133",
-            },
-        )
+def test_field_report_rejects_invalid_label(client):
+    resp = client.post(
+        "/social/field-report",
+        json={
+            "operator_id": "coen_lima",
+            "text": "Vía bloqueada",
+            "label": "bogus_label",
+            "district_ubigeo": "150133",
+        },
+    )
     assert resp.status_code == 400
     assert "Invalid label" in resp.json()["detail"]
 
 
-@pytest.mark.asyncio
-async def test_field_report_rejects_empty_text():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-        resp = await c.post(
-            "/api/v1/social/field-report",
-            json={
-                "operator_id": "coen_lima",
-                "text": "   ",
-                "label": "needs_help",
-            },
-        )
-    assert resp.status_code == 400  # whitespace-only fails server-side strip check
+def test_field_report_rejects_empty_text(client):
+    resp = client.post(
+        "/social/field-report",
+        json={
+            "operator_id": "coen_lima",
+            "text": "   ",
+            "label": "needs_help",
+        },
+    )
+    assert resp.status_code == 400
 
 
-@pytest.mark.asyncio
-async def test_field_report_accepts_null_district():
+def test_field_report_accepts_null_district(client):
     """An operator may not know the ubigeo; the endpoint must accept null."""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-        resp = await c.post(
-            "/api/v1/social/field-report",
-            json={
-                "operator_id": "coen_lima",
-                "text": "Lluvia intensa observada desde el helicoptero",
-                "label": "weather_observation",
-                "district_ubigeo": None,
-            },
-        )
+    resp = client.post(
+        "/social/field-report",
+        json={
+            "operator_id": "coen_lima",
+            "text": "Lluvia intensa observada desde el helicoptero",
+            "label": "weather_observation",
+            "district_ubigeo": None,
+        },
+    )
     assert resp.status_code == 201
     assert resp.json()["signal_id"] > 0
 
 
-@pytest.mark.asyncio
-async def test_field_report_returns_district_id_when_known():
+def test_field_report_returns_district_id_when_known(client):
     """When the ubigeo resolves to a real district, the row has district_id."""
     # 150101 = Lima district seeded by auto_seed.
-    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-        resp = await c.post(
-            "/api/v1/social/field-report",
-            json={
-                "operator_id": "coen_lima",
-                "text": "Aniego confirmado por brigada Plaza Mayor",
-                "label": "infrastructure_damage",
-                "district_ubigeo": "150101",
-            },
-        )
+    resp = client.post(
+        "/social/field-report",
+        json={
+            "operator_id": "coen_lima",
+            "text": "Aniego confirmado por brigada Plaza Mayor",
+            "label": "infrastructure_damage",
+            "district_ubigeo": "150101",
+        },
+    )
     assert resp.status_code == 201
     assert isinstance(resp.json()["signal_id"], int)
