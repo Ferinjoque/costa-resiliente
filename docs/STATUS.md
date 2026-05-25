@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **316 passed, 0 errors** (Session 12). Up from 314 (2 new social label tests).
+- **API**: **425 passed, 0 errors** (Session 13). Up from 316 (109 new tests across 4 new test files).
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB (Session 5: 153 → 173 → 175 with new ProposalsPanel)
 
@@ -225,6 +225,40 @@ POST   /api/v1/auth/operators
 ---
 
 ## Recent session log (rolling, last 5)
+
+### Session 13 — 2026-05-25 — Sprint 21: Bug fixes + 109 new tests (alerts, fusion, layers, share)
+
+Autonomous session (Fernando offline). All changes on `develop`, local Ollama only.
+
+**Bug fixes discovered via new tests:**
+- `fix(alerts)`: `_parse_iso_dt()` helper added — asyncpg requires `datetime` objects for
+  timestamp-typed bind parameters; passing raw ISO strings (e.g. `2026-05-01T00:00:00Z`)
+  raised `asyncpg.exceptions.DataError`. Affects `/decision-log` list, CSV export, PDF report.
+- `fix(alerts)`: `datetime.utcnow()` deprecation warning fixed → `datetime.now(timezone.utc)`.
+- `feat(alerts)`: PDF report endpoint `/decision-log/report` now accepts `?since=ISO&until=ISO`
+  date-range params, matching the CSV export endpoint for EDAN-Perú shift/audit consistency.
+- `fix(health)`: `imerg`/`stations` stale thresholds raised to 70min (actual scheduler cadence
+  is 30–60min; previous 35/20min thresholds were too strict, causing false-stale alarms).
+- `fix(ana_scraper)`: Stations Redis TTL raised to 2h (matches actual observed cadence).
+- `fix(demo)`: Lurigancho fusion prose updated to reflect new huayco_observation cluster signals.
+
+**New test files (109 new tests, suite 316 → 425):**
+- `test_alerts.py` (30 tests): list_alerts filters, alert actions (all 4 valid + invalid),
+  free-form log entries, decision-log list with since/until/operator filters, CSV export
+  (headers, date-range filename suffix, parseable rows), PDF report (magic bytes, disposition,
+  with/without filters, date-range, far-future since → empty log section still renders).
+- `test_fusion.py` (22 tests): district fusion shape, all subkeys, risk_level enum, prose
+  correctness, ubigeo validation (400 on bad format, 404 on unknown); pure unit tests for
+  `_overall_risk` (9 cases) and `_risk_prose_es` (5 cases).
+- `test_layers.py` (45 tests): all 11 layer endpoints — imerg, flood, huayco, hazard,
+  infrastructure, stations, watersheds, quebradas, flood/exposure, social, shelters.
+  Includes label-filter correctness, irrelevant exclusion, param validation.
+- `test_share.py` (12 tests): mint/resolve round-trip, layer whitelist (valid + invalid),
+  time-window whitelist (all 6 valid values), replay mode, 404/malformed token.
+
+**Tests:** 425 passed (↑109 from 316). TypeScript: 0 errors.
+
+---
 
 ### Session 12 — 2026-05-25 — Sprint 20: Field-report labels end-to-end + triage pipeline + robustness
 
