@@ -292,7 +292,8 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   ) {
     setActing(true);
     const newStatus = ACTION_STATUS[action];
-    qc.setQueryData(["alerts", undefined], (old: Alert[] | undefined) =>
+    // setQueriesData (prefix match) hits all ["alerts", *] keys regardless of filter args
+    qc.setQueriesData<Alert[]>({ queryKey: ["alerts"] }, (old) =>
       old ? old.map((a) => (a.id === alert.id ? { ...a, status: newStatus } : a)) : old,
     );
     setMenuOpen(false);
@@ -307,7 +308,7 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
       // Roll back optimistic status update — the action did NOT register.
       // Telling an operator their escalation went through when it didn't is
       // worse than no UI at all in an emergency-ops context.
-      qc.setQueryData<Alert[]>(["alerts"], (old) =>
+      qc.setQueriesData<Alert[]>({ queryKey: ["alerts"] }, (old) =>
         old ? old.map((a) => (a.id === alert.id ? { ...a, status: alert.status } : a)) : old,
       );
       const errMsg = locale === "es"
@@ -583,17 +584,24 @@ function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en
       hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Lima",
     });
     setDispatched((m) => new Map([...m, [r.id, ts]]));
-    await logDecision({
-      operator_id: operatorId,
-      action_type: "resource_dispatch",
-      alert_id: primaryAlert?.id ?? null,
-      payload: { resource: r.id, resource_name: label, dispatched_at: new Date().toISOString() },
-      session_id: "demo",
-    });
-    addToast({
-      message: locale === "es" ? `${label} despachado — registrado en log` : `${label} dispatched — logged`,
-      variant: "success",
-    } as Omit<LiveToast, "id" | "at">);
+    try {
+      await logDecision({
+        operator_id: operatorId,
+        action_type: "resource_dispatch",
+        alert_id: primaryAlert?.id ?? null,
+        payload: { resource: r.id, resource_name: label, dispatched_at: new Date().toISOString() },
+        session_id: "demo",
+      });
+      addToast({
+        message: locale === "es" ? `${label} despachado — registrado en log` : `${label} dispatched — logged`,
+        variant: "success",
+      } as Omit<LiveToast, "id" | "at">);
+    } catch {
+      addToast({
+        message: locale === "es" ? `${label} despachado (log no disponible)` : `${label} dispatched (log unavailable)`,
+        variant: "warn",
+      } as Omit<LiveToast, "id" | "at">);
+    }
   }
 
   const dispatchedCount = dispatched.size;
