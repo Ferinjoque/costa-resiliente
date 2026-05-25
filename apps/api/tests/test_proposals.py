@@ -17,12 +17,20 @@ AUTH = {"X-Testing-Operator": "1:test-op:coer"}
 
 
 @pytest.mark.asyncio
+async def test_list_proposals_unauthenticated_returns_401():
+    """Proposals list is operator-only — no auth header → 401."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.get("/api/v1/proposals")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
 async def test_list_proposals_excludes_test_residue():
     """`Test Flood Alert`, XSS, and SQL-injection seed titles must not appear
     in the operator-facing list. They live on in the table for audit but the
     duty officer's queue stays clean."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-        resp = await c.get("/api/v1/proposals")
+        resp = await c.get("/api/v1/proposals", headers=AUTH)
     assert resp.status_code == 200
     items = resp.json()
     for p in items:

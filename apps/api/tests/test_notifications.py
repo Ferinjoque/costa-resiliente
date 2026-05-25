@@ -14,9 +14,17 @@ AUTH = {"X-Testing-Operator": "1:test_op:coer"}
 # ─── GET /notifications ───────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_list_subscribers_returns_list():
+async def test_list_subscribers_unauthenticated_returns_401():
+    """Subscriber list is operator-only — no auth → 401."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         resp = await c.get("/api/v1/notifications")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_list_subscribers_returns_list():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.get("/api/v1/notifications", headers=AUTH)
     assert resp.status_code == 200
     assert isinstance(resp.json(), list)
 
@@ -132,7 +140,7 @@ async def test_delete_subscriber_soft_deactivates():
         del_resp = await c.delete(f"/api/v1/notifications/{sub_id}", headers=AUTH)
         assert del_resp.status_code == 204
 
-        subs = (await c.get("/api/v1/notifications")).json()
+        subs = (await c.get("/api/v1/notifications", headers=AUTH)).json()
         assert sub_id not in [s["id"] for s in subs]
 
 
@@ -146,9 +154,17 @@ async def test_delete_nonexistent_subscriber_returns_404():
 # ─── GET /notifications/deliveries ───────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_deliveries_returns_list():
+async def test_deliveries_unauthenticated_returns_401():
+    """Delivery log is operator-only — no auth → 401."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         resp = await c.get("/api/v1/notifications/deliveries")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_deliveries_returns_list():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.get("/api/v1/notifications/deliveries", headers=AUTH)
     assert resp.status_code == 200
     assert isinstance(resp.json(), list)
 
@@ -156,7 +172,7 @@ async def test_deliveries_returns_list():
 @pytest.mark.asyncio
 async def test_deliveries_limit_param():
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-        resp = await c.get("/api/v1/notifications/deliveries?limit=5")
+        resp = await c.get("/api/v1/notifications/deliveries?limit=5", headers=AUTH)
     assert resp.status_code == 200
     assert len(resp.json()) <= 5
 

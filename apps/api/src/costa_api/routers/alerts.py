@@ -331,6 +331,7 @@ async def list_decision_log(
     until: Optional[str] = Query(None, description="ISO-8601 end datetime (inclusive)"),
     limit: int = Query(100, ge=0, le=500),
     db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
 ) -> list[DecisionLogEntry]:
     """Return recent decision log entries, newest first."""
     conditions = ["1=1"]
@@ -374,6 +375,7 @@ async def export_decision_log(
     until: Optional[str] = Query(None, description="ISO-8601 end datetime (inclusive)"),
     limit: int = Query(500, ge=0, le=2000),
     db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
 ) -> StreamingResponse:
     """
     Export decision log as CSV for EDAN-Perú reporting.
@@ -442,6 +444,7 @@ async def export_pdf_report(
     until: Optional[str] = Query(None, description="ISO-8601 end datetime (inclusive)"),
     limit: int = Query(200, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
 ) -> StreamingResponse:
     """
     Export decision log as an EDAN-Perú style PDF situational report.

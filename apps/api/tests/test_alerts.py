@@ -267,9 +267,16 @@ class TestLogDecision:
 
 class TestDecisionLog:
     @pytest.mark.asyncio
-    async def test_returns_list(self):
+    async def test_unauthenticated_returns_401(self):
+        """Decision log is operator-only — no auth header → 401."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get("/api/v1/alerts/decision-log")
+        assert resp.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_returns_list(self):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get("/api/v1/alerts/decision-log", headers=AUTH)
         assert resp.status_code == 200
         assert isinstance(resp.json(), list)
 
@@ -286,7 +293,7 @@ class TestDecisionLog:
                 },
                 headers=AUTH,
             )
-            resp = await c.get("/api/v1/alerts/decision-log?limit=10")
+            resp = await c.get("/api/v1/alerts/decision-log?limit=10", headers=AUTH)
         entries = resp.json()
         assert entries, "decision log is empty after seeding"
         e = entries[0]
@@ -309,7 +316,10 @@ class TestDecisionLog:
                 headers=AUTH,
             )
             # AUTH header username is "test-op" — that's what gets stored
-            resp = await c.get("/api/v1/alerts/decision-log?operator_id=test-op&limit=20")
+            resp = await c.get(
+                "/api/v1/alerts/decision-log?operator_id=test-op&limit=20",
+                headers=AUTH,
+            )
         entries = resp.json()
         for e in entries:
             assert e["operator_id"] == "test-op"
@@ -317,14 +327,17 @@ class TestDecisionLog:
     @pytest.mark.asyncio
     async def test_limit_respected(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.get("/api/v1/alerts/decision-log?limit=2")
+            resp = await c.get("/api/v1/alerts/decision-log?limit=2", headers=AUTH)
         assert len(resp.json()) <= 2
 
     @pytest.mark.asyncio
     async def test_since_filter_future_returns_empty(self):
         """Since=far-future should return zero rows."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.get("/api/v1/alerts/decision-log?since=2099-01-01T00:00:00Z")
+            resp = await c.get(
+                "/api/v1/alerts/decision-log?since=2099-01-01T00:00:00Z",
+                headers=AUTH,
+            )
         assert resp.status_code == 200
         assert resp.json() == []
 
@@ -332,7 +345,10 @@ class TestDecisionLog:
     async def test_until_filter_past_returns_empty(self):
         """Until=far-past should return zero rows."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.get("/api/v1/alerts/decision-log?until=2000-01-01T00:00:00Z")
+            resp = await c.get(
+                "/api/v1/alerts/decision-log?until=2000-01-01T00:00:00Z",
+                headers=AUTH,
+            )
         assert resp.status_code == 200
         assert resp.json() == []
 
@@ -341,16 +357,23 @@ class TestDecisionLog:
 
 class TestDecisionLogExport:
     @pytest.mark.asyncio
+    async def test_unauthenticated_returns_401(self):
+        """Export endpoint is operator-only — no auth → 401."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get("/api/v1/alerts/decision-log/export")
+        assert resp.status_code == 401
+
+    @pytest.mark.asyncio
     async def test_returns_csv(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.get("/api/v1/alerts/decision-log/export?limit=10")
+            resp = await c.get("/api/v1/alerts/decision-log/export?limit=10", headers=AUTH)
         assert resp.status_code == 200
         assert "text/csv" in resp.headers.get("content-type", "")
 
     @pytest.mark.asyncio
     async def test_csv_has_headers(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.get("/api/v1/alerts/decision-log/export?limit=10")
+            resp = await c.get("/api/v1/alerts/decision-log/export?limit=10", headers=AUTH)
         reader = csv.DictReader(io.StringIO(resp.text))
         assert "id" in (reader.fieldnames or [])
         assert "operator_id" in (reader.fieldnames or [])
@@ -362,7 +385,8 @@ class TestDecisionLogExport:
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get(
                 "/api/v1/alerts/decision-log/export"
-                "?since=2026-05-01T00:00:00Z&until=2026-05-31T23:59:59Z"
+                "?since=2026-05-01T00:00:00Z&until=2026-05-31T23:59:59Z",
+                headers=AUTH,
             )
         assert resp.status_code == 200
         cd = resp.headers.get("content-disposition", "")
@@ -383,7 +407,7 @@ class TestDecisionLogExport:
                 },
                 headers=AUTH,
             )
-            resp = await c.get("/api/v1/alerts/decision-log/export?limit=20")
+            resp = await c.get("/api/v1/alerts/decision-log/export?limit=20", headers=AUTH)
         reader = csv.DictReader(io.StringIO(resp.text))
         rows = list(reader)
         assert len(rows) >= 1
@@ -395,22 +419,29 @@ class TestDecisionLogExport:
 
 class TestDecisionLogReport:
     @pytest.mark.asyncio
+    async def test_unauthenticated_returns_401(self):
+        """PDF report endpoint is operator-only — no auth → 401."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get("/api/v1/alerts/decision-log/report")
+        assert resp.status_code == 401
+
+    @pytest.mark.asyncio
     async def test_returns_pdf(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.get("/api/v1/alerts/decision-log/report?limit=5")
+            resp = await c.get("/api/v1/alerts/decision-log/report?limit=5", headers=AUTH)
         assert resp.status_code == 200
         assert "application/pdf" in resp.headers.get("content-type", "")
 
     @pytest.mark.asyncio
     async def test_pdf_has_pdf_magic_bytes(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.get("/api/v1/alerts/decision-log/report?limit=5")
+            resp = await c.get("/api/v1/alerts/decision-log/report?limit=5", headers=AUTH)
         assert resp.content[:4] == b"%PDF", "response is not a valid PDF"
 
     @pytest.mark.asyncio
     async def test_pdf_content_disposition(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
-            resp = await c.get("/api/v1/alerts/decision-log/report?limit=5")
+            resp = await c.get("/api/v1/alerts/decision-log/report?limit=5", headers=AUTH)
         cd = resp.headers.get("content-disposition", "")
         assert "attachment" in cd
         assert ".pdf" in cd
@@ -420,7 +451,8 @@ class TestDecisionLogReport:
         """Report with operator_id filter must still return a valid PDF."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get(
-                "/api/v1/alerts/decision-log/report?operator_id=test-op&limit=5"
+                "/api/v1/alerts/decision-log/report?operator_id=test-op&limit=5",
+                headers=AUTH,
             )
         assert resp.status_code == 200
         assert resp.content[:4] == b"%PDF"
@@ -431,7 +463,8 @@ class TestDecisionLogReport:
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get(
                 "/api/v1/alerts/decision-log/report"
-                "?since=2026-01-01T00:00:00Z&until=2099-12-31T23:59:59Z&limit=5"
+                "?since=2026-01-01T00:00:00Z&until=2099-12-31T23:59:59Z&limit=5",
+                headers=AUTH,
             )
         assert resp.status_code == 200
         assert resp.content[:4] == b"%PDF"
@@ -441,7 +474,8 @@ class TestDecisionLogReport:
         """Since=far-future → log section has 0 entries but PDF still renders."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get(
-                "/api/v1/alerts/decision-log/report?since=2099-01-01T00:00:00Z&limit=5"
+                "/api/v1/alerts/decision-log/report?since=2099-01-01T00:00:00Z&limit=5",
+                headers=AUTH,
             )
         assert resp.status_code == 200
         assert resp.content[:4] == b"%PDF"

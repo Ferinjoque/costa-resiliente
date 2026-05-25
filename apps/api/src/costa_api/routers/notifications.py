@@ -129,6 +129,7 @@ class DeliveryOut(BaseModel):
 async def list_subscribers(
     active_only: bool = Query(True),
     db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
 ) -> list[SubscriberOut]:
     where = "WHERE active = TRUE" if active_only else ""
     result = await db.execute(text(f"SELECT * FROM ops.notification_subscribers {where} ORDER BY created_at DESC"))
@@ -180,6 +181,7 @@ async def delete_subscriber(
 async def list_deliveries(
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
 ) -> list[DeliveryOut]:
     result = await db.execute(
         text("SELECT * FROM ops.notification_deliveries ORDER BY created_at DESC LIMIT :limit"),
