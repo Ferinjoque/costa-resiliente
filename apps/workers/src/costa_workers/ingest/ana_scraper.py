@@ -462,7 +462,7 @@ async def _check_stale_stations(pool: "asyncpg.Pool", threshold_hours: int = 2) 
               AND so.time > NOW() - INTERVAL '1 hour' * $1
         WHERE s.active = TRUE
         GROUP BY s.code
-        HAVING COUNT(*) = 0
+        HAVING COUNT(so.station_id) = 0
         """,
         threshold_hours,
     )

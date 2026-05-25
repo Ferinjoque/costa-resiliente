@@ -203,30 +203,40 @@ async def store_flood_polygons(scene_id: str, polygons: list[dict], acquired_at:
             logger.info("Scene %s: no flood detected — dry-scene sentinel inserted", scene_id)
             return 0
 
-        inserted = 0
-        for poly in polygons:
-            geom_json = json.dumps(poly["geometry"]) if poly.get("geometry") else None
-            if geom_json is None:
-                logger.warning("Skipping polygon without geometry for scene %s", scene_id)
-                continue
-            await pool.execute(
-                """
-                INSERT INTO ml.flood_polygons
-                    (scene_id, acquired_at, model_version, confidence, area_km2, geom)
-                VALUES ($1, $2, $3, $4, $5,
-                    ST_SetSRID(ST_GeomFromGeoJSON($6), 4326))
-                ON CONFLICT (scene_id) DO NOTHING
-                """,
-                scene_id,
-                acquired_at,
-                "sen1floods11-unet-v1",
-                poly.get("confidence", 0.0),
-                poly.get("area_m2", 0.0) / 1_000_000,  # m² → km²
-                geom_json,
-            )
-            inserted += 1
+        # Schema has GEOMETRY(MULTIPOLYGON) + UNIQUE(scene_id) — one row per scene.
+        # Build a MULTIPOLYGON GeoJSON in Python and pass as a single parameter so
+        # all detected polygons are captured; looping with ON CONFLICT DO NOTHING
+        # would silently discard all but the first.
+        valid_polys = [p for p in polygons if p.get("geometry") and p["geometry"].get("coordinates")]
+        if not valid_polys:
+            logger.warning("All polygons lacked geometry for scene %s — skipping", scene_id)
+            return 0
 
-    logger.info("Stored %d polygon rows for scene %s", inserted, scene_id)
+        multi_geom = {
+            "type": "MultiPolygon",
+            "coordinates": [p["geometry"]["coordinates"] for p in valid_polys],
+        }
+        total_area_km2 = sum(p.get("area_m2", 0.0) for p in valid_polys) / 1_000_000
+        mean_confidence = sum(p.get("confidence", 0.0) for p in valid_polys) / len(valid_polys)
+
+        await pool.execute(
+            """
+            INSERT INTO ml.flood_polygons
+                (scene_id, acquired_at, model_version, confidence, area_km2, geom)
+            VALUES ($1, $2, $3, $4, $5,
+                ST_SetSRID(ST_GeomFromGeoJSON($6), 4326))
+            ON CONFLICT (scene_id) DO NOTHING
+            """,
+            scene_id,
+            acquired_at,
+            "sen1floods11-unet-v1",
+            mean_confidence,
+            total_area_km2,
+            json.dumps(multi_geom),
+        )
+        inserted = len(valid_polys)
+
+    logger.info("Stored %d polygon(s) as 1 MULTIPOLYGON row for scene %s", inserted, scene_id)
     return inserted
 
 

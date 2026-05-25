@@ -190,12 +190,20 @@ class FloodSegmentationModel:
                 shutil.copy(local, self.weights_path)
                 state = torch.load(local, map_location=self.device, weights_only=True)
             except Exception as exc:
-                logger.warning(
-                    "HuggingFace download failed (%s). "
-                    "Continuing with random weights for development.",
-                    exc,
-                )
-                state = net.state_dict()
+                import os as _os
+                if _os.getenv("FLOOD_ALLOW_RANDOM_WEIGHTS", "0") == "1":
+                    logger.warning(
+                        "HuggingFace download failed (%s). "
+                        "FLOOD_ALLOW_RANDOM_WEIGHTS=1 — using random weights (dev only).",
+                        exc,
+                    )
+                    state = net.state_dict()
+                else:
+                    raise RuntimeError(
+                        f"Sen1Floods11 weights unavailable and FLOOD_ALLOW_RANDOM_WEIGHTS "
+                        f"is not set. Cannot produce valid flood maps. "
+                        f"Download error: {exc}"
+                    ) from exc
 
         net.load_state_dict(state, strict=False)
         net.eval()
