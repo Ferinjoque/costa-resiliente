@@ -52,7 +52,8 @@ def sanitise(text: str, source_rows: list[dict] | None = None) -> tuple[str, lis
     Scan and redact LLM output.
 
     Returns (sanitised_text, list_of_triggered_labels).
-    Source rows are passed in so legitimate emails/numbers from DB aren't flagged.
+    source_rows is accepted for API compatibility but not used — all
+    pattern-matched content is redacted regardless of DB origin.
     """
     triggered: list[str] = []
 

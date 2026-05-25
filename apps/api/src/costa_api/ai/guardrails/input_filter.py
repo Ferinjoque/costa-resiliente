@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 import re
+import unicodedata
 
 logger = logging.getLogger(__name__)
 
@@ -91,8 +92,14 @@ def check_input(query: str, operator_id: str = "unknown") -> GuardResult:
     if len(query) > _MAX_LEN:
         return GuardResult.block("Consulta demasiado larga", "too_long")
 
+    # NFKC normalise before pattern matching — decomposes compatibility characters
+    # (ligatures, zero-width spaces, fullwidth letters) without splitting normal
+    # accented chars like ú/á/ñ into base + combining mark, which would break
+    # the Spanish injection patterns.
+    normalised = unicodedata.normalize("NFKC", query)
+
     for pattern, label in _COMPILED:
-        if pattern.search(query):
+        if pattern.search(normalised):
             logger.warning(
                 "input_guardrail blocked | op=%s label=%s snippet=%.60r",
                 operator_id, label, query,
