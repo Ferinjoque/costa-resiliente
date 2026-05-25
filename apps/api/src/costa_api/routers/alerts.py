@@ -417,12 +417,15 @@ async def export_decision_log(
 @router.get("/decision-log/report")
 async def export_pdf_report(
     operator_id: Optional[str] = Query(None),
+    since: Optional[str] = Query(None, description="ISO-8601 start datetime (inclusive)"),
+    until: Optional[str] = Query(None, description="ISO-8601 end datetime (inclusive)"),
     limit: int = Query(200, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     """
     Export decision log as an EDAN-Perú style PDF situational report.
     Sections: cover, active alerts summary, operator action log.
+    Supports ?since=ISO&until=ISO date-range filtering (same as CSV export).
     """
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
@@ -454,6 +457,14 @@ async def export_pdf_report(
     if operator_id:
         conditions.append("dl.operator_id = :op")
         params["op"] = operator_id
+    since_dt = _parse_iso_dt(since)
+    until_dt = _parse_iso_dt(until)
+    if since_dt:
+        conditions.append("dl.logged_at >= :since")
+        params["since"] = since_dt
+    if until_dt:
+        conditions.append("dl.logged_at <= :until")
+        params["until"] = until_dt
 
     log_rows = (await db.execute(
         text(f"""

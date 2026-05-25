@@ -357,3 +357,24 @@ class TestDecisionLogReport:
             )
         assert resp.status_code == 200
         assert resp.content[:4] == b"%PDF"
+
+    @pytest.mark.asyncio
+    async def test_pdf_with_date_range(self):
+        """Report with since/until params returns a valid PDF (date-range filtering parity with CSV)."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get(
+                "/api/v1/alerts/decision-log/report"
+                "?since=2026-01-01T00:00:00Z&until=2099-12-31T23:59:59Z&limit=5"
+            )
+        assert resp.status_code == 200
+        assert resp.content[:4] == b"%PDF"
+
+    @pytest.mark.asyncio
+    async def test_pdf_far_future_since_yields_empty_log_section(self):
+        """Since=far-future → log section has 0 entries but PDF still renders."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get(
+                "/api/v1/alerts/decision-log/report?since=2099-01-01T00:00:00Z&limit=5"
+            )
+        assert resp.status_code == 200
+        assert resp.content[:4] == b"%PDF"
