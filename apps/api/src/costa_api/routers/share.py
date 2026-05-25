@@ -72,6 +72,7 @@ async def mint_share_token(
 ) -> MintResponse:
     """Mint a share token capturing a scenario snapshot. Requires auth to prevent spam."""
     _validate_scenario(body.scenario)
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
 
     token = secrets.token_urlsafe(24)
     expires_at = datetime.now(timezone.utc) + timedelta(days=settings.share_token_ttl_days)

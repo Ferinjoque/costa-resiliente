@@ -106,6 +106,7 @@ async def submit_field_report(
     op: CurrentOperator = Depends(require_operator),
 ) -> dict:
     await _check_field_report_rate(op.username)
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
 
     if body.label not in _ALLOWED_LABELS:
         raise HTTPException(400, f"Invalid label. Must be one of: {sorted(_ALLOWED_LABELS)}")
