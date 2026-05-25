@@ -10,6 +10,7 @@ Ollama sends to the model so it can emit structured tool_call JSON.
 
 from __future__ import annotations
 
+import inspect
 import json
 import logging
 from typing import Any
@@ -472,8 +473,10 @@ async def dispatch(tool_name: str, args: dict, db: AsyncSession, rag_fn=None) ->
         return cached
 
     try:
-        co_vars = getattr(getattr(fn, "__code__", None), "co_varnames", None)
-        filtered = {k: v for k, v in args.items() if co_vars is None or k in co_vars}
+        # Use inspect.signature to get only declared parameters (not all local vars).
+        # co_varnames includes locals too, which could pass unexpected kwargs through.
+        valid_params = set(inspect.signature(fn).parameters) - {"db"}
+        filtered = {k: v for k, v in args.items() if k in valid_params}
         rows = await fn(db, **filtered)
         result = {"tool": tool_name, "rows": rows, "count": len(rows)}
         await set_cached(tool_name, args, result)

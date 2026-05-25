@@ -272,9 +272,16 @@ async def log_decision(
 
 # ─── Decision log ─────────────────────────────────────────────────────────────
 
+_STREAM_MAX_LIFETIME_S = 3600  # force reconnect after 1 h — prevents zombie connections
+
 @router.get("/stream")
 async def alerts_stream(request: Request) -> StreamingResponse:
-    """Server-Sent Events — pushes active alerts every 10 s."""
+    """Server-Sent Events — pushes active alerts every 10 s.
+
+    Connection is capped at _STREAM_MAX_LIFETIME_S (1 h) to prevent indefinite
+    resource holding. Clients receive a 'retry' event and should reconnect.
+    Alert data is public (matches GET /alerts) — no auth required for read.
+    """
     async def _fetch_alerts() -> str:
         async with engine.connect() as conn:
             result = await conn.execute(
@@ -296,8 +303,13 @@ async def alerts_stream(request: Request) -> StreamingResponse:
         return json.dumps(alerts)
 
     async def generate():
+        deadline = asyncio.get_event_loop().time() + _STREAM_MAX_LIFETIME_S
         while True:
             if await request.is_disconnected():
+                break
+            if asyncio.get_event_loop().time() >= deadline:
+                # Tell client to reconnect in 10 s then close this generator.
+                yield "retry: 10000\ndata: {\"reconnect\":true}\n\n"
                 break
             try:
                 payload = await asyncio.wait_for(_fetch_alerts(), timeout=8.0)
