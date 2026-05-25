@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Radio, MapPin, X, Filter, Send, PlusCircle, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { Radio, MapPin, X, Filter, Send, PlusCircle, ChevronDown, ChevronUp, ExternalLink, AlertTriangle } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
@@ -331,6 +331,21 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
     }
   }
 
+  if (!operator) {
+    return (
+      <div className="px-4 py-3 border-b border-border bg-warn-soft/40">
+        <div className="flex items-start gap-2 text-xs text-warn-muted">
+          <AlertTriangle size={12} className="shrink-0 mt-0.5" aria-hidden="true" />
+          <p>
+            {locale === "es"
+              ? "Inicia sesión para enviar reportes de campo. Los reportes quedan registrados con tu identidad de operador."
+              : "Log in to submit field reports. Reports are recorded under your operator identity."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 py-3 border-b border-border bg-surface-sunken">
       <SectionLabel className="mb-2">
@@ -416,7 +431,7 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
 
 export function SocialFeedPanel() {
   const { activePanel, setActivePanel, locale, setFlyToPoint } = useUIStore();
-  const { data: signals, dataUpdatedAt } = useSocialSignals(48);
+  const { data: signals, dataUpdatedAt, isLoading, isError, refetch } = useSocialSignals(48);
   const [labelFilter, setLabelFilter] = useState<Label | "all">("all");
   const [showFilter, setShowFilter] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -585,7 +600,25 @@ export function SocialFeedPanel() {
         aria-label={locale === "es" ? "Feed de señales" : "Signal feed"}
         aria-live="polite"
       >
-        {filtered.length === 0 && (
+        {isLoading && (
+          <li className="px-4 py-10 text-xs text-ink-muted text-center" aria-live="polite">
+            {locale === "es" ? "Cargando señales…" : "Loading signals…"}
+          </li>
+        )}
+        {isError && (
+          <li className="px-4 py-8 flex flex-col items-center gap-2" role="alert">
+            <span className="text-xs text-danger text-center">
+              {locale === "es" ? "No se pudo cargar el feed social." : "Could not load social feed."}
+            </span>
+            <button
+              onClick={() => refetch()}
+              className="text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"
+            >
+              {locale === "es" ? "Reintentar" : "Retry"}
+            </button>
+          </li>
+        )}
+        {!isLoading && !isError && filtered.length === 0 && (
           <li className="flex flex-col items-center">
             <EmptyState
               title={locale === "es" ? "Sin señales" : "No signals"}
@@ -607,7 +640,7 @@ export function SocialFeedPanel() {
             </Button>
           </li>
         )}
-        {filtered.map((f) => (
+        {!isLoading && !isError && filtered.map((f) => (
           <SignalRow
             key={f.properties.id}
             props={f.properties}

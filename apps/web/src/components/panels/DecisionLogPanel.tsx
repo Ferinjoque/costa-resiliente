@@ -14,6 +14,7 @@ import {
   Truck,
   X,
   XCircle,
+  FileText,
 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useDecisionLog, useApiHealth } from "@/lib/queries";
@@ -97,6 +98,7 @@ const ACTION_META: Record<
   social_signal_received: { es: "Señal social (auto)", en: "Social signal",     icon: Radio,         variant: "default"  },
   resource_dispatch:      { es: "Despacho recurso",    en: "Resource dispatch", icon: Truck,         variant: "warn"     },
   protocol_step:          { es: "Paso de protocolo",   en: "Protocol step",     icon: ChevronRight,  variant: "default"  },
+  field_report:           { es: "Reporte de campo",    en: "Field report",      icon: FileText,      variant: "accent"   },
 };
 
 function payloadPreview(entry: DecisionLogEntry): string | null {
