@@ -179,9 +179,15 @@ async def act_on_alert(
     }
     new_status = status_map[action.action]
 
-    # Fetch alert metadata needed for notification fan-out before updating
+    # Fetch alert metadata needed for notification fan-out before updating.
+    # Join districts to get ubigeo for subscriber district_filter matching.
     meta_row = await db.execute(
-        text("SELECT severity, title, district_id FROM ops.alerts WHERE id = :id"),
+        text("""
+            SELECT a.severity, a.title, d.ubigeo AS district_ubigeo
+            FROM ops.alerts a
+            LEFT JOIN geo.districts d ON d.id = a.district_id
+            WHERE a.id = :id
+        """),
         {"id": alert_id},
     )
     meta = meta_row.mappings().first()
@@ -228,7 +234,7 @@ async def act_on_alert(
             alert_id=alert_id,
             alert_severity=meta["severity"],
             alert_title=meta["title"],
-            alert_district_ubigeo=str(meta["district_id"]) if meta["district_id"] else None,
+            alert_district_ubigeo=meta["district_ubigeo"],
             trigger_event="alert_escalated",
         )
 
@@ -436,13 +442,16 @@ async def export_pdf_report(
     Sections: cover, active alerts summary, operator action log.
     Supports ?since=ISO&until=ISO date-range filtering (same as CSV export).
     """
-    from reportlab.lib import colors
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import cm
-    from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, HRFlowable,
-    )
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.platypus import (
+            SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, HRFlowable,
+        )
+    except ImportError:
+        raise HTTPException(status_code=503, detail="PDF export no disponible — dependencia reportlab no instalada")
 
     # ── Fetch active alerts ───────────────────────────────────────────────────
     alert_rows = (await db.execute(
