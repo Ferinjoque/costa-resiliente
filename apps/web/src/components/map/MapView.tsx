@@ -90,6 +90,10 @@ function geomBounds(geom: GeoJSON.Geometry): maplibregl.LngLatBoundsLike {
   return [[minLng, minLat], [maxLng, maxLat]];
 }
 
+function escHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 /** Build dark-theme popup HTML. */
 function popupHtml(
   title: string,
@@ -99,10 +103,10 @@ function popupHtml(
   const body = rows
     .filter(([, v]) => v !== null && v !== undefined && v !== "")
     .map(([k, v, vc]) =>
-      `<div class="cr-row"><span class="cr-key">${k}</span><span class="cr-val${vc ? ` ${vc}` : ""}">${v}</span></div>`
+      `<div class="cr-row"><span class="cr-key">${escHtml(String(k))}</span><span class="cr-val${vc ? ` ${vc}` : ""}">${escHtml(String(v))}</span></div>`
     )
     .join("");
-  return `<div class="cr-popup"><div class="cr-title${titleClass ? ` ${titleClass}` : ""}">${title}</div>${body}</div>`;
+  return `<div class="cr-popup"><div class="cr-title${titleClass ? ` ${titleClass}` : ""}">${escHtml(title)}</div>${body}</div>`;
 }
 
 /** Replace active popup with a new one. */
