@@ -143,11 +143,13 @@ class TestStoreFloodPolygons:
             )
 
         args = calls[0]["args"]
-        # $6 (index 5) is geom_json
+        # $6 (index 5) is geom_json — now a MultiPolygon aggregating all detected polygons
         geom_arg = args[5]
         assert isinstance(geom_arg, str)
         parsed = json.loads(geom_arg)
-        assert parsed["type"] == "Polygon"
+        assert parsed["type"] == "MultiPolygon"
+        # coordinates are wrapped one level deeper than Polygon
+        assert len(parsed["coordinates"]) >= 1
 
     @pytest.mark.asyncio
     async def test_area_converted_from_m2_to_km2(self):
