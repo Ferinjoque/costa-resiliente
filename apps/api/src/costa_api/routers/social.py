@@ -16,19 +16,66 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+import redis.asyncio as aioredis
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from costa_api.config import settings
 from costa_api.db import get_db
 from costa_api.routers.auth import require_operator, CurrentOperator
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/social", tags=["social"])
+
+_FIELD_REPORT_RATE_LIMIT = 30
+_FIELD_REPORT_RATE_WINDOW = 3600
+_social_rl_client: aioredis.Redis | None = None
+
+
+def _get_social_rl_client() -> aioredis.Redis | None:
+    global _social_rl_client
+    if _social_rl_client is None:
+        try:
+            _social_rl_client = aioredis.from_url(
+                settings.redis_url,
+                encoding="utf-8",
+                decode_responses=True,
+                socket_connect_timeout=1,
+                socket_timeout=1,
+            )
+        except Exception as exc:
+            logger.warning("[social] Redis rate-limiter init failed: %s", exc)
+    return _social_rl_client
+
+
+async def _check_field_report_rate(operator_id: str) -> None:
+    """Raise 429 if operator exceeds field-report limit. Fails open on Redis outage."""
+    if os.environ.get("TESTING", "0") == "1":
+        return
+    client = _get_social_rl_client()
+    if client is None:
+        return
+    key = f"costa:social:fieldreport:{operator_id}"
+    try:
+        count = await client.incr(key)
+        if count == 1:
+            await client.expire(key, _FIELD_REPORT_RATE_WINDOW)
+        if count > _FIELD_REPORT_RATE_LIMIT:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Demasiados reportes de campo. Espere antes de enviar más.",
+                headers={"Retry-After": str(_FIELD_REPORT_RATE_WINDOW)},
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("[social] Rate-limit check failed (fail-open): %s", exc)
 
 _ALLOWED_LABELS = {
     "needs_help",
@@ -56,6 +103,8 @@ async def submit_field_report(
     db: AsyncSession = Depends(get_db),
     op: CurrentOperator = Depends(require_operator),
 ) -> dict:
+    await _check_field_report_rate(op.username)
+
     if body.label not in _ALLOWED_LABELS:
         raise HTTPException(400, f"Invalid label. Must be one of: {sorted(_ALLOWED_LABELS)}")
 

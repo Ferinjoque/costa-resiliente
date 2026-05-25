@@ -255,6 +255,8 @@ async def run(
                     redacted=bool(triggered),
                     quick_mode=True,
                 )
+            else:
+                logger.warning("multi_quick: all tools returned empty rows for tools=%s — falling through to full agent", multi_tools)
         except Exception as exc:
             logger.warning("multi_quick failed: %s — falling through to full agent", exc)
 
