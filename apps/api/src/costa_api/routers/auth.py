@@ -45,9 +45,12 @@ def _hash_password(pw: str) -> str:
 def _verify_password(pw: str, hashed: str) -> bool:
     return _bcrypt_lib.checkpw(pw.encode(), hashed.encode())
 
-_SECRET = getattr(settings, "jwt_secret", None) or os.environ.get("JWT_SECRET", "costa-dev-secret-change-in-prod")
+_SECRET = settings.jwt_secret
 _ALGO = "HS256"
 _TTL_HOURS = 24
+# Pre-computed bcrypt hash used as a dummy when user not found — ensures
+# _verify_password always runs so response time does not leak username existence.
+_DUMMY_BCRYPT_HASH: str = _bcrypt_lib.hashpw(b"__dummy__", _bcrypt_lib.gensalt(12)).decode()
 
 TESTING = os.environ.get("TESTING", "0") == "1"
 
@@ -281,7 +284,11 @@ async def issue_token(
         {"u": form.username},
     )
     row = result.mappings().first()
-    if not row or not row["active"] or not _verify_password(form.password, row["password_hash"]):
+    # Always call _verify_password to avoid timing side-channel that could
+    # reveal whether a username exists (bcrypt takes ~100ms; skipping it leaks info).
+    pw_hash = row["password_hash"] if row else _DUMMY_BCRYPT_HASH
+    pw_ok = _verify_password(form.password, pw_hash)
+    if not row or not row["active"] or not pw_ok:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario o contraseña incorrectos.",
