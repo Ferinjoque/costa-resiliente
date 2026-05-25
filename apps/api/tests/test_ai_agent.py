@@ -562,6 +562,25 @@ def test_detect_quick_rainfall():
     assert _detect_quick("¿Cuánta lluvia acumulada hay en las últimas 72h?") == "get_rainfall_accumulation"
 
 
+def test_detect_quick_desborde_flood():
+    """'desborde' alone triggers get_flood_polygons when no river keyword co-occurs."""
+    from costa_api.ai.agent import _detect_quick
+    # Query uses 'desborde' but no river/station keywords → single match
+    assert _detect_quick("¿Hay desborde en la urbanización San Hilarión?") == "get_flood_polygons"
+
+
+def test_detect_quick_colapso_huayco():
+    """'colapso' triggers get_huayco_risk (structural collapses follow mudslides)."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("Reportan colapso de viviendas en Lurigancho") == "get_huayco_risk"
+
+
+def test_detect_quick_anegamiento_flood():
+    """'anegad' (waterlogging/flooding) triggers get_flood_polygons."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("La calle está anegada en San Juan de Lurigancho") == "get_flood_polygons"
+
+
 # ─── _detect_multi_quick: 2-3 simultaneous pattern match ─────────────────────
 
 def test_detect_multi_quick_two_patterns():
