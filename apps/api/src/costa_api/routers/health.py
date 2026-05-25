@@ -41,6 +41,7 @@ async def health_check() -> HealthResponse:
 @router.get("/health/seed", response_model=SeedStatus)
 async def seed_status(db: AsyncSession = Depends(get_db)) -> SeedStatus:
     """Return row counts for seeded tables — useful for diagnosing empty data."""
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     counts: dict[str, int] = {}
     for key, tbl in [
         ("districts", "geo.districts"),
