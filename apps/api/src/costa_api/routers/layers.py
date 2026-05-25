@@ -104,7 +104,7 @@ async def imerg_latest(
     rows = result.mappings().all()
     return {
         "type": "FeatureCollection",
-        "source": "NASA IMERG Early Run v07 (GPM)",
+        "source": "NASA IMERG Late Run V07B (GPM)",
         "source_url": "https://gpm.nasa.gov/data/imerg",
         "retrieved_at": _now_iso(),
         "data_updated_at": data_updated_at,

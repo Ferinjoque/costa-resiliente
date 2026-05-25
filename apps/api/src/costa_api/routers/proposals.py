@@ -47,7 +47,10 @@ class ProposalReview(BaseModel):
 # ─── List pending ─────────────────────────────────────────────────────────────
 
 @router.get("")
-async def list_proposals(db: AsyncSession = Depends(get_db)) -> list[dict]:
+async def list_proposals(
+    db: AsyncSession = Depends(get_db),
+    op: CurrentOperator = Depends(require_operator),
+) -> list[dict]:
     # Excludes obvious test residue (XSS/SQL-injection seeds, empty titles,
     # 'Test Flood Alert' fixtures) from the operator-facing list. The rows
     # remain in the table for audit; they're just hidden from the duty
