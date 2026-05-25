@@ -5,6 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { useUIStore } from "@/store/ui";
 import { fetchShareToken } from "@/lib/api";
 
+const KNOWN_LAYERS = new Set([
+  "districts", "imerg", "flood", "huayco", "hazard",
+  "infrastructure", "social", "stations", "shelters",
+]);
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const UBIGEO_RE   = /^\d{6}$/;
+
 /**
  * Reads ?share=<token> on mount and hydrates Zustand store from the resolved
  * scenario. Enables read-only mode so judges can load a shared link without auth.
@@ -26,7 +34,7 @@ export function ShareLoader() {
       loaded.current = true;
       try {
         const decoded = JSON.parse(atob(stateParam));
-        applyScenario(decoded);
+        applyScenario(sanitize(decoded));
       } catch {
         // malformed — ignore
       }
@@ -36,7 +44,7 @@ export function ShareLoader() {
     if (!token) return;
     loaded.current = true;
     fetchShareToken(token)
-      .then(({ scenario }) => applyScenario(scenario))
+      .then(({ scenario }) => applyScenario(sanitize(scenario)))
       .catch(() => {
         addToast({
           message: locale === "es"
@@ -49,22 +57,56 @@ export function ShareLoader() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Reject out-of-range / wrong-type values from untrusted URL params.
+  function sanitize(raw: unknown) {
+    const r = (raw ?? {}) as Record<string, unknown>;
+    const ubigeo =
+      typeof r.districtUbigeo === "string" && UBIGEO_RE.test(r.districtUbigeo)
+        ? r.districtUbigeo
+        : null;
+    const name =
+      typeof r.districtName === "string" && r.districtName.length <= 120
+        ? r.districtName
+        : null;
+    const hours = typeof r.timeWindowHours === "number"
+      ? Math.min(Math.max(Math.round(r.timeWindowHours), 1), 168)
+      : 24;
+    const replay = r.isReplayMode === true;
+    const replayDate =
+      typeof r.replayDate === "string" && ISO_DATE_RE.test(r.replayDate)
+        ? r.replayDate
+        : null;
+    const layers = Array.isArray(r.activeLayers)
+      ? (r.activeLayers as unknown[])
+          .filter((k): k is string => typeof k === "string" && KNOWN_LAYERS.has(k))
+          .slice(0, KNOWN_LAYERS.size)
+      : [];
+    return {
+      districtUbigeo: ubigeo,
+      districtName: name,
+      timeWindowHours: hours,
+      isReplayMode: replay,
+      replayDate,
+      activeLayers: layers,
+    };
+  }
+
   function applyScenario(scenario: {
-    districtUbigeo?: string | null;
-    districtName?: string | null;
-    timeWindowHours?: number;
-    isReplayMode?: boolean;
-    replayDate?: string | null;
-    activeLayers?: string[];
+    districtUbigeo: string | null;
+    districtName: string | null;
+    timeWindowHours: number;
+    isReplayMode: boolean;
+    replayDate: string | null;
+    activeLayers: string[];
   }) {
     setScenario({
-      districtUbigeo: scenario.districtUbigeo ?? null,
-      districtName: scenario.districtName ?? null,
-      timeWindowHours: scenario.timeWindowHours ?? 24,
-      isReplayMode: scenario.isReplayMode ?? false,
-      replayDate: scenario.replayDate ?? null,
+      districtUbigeo: scenario.districtUbigeo,
+      districtName: scenario.districtName,
+      timeWindowHours: scenario.timeWindowHours,
+      isReplayMode: scenario.isReplayMode,
+      replayDate: scenario.replayDate,
     });
-    const target = new Set(scenario.activeLayers ?? []);
+    const target = new Set(scenario.activeLayers);
     for (const key of activeLayers) {
       if (!target.has(key)) toggleLayer(key);
     }
