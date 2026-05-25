@@ -190,16 +190,16 @@ async def store_flood_polygons(scene_id: str, polygons: list[dict], acquired_at:
         inserted = 0
         for poly in polygons:
             geom_json = json.dumps(poly["geometry"]) if poly.get("geometry") else None
+            if geom_json is None:
+                logger.warning("Skipping polygon without geometry for scene %s", scene_id)
+                continue
             await pool.execute(
                 """
                 INSERT INTO ml.flood_polygons
                     (scene_id, acquired_at, model_version, confidence, area_km2, geom)
                 VALUES ($1, $2, $3, $4, $5,
-                    CASE WHEN $6 IS NOT NULL
-                         THEN ST_SetSRID(ST_GeomFromGeoJSON($6), 4326)
-                         ELSE NULL END
-                )
-                ON CONFLICT (scene_id) WHERE geom IS NULL DO NOTHING
+                    ST_SetSRID(ST_GeomFromGeoJSON($6), 4326))
+                ON CONFLICT (scene_id) DO NOTHING
                 """,
                 scene_id,
                 acquired_at,
