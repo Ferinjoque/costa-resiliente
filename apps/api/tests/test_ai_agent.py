@@ -16,6 +16,7 @@ import pytest
 
 from costa_api.ai.agent import run as agent_run, AgentResult
 from costa_api.ai.guardrails.input_filter import check_input
+from costa_api.ai.tools import db_tools
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -63,7 +64,14 @@ async def test_direct_answer_no_tools():
         "No se encontraron datos para el período consultado."
     )
 
-    with patch("costa_api.ai.agent.gateway") as mock_gw:
+    # _keyword_dispatch is patched so the real DB function isn't called with AsyncMock,
+    # which would trigger RuntimeWarning from un-awaited mock coroutines.
+    _kw_result = {"tool": "get_active_alerts", "rows": [], "count": 0}
+
+    with (
+        patch("costa_api.ai.agent.gateway") as mock_gw,
+        patch("costa_api.ai.agent._keyword_dispatch", AsyncMock(return_value=_kw_result)),
+    ):
         mock_gw.chat = AsyncMock(return_value=direct_response)
         mock_gw.extract_tool_calls = MagicMock(return_value=[])
         mock_gw.extract_text = MagicMock(
@@ -298,14 +306,29 @@ async def test_parallel_tool_execution():
     flood_rows = [{"scene_id": "S1", "area_km2": 2.0}]
     alert_rows = [{"id": 1, "severity": "high", "_total_active": 5}]
 
+    async def _fake_flood(db, **kwargs):
+        return flood_rows
+
+    async def _fake_alerts(db, **kwargs):
+        return alert_rows
+
+    # Patch _TOOL_MAP directly so dispatch() picks up the mocks
+    # (patching module attrs alone doesn't affect the already-bound dict entries).
     with (
         patch("costa_api.ai.agent.gateway") as mock_gw,
-        patch("costa_api.ai.tools.db_tools.get_flood_polygons", AsyncMock(return_value=flood_rows)),
-        patch("costa_api.ai.tools.db_tools.get_active_alerts", AsyncMock(return_value=alert_rows)),
+        patch.dict(db_tools._TOOL_MAP, {
+            "get_flood_polygons": _fake_flood,
+            "get_active_alerts": _fake_alerts,
+        }),
+        patch("costa_api.ai.tools.db_tools.get_cached", AsyncMock(return_value=None)),
+        patch("costa_api.ai.tools.db_tools.set_cached", AsyncMock()),
     ):
         mock_gw.chat = AsyncMock(side_effect=fake_chat)
         mock_gw.extract_tool_calls = MagicMock(
             side_effect=lambda resp: resp["message"].get("tool_calls", [])
+        )
+        mock_gw.extract_text = MagicMock(
+            return_value="Se detectaron inundaciones con alertas activas."
         )
 
         result = await agent_run(

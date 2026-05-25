@@ -490,4 +490,30 @@ async def ingest_social_flow() -> dict:
 
     total = await upsert_signals(all_signals)
     logger.info("Social ingest complete: %d signals stored", total)
+
+    # Record scraper run times in Redis so the health endpoint shows liveness
+    # regardless of whether fresh disaster content was published this cycle.
+    await _write_scraper_heartbeats(results)
+
     return {"signals_stored": total, "signals_collected": len(all_signals)}
+
+
+async def _write_scraper_heartbeats(results: list) -> None:
+    """Write per-source last-run timestamps to Redis keyed by source name."""
+    redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
+    try:
+        import redis.asyncio as aioredis
+        r = aioredis.from_url(redis_url, decode_responses=True, socket_timeout=2)
+        now_iso = datetime.now(timezone.utc).isoformat()
+        # results[0]=bluesky, [1]=rss, [2]=reddit, [3]=telegram (order matches gather)
+        source_order = ["bluesky", "rss", "reddit", "telegram"]
+        for i, source in enumerate(source_order):
+            if i < len(results) and not isinstance(results[i], Exception):
+                await r.set(
+                    f"costa:scraper:last_run:{source}",
+                    now_iso,
+                    ex=3600,  # expire after 1h so stale keys don't mislead
+                )
+        await r.aclose()
+    except Exception as exc:
+        logger.warning("Could not write scraper heartbeats to Redis: %s", exc)

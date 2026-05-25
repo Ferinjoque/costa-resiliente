@@ -24,6 +24,7 @@ Retry/quarantine strategy:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -39,7 +40,7 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 TRIAGE_MODEL = os.getenv("TRIAGE_MODEL", os.getenv("OLLAMA_PRIMARY_MODEL", "gemma4:e4b"))
 DB_DSN = os.getenv("DATABASE_URL", "postgresql://costa:costa@localhost:5432/costa_resiliente")
 
-BATCH_SIZE = 20  # signals per triage run
+BATCH_SIZE = 10  # signals per triage run; smaller = less copilot starvation per cycle
 
 
 class TriageLabel(str, Enum):
@@ -102,6 +103,10 @@ async def triage_signal(
     user_msg = TRIAGE_USER_TEMPLATE.format(content=content)
 
     for attempt in range(max_retries):
+        # Exponential backoff: 0s, 3s, 9s — give copilot/other Ollama callers a turn
+        if attempt > 0:
+            await asyncio.sleep(3 ** attempt)
+
         try:
             async with httpx.AsyncClient(timeout=45.0) as client:
                 resp = await client.post(
@@ -114,6 +119,12 @@ async def triage_signal(
                         ],
                         "stream": False,
                         "format": "json",
+                        "keep_alive": "5m",  # release GPU RAM between batches
+                        "options": {
+                            "num_ctx": 4096,    # triage prompts are short; 4k >> needed
+                            "num_predict": 256,  # JSON label response fits in 256 tokens
+                            "temperature": 0.1,
+                        },
                     },
                 )
                 resp.raise_for_status()
@@ -131,7 +142,7 @@ async def triage_signal(
                 "Triage JSON parse failed (attempt %d/%d): %s",
                 attempt + 1, max_retries, exc,
             )
-        except httpx.HTTPError as exc:
+        except (httpx.HTTPError, httpx.TimeoutException) as exc:
             logger.warning(
                 "Ollama HTTP error (attempt %d/%d): %s",
                 attempt + 1, max_retries, exc,
@@ -190,7 +201,12 @@ async def run_triage_pipeline(
 
         processed = labelled = quarantined = 0
 
-        for row in rows:
+        for i, row in enumerate(rows):
+            # Small inter-signal pause so copilot/embed callers get Ollama turns.
+            # 0.8s gap costs ~16s per 20-signal batch — negligible vs 15min triage cadence.
+            if i > 0:
+                await asyncio.sleep(0.8)
+
             result = await triage_signal(
                 content=row["content_redacted"],
                 ollama_host=ollama_host,

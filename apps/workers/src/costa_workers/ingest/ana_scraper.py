@@ -285,8 +285,8 @@ async def fetch_senamhi_station(station: dict) -> list[dict]:
 @task(retries=3, retry_delay_seconds=30, log_prints=True)
 async def fetch_openmeteo_station(station: dict) -> list[dict]:
     """
-    Fallback: fetch hourly precipitation for a station from Open-Meteo (no auth required).
-    Returns observations with rain_mm only (no level/flow — gauge data unavailable).
+    Fallback: fetch current-hour precipitation for a station from Open-Meteo (no auth required).
+    Returns one observation timestamped to the current hour so each run writes a fresh row.
     Used when ANA/SENAMHI endpoints are unreachable.
     """
     lat = station.get("lat")
@@ -300,7 +300,7 @@ async def fetch_openmeteo_station(station: dict) -> list[dict]:
         "hourly": "precipitation",
         "past_days": 1,
         "forecast_days": 0,
-        "timezone": "America/Lima",
+        "timezone": "UTC",
     }
     async with _make_client() as client:
         try:
@@ -314,27 +314,41 @@ async def fetch_openmeteo_station(station: dict) -> list[dict]:
     hourly = data.get("hourly", {})
     times = hourly.get("time", [])
     precip = hourly.get("precipitation", [])
-    observations = []
-    for ts, rain in zip(times, precip):
+
+    # Use the current-hour timestamp so each scraper run inserts a fresh row.
+    # On conflict, update rain_mm so the value reflects the latest Open-Meteo
+    # nowcast (which refines as the hour progresses).
+    now_hour = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    latest_rain: float | None = None
+
+    for ts, rain in zip(reversed(times), reversed(precip)):
         if rain is None:
             continue
         try:
             obs_at = datetime.fromisoformat(ts).replace(tzinfo=timezone.utc)
         except ValueError:
             continue
-        observations.append({
-            "station_code": station["code"],
-            "observed_at": obs_at,
-            "level_m": None,
-            "flow_m3s": None,
-            "rain_mm": float(rain),
-        })
+        if obs_at <= now_hour:
+            latest_rain = float(rain)
+            break
 
+    if latest_rain is None:
+        logger.info("Open-Meteo station %s (%s): no recent precipitation data", station["name"], station["code"])
+        return []
+
+    observation = {
+        "station_code": station["code"],
+        "observed_at": now_hour,
+        "level_m": None,
+        "flow_m3s": None,
+        "rain_mm": latest_rain,
+        "_openmeteo": True,  # flag for DO UPDATE in upsert
+    }
     logger.info(
-        "Open-Meteo station %s (%s): %d observations",
-        station["name"], station["code"], len(observations),
+        "Open-Meteo station %s (%s): %.1f mm at %s",
+        station["name"], station["code"], latest_rain, now_hour.isoformat(),
     )
-    return observations
+    return [observation]
 
 
 @task(retries=2, retry_delay_seconds=30, log_prints=True)
@@ -390,19 +404,37 @@ async def upsert_observations(observations: list[dict], stations_meta: dict[str,
             )
             if not station_id:
                 continue
-            await pool.execute(
-                """
-                INSERT INTO hydro.station_observations
-                    (station_id, time, level_m, flow_m3s, rain_mm)
-                VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (station_id, time) DO NOTHING
-                """,
-                station_id,
-                obs["observed_at"],
-                obs.get("level_m"),
-                obs.get("flow_m3s"),
-                obs.get("rain_mm"),
-            )
+            # Open-Meteo observations use DO UPDATE so each hourly run refreshes
+            # the current-hour row; ANA/SENAMHI use DO NOTHING (authoritative gauge data).
+            if obs.get("_openmeteo"):
+                await pool.execute(
+                    """
+                    INSERT INTO hydro.station_observations
+                        (station_id, time, level_m, flow_m3s, rain_mm)
+                    VALUES ($1, $2, $3, $4, $5)
+                    ON CONFLICT (station_id, time) DO UPDATE
+                        SET rain_mm = EXCLUDED.rain_mm
+                    """,
+                    station_id,
+                    obs["observed_at"],
+                    obs.get("level_m"),
+                    obs.get("flow_m3s"),
+                    obs.get("rain_mm"),
+                )
+            else:
+                await pool.execute(
+                    """
+                    INSERT INTO hydro.station_observations
+                        (station_id, time, level_m, flow_m3s, rain_mm)
+                    VALUES ($1, $2, $3, $4, $5)
+                    ON CONFLICT (station_id, time) DO NOTHING
+                    """,
+                    station_id,
+                    obs["observed_at"],
+                    obs.get("level_m"),
+                    obs.get("flow_m3s"),
+                    obs.get("rain_mm"),
+                )
             inserted += 1
 
     logger.info("Upserted %d station observations", inserted)
@@ -423,7 +455,7 @@ async def _check_stale_stations(pool: "asyncpg.Pool", threshold_hours: int = 2) 
               AND so.time > NOW() - INTERVAL '1 hour' * $1
         WHERE s.active = TRUE
         GROUP BY s.code
-        HAVING COUNT(so.id) = 0
+        HAVING COUNT(*) = 0
         """,
         threshold_hours,
     )
@@ -494,6 +526,21 @@ async def ingest_hydro_stations_flow() -> dict:
             )
     except Exception as exc:
         logger.warning("Stale-station check failed (non-fatal): %s", exc)
+
+    # Heartbeat for health endpoint liveness — distinct from scraper status (which
+    # measures live-station count); this marks the flow as running on schedule.
+    try:
+        import redis.asyncio as aioredis
+        redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
+        r = aioredis.from_url(redis_url, decode_responses=True, socket_timeout=2)
+        await r.set(
+            "costa:scraper:last_run:stations",
+            datetime.now(timezone.utc).isoformat(),
+            ex=1800,  # 30min — 2× the 15min schedule
+        )
+        await r.aclose()
+    except Exception:
+        pass
 
     return {
         "observations_stored": total,
