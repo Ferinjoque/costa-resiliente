@@ -300,6 +300,22 @@ async def test_create_coel_without_district_returns_422():
 
 
 @pytest.mark.asyncio
+async def test_create_operator_duplicate_username_returns_409():
+    token = await _login("coen_lima")
+    payload = {
+        "username": "test_dup_409",
+        "full_name": "Duplicate test",
+        "role": "coer",
+        "password": "testpass99",
+    }
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        r1 = await c.post("/api/v1/auth/operators", json=payload, headers={"Authorization": f"Bearer {token}"})
+        r2 = await c.post("/api/v1/auth/operators", json=payload, headers={"Authorization": f"Bearer {token}"})
+    assert r1.status_code == 201
+    assert r2.status_code == 409
+
+
+@pytest.mark.asyncio
 async def test_create_operator_without_auth_returns_401():
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         resp = await c.post(

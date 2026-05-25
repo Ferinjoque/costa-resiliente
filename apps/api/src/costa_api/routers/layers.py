@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import text
+from sqlalchemy import ARRAY, String, bindparam, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.db import get_db
@@ -333,8 +333,7 @@ async def infrastructure(
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
     await db.execute(text("SET LOCAL statement_timeout = '10000'"))
-    result = await db.execute(
-        text(f"""
+    sql = text(f"""
             SELECT
                 i.id, i.osm_id, i.type, i.name,
                 i.district_id, d.name AS district_name,
@@ -345,9 +344,10 @@ async def infrastructure(
             {where}
             ORDER BY i.type, i.name
             LIMIT 2000
-        """),
-        params,
-    )
+        """)
+    if type:
+        sql = sql.bindparams(bindparam("types", type_=ARRAY(String)))
+    result = await db.execute(sql, params)
     rows = result.mappings().all()
     return {
         "type": "FeatureCollection",
