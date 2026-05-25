@@ -172,7 +172,7 @@ class FloodSegmentationModel:
 
         if self.weights_path.exists():
             logger.info("Loading Sen1Floods11 weights from %s", self.weights_path)
-            state = torch.load(self.weights_path, map_location=self.device)
+            state = torch.load(self.weights_path, map_location=self.device, weights_only=True)
         else:
             logger.info(
                 "Weights not at %s — downloading from HuggingFace %s",
@@ -188,7 +188,7 @@ class FloodSegmentationModel:
                 self.weights_path.parent.mkdir(parents=True, exist_ok=True)
                 import shutil
                 shutil.copy(local, self.weights_path)
-                state = torch.load(local, map_location=self.device)
+                state = torch.load(local, map_location=self.device, weights_only=True)
             except Exception as exc:
                 logger.warning(
                     "HuggingFace download failed (%s). "

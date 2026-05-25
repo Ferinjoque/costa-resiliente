@@ -104,7 +104,9 @@ async def triage_signal(
     Classify one social signal. Returns None if quarantined after max_retries.
     Content is sandboxed in <SEÑAL> XML tags — never interpolated into system prompt.
     """
-    user_msg = f"<SEÑAL>{content}</SEÑAL>"
+    # Strip embedded SEÑAL tags to prevent XML tag injection escaping the sandbox.
+    safe_content = content.replace("<SEÑAL>", "").replace("</SEÑAL>", "")
+    user_msg = f"<SEÑAL>{safe_content}</SEÑAL>"
 
     for attempt in range(max_retries):
         # Exponential backoff: 0s, 3s, 9s — give copilot/other Ollama callers a turn
