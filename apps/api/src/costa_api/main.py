@@ -31,9 +31,35 @@ async def _seed_with_retry(max_attempts: int = 5, delay: float = 5.0) -> None:
                 logger.error("auto_seed failed after %d attempts: %s", max_attempts, exc)
 
 
+_DEFAULT_SECRETS = {
+    "dev-secret-change-me",
+    "dev-share-secret-change-me",
+    "change_me_in_production",
+}
+
+
+def _warn_default_secrets() -> None:
+    """Log loud warnings if any secrets still use default placeholder values."""
+    checks = {
+        "APP_SECRET_KEY": settings.app_secret_key,
+        "SHARE_TOKEN_SECRET": settings.share_token_secret,
+        "POSTGRES_PASSWORD": settings.postgres_password,
+        "POSTGRES_AI_PASSWORD": settings.postgres_ai_password,
+    }
+    for name, value in checks.items():
+        if value in _DEFAULT_SECRETS:
+            if settings.app_env == "production":
+                raise RuntimeError(
+                    f"{name} is still set to a default placeholder value — "
+                    "refusing to start in production with insecure credentials."
+                )
+            logger.warning("SECURITY: %s uses a default placeholder value — change before production deploy", name)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Costa Resiliente API starting up")
+    _warn_default_secrets()
     await _seed_with_retry()
     await auth.seed_demo_operators()
     yield

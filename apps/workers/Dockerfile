@@ -24,4 +24,7 @@ COPY pyproject.toml .
 COPY src/ src/
 RUN pip install --no-cache-dir .
 
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+USER appuser
+
 CMD ["python", "-m", "costa_workers.flows.schedules"]
