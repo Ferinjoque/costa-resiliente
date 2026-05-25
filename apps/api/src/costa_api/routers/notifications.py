@@ -398,6 +398,7 @@ async def fan_out_notifications(
     """Background task: query matching subscribers and dispatch notifications in parallel."""
     try:
         async with engine.connect() as conn:
+            await conn.execute(text("SET LOCAL statement_timeout = '5000'"))
             result = await conn.execute(
                 text("""
                     SELECT id, channel, target, label, severity_min, district_filter

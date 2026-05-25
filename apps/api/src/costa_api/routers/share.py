@@ -111,6 +111,7 @@ async def resolve_share_token(
     if len(token) > 64 or not token.replace("-", "").replace("_", "").isalnum():
         raise HTTPException(404, "Invalid token format")
 
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     row = await db.execute(
         text(
             "UPDATE ops.share_tokens SET accessed_at = NOW() "
