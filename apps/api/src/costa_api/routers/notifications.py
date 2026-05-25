@@ -332,7 +332,8 @@ async def _send_webhook(target: str, payload: dict, timeout: float = 5.0, retrie
             except Exception as exc:
                 last_err = str(exc)
             if attempt < retries:
-                await asyncio.sleep(2 ** attempt)
+                # Short fixed delays — this is emergency alert fan-out, not a background job.
+                await asyncio.sleep(0.5 * attempt)
     return False, last_err, retries
 
 
@@ -357,7 +358,7 @@ async def _send_sms(to_number: str, body: str) -> tuple[bool, str]:
 
 
 _FAN_OUT_CONCURRENCY = 10  # max parallel webhook/SMS dispatches
-_FAN_OUT_SUBSCRIBER_CAP = 100  # never fan-out to more than N subscribers
+_FAN_OUT_SUBSCRIBER_CAP = 500  # safety cap on subscribers loaded per fan-out
 
 
 async def _dispatch_to_subscriber(
@@ -401,21 +402,41 @@ async def fan_out_notifications(
 ) -> None:
     """Background task: query matching subscribers and dispatch notifications in parallel."""
     try:
+        sev_rank = SEVERITY_RANK.get(alert_severity, 0)
+
         async with engine.connect() as conn:
             await conn.execute(text("SET LOCAL statement_timeout = '5000'"))
+            # Apply severity and district filters in SQL so LIMIT is on matched rows,
+            # not on the full subscriber table. Without this, high-ID subscribers (added
+            # later) are silently skipped when total active > _FAN_OUT_SUBSCRIBER_CAP.
             result = await conn.execute(
                 text("""
                     SELECT id, channel, target, label, severity_min, district_filter
                     FROM ops.notification_subscribers
                     WHERE active = TRUE
+                      AND CASE severity_min
+                            WHEN 'low'      THEN 0
+                            WHEN 'medium'   THEN 1
+                            WHEN 'high'     THEN 2
+                            WHEN 'critical' THEN 3
+                            ELSE 2
+                          END <= :sev_rank
+                      AND (
+                            district_filter IS NULL
+                            OR :alert_ubigeo IS NULL
+                            OR :alert_ubigeo LIKE district_filter || '%'
+                          )
                     ORDER BY id
                     LIMIT :cap
                 """),
-                {"cap": _FAN_OUT_SUBSCRIBER_CAP},
+                {
+                    "sev_rank": sev_rank,
+                    "alert_ubigeo": alert_district_ubigeo,
+                    "cap": _FAN_OUT_SUBSCRIBER_CAP,
+                },
             )
             subscribers = result.mappings().all()
 
-        sev_rank = SEVERITY_RANK.get(alert_severity, 0)
         payload = {
             "event": trigger_event,
             "alert_id": alert_id,
@@ -426,17 +447,15 @@ async def fan_out_notifications(
         }
 
         semaphore = asyncio.Semaphore(_FAN_OUT_CONCURRENCY)
-        tasks = []
-        for sub in subscribers:
-            sub_min_rank = SEVERITY_RANK.get(sub["severity_min"], 2)
-            if sev_rank < sub_min_rank:
-                continue
-            if sub["district_filter"] and alert_district_ubigeo:
-                if not alert_district_ubigeo.startswith(sub["district_filter"]):
-                    continue
-            tasks.append(_dispatch_to_subscriber(dict(sub), payload, alert_id, trigger_event, semaphore))
+        tasks = [
+            _dispatch_to_subscriber(dict(sub), payload, alert_id, trigger_event, semaphore)
+            for sub in subscribers
+        ]
 
         if tasks:
-            await asyncio.gather(*tasks, return_exceptions=True)
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            failed = sum(1 for r in results if isinstance(r, Exception))
+            if failed:
+                logger.warning("[notifications] fan_out: %d/%d dispatches raised exceptions", failed, len(results))
     except Exception as exc:
         logger.exception("[notifications] fan_out error: %s", exc)
