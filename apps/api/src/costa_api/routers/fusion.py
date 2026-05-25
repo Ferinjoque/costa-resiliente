@@ -88,7 +88,7 @@ async def district_fusion(
     - social.signals: urgent citizen reports in last 3 hours
     - geo.districts.population: INEI 2017 census
     """
-    if not ubigeo.isdigit() or len(ubigeo) != 6:
+    if not ubigeo.isascii() or not ubigeo.isdigit() or len(ubigeo) != 6:
         raise HTTPException(400, "ubigeo must be a 6-digit INEI code")
 
     # ── District metadata ─────────────────────────────────────────────────────

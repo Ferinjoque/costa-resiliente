@@ -31,7 +31,17 @@ logger = logging.getLogger(__name__)
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 
-PROTOCOLS_DIR = Path(__file__).parents[5] / "data" / "protocols"
+_protocols_env = os.getenv("PROTOCOLS_DIR")
+if _protocols_env:
+    PROTOCOLS_DIR = Path(_protocols_env)
+else:
+    try:
+        # Dev layout: <repo>/apps/workers/src/costa_workers/rag/ingest.py
+        # parents[5] → <repo root> → <repo root>/data/protocols
+        PROTOCOLS_DIR = Path(__file__).parents[5] / "data" / "protocols"
+    except IndexError:
+        # Container layout: /app/src/costa_workers/rag/ingest.py (only 5 parents)
+        PROTOCOLS_DIR = Path("/data/protocols")
 OLLAMA_HOST = os.getenv("LLM_BASE_URL", "http://localhost:11434")
 EMBED_MODEL = os.getenv("LLM_EMBED_MODEL", "nomic-embed-text")
 CHUNK_SIZE = 800       # characters per chunk (≈ 200 tokens for nomic)

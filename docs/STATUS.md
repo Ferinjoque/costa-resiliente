@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **314 passed, 0 errors** (Session 9). Up from Session 8's 314 with 2 test failures. Fixed: FK teardown violation (`notification_deliveries_alert_id_fkey`), quick-mode false-match test queries for `test_direct_answer_no_tools`, `test_output_guardrail_redacts_key`, `test_parallel_tool_execution`. Pre-existing Ollama-timeout flake in `test_session_audit` passes under normal load.
+- **API**: **314 passed, 0 errors** (Session 10). Stable across all sessions since Session 9.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB (Session 5: 153 → 173 → 175 with new ProposalsPanel)
 
@@ -225,6 +225,59 @@ POST   /api/v1/auth/operators
 ---
 
 ## Recent session log (rolling, last 5)
+
+### Session 10 — 2026-05-24 — Sprint 18: RAG end-to-end fix + router hardening
+
+Autonomous session (Fernando offline). All changes on `develop`, local Ollama only.
+
+**RAG vector search fixed:**
+- `fix(ai/rag)`: `rag.py` used `:vec::vector` SQLAlchemy named-param + PostgreSQL
+  cast shorthand, which triggers `sqlalchemy.exc.ProgrammingError` (f405). Fixed:
+  inline `vec_str` directly as a PostgreSQL literal `'{vec_str}'::vector` — safe
+  because `vec_str` is a float array generated from Ollama embeddings, never from
+  user input. Verified end-to-end: 3 protocol results returned with similarity
+  0.634–0.606 for flood/evacuation query.
+- `fix(ai/agent)`: `_keyword_dispatch()` fallback path was passing `{}` as args
+  for `search_protocols` — same empty-query short-circuit bug fixed in quick-mode
+  Session 9. Now passes `{"query": query}` for the RAG tool.
+
+**Protocol indexer hardening:**
+- `fix(workers/rag/ingest)`: `PROTOCOLS_DIR = Path(__file__).parents[5]` raises
+  `IndexError` in container (`/app/src/costa_workers/rag/ingest.py` only has 5
+  parents 0–4). Fixed: try/except with container fallback `/data/protocols`.
+  Also respects `PROTOCOLS_DIR` env var override.
+- `feat(docker-compose)`: `./data/protocols:/data/protocols:ro` volume mount added
+  to `prefect-worker` service + `PROTOCOLS_DIR=/data/protocols` env var. Protocol
+  documents now survive container rebuilds without manual `docker compose cp`.
+- `fix(infra/postgres/init.sql)`: `rag.documents.content_hash` had only a plain
+  index, not a UNIQUE constraint. `ON CONFLICT (content_hash) DO NOTHING` in
+  `ingest.py` therefore silently failed. Changed to
+  `CREATE UNIQUE INDEX IF NOT EXISTS rag_documents_content_hash_unique`.
+
+**Router robustness (CRITICAL + HIGH fixes from audit):**
+- `fix(api/proposals)`: `create_proposal` — added null check on `fetchone()` result
+  before accessing `.id` (500 instead of AttributeError).
+- `fix(api/proposals)`: `approve_proposal` — race condition: two concurrent approvals
+  could both read `status='pending'` and both create duplicate alerts. Fixed by
+  atomically `UPDATE ... SET status='approved' WHERE status='pending' RETURNING *`
+  first; only the winner gets a row, loser gets 404.
+- `fix(api/proposals)`: `approve_proposal` — null check on alert `INSERT RETURNING`
+  row before accessing `.id`.
+- `fix(api/share)`: `mint_share_token` — `settings.app_cors_origins.split(",")[0]`
+  fails silently (wrong URL) if CORS setting is empty. Now filters and uses first
+  non-empty origin, falls back to `http://localhost:3000`.
+- `fix(api/share)`: `resolve_share_token` — `expires_at.replace(tzinfo=UTC)` is
+  incorrect when `expires_at` is already timezone-aware (replaces tz instead of
+  converting). Now checks `exp.tzinfo is None` before adding UTC.
+- `fix(api/fusion)`: `ubigeo` validation `isdigit()` passes Unicode digit codepoints.
+  Added `isascii()` check before `isdigit()`.
+- `fix(api/districts)`: SINPAD `except Exception` was fully silent on query errors.
+  Added `logger.debug()` so container logs surface the failure when SINPAD table
+  is absent.
+
+**Tests:** 314 passed, 0 errors. Build: TypeScript 0 errors, Next.js green.
+
+---
 
 ### Session 9 — 2026-05-24 — Sprint 17: Copilot CPU hardening + test stability
 
@@ -555,7 +608,8 @@ For full detail of all sessions, see [`../SESSION_LOG.md`](../SESSION_LOG.md).
 | 14 | Trust-the-loop pass (PII fix, truthful counts, no false-success toast, Prefect deploys) | ✅ |
 | 15 | Real-disaster utility pass (pgstac, AI speed, pop-at-risk, rainfall alerts, auto-resolve, ANA cache) | ✅ |
 | 16 | Shelters, Callao, Quick-mode, Twilio, onboarding tour | ✅ |
-| 17 | Copilot CPU hardening (multi-quick, tool pre-selection, 45s timeout), AlertsPanel + DecisionLog fixes, test stability | ✅ (this session) |
+| 17 | Copilot CPU hardening (multi-quick, tool pre-selection, 45s timeout), AlertsPanel + DecisionLog fixes, test stability | ✅ |
+| 18 | RAG end-to-end fix (vector cast, protocol volume, unique constraint), router hardening (race conditions, null checks, timezone) | ✅ (this session) |
 
 ---
 

@@ -173,7 +173,8 @@ async def _keyword_dispatch(query: str, db, rag_fn) -> dict:
     for keywords, tool_name in _KEYWORD_MAP:
         if any(kw in q for kw in keywords):
             from costa_api.ai.tools.db_tools import dispatch
-            return await dispatch(tool_name, {}, db, rag_fn=rag_fn)
+            args = {"query": query} if tool_name == "search_protocols" else {}
+            return await dispatch(tool_name, args, db, rag_fn=rag_fn)
     # Default: try flood status
     from costa_api.ai.tools.db_tools import dispatch
     return await dispatch("get_flood_polygons", {}, db, rag_fn=rag_fn)

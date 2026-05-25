@@ -87,7 +87,8 @@ async def mint_share_token(
     )
     await db.commit()
 
-    base_url = settings.app_cors_origins.split(",")[0].strip().rstrip("/")
+    origins = [o.strip().rstrip("/") for o in settings.app_cors_origins.split(",") if o.strip()]
+    base_url = origins[0] if origins else "http://localhost:3000"
     return MintResponse(
         token=token,
         url=f"{base_url}/?share={token}",
@@ -121,7 +122,10 @@ async def resolve_share_token(
     if not record:
         raise HTTPException(404, "Share token not found")
 
-    if record["expires_at"].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+    exp = record["expires_at"]
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if exp < datetime.now(timezone.utc):
         raise HTTPException(410, "Share token has expired")
 
     await db.commit()
