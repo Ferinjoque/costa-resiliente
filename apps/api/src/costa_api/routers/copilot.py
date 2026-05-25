@@ -24,6 +24,8 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+import asyncio
+
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -139,12 +141,22 @@ async def ask(
     Operator NL query → agentic tool loop → Spanish answer.
     LLM never fabricates: all claims trace to DB rows in sources[].
     """
-    result: AgentResult = await agent_run(
-        query=query.query,
-        operator_id=query.operator_id,
-        db=ai_db,
-        rag_fn=search_protocols,
-    )
+    try:
+        result: AgentResult = await asyncio.wait_for(
+            agent_run(
+                query=query.query,
+                operator_id=query.operator_id,
+                db=ai_db,
+                rag_fn=search_protocols,
+            ),
+            timeout=90.0,
+        )
+    except asyncio.TimeoutError:
+        logger.error("copilot/ask: agent_run timed out (>90s) for operator=%s", query.operator_id)
+        raise HTTPException(
+            status_code=503,
+            detail="El asistente no respondió a tiempo. Reintenta en unos segundos.",
+        )
 
     # Log security event if blocked
     if result.blocked:

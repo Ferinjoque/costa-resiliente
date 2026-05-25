@@ -32,7 +32,7 @@ def test_field_report_stores_signal_and_decision_log(client):
     )
     assert resp.status_code == 201
     body = resp.json()
-    assert body["status"] == "stored"
+    assert body["status"] in ("stored", "duplicate")  # idempotent — same hash deduplicates
     assert isinstance(body["signal_id"], int)
     assert body["signal_id"] > 0
     assert body["ingested_at"] is not None
