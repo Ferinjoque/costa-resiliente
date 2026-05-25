@@ -14,7 +14,7 @@ export function ShareLoader() {
   const searchParams = useSearchParams();
   const token = searchParams.get("share");
   const loaded = useRef(false);
-  const { setScenario, toggleLayer, activeLayers, setShareMode } = useUIStore();
+  const { setScenario, toggleLayer, activeLayers, setShareMode, addToast, locale } = useUIStore();
 
   const stateParam = searchParams.get("state");
 
@@ -37,7 +37,14 @@ export function ShareLoader() {
     loaded.current = true;
     fetchShareToken(token)
       .then(({ scenario }) => applyScenario(scenario))
-      .catch(() => {});
+      .catch(() => {
+        addToast({
+          message: locale === "es"
+            ? "Enlace de compartición no válido o expirado"
+            : "Share link is invalid or expired",
+          variant: "danger",
+        });
+      });
     // Only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
