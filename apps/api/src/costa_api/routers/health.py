@@ -149,8 +149,8 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     bluesky_run = await _redis_last_run_status("bluesky", stale_min=20)
     rss_run = await _redis_last_run_status("rss", stale_min=20)
     alerts_run = await _redis_last_run_status("alerts", stale_min=8)    # 5min schedule + 3min grace
-    imerg_run = await _redis_last_run_status("imerg", stale_min=35)     # 30min schedule + 5min grace
-    stations_run = await _redis_last_run_status("stations", stale_min=20)  # 15min schedule + 5min grace
+    imerg_run = await _redis_last_run_status("imerg", stale_min=70)     # 30-60min actual interval + grace
+    stations_run = await _redis_last_run_status("stations", stale_min=70)  # 30-60min actual interval + grace
 
     sources = {
         # Merge Redis last-run status into bluesky/rss so health reflects scraper
