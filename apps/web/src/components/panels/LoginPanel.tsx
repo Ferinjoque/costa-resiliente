@@ -78,12 +78,25 @@ export function LoginPanel() {
       await login(username.trim(), password);
       close();
     } catch (err: unknown) {
+      const status = (err as { httpStatus?: number }).httpStatus;
       const msg = err instanceof Error ? err.message : String(err);
-      setError(
-        msg.includes("401") || msg.toLowerCase().includes("usuario")
-          ? locale === "es" ? "Usuario o contraseña incorrectos." : "Invalid username or password."
-          : msg,
-      );
+      if (status === 429) {
+        setError(locale === "es"
+          ? "Demasiados intentos. Espera 60 segundos."
+          : "Too many login attempts. Wait 60 seconds.");
+      } else if (status === 503) {
+        setError(locale === "es"
+          ? "Servicio no disponible. Reintenta en un momento."
+          : "Service unavailable. Try again shortly.");
+      } else if (!status && (msg.toLowerCase().includes("failed to fetch") || msg.toLowerCase().includes("networkerror") || msg.toLowerCase().includes("abort"))) {
+        setError(locale === "es"
+          ? "Sin conexión con el servidor."
+          : "Cannot reach the server.");
+      } else {
+        setError(locale === "es"
+          ? "Usuario o contraseña incorrectos."
+          : "Invalid username or password.");
+      }
     } finally {
       setLoading(false);
     }
