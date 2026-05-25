@@ -46,3 +46,31 @@ def test_confidence_must_be_float():
         reasoning="Contenido irrelevante.",
     )
     assert isinstance(result.confidence, float)
+
+
+def test_huayco_observation_label():
+    raw = """
+    {
+      "label": "huayco_observation",
+      "confidence": 0.91,
+      "location_entity": "Quebrada Jicamarca",
+      "district_name": "San Juan de Lurigancho",
+      "reasoning": "El usuario reporta flujo de lodo en quebrada Jicamarca."
+    }
+    """
+    result = TriageResult.model_validate_json(raw)
+    assert result.label == TriageLabel.HUAYCO_OBSERVATION
+
+
+def test_flood_observation_label():
+    raw = """
+    {
+      "label": "flood_observation",
+      "confidence": 0.85,
+      "location_entity": "Av. Universitaria",
+      "district_name": "Comas",
+      "reasoning": "Reporte de desborde de canal en Av. Universitaria."
+    }
+    """
+    result = TriageResult.model_validate_json(raw)
+    assert result.label == TriageLabel.FLOOD_OBSERVATION

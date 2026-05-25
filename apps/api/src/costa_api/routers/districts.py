@@ -138,7 +138,7 @@ async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str,
                     SELECT COUNT(*) FROM social.signals s
                     WHERE s.district_id = d.id
                       AND s.ingested_at >= NOW() - INTERVAL '3 hours'
-                      AND s.triage_label IN ('needs_help','infrastructure_damage','road_blocked')
+                      AND s.triage_label IN ('needs_help','infrastructure_damage','road_blocked','huayco_observation','flood_observation')
                 ), 0) AS urgent_social_3h
             FROM geo.districts d
             ORDER BY d.name

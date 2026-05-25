@@ -93,3 +93,33 @@ def test_field_report_returns_district_id_when_known(client):
     )
     assert resp.status_code == 201
     assert isinstance(resp.json()["signal_id"], int)
+
+
+def test_field_report_accepts_huayco_observation(client):
+    """huayco_observation is a valid label — field team reporting debris flow sighting."""
+    resp = client.post(
+        "/social/field-report",
+        json={
+            "operator_id": "coen_lima",
+            "text": "Flujo de lodo en quebrada Huaycoloro avanzando hacia puente Huachipa",
+            "label": "huayco_observation",
+            "district_ubigeo": "150133",
+        },
+    )
+    assert resp.status_code == 201
+    assert resp.json()["signal_id"] > 0
+
+
+def test_field_report_accepts_flood_observation(client):
+    """flood_observation is a valid label — field team reporting inundation sighting."""
+    resp = client.post(
+        "/social/field-report",
+        json={
+            "operator_id": "coen_lima",
+            "text": "Desborde de canal de riego confirmado en Av. Universitaria altura Comas",
+            "label": "flood_observation",
+            "district_ubigeo": "150105",
+        },
+    )
+    assert resp.status_code == 201
+    assert resp.json()["signal_id"] > 0
