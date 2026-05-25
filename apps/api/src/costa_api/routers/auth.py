@@ -109,6 +109,8 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     operator_id: int
+    username: str
+    full_name: str
     role: str
     district_ubigeo: Optional[str]
 
@@ -274,7 +276,7 @@ async def issue_token(
 ) -> TokenResponse:
     """Issue a JWT for username+password."""
     result = await db.execute(
-        text("SELECT id, password_hash, role, district_ubigeo, active FROM ops.operators WHERE username = :u"),
+        text("SELECT id, password_hash, full_name, role, district_ubigeo, active FROM ops.operators WHERE username = :u"),
         {"u": form.username},
     )
     row = result.mappings().first()
@@ -288,6 +290,8 @@ async def issue_token(
     return TokenResponse(
         access_token=token,
         operator_id=row["id"],
+        username=form.username,
+        full_name=row["full_name"],
         role=row["role"],
         district_ubigeo=row["district_ubigeo"],
     )
