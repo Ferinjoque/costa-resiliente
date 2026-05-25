@@ -180,7 +180,8 @@ export function useFlood(
       }
     },
     staleTime: replayDate ? 60 * MIN : 10 * MIN,
-    refetchInterval: replayDate ? false : undefined,
+    refetchInterval: replayDate ? false : 10 * MIN,
+    placeholderData: (prev) => prev,
     ...opts,
   });
 }
@@ -199,6 +200,8 @@ export function useHuayco(
       }
     },
     staleTime: 10 * MIN,
+    refetchInterval: 10 * MIN,
+    placeholderData: (prev) => prev,
     ...opts,
   });
 }
@@ -281,6 +284,7 @@ export function useDecisionLog(
     },
     staleTime: 15 * 1000,
     refetchInterval: 30 * 1000,
+    placeholderData: (prev) => prev,
     ...opts,
   });
 }
@@ -322,6 +326,7 @@ export function useSocialSignals(
     },
     staleTime: 90 * 1000,
     refetchInterval: 90 * 1000,
+    placeholderData: (prev) => prev,
     ...opts,
   });
 }
@@ -340,8 +345,9 @@ export function useFusion(
       }
     },
     enabled: !!ubigeo,
-    staleTime: 3 * MIN,
-    refetchInterval: 3 * MIN,
+    staleTime: 2 * MIN,
+    refetchInterval: 2 * MIN,
+    placeholderData: (prev) => prev,
     ...opts,
   });
 }
@@ -359,8 +365,8 @@ export function useDistrictRiskSummary(
         return DEMO_DISTRICT_RISK_SUMMARY;
       }
     },
-    staleTime: 3 * MIN,
-    refetchInterval: 5 * MIN,
+    staleTime: 2 * MIN,
+    refetchInterval: 2 * MIN,
     placeholderData: (prev) => prev,
     ...opts,
   });
@@ -401,7 +407,8 @@ export function useDistrictDashboard(
     },
     enabled: !!ubigeo,
     staleTime: 2 * MIN,
-    refetchInterval: 5 * MIN,
+    refetchInterval: 2 * MIN,
+    placeholderData: (prev) => prev,
     ...opts,
   });
 }

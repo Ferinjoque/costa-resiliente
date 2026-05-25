@@ -180,9 +180,15 @@ async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str,
     }
 
 
+def _validate_ubigeo(ubigeo: str) -> None:
+    if not ubigeo.isdigit() or len(ubigeo) != 6:
+        raise HTTPException(status_code=400, detail="ubigeo must be a 6-digit INEI code")
+
+
 @router.get("/{ubigeo}")
 async def get_district(ubigeo: str, db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """Return a single district by INEI UBIGEO code."""
+    _validate_ubigeo(ubigeo)
     result = await db.execute(
         text("""
             SELECT
@@ -213,9 +219,8 @@ async def get_district(ubigeo: str, db: AsyncSession = Depends(get_db)) -> dict[
 
 @router.get("/{ubigeo}/dashboard")
 async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
-    """
-    Rich dashboard data for a single district: alerts trend, IMERG 30d, social breakdown.
-    """
+    """Rich dashboard data for a single district: alerts trend, IMERG 30d, social breakdown."""
+    _validate_ubigeo(ubigeo)
     district_row = await db.execute(
         text("SELECT id, name, population, area_km2 FROM geo.districts WHERE ubigeo = :u"),
         {"u": ubigeo},
@@ -371,6 +376,7 @@ async def get_district_watersheds(
     ubigeo: str, db: AsyncSession = Depends(get_db)
 ) -> dict[str, Any]:
     """Return watersheds that intersect a given district."""
+    _validate_ubigeo(ubigeo)
     result = await db.execute(
         text("""
             SELECT DISTINCT ON (w.id)
