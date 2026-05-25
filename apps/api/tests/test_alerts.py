@@ -479,3 +479,29 @@ class TestDecisionLogReport:
             )
         assert resp.status_code == 200
         assert resp.content[:4] == b"%PDF"
+
+
+# ─── Limit validation (ge=1) ─────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_decision_log_limit_zero_returns_422():
+    """limit=0 must be rejected — ge=1 validator prevents zero-row queries."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.get("/api/v1/alerts/decision-log?limit=0", headers=AUTH)
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_decision_log_export_limit_zero_returns_422():
+    """CSV export limit=0 must be rejected."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.get("/api/v1/alerts/decision-log/export?limit=0", headers=AUTH)
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_decision_log_report_limit_zero_returns_422():
+    """PDF report limit=0 must be rejected."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.get("/api/v1/alerts/decision-log/report?limit=0", headers=AUTH)
+    assert resp.status_code == 422
