@@ -180,8 +180,8 @@ export function NotificationsPanel() {
   const { activePanel, setActivePanel, locale } = useUIStore();
   const qc = useQueryClient();
   const { addToast } = useUIStore();
-  const { data: subscribers = [] } = useNotificationSubscribers();
-  const { data: deliveries = [] } = useNotificationDeliveries();
+  const { data: subscribers = [], isLoading: subLoading, isError: subError, refetch: refetchSubs } = useNotificationSubscribers();
+  const { data: deliveries = [], isLoading: delLoading, isError: delError, refetch: refetchDels } = useNotificationDeliveries();
   const [showForm, setShowForm] = useState(false);
   const [tab, setTab] = useState<"subscribers" | "log">("subscribers");
 
@@ -267,7 +267,22 @@ export function NotificationsPanel() {
       <div className="flex-1 overflow-y-auto">
         {tab === "subscribers" && (
           <ul role="list" className="divide-y divide-border-subtle">
-            {subscribers.length === 0 && (
+            {subLoading && (
+              <li className="px-4 py-10 text-xs text-ink-muted text-center" aria-live="polite">
+                {locale === "es" ? "Cargando suscriptores…" : "Loading subscribers…"}
+              </li>
+            )}
+            {subError && (
+              <li className="px-4 py-8 flex flex-col items-center gap-2" role="alert">
+                <span className="text-xs text-danger text-center">
+                  {locale === "es" ? "Error al cargar suscriptores." : "Could not load subscribers."}
+                </span>
+                <button onClick={() => refetchSubs()} className="text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded">
+                  {locale === "es" ? "Reintentar" : "Retry"}
+                </button>
+              </li>
+            )}
+            {!subLoading && !subError && subscribers.length === 0 && (
               <li className="flex flex-col items-center">
                 <EmptyState
                   title={locale === "es" ? "Sin suscriptores" : "No subscribers"}
@@ -278,7 +293,7 @@ export function NotificationsPanel() {
                 />
               </li>
             )}
-            {subscribers.map((sub) => (
+            {!subLoading && !subError && subscribers.map((sub) => (
               <li key={sub.id} className="px-4 py-3 flex items-start gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
@@ -305,14 +320,29 @@ export function NotificationsPanel() {
 
         {tab === "log" && (
           <>
-            {deliveries.length > 0 && (
+            {!delLoading && !delError && deliveries.length > 0 && (
               <div className="px-4 py-2 border-b border-border-subtle flex gap-3 text-xs text-ink-muted">
                 <span className="text-ok-muted font-medium">{deliveredCount} ✓</span>
                 {failedCount > 0 && <span className="text-danger font-medium">{failedCount} ✗</span>}
               </div>
             )}
             <ul role="list" className="divide-y divide-border-subtle">
-              {deliveries.length === 0 && (
+              {delLoading && (
+                <li className="px-4 py-10 text-xs text-ink-muted text-center" aria-live="polite">
+                  {locale === "es" ? "Cargando historial…" : "Loading delivery log…"}
+                </li>
+              )}
+              {delError && (
+                <li className="px-4 py-8 flex flex-col items-center gap-2" role="alert">
+                  <span className="text-xs text-danger text-center">
+                    {locale === "es" ? "Error al cargar historial." : "Could not load delivery log."}
+                  </span>
+                  <button onClick={() => refetchDels()} className="text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded">
+                    {locale === "es" ? "Reintentar" : "Retry"}
+                  </button>
+                </li>
+              )}
+              {!delLoading && !delError && deliveries.length === 0 && (
                 <li className="flex flex-col items-center">
                   <EmptyState
                     title={locale === "es" ? "Sin envíos" : "No deliveries"}
@@ -323,7 +353,7 @@ export function NotificationsPanel() {
                   />
                 </li>
               )}
-              {deliveries.map((d) => (
+              {!delLoading && !delError && deliveries.map((d) => (
                 <li key={d.id} className="px-4 py-2.5 flex items-start gap-2">
                   <span className="mt-0.5 shrink-0">{STATUS_ICON[d.status]}</span>
                   <div className="flex-1 min-w-0">
