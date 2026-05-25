@@ -191,11 +191,12 @@ async def ingest_bluesky_firehose(window_seconds: int = BLUESKY_WINDOW_S) -> lis
         "?wantedCollections=app.bsky.feed.post"
     )
     signals: list[RawSignal] = []
-    deadline = asyncio.get_event_loop().time() + window_seconds
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + window_seconds
 
     try:
         async with websockets.connect(url, open_timeout=10) as ws:
-            while asyncio.get_event_loop().time() < deadline:
+            while loop.time() < deadline:
                 try:
                     raw = await asyncio.wait_for(ws.recv(), timeout=5.0)
                     event = json.loads(raw)
