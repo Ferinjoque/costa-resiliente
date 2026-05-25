@@ -90,7 +90,9 @@ _ALLOWED_LABELS = {
 
 
 class FieldReport(BaseModel):
-    operator_id: str = Field(..., min_length=1, max_length=64)
+    # operator_id accepted for backwards-compatibility but IGNORED — JWT identity
+    # (op.username) is always used so reports cannot be forged under another name.
+    operator_id: Optional[str] = Field(None, max_length=64)
     text: str = Field(..., min_length=1, max_length=2000)
     label: str = Field(..., min_length=1, max_length=40)
     district_ubigeo: Optional[str] = Field(None, max_length=12)
