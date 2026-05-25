@@ -473,6 +473,21 @@ async def generate_alerts_flow() -> dict:
 
     total = flood + huayco + social + rainfall
     logger.info("Alert generation complete: %d new, %d auto-resolved", total, resolved)
+
+    # Heartbeat for health endpoint — flow ran, not just "was an alert created"
+    try:
+        import redis.asyncio as aioredis
+        redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
+        r = aioredis.from_url(redis_url, decode_responses=True, socket_timeout=2)
+        await r.set(
+            "costa:scraper:last_run:alerts",
+            datetime.now(timezone.utc).isoformat(),
+            ex=600,  # 10min — expire if flow stops running so stale flag fires naturally
+        )
+        await r.aclose()
+    except Exception:
+        pass  # non-critical; health falls back to MAX(created_at)
+
     return {
         "flood_alerts": flood,
         "huayco_alerts": huayco,

@@ -108,7 +108,7 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
         "SELECT COUNT(*) as count, MAX(created_at) as last_seen_at FROM ops.alerts"
     )
 
-    # Merge Redis scraper health for ANA/SENAMHI (written by the worker after each run)
+    # Merge Redis scraper health (written by workers after each run)
     async def _redis_scraper_status(source_key: str) -> dict:
         try:
             import redis.asyncio as aioredis
@@ -126,22 +126,58 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
             pass
         return {}
 
+    async def _redis_last_run_status(source_key: str, stale_min: int = 20) -> dict:
+        """Read per-source last-run heartbeat written by the social worker after each cycle.
+        Returns a status override dict: status='ok'/'stale'/'offline' + scraper_last_run_at."""
+        try:
+            import redis.asyncio as aioredis
+            r = aioredis.from_url(settings.redis_url, decode_responses=True, socket_timeout=1)
+            raw = await r.get(f"costa:scraper:last_run:{source_key}")
+            await r.aclose()
+            if raw:
+                from datetime import datetime, timezone
+                last_run = datetime.fromisoformat(raw)
+                age_min = (now - last_run).total_seconds() / 60
+                run_status = "ok" if age_min < stale_min else ("stale" if age_min < 120 else "offline")
+                return {"scraper_last_run_at": raw, "status": run_status}
+        except Exception:
+            pass
+        return {}
+
     ana_scraper = await _redis_scraper_status("ana")
     senamhi_scraper = await _redis_scraper_status("senamhi")
+    bluesky_run = await _redis_last_run_status("bluesky", stale_min=20)
+    rss_run = await _redis_last_run_status("rss", stale_min=20)
+    alerts_run = await _redis_last_run_status("alerts", stale_min=8)    # 5min schedule + 3min grace
+    imerg_run = await _redis_last_run_status("imerg", stale_min=35)     # 30min schedule + 5min grace
+    stations_run = await _redis_last_run_status("stations", stale_min=20)  # 15min schedule + 5min grace
 
     sources = {
-        "bluesky": {"label": "Bluesky Jetstream", "schedule": "15min", **bluesky},
-        "rss": {"label": "RSS (RPP/Andina/Canal N…)", "schedule": "15min", **rss},
+        # Merge Redis last-run status into bluesky/rss so health reflects scraper
+        # liveness rather than content publication density (quiet periods have no
+        # new disaster posts even though the scraper ran successfully).
+        "bluesky": {"label": "Bluesky Jetstream", "schedule": "15min", **bluesky, **bluesky_run},
+        "rss": {"label": "RSS (RPP/Andina/Canal N…)", "schedule": "15min", **rss, **rss_run},
         "reddit": {"label": "Reddit (r/Peru, r/Lima)", "schedule": "15min", **reddit},
         "telegram": {"label": "Telegram (SENAMHI)", "schedule": "15min", **telegram},
-        "imerg": {"label": "NASA IMERG Early Run", "schedule": "30min", **imerg},
-        "stations": {"label": "ANA/SENAMHI Stations", "schedule": "15min", **stations, **ana_scraper},
+        "imerg": {"label": "NASA IMERG Early Run", "schedule": "30min", **imerg, **imerg_run},
+        "stations": {"label": "ANA/SENAMHI Stations", "schedule": "15min", **stations, **ana_scraper, **stations_run},
         "flood": {"label": "SAR Flood Polygons", "schedule": "daily", **flood},
-        "alerts": {"label": "Auto-generated Alerts", "schedule": "5min", **alerts},
+        "alerts": {"label": "Auto-generated Alerts", "schedule": "5min", **alerts, **alerts_run},
     }
 
-    overall = "ok" if all(s["status"] == "ok" for s in sources.values()) else \
-              ("stale" if any(s["status"] == "stale" for s in sources.values()) else "offline")
+    # Overall status uses operational sources only.
+    # Reddit and Telegram are best-effort external scrapers — their outage does
+    # not degrade situational awareness (Bluesky + RSS carry the social signal).
+    # SAR flood is daily cadence; offline between acquisitions is expected.
+    _core = {k: v for k, v in sources.items() if k not in ("reddit", "telegram", "flood")}
+    _statuses = [s["status"] for s in _core.values()]
+    if all(s == "ok" for s in _statuses):
+        overall = "ok"
+    elif any(s == "offline" for s in _statuses) and not any(s in ("ok", "stale") for s in _statuses):
+        overall = "offline"
+    else:
+        overall = "stale"
 
     return {
         "retrieved_at": now.isoformat(),
