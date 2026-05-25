@@ -1,7 +1,7 @@
 # Costa Resiliente — Project Status
 
 > **This is the single source of truth for what's built, what's pending, and the current rubric score.**
-> Last updated: 2026-05-25
+> Last updated: 2026-05-25 (Session 14)
 > Branch: `develop`
 
 For competition context, see [`COMPETITION.md`](COMPETITION.md).
@@ -28,7 +28,8 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **425 passed, 0 errors** (Session 13). Up from 316 (109 new tests across 4 new test files).
+- **API**: **445 passed, 0 errors** (Session 14). Up from 425 (20 new tests: health scraper, quick-mode, multi-quick, rainfall thresholds, huayco SQL injection guard).
+- **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB (Session 5: 153 → 173 → 175 with new ProposalsPanel)
 
@@ -416,6 +417,53 @@ Autonomous session (Fernando offline). All changes on `develop`, local Ollama on
   is absent.
 
 **Tests:** 314 passed, 0 errors. Build: TypeScript 0 errors, Next.js green.
+
+---
+
+### Session 14 — 2026-05-25 — Sprint 20: Threshold correctness + test coverage + observability
+
+Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
+
+**Rainfall threshold correctness (CRITICAL operational fix):**
+- `fix(ai/agent)`: `_build_answer` used wrong threshold (42mm) for rainfall alerts. Real
+  ANA/INDECI thresholds: 25mm/72h = ALERTA, 50mm/72h = EMERGENCIA. Fixed three-tier logic:
+  ≥50mm → "⚠ EMERGENCIA", ≥25mm → "⚠ ALERTA", else "debajo del umbral". Wrong threshold
+  could delay activation of evacuation protocols.
+- `fix(demo)`: `demoData.ts` had 42mm in 9+ places (copilot responses, source tables, English
+  answers). Corrected to actual thresholds: 15mm/24h (alert trigger), 25mm/72h (ALERTA),
+  50mm/72h (EMERGENCIA). `npx tsc --noEmit` clean.
+
+**SQL injection pattern removed from db_tools:**
+- `fix(db-tools)`: `get_huayco_risk` used f-string SQL: `f"IN ({', '.join(f\"'{r}'\" for r in valid)})"`.
+  Replaced with parameterized `= ANY(:levels)` pattern. Values came from an internal whitelist,
+  so exploitability was nil, but the pattern is a code smell caught by linters.
+
+**Test coverage added (9 new tests this session → 445 total):**
+- `test(health)`: Expanded `test_health.py` from 1 → 7 tests. New: all 8 seed keys non-negative,
+  ≥43 districts seeded, scraper shape, 8 source keys, status enum validation, `retrieved_at` field.
+- `test(agent)`: Huayco SQL injection guard (unknown `min_risk`), `very_high` filter isolation,
+  rainfall EMERGENCIA/ALERTA/below labels, `_detect_quick` single-match/ambiguity/rainfall,
+  `_detect_multi_quick` two-tool/no-match/dedup, quick-mode integration (LLM not called),
+  quick-mode dispatch-raises fallthrough.
+- `fix(workers/tests)`: Worker `test_sprint5_contract.py::TestCopilotSafety` and
+  `test_sprint6_contract.py::TestAlertApiSchema/TestDecisionLogCsvExport` imported `costa_api`
+  not installed in worker env. Fixed with `importlib.util.find_spec` + `@pytest.mark.skipif`.
+  Worker tests: 240 passed, 16 skipped, 0 failed.
+
+**DemoLiveSimulator signal coverage:**
+- `feat(demo)`: Added 4 new signals to `DemoLiveSimulator.tsx` — 2× `huayco_observation`
+  (Lurigancho, Quebrada Huaycoloro) + 2× `flood_observation` (Ate Desborde Rímac, Carabayllo
+  Canal). Both label types now appear in the demo signal stream.
+
+**Observability hardening:**
+- `fix(health)`: Two silent `except Exception: pass` blocks in `health.py` (Redis scraper-status
+  + last-run lookups) now emit `log.warning` with source key and error. Redis outages visible
+  in container logs.
+- `fix(auto_seed)`: Four bare `except Exception: pass/None` blocks replaced with `logger.debug`
+  including coordinates and error. Silent seed failures during district geometry lookup now
+  traceable.
+
+**Tests:** 445 API passed (↑20 from 425), 240 worker passed 16 skipped. TypeScript: 0 errors.
 
 ---
 
