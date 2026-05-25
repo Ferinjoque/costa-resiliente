@@ -64,10 +64,10 @@ function ProposalRow({
           {locale === "es" ? sev.es : sev.en}
         </span>
         <span className="text-[10px] text-ink-subtle font-mono shrink-0">{typ}</span>
-        {proposal.district_ubigeo && (
+        {(proposal.district_name ?? proposal.district_ubigeo) && (
           <span className="flex items-center gap-0.5 text-[10px] text-ink-subtle">
             <MapPin size={9} aria-hidden="true" />
-            {proposal.district_ubigeo}
+            {proposal.district_name ?? proposal.district_ubigeo}
           </span>
         )}
         <span className="ml-auto text-[10px] text-ink-subtle shrink-0">
