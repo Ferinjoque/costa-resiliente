@@ -46,7 +46,7 @@ DB_DSN = (
     f"{os.getenv('POSTGRES_DB','costa_resiliente')}"
 )
 
-ACCUMULATION_HOURS = [1, 3, 6, 12, 24, 72]
+ACCUMULATION_HOURS = [1, 3, 6, 12, 24, 72, 168]
 
 
 class GranuleResult(NamedTuple):
@@ -206,12 +206,13 @@ def compute_watershed_accumulations(
         results.append({
             "time": reference_time,
             "watershed_id": ws["id"],
-            "acc_1h_mm":  acc.get(1),
-            "acc_3h_mm":  acc.get(3),
-            "acc_6h_mm":  acc.get(6),
-            "acc_12h_mm": acc.get(12),
-            "acc_24h_mm": acc.get(24),
-            "acc_72h_mm": acc.get(72),
+            "acc_1h_mm":   acc.get(1),
+            "acc_3h_mm":   acc.get(3),
+            "acc_6h_mm":   acc.get(6),
+            "acc_12h_mm":  acc.get(12),
+            "acc_24h_mm":  acc.get(24),
+            "acc_72h_mm":  acc.get(72),
+            "acc_168h_mm": acc.get(168),
         })
 
     log.info("Computed accumulations for %d watersheds", len(results))
@@ -234,21 +235,23 @@ def upsert_accumulations(records: list[dict]) -> int:
                 """
                 INSERT INTO hydro.imerg_accumulations
                     (time, watershed_id, acc_1h_mm, acc_3h_mm, acc_6h_mm,
-                     acc_12h_mm, acc_24h_mm, acc_72h_mm)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                     acc_12h_mm, acc_24h_mm, acc_72h_mm, acc_168h_mm)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 ON CONFLICT (time, watershed_id) DO UPDATE
-                  SET acc_1h_mm  = EXCLUDED.acc_1h_mm,
-                      acc_3h_mm  = EXCLUDED.acc_3h_mm,
-                      acc_6h_mm  = EXCLUDED.acc_6h_mm,
-                      acc_12h_mm = EXCLUDED.acc_12h_mm,
-                      acc_24h_mm = EXCLUDED.acc_24h_mm,
-                      acc_72h_mm = EXCLUDED.acc_72h_mm
+                  SET acc_1h_mm   = EXCLUDED.acc_1h_mm,
+                      acc_3h_mm   = EXCLUDED.acc_3h_mm,
+                      acc_6h_mm   = EXCLUDED.acc_6h_mm,
+                      acc_12h_mm  = EXCLUDED.acc_12h_mm,
+                      acc_24h_mm  = EXCLUDED.acc_24h_mm,
+                      acc_72h_mm  = EXCLUDED.acc_72h_mm,
+                      acc_168h_mm = EXCLUDED.acc_168h_mm
                 """,
                 [
                     (
                         r["time"], r["watershed_id"],
                         r["acc_1h_mm"], r["acc_3h_mm"], r["acc_6h_mm"],
                         r["acc_12h_mm"], r["acc_24h_mm"], r["acc_72h_mm"],
+                        r["acc_168h_mm"],
                     )
                     for r in records
                 ],
@@ -315,7 +318,7 @@ def fetch_imerg_openmeteo_fallback(lookback_hours: int = 73) -> list[dict]:
                 """
                 SELECT DISTINCT ON (watershed_id) watershed_id,
                        acc_1h_mm, acc_3h_mm, acc_6h_mm,
-                       acc_12h_mm, acc_24h_mm, acc_72h_mm
+                       acc_12h_mm, acc_24h_mm, acc_72h_mm, acc_168h_mm
                 FROM hydro.imerg_accumulations
                 ORDER BY watershed_id, time DESC
                 """
@@ -375,12 +378,13 @@ def fetch_imerg_openmeteo_fallback(lookback_hours: int = 73) -> list[dict]:
         records.append({
             "time": now,
             "watershed_id": ws["id"],
-            "acc_1h_mm":  delta_1h,
-            "acc_3h_mm":  float(base["acc_3h_mm"] or 0),
-            "acc_6h_mm":  float(base["acc_6h_mm"] or 0),
-            "acc_12h_mm": float(base["acc_12h_mm"] or 0),
-            "acc_24h_mm": float(base["acc_24h_mm"] or 0),
-            "acc_72h_mm": float(base["acc_72h_mm"] or 0),
+            "acc_1h_mm":   delta_1h,
+            "acc_3h_mm":   float(base["acc_3h_mm"] or 0),
+            "acc_6h_mm":   float(base["acc_6h_mm"] or 0),
+            "acc_12h_mm":  float(base["acc_12h_mm"] or 0),
+            "acc_24h_mm":  float(base["acc_24h_mm"] or 0),
+            "acc_72h_mm":  float(base["acc_72h_mm"] or 0),
+            "acc_168h_mm": float(base["acc_168h_mm"] or 0),
         })
         log.info(
             "IMERG carry-forward: watershed=%s acc_24h=%.1f acc_72h=%.1f mm (1h_delta=%.2f)",
@@ -392,12 +396,12 @@ def fetch_imerg_openmeteo_fallback(lookback_hours: int = 73) -> list[dict]:
 
 # ─── Flow ──────────────────────────────────────────────────────────────────────
 @flow(name="ingest-imerg", log_prints=True)
-def ingest_imerg_flow(lookback_hours: int = 73) -> dict:
+def ingest_imerg_flow(lookback_hours: int = 169) -> dict:
     """
     Fetch IMERG granules for lookback window and compute watershed accumulations.
     Falls back to Open-Meteo when NASA GES DISC returns 0 valid granules (auth
-    failure, data lag, or URL change). lookback_hours=73 (72h + 1h buffer) ensures
-    72h accumulations always have enough history. Flow is idempotent (ON CONFLICT).
+    failure, data lag, or URL change). lookback_hours=169 (168h + 1h buffer) ensures
+    168h accumulations always have enough history. Flow is idempotent (ON CONFLICT).
     """
     end_dt = datetime.now(timezone.utc)
     start_dt = end_dt - timedelta(hours=lookback_hours)
