@@ -190,11 +190,7 @@ async def store_flood_polygons(scene_id: str, polygons: list[dict], acquired_at:
     async with asyncpg.create_pool(DB_DSN, min_size=1, max_size=3) as pool:
         inserted = 0
         for poly in polygons:
-            geom_wkt: str | None = None
-            if poly.get("geometry"):
-                geom_json = json.dumps(poly["geometry"])
-                geom_wkt = f"ST_SetSRID(ST_GeomFromGeoJSON('{geom_json}'), 4326)"
-
+            geom_json = json.dumps(poly["geometry"]) if poly.get("geometry") else None
             await pool.execute(
                 """
                 INSERT INTO ml.flood_polygons
@@ -211,7 +207,7 @@ async def store_flood_polygons(scene_id: str, polygons: list[dict], acquired_at:
                 "sen1floods11-unet-v1",
                 poly.get("confidence", 0.0),
                 poly.get("area_m2", 0.0) / 1_000_000,  # m² → km²
-                json.dumps(poly["geometry"]) if poly.get("geometry") else None,
+                geom_json,
             )
             inserted += 1
 
