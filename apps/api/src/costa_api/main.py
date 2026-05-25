@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from costa_api.auto_seed import maybe_seed
 from costa_api.config import settings
@@ -56,10 +57,36 @@ def _warn_default_secrets() -> None:
             logger.warning("SECURITY: %s uses a default placeholder value — change before production deploy", name)
 
 
+async def _sync_ai_role_password() -> None:
+    """Keep costa_ai_ro DB role password in sync with POSTGRES_AI_PASSWORD env var.
+
+    ai_migration.sql creates the role with 'change_me_in_production' as a
+    placeholder. Without this call the role password and the env var diverge in
+    any non-default deployment, breaking the AI read-only DB connection.
+    Skips silently in dev (default placeholder) so local dev boots without a DB.
+    """
+    pwd = settings.postgres_ai_password
+    if pwd in _DEFAULT_SECRETS:
+        logger.debug("_sync_ai_role_password: skipping (default placeholder, dev mode)")
+        return
+
+    try:
+        async with engine.connect() as conn:
+            # Use text() with a literal value — ALTER ROLE does not support
+            # parameterized placeholders in PostgreSQL for the PASSWORD clause.
+            safe_pwd = pwd.replace("'", "''")  # rudimentary escaping; pwd from env, not user input
+            await conn.execute(text(f"ALTER ROLE costa_ai_ro PASSWORD '{safe_pwd}'"))
+            await conn.commit()
+            logger.info("_sync_ai_role_password: costa_ai_ro password synced")
+    except Exception as exc:
+        logger.warning("_sync_ai_role_password: failed to sync costa_ai_ro password: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Costa Resiliente API starting up")
     _warn_default_secrets()
+    await _sync_ai_role_password()
     await _seed_with_retry()
     await auth.seed_demo_operators()
     yield
