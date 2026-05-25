@@ -295,7 +295,7 @@ async def run_huayco_susceptibility(db_dsn: str, model: HuaycoModel) -> list[dic
                 COALESCE(q.soil_moisture, 0.25)        AS soil_moisture,
                 COALESCE(ia24.acc_24h_mm, 0.0)         AS rain_24h_mm,
                 COALESCE(ia72.acc_72h_mm, 0.0)         AS rain_72h_mm,
-                COALESCE(ia7d.acc_7d_mm, 0.0)          AS rain_7d_mm
+                COALESCE(ia7d.acc_168h_mm, 0.0)        AS rain_7d_mm
             FROM geo.quebradas q
             LEFT JOIN LATERAL (
                 SELECT ia.acc_24h_mm
@@ -310,10 +310,10 @@ async def run_huayco_susceptibility(db_dsn: str, model: HuaycoModel) -> list[dic
                 ORDER BY ia.time DESC LIMIT 1
             ) ia72 ON TRUE
             LEFT JOIN LATERAL (
-                SELECT SUM(ia.acc_24h_mm) AS acc_7d_mm
+                SELECT ia.acc_168h_mm
                 FROM hydro.imerg_accumulations ia
                 WHERE ia.watershed_id = q.watershed_id
-                  AND ia.time >= NOW() - INTERVAL '7 days'
+                ORDER BY ia.time DESC LIMIT 1
             ) ia7d ON TRUE
             ORDER BY q.priority
             """
