@@ -303,6 +303,7 @@ async def current_user(
     op: CurrentOperator = Depends(require_operator),
     db: AsyncSession = Depends(get_db),
 ) -> OperatorOut:
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     result = await db.execute(
         text("SELECT id, username, full_name, role, district_ubigeo, active, created_at FROM ops.operators WHERE id = :id"),
         {"id": op.id},
@@ -319,6 +320,7 @@ async def list_operators(
     db: AsyncSession = Depends(get_db),
 ) -> list[OperatorOut]:
     """List all operators (COEN/COER only in production; any authenticated in demo)."""
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     result = await db.execute(
         text("SELECT id, username, full_name, role, district_ubigeo, active, created_at FROM ops.operators ORDER BY role, id")
     )
@@ -338,6 +340,7 @@ async def create_operator(
         raise HTTPException(status_code=422, detail=f"role must be one of: {', '.join(sorted(valid_roles))}")
     if body.role == "coel" and not body.district_ubigeo:
         raise HTTPException(status_code=422, detail="COEL operators require a district_ubigeo.")
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     row = await db.execute(
         text("""
             INSERT INTO ops.operators (username, full_name, role, district_ubigeo, password_hash)
