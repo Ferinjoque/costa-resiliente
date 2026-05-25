@@ -7,7 +7,7 @@ import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSocialSignals, useDistrictList } from "@/lib/queries";
-import { submitFieldReport } from "@/lib/api";
+import { submitFieldReport, RateLimitError } from "@/lib/api";
 import type { SocialSignalProperties, SocialSignalCollection } from "@/lib/api";
 import {
   PanelHeader,
@@ -314,11 +314,16 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
       setText("");
       setDistrictUbigeo("");
       onClose();
-    } catch {
+    } catch (e: unknown) {
+      const isRateLimit = e instanceof RateLimitError;
       addToast({
-        message: locale === "es"
-          ? "No se pudo registrar el reporte. Reintenta."
-          : "Could not store the report. Retry.",
+        message: isRateLimit
+          ? (locale === "es"
+              ? `Demasiados reportes. Espere ${(e as RateLimitError).retryAfter}s.`
+              : `Too many reports. Wait ${(e as RateLimitError).retryAfter}s.`)
+          : (locale === "es"
+              ? "No se pudo registrar el reporte. Reintenta."
+              : "Could not store the report. Retry."),
         variant: "danger",
       });
     } finally {

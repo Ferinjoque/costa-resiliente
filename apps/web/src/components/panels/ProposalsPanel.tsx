@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { usePendingProposals } from "@/lib/queries";
-import { approveProposal, rejectProposal } from "@/lib/api";
+import { approveProposal, rejectProposal, RateLimitError } from "@/lib/api";
 import type { AlertProposal } from "@/lib/api";
 import type { LiveToast } from "@/store/ui";
 import { Button, Pill, EmptyState } from "@/components/ui/primitives";
@@ -144,12 +144,17 @@ export function ProposalsPanel() {
           variant: "info",
         } as Omit<LiveToast, "id" | "at">);
       }
-    } catch {
+    } catch (e: unknown) {
       qc.setQueryData(["pending-proposals"], prev);
+      const isRateLimit = e instanceof RateLimitError;
       addToast({
-        message: locale === "es"
-          ? "No se pudo registrar la revisión. Reintenta."
-          : "Could not record the review. Retry.",
+        message: isRateLimit
+          ? (locale === "es"
+              ? `Límite alcanzado. Espere ${(e as RateLimitError).retryAfter}s.`
+              : `Rate limited. Wait ${(e as RateLimitError).retryAfter}s.`)
+          : (locale === "es"
+              ? "No se pudo registrar la revisión. Reintenta."
+              : "Could not record the review. Retry."),
         variant: "danger",
       } as Omit<LiveToast, "id" | "at">);
     }
