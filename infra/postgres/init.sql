@@ -218,6 +218,13 @@ CREATE TABLE IF NOT EXISTS ops.alerts (
 );
 CREATE INDEX IF NOT EXISTS alerts_geom_idx ON ops.alerts USING GIST (geom);
 CREATE INDEX IF NOT EXISTS alerts_status_severity_idx ON ops.alerts (status, severity, created_at DESC);
+-- Alert generator runs every 5 min with 8 per-type queries (dedup + auto-resolve).
+-- Without this index each query scans the full table.
+CREATE INDEX IF NOT EXISTS alerts_type_status_time_idx ON ops.alerts (type, status, created_at DESC);
+-- District-filtered reads from copilot/api tools and social dedup.
+CREATE INDEX IF NOT EXISTS alerts_district_status_idx ON ops.alerts (district_id, status, created_at DESC);
+-- GIN index for JSONB containment queries on source_refs (flood_polygon_id, watershed_id, etc.)
+CREATE INDEX IF NOT EXISTS alerts_source_refs_gin_idx ON ops.alerts USING GIN (source_refs);
 
 -- ─── ops: Operator Decision Log (append-only, immutable) ─────────────────────
 CREATE TABLE IF NOT EXISTS ops.decision_log (
