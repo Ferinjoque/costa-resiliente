@@ -103,7 +103,18 @@ async def submit_field_report(body: FieldReport, db: AsyncSession = Depends(get_
     )
     inserted = insert_result.first()
     if not inserted:
-        raise HTTPException(409, "Duplicate report")
+        # Duplicate submission (same operator + same text already stored).
+        # Return the existing record so the caller is idempotent — operator
+        # retrying after a transient error doesn't see a confusing 409.
+        existing = (
+            await db.execute(
+                text("SELECT id, ingested_at FROM social.signals WHERE content_hash = :h"),
+                {"h": content_hash},
+            )
+        ).first()
+        if existing:
+            return {"signal_id": existing.id, "ingested_at": existing.ingested_at.isoformat() if existing.ingested_at else None, "status": "duplicate"}
+        raise HTTPException(500, "Duplicate signal but existing record not found")
 
     # Audit log
     payload = {

@@ -18,7 +18,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,17 +29,17 @@ router = APIRouter(prefix="/proposals", tags=["proposals"])
 
 
 class ProposalCreate(BaseModel):
-    severity: str
-    alert_type: str
-    district_ubigeo: Optional[str] = None
-    title: str
-    summary: str
+    severity: str = Field(..., min_length=1, max_length=20)
+    alert_type: str = Field(..., min_length=1, max_length=40)
+    district_ubigeo: Optional[str] = Field(None, max_length=12)
+    title: str = Field(..., min_length=1, max_length=200)
+    summary: str = Field(..., min_length=1, max_length=2000)
     source_refs: Optional[list[dict]] = None
 
 
 class ProposalReview(BaseModel):
-    operator_id: str
-    notes: Optional[str] = None
+    operator_id: str = Field(..., min_length=1, max_length=100)
+    notes: Optional[str] = Field(None, max_length=2000)
 
 
 # ─── List pending ─────────────────────────────────────────────────────────────
