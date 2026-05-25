@@ -87,16 +87,25 @@ class DecisionLogEntry(BaseModel):
 
 # ─── Alerts ───────────────────────────────────────────────────────────────────
 
+_VALID_ALERT_STATUSES = {"active", "resolved", "escalated", "dismissed", "acknowledged"}
+_VALID_SEVERITIES = {"critical", "high", "medium", "low"}
+
+
 @router.get("", response_model=list[AlertSummary])
 async def list_alerts(
     status: Optional[str] = Query(None),
     severity: Optional[str] = Query(None),
     province: Optional[str] = Query(None, description="Filter by province. 'Lima' = Lima Metropolitana (43 districts). Omit for all."),
     district: Optional[str] = Query(None, description="Filter by district name (case-insensitive)."),
-    limit: int = Query(50, ge=0, le=200),
+    limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
 ) -> list[AlertSummary]:
     """Return alerts from ops.alerts with district info, newest first."""
+    if status and status not in _VALID_ALERT_STATUSES:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Allowed: {sorted(_VALID_ALERT_STATUSES)}")
+    if severity and severity not in _VALID_SEVERITIES:
+        raise HTTPException(status_code=400, detail=f"Invalid severity. Allowed: {sorted(_VALID_SEVERITIES)}")
+
     # Exclude obvious test residue (XSS/SQL seeds, 'Test ' prefix fixtures)
     # from the operator-facing list. Rows remain in the table; just hidden.
     conditions = [
