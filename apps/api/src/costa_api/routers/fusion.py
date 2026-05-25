@@ -40,7 +40,7 @@ def _risk_prose_es(
         parts.append("Sin inundaciones SAR activas detectadas")
 
     if huayco_risk and huayco_prob is not None:
-        RISK_ES = {"low": "bajo", "moderate": "moderado", "high": "alto", "very_high": "muy alto"}
+        RISK_ES = {"low": "bajo", "medium": "moderado", "high": "alto", "very_high": "muy alto"}
         parts.append(
             f"Riesgo de huayco {RISK_ES.get(huayco_risk, huayco_risk)} "
             f"(probabilidad {huayco_prob * 100:.0f}%)"
@@ -76,7 +76,7 @@ def _risk_prose_en(
         parts.append("No active SAR flood extents detected")
 
     if huayco_risk and huayco_prob is not None:
-        RISK_EN = {"low": "low", "moderate": "moderate", "high": "high", "very_high": "very high"}
+        RISK_EN = {"low": "low", "medium": "moderate", "high": "high", "very_high": "very high"}
         parts.append(
             f"{RISK_EN.get(huayco_risk, huayco_risk)} mudslide risk "
             f"(probability {huayco_prob * 100:.0f}%)"
@@ -104,7 +104,7 @@ def _overall_risk(
         return "alto"
     if (
         flood_area_km2 > 0
-        or huayco_risk == "moderate"
+        or huayco_risk == "medium"
         or social_urgent >= 2
     ):
         return "moderado"
