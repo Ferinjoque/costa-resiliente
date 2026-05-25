@@ -6,7 +6,7 @@ import { clsx } from "clsx";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUIStore } from "@/store/ui";
 import { useNotificationSubscribers, useNotificationDeliveries } from "@/lib/queries";
-import { createNotificationSubscriber, deleteNotificationSubscriber } from "@/lib/api";
+import { createNotificationSubscriber, deleteNotificationSubscriber, RateLimitError } from "@/lib/api";
 import {
   Panel,
   PanelHeader,
@@ -55,9 +55,14 @@ function AddSubscriberForm({ locale, onClose }: { locale: "es" | "en"; onClose: 
       setError(locale === "es" ? "Rellena todos los campos." : "Fill in all fields.");
       return;
     }
-    if (channel === "webhook" && !target.startsWith("http")) {
-      setError(locale === "es" ? "El target debe ser una URL http/https." : "Target must be an http/https URL.");
-      return;
+    if (channel === "webhook") {
+      try {
+        const parsed = new URL(target.trim());
+        if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
+      } catch {
+        setError(locale === "es" ? "El target debe ser una URL http/https válida." : "Target must be a valid http/https URL.");
+        return;
+      }
     }
     setSaving(true);
     try {
@@ -66,7 +71,13 @@ function AddSubscriberForm({ locale, onClose }: { locale: "es" | "en"; onClose: 
       addToast({ message: locale === "es" ? "Suscriptor añadido" : "Subscriber added", variant: "success" });
       onClose();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Error");
+      if (e instanceof RateLimitError) {
+        setError(locale === "es"
+          ? `Demasiadas suscripciones. Espere ${e.retryAfter}s e intente de nuevo.`
+          : `Too many subscriptions. Wait ${e.retryAfter}s and try again.`);
+      } else {
+        setError(e instanceof Error ? e.message : "Error");
+      }
     } finally {
       setSaving(false);
     }
