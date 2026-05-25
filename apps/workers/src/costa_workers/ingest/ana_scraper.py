@@ -49,12 +49,14 @@ async def _cache_station_reading(code: str, obs: dict) -> None:
     try:
         import redis.asyncio as aioredis
         r = aioredis.from_url(_redis_url(), decode_responses=True, socket_timeout=2)
-        await r.setex(
-            f"costa:hydro:{code}:latest",
-            86400,  # 24h TTL
-            json.dumps(obs, default=str),
-        )
-        await r.aclose()
+        try:
+            await r.setex(
+                f"costa:hydro:{code}:latest",
+                86400,  # 24h TTL
+                json.dumps(obs, default=str),
+            )
+        finally:
+            await r.aclose()
     except Exception as exc:
         logger.debug("Redis cache write skipped for %s: %s", code, exc)
 
@@ -63,8 +65,10 @@ async def _get_cached_reading(code: str) -> dict | None:
     try:
         import redis.asyncio as aioredis
         r = aioredis.from_url(_redis_url(), decode_responses=True, socket_timeout=2)
-        raw = await r.get(f"costa:hydro:{code}:latest")
-        await r.aclose()
+        try:
+            raw = await r.get(f"costa:hydro:{code}:latest")
+        finally:
+            await r.aclose()
         if raw:
             data = json.loads(raw)
             data["from_cache"] = True
@@ -79,15 +83,17 @@ async def _publish_scraper_status(source: str, ok: bool, stations_ok: int, total
     try:
         import redis.asyncio as aioredis
         r = aioredis.from_url(_redis_url(), decode_responses=True, socket_timeout=2)
-        payload = json.dumps({
-            "source": source,
-            "ok": ok,
-            "stations_ok": stations_ok,
-            "total": total,
-            "ts": datetime.now(timezone.utc).isoformat(),
-        })
-        await r.set(f"costa:scraper:status:{source}", payload, ex=3600)
-        await r.aclose()
+        try:
+            payload = json.dumps({
+                "source": source,
+                "ok": ok,
+                "stations_ok": stations_ok,
+                "total": total,
+                "ts": datetime.now(timezone.utc).isoformat(),
+            })
+            await r.set(f"costa:scraper:status:{source}", payload, ex=3600)
+        finally:
+            await r.aclose()
     except Exception as exc:
         logger.debug("Scraper status publish skipped: %s", exc)
 
@@ -534,12 +540,14 @@ async def ingest_hydro_stations_flow() -> dict:
         import redis.asyncio as aioredis
         redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
         r = aioredis.from_url(redis_url, decode_responses=True, socket_timeout=2)
-        await r.set(
-            "costa:scraper:last_run:stations",
-            datetime.now(timezone.utc).isoformat(),
-            ex=7200,  # 2h — covers actual observed 30-60min schedule intervals
-        )
-        await r.aclose()
+        try:
+            await r.set(
+                "costa:scraper:last_run:stations",
+                datetime.now(timezone.utc).isoformat(),
+                ex=7200,  # 2h — covers actual observed 30-60min schedule intervals
+            )
+        finally:
+            await r.aclose()
     except Exception:
         pass
 
