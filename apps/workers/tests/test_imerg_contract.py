@@ -37,10 +37,10 @@ def test_half_hourly_to_mm():
 
 
 def test_accumulation_window_granule_counts():
-    """1h = 2 granules, 3h = 6, 6h = 12, 12h = 24, 24h = 48, 72h = 144."""
+    """1h = 2 granules, 3h = 6, 6h = 12, 12h = 24, 24h = 48, 72h = 144, 168h = 336."""
     granules_per_hour = 2
     from costa_workers.ingest.imerg import ACCUMULATION_HOURS
-    expected = {1: 2, 3: 6, 6: 12, 12: 24, 24: 48, 72: 144}
+    expected = {1: 2, 3: 6, 6: 12, 12: 24, 24: 48, 72: 144, 168: 336}
     for h in ACCUMULATION_HOURS:
         assert h * granules_per_hour == expected[h]
 
