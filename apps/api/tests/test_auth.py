@@ -44,6 +44,9 @@ async def test_login_coer_returns_token():
     assert "access_token" in body
     assert body["role"] == "coer"
     assert body["district_ubigeo"] is None
+    assert body["username"] == "coer_lima"
+    assert "full_name" in body
+    assert len(body["full_name"]) > 0
 
 
 @pytest.mark.asyncio

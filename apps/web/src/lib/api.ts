@@ -735,6 +735,8 @@ export interface OperatorTokenResponse {
   access_token: string;
   token_type: string;
   operator_id: number;
+  username: string;
+  full_name: string;
   role: string;
   district_ubigeo: string | null;
 }
