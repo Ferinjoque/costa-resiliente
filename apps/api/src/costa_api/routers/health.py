@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from costa_api.db import get_db, engine
 from costa_api.auto_seed import maybe_seed
 from costa_api.config import settings
+from costa_api.routers.auth import get_current_operator, CurrentOperator
 
 log = logging.getLogger(__name__)
 
@@ -221,10 +222,24 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
 
 
 @router.post("/health/seed")
-async def trigger_seed() -> dict:
-    """Force a re-seed pass (idempotent — skips tables that already have data)."""
+async def trigger_seed(
+    request: Request,
+    operator: CurrentOperator | None = Depends(get_current_operator),
+) -> dict:
+    """Force a re-seed pass (idempotent). Requires coen or coer role."""
+    if operator is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Autenticación requerida.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if operator.role not in ("coen", "coer"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo operadores COEN/COER pueden ejecutar el seed.",
+        )
     try:
         await maybe_seed(engine)
-        return {"status": "ok", "message": "Seed pass completed"}
+        return {"status": "ok", "message": "Seed pass completed", "triggered_by": operator.username}
     except Exception as exc:
         return {"status": "error", "message": str(exc)}

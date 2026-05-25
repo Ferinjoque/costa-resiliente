@@ -4,6 +4,9 @@ from httpx import AsyncClient, ASGITransport
 from costa_api.main import app
 
 BASE = "http://test"
+_COER = {"X-Testing-Operator": "1:test_op:coer"}
+_COEN = {"X-Testing-Operator": "2:test_coen:coen"}
+_COEL = {"X-Testing-Operator": "3:test_coel:coel:150101"}
 
 
 @pytest.mark.asyncio
@@ -78,3 +81,41 @@ async def test_health_scraper_has_retrieved_at():
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as client:
         resp = await client.get("/api/v1/health/scraper")
     assert "retrieved_at" in resp.json()
+
+
+# ─── POST /health/seed auth guard ─────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_post_seed_unauthenticated_returns_401():
+    """POST /health/seed without token → 401."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post("/api/v1/health/seed")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_post_seed_coel_returns_403():
+    """POST /health/seed with district-only COEL role → 403."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post("/api/v1/health/seed", headers=_COEL)
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_post_seed_coer_allowed():
+    """POST /health/seed with COER role → 200 (idempotent)."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post("/api/v1/health/seed", headers=_COER)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body.get("triggered_by") == "test_op"
+
+
+@pytest.mark.asyncio
+async def test_post_seed_coen_allowed():
+    """POST /health/seed with COEN role → 200 (idempotent)."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post("/api/v1/health/seed", headers=_COEN)
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
