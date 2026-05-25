@@ -15,7 +15,7 @@ import json
 import logging
 from typing import Any
 
-from sqlalchemy import text
+from sqlalchemy import ARRAY, String, bindparam, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.ai.cache import get_cached, set_cached
@@ -247,6 +247,8 @@ async def get_huayco_risk(db: AsyncSession, min_risk: str = "high") -> list[dict
     _RISK_ORDER = {"low": 0, "medium": 1, "high": 2, "very_high": 3}
     min_val = _RISK_ORDER.get(min_risk, 2)
     valid = [k for k, v in _RISK_ORDER.items() if v >= min_val]
+    # bindparam with ARRAY(String) tells SQLAlchemy+asyncpg the exact PG type so
+    # ANY(:levels) resolves correctly without relying on driver-side type inference.
     sql = text("""
         SELECT q.name, q.priority, hs.probability, hs.risk_level,
                hs.computed_at, hs.trigger_rain_24h_mm
@@ -256,7 +258,7 @@ async def get_huayco_risk(db: AsyncSession, min_risk: str = "high") -> list[dict
           AND hs.risk_level = ANY(:levels)
         ORDER BY hs.probability DESC
         LIMIT 10
-    """)
+    """).bindparams(bindparam("levels", type_=ARRAY(String)))
     result = await db.execute(sql, {"levels": valid})
     return [dict(r._mapping) for r in result]
 

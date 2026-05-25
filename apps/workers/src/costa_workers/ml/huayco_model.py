@@ -319,29 +319,28 @@ async def run_huayco_susceptibility(db_dsn: str, model: HuaycoModel) -> list[dic
             """
         )
 
-    features = [
-        HuaycoFeatures(
-            slope_deg=float(r["slope_deg"]),
-            aspect_deg=float(r["aspect_deg"]),
-            lithology_class=int(r["lithology_class"]),
-            distance_to_stream_m=float(r["distance_to_stream_m"]),
-            ndvi=float(r["ndvi"]),
-            soil_moisture=float(r["soil_moisture"]),
-            rain_24h_mm=float(r["rain_24h_mm"]),
-            rain_72h_mm=float(r["rain_72h_mm"]),
-            rain_7d_mm=float(r["rain_7d_mm"]),
-        )
-        for r in rows
-    ]
+        if not rows:
+            return []
 
-    if not features:
-        return []
+        features = [
+            HuaycoFeatures(
+                slope_deg=float(r["slope_deg"]),
+                aspect_deg=float(r["aspect_deg"]),
+                lithology_class=int(r["lithology_class"]),
+                distance_to_stream_m=float(r["distance_to_stream_m"]),
+                ndvi=float(r["ndvi"]),
+                soil_moisture=float(r["soil_moisture"]),
+                rain_24h_mm=float(r["rain_24h_mm"]),
+                rain_72h_mm=float(r["rain_72h_mm"]),
+                rain_7d_mm=float(r["rain_7d_mm"]),
+            )
+            for r in rows
+        ]
 
-    probs = model.predict_proba(features)
-    now = datetime.now(timezone.utc)
-    results = []
+        probs = model.predict_proba(features)
+        now = datetime.now(timezone.utc)
+        results = []
 
-    async with asyncpg.create_pool(db_dsn, min_size=1, max_size=3) as pool:
         for row, feat, prob in zip(rows, features, probs):
             level = risk_level(float(prob))
             feat_json = json.dumps({n: getattr(feat, n) for n in FEATURE_NAMES})
