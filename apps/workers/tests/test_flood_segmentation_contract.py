@@ -136,6 +136,17 @@ def test_remove_small_regions_all_zeros_noop():
 
 # ─── Full pipeline (no model) ──────────────────────────────────────────────────
 
+def test_vectorize_mask_bad_crs_returns_empty():
+    """Invalid CRS string must return [] without raising."""
+    from costa_workers.ml.flood_segmentation import vectorize_mask
+    import rasterio.transform as rt
+    mask = np.zeros((8, 8), dtype=np.uint8)
+    mask[2:6, 2:6] = 1
+    transform = rt.from_bounds(0, 0, 1, 1, 8, 8)
+    result = vectorize_mask(mask, transform, crs_wkt="NOT_A_REAL_CRS", min_pixels=1)
+    assert result == []
+
+
 def test_sar_to_flood_polygons_empty_mask():
     """If the model returns an all-zero mask, sar_to_flood_polygons returns []."""
     from unittest.mock import MagicMock, patch
