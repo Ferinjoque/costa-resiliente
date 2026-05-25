@@ -179,14 +179,30 @@ async def store_flood_polygons(scene_id: str, polygons: list[dict], acquired_at:
     Upsert flood polygons into ml.flood_polygons.
     Returns count of inserted rows.
     """
-    if not polygons:
-        logger.info("Scene %s: no flood detected — inserting sentinel row", scene_id)
-        polygons = [{"scene_id": scene_id, "geometry": None, "area_m2": 0.0, "confidence": 0.0}]
-
     import asyncpg
     import json
 
     async with asyncpg.create_pool(DB_DSN, min_size=1, max_size=3) as pool:
+        if not polygons:
+            # No flood pixels detected — insert a dry-scene sentinel with an empty
+            # geometry so list_unprocessed_scenes() skips this scene on future runs.
+            # MULTIPOLYGON EMPTY is a valid PostGIS geometry that satisfies the NOT NULL
+            # constraint while signalling zero flood extent to downstream queries.
+            await pool.execute(
+                """
+                INSERT INTO ml.flood_polygons
+                    (scene_id, acquired_at, model_version, confidence, area_km2, geom)
+                VALUES ($1, $2, $3, 0.0, 0.0,
+                    ST_GeomFromText('MULTIPOLYGON EMPTY', 4326))
+                ON CONFLICT (scene_id) DO NOTHING
+                """,
+                scene_id,
+                acquired_at,
+                "sen1floods11-unet-v1",
+            )
+            logger.info("Scene %s: no flood detected — dry-scene sentinel inserted", scene_id)
+            return 0
+
         inserted = 0
         for poly in polygons:
             geom_json = json.dumps(poly["geometry"]) if poly.get("geometry") else None
