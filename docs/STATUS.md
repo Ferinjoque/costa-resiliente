@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **314 passed, 0 errors** (Session 11). Stable across all sessions since Session 9.
+- **API**: **316 passed, 0 errors** (Session 12). Up from 314 (2 new social label tests).
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB (Session 5: 153 → 173 → 175 with new ProposalsPanel)
 
@@ -225,6 +225,46 @@ POST   /api/v1/auth/operators
 ---
 
 ## Recent session log (rolling, last 5)
+
+### Session 12 — 2026-05-25 — Sprint 20: Field-report labels end-to-end + triage pipeline + robustness
+
+Autonomous session (Fernando offline). All changes on `develop`, local Ollama only.
+
+**Field-report labels `huayco_observation` + `flood_observation` — full end-to-end:**
+- `fix(triage)`: Added 2 labels to `TriageLabel` enum in `triage.py`. Updated Ollama system
+  prompt to describe them. Previously Ollama classified huayco/flood sightings as
+  `weather_observation` — now they route to the correct label and trigger dedicated alerts.
+- `fix(db)`: `signals_triage_label_check` constraint in PostgreSQL didn't include new labels.
+  Field-report POST returned 500 for any `huayco_observation`/`flood_observation` label.
+  Fixed: `ALTER TABLE social.signals DROP CONSTRAINT + ADD CONSTRAINT`. Migration script:
+  `infra/postgres/migration_huayco_flood_labels.sql`. `init.sql` updated for clean installs.
+- `fix(alert_generator)`: `generate_social_alerts` now clusters `huayco_observation`
+  (threshold=3, severity=critical) and `flood_observation` (threshold=5) via
+  `_SOCIAL_CLUSTER_CONFIGS` — previously only `needs_help` triggered social cluster alerts.
+- `fix(districts)` + `fix(fusion)`: `urgent_social_3h` count IN clause was missing the 2
+  new labels. District dashboard and fusion summary now count them as urgent signals.
+- `fix(auto_seed)`: Demo seed included a huayco signal labeled `weather_observation` (flooded
+  streets). Reclassified to `flood_observation`. Added a `huayco_observation` seed signal
+  (Quebrada Huaycoloro / Lurigancho) for demo coverage of new label type.
+- `fix(copilot/quick_patterns)`: Added `avistamiento`, `campo`, `reporte de campo` keywords.
+  `fix(copilot/answer)`: Social cluster answer now breaks down by label type
+  (e.g. "14 señales — 3 avistamientos huayco, 5 solicitudes de ayuda") instead of just total.
+- `fix(schedules.py)`: Triage flow was passing `LLM_FAST_MODEL=gemma2:2b` to
+  `run_triage_pipeline`. Changed to `TRIAGE_MODEL` env var (falls back to `LLM_PRIMARY_MODEL`).
+  Triage now uses the better model, not the fast/small one.
+
+**Decision log export improvements:**
+- `feat(alerts)`: Both `/decision-log` (list) and `/decision-log/export` (CSV) now accept
+  `?since=ISO&until=ISO` date-range params for EDAN-Perú shift/audit reports.
+  CSV filename includes date range: `decision_log_20260501-20260531_20260525_074500.csv`.
+- `perf(db)`: Added `decision_log_ts_idx (logged_at DESC)` and
+  `decision_log_op_ts_idx (operator_id, logged_at DESC)` indexes for date-range queries.
+
+**Tests:** 316 passed (↑2 from 314). New tests: `test_field_report_accepts_huayco_observation`,
+`test_field_report_accepts_flood_observation`. Worker tests: `test_alert_generator.py`
+(threshold functions, cluster configs — run in worker dev env). TypeScript: 0 errors.
+
+---
 
 ### Session 11 — 2026-05-25 — Sprint 19: Scraper liveness + Ollama contention + health accuracy
 
