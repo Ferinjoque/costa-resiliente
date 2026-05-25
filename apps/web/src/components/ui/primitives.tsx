@@ -194,7 +194,7 @@ export function Badge({
         BADGE_VARIANT[variant],
       )}
     >
-      {count > 99 ? "99+" : count > 9 ? "9+" : count}
+      {count > 99 ? "99+" : count}
     </span>
   );
 }
