@@ -1,7 +1,7 @@
 # Costa Resiliente — Project Status
 
 > **This is the single source of truth for what's built, what's pending, and the current rubric score.**
-> Last updated: 2026-05-24
+> Last updated: 2026-05-25
 > Branch: `develop`
 
 For competition context, see [`COMPETITION.md`](COMPETITION.md).
@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **314 passed, 0 errors** (Session 10). Stable across all sessions since Session 9.
+- **API**: **314 passed, 0 errors** (Session 11). Stable across all sessions since Session 9.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB (Session 5: 153 → 173 → 175 with new ProposalsPanel)
 
@@ -225,6 +225,72 @@ POST   /api/v1/auth/operators
 ---
 
 ## Recent session log (rolling, last 5)
+
+### Session 11 — 2026-05-25 — Sprint 19: Scraper liveness + Ollama contention + health accuracy
+
+Autonomous session (Fernando offline 11am–4pm). All changes on `develop`, local Ollama only.
+
+**Scraper liveness heartbeat system (5 sources):**
+- `feat(social/health)`: `_write_scraper_heartbeats()` in `social.py` writes
+  `costa:scraper:last_run:{source}` Redis keys (TTL 1h) for bluesky/rss/reddit/telegram
+  after each `ingest_social_flow` cycle. Health endpoint reads these keys via
+  `_redis_last_run_status()` — scraper status reflects whether the flow RAN, not whether
+  new disaster content was published (no content during quiet periods ≠ unhealthy scraper).
+- `feat(alert_generator)`: `generate_alerts_flow` writes `costa:scraper:last_run:alerts`
+  (TTL 10min — stale-flag fires within 2 cycles if flow stops). 5min schedule + 3min grace.
+- `feat(imerg)`: `_write_imerg_heartbeat()` called from both NASA and Open-Meteo fallback
+  paths using sync `redis` client (flow is sync Prefect). TTL 1h = 2× the 30min schedule.
+- `feat(ana_scraper)`: `ingest_hydro_stations_flow` writes `costa:scraper:last_run:stations`
+  (TTL 30min). Health shows "ok" if flow ran within 20min.
+- `feat(health)`: `_redis_last_run_status()` inner function in `health.py` reads the 5
+  heartbeat keys and overrides content-time status; grace windows: bluesky/rss 20min,
+  alerts 8min, imerg 35min, stations 20min.
+
+**Ollama triage contention hardened:**
+- `fix(triage)`: Exponential backoff between retry attempts (`asyncio.sleep(3**attempt)` =
+  0/3s/9s). Previously all 3 retries fired immediately, hammering Ollama while busy.
+- `fix(triage)`: `num_ctx=4096` (was default 32k); triage prompts are ~200 tokens.
+  4k context = 8× faster KV allocation vs default 32k — reduces Ollama inference time.
+- `fix(triage)`: `num_predict=256`; JSON label response fits in 256 tokens.
+- `fix(triage)`: `keep_alive="5m"` so triage model releases GPU RAM between batches,
+  letting copilot model load without eviction contention.
+- `fix(triage)`: Inter-signal pause `asyncio.sleep(0.8)` between signals so copilot/embed
+  callers get Ollama turns during triage batch. 0.8s × 10 signals = 8s overhead per batch.
+- `fix(triage)`: `BATCH_SIZE` 20 → 10, halving the maximum copilot starvation window.
+
+**Hydro ingest bug fixes:**
+- `fix(ana_scraper)`: `_check_stale_stations` used `COUNT(so.id)` — `station_observations`
+  has composite PK `(time, station_id)`, no `id` column. Every run logged SQL error
+  "column so.id does not exist". Fixed: `COUNT(*)`.
+- `fix(ana_scraper)`: `fetch_openmeteo_station` returned all `past_days=1` historical
+  observations. On first run, inserts all with `DO NOTHING`; subsequent runs found no new
+  timestamps → `MAX(time)` stayed old → stations health "offline". Fixed: return only
+  current-hour observation (`observed_at = now_hour`) with `DO UPDATE` for Open-Meteo rows.
+
+**IMERG carry-forward fallback:**
+- `fix(imerg)`: Open-Meteo fallback now fires when NASA GES DISC returns 0 valid granules
+  (auth failure, data lag, or Prefect task cache returning `None`). Loads latest DB
+  accumulations per watershed, blends in Open-Meteo 1h delta, re-inserts with `time = NOW()`.
+  El Niño scenario values (63.2mm / 41.8mm for Rímac) carry forward without being zeroed.
+- `scripts/refresh_imerg_now.py`: one-shot bootstrap tool to manually insert fresh IMERG
+  rows (copies latest DB values with current timestamp). Run via `docker exec` to recover
+  from IMERG health "offline" without restarting flows.
+
+**Health endpoint accuracy:**
+- `fix(health)`: `overall_status` now excludes Reddit, Telegram, and SAR flood from core
+  signal computation. These are best-effort/daily-cadence sources — their outage does not
+  degrade situational awareness. Core = bluesky, rss, imerg, stations, alerts.
+- `fix(health)`: `_redis_last_run_status()` merges scraper-run-time status into bluesky/rss
+  (content staleness ≠ scraper outage during quiet periods).
+
+**Data cleanup:**
+- Resolved 14 "Test Flood Alert" entries (leftover from dev testing sessions, `source_refs=[]`,
+  no polygon reference). Active alerts now 3: 1 critical rainfall (Rímac 63.2mm 72h),
+  1 high rainfall (Chillón 28.4mm 72h), 1 high flood (Huaycoloro scenario).
+
+**Tests:** 314 passed, 0 errors. TypeScript: 0 errors. Next.js build: green.
+
+---
 
 ### Session 10 — 2026-05-24 — Sprint 18: RAG end-to-end fix + router hardening
 
