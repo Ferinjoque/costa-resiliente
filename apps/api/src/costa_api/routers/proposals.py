@@ -59,19 +59,21 @@ async def list_proposals(
     # remain in the table for audit; they're just hidden from the duty
     # officer who has no business reviewing test data.
     result = await db.execute(text("""
-        SELECT id, severity, alert_type, district_ubigeo,
-               title, summary, source_refs, status, created_at
-        FROM ops.alert_proposals
-        WHERE status = 'pending'
-          AND title IS NOT NULL AND title <> ''
-          AND title NOT LIKE 'Test %'
-          AND title NOT LIKE '<%>%'
-          AND title NOT LIKE '%DROP TABLE%'
-          AND COALESCE(summary, '') NOT LIKE 'Automated test%'
+        SELECT p.id, p.severity, p.alert_type, p.district_ubigeo,
+               d.name AS district_name,
+               p.title, p.summary, p.source_refs, p.status, p.created_at
+        FROM ops.alert_proposals p
+        LEFT JOIN geo.districts d ON d.ubigeo = p.district_ubigeo
+        WHERE p.status = 'pending'
+          AND p.title IS NOT NULL AND p.title <> ''
+          AND p.title NOT LIKE 'Test %'
+          AND p.title NOT LIKE '<%>%'
+          AND p.title NOT LIKE '%DROP TABLE%'
+          AND COALESCE(p.summary, '') NOT LIKE 'Automated test%'
         ORDER BY
-            CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1
-                          WHEN 'medium' THEN 2 ELSE 3 END,
-            created_at DESC
+            CASE p.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1
+                            WHEN 'medium' THEN 2 ELSE 3 END,
+            p.created_at DESC
         LIMIT 50
     """))
     return [dict(r._mapping) for r in result]
@@ -85,6 +87,7 @@ async def create_proposal(
     db: AsyncSession = Depends(get_db),
     _op: CurrentOperator = Depends(require_operator),
 ) -> dict:
+    await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     if body.severity not in ("critical", "high", "medium", "low"):
         raise HTTPException(400, "Invalid severity")
     refs_json = json.dumps(body.source_refs or [], default=str)
