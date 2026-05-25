@@ -59,23 +59,49 @@ class AgentResult:
 # Bypass LLM entirely: keyword match → DB tool → template answer (~2s).
 
 _QUICK_PATTERNS: list[tuple[list[str], str]] = [
-    (["alerta", "activ", "cuántas alert", "cuantas alert", "emergencia activ"], "get_active_alerts"),
-    (["nivel", "caudal", "río", "rio", "rimac", "chillon", "chillón", "lurin", "lurín", "estaci"], "get_river_levels"),
-    (["inundad", "inundacion", "flood", "sar", "poligono", "polígono", "zona inund"], "get_flood_polygons"),
-    (["lluvia", "precipitaci", "imerg", "acumul", "cuánto lluv", "cuanto lluv", "mm"], "get_rainfall_accumulation"),
-    (["poblaci", "personas", "habitantes", "afectad", "riesgo pob", "cuántos", "cuantos"], "get_population_at_risk"),
+    # "alerta" alone is too broad (catches "mensaje de alerta", "redacta una alerta").
+    # Require an operational qualifier word alongside it.
+    (["alertas activ", "alerta activ", "cuántas alert", "cuantas alert",
+      "emergencia activ", "qué alertas", "que alertas", "alertas ahora",
+      "alertas critic", "nivel crítico", "nivel critico",
+      "alertas en lima", "alertas de"], "get_active_alerts"),
+    (["nivel del río", "nivel del rim", "nivel del chill", "nivel del lurin",
+      "caudal", "río rímac", "río rimac", "rio rimac", "río chillon", "río lurín",
+      "rimac", "rímac", "chillon", "chillón", "lurin", "lurín",
+      "chosica", "carapongo", "ñaña", "estacion hidrol"], "get_river_levels"),
+    (["inundad", "inundaci", "inundación", "flood", "sar", "polígono", "poligono",
+      "zona inund", "km² inund", "km2 inund"], "get_flood_polygons"),
+    (["lluvia", "precipitaci", "imerg", "acumul", "mm"], "get_rainfall_accumulation"),
+    (["poblaci", "personas", "habitantes", "afectad", "riesgo pob",
+      "cuántas personas", "cuántos", "cuantos"], "get_population_at_risk"),
+    (["huayco", "quebrada", "deslizami", "flujo de barro", "lahar"], "get_huayco_risk"),
+    (["social", "señal", "vecin", "bluesky", "reddit", "telegram"], "get_social_clusters"),
+    (["hospital", "escuela", "puente", "infraestructura", "vial"], "get_infrastructure_impact"),
+    (["protocolo", "indeci", "sinagerd", "procedimiento", "evacu"], "search_protocols"),
 ]
 
 
 def _detect_quick(query: str) -> str | None:
-    """Return tool_name if exactly one quick-mode pattern matches, else None.
-
-    Multi-topic queries (>1 match) fall through to full LLM mode so the agent
-    can dispatch multiple tools in parallel.
-    """
+    """Return tool_name if exactly one quick-mode pattern matches, else None."""
     q = query.lower()
     matches = [tool for keywords, tool in _QUICK_PATTERNS if any(kw in q for kw in keywords)]
     return matches[0] if len(matches) == 1 else None
+
+
+def _detect_multi_quick(query: str) -> list[str]:
+    """Return all matched tool names when 2-3 quick patterns fire.
+
+    Multi-signal queries (e.g. "río + huayco", "lluvia + inundación") are
+    executed in parallel without LLM, giving fast (~3s) combined answers.
+    LLM path is reserved for open-ended, synthesis, or drafting queries
+    where no quick pattern matches at all.
+    """
+    q = query.lower()
+    seen: list[str] = []
+    for keywords, tool in _QUICK_PATTERNS:
+        if any(kw in q for kw in keywords) and tool not in seen:
+            seen.append(tool)
+    return seen if 2 <= len(seen) <= 3 else []
 
 
 _KEYWORD_MAP: list[tuple[list[str], str]] = [
@@ -89,6 +115,56 @@ _KEYWORD_MAP: list[tuple[list[str], str]] = [
     (["alerta", "alert", "activ", "emergencia"], "get_active_alerts"),
     (["protocolo", "evacu", "indeci", "minsa", "cenepred", "procedimiento"], "search_protocols"),
 ]
+
+
+_TOOL_SCHEMA_BY_NAME: dict[str, dict] = {
+    s["function"]["name"]: s for s in TOOL_SCHEMAS
+}
+
+# Maps keyword hints to the 1-2 primary tools most likely needed.
+# Used to pre-select schemas before sending to LLM — fewer input tokens
+# = faster inference on CPU (generation cost scales with context length).
+_TOOL_HINT_MAP: list[tuple[list[str], list[str]]] = [
+    (["poblaci", "personas", "habitantes", "riesgo pob", "cuántas personas"],
+     ["get_population_at_risk", "get_flood_polygons"]),
+    (["inundaci", "desborde", "flood", "sar", "sentinel", "polígono", "poligono", "zona inund"],
+     ["get_flood_polygons", "get_active_alerts"]),
+    (["huayco", "quebrada", "deslizami", "flujo", "lahar"],
+     ["get_huayco_risk", "get_river_levels"]),
+    (["río", "rio", "nivel", "caudal", "rimac", "chillon", "chillón", "chosica", "carapongo"],
+     ["get_river_levels", "get_flood_polygons"]),
+    (["social", "reporte", "bluesky", "reddit", "señal", "vecino"],
+     ["get_social_clusters", "get_active_alerts"]),
+    (["hospital", "escuela", "puente", "infraestructura", "vial"],
+     ["get_infrastructure_impact", "get_flood_polygons"]),
+    (["lluvia", "precipitaci", "imerg", "acumul", "pronóst", "pronost", "72h"],
+     ["get_rainfall_accumulation", "get_river_levels"]),
+    (["protocolo", "evacu", "indeci", "minsa", "cenepred", "procedimiento", "sinagerd"],
+     ["search_protocols", "get_active_alerts"]),
+]
+
+
+def _select_tools(query: str) -> list[dict]:
+    """Return 2-4 tool schemas most relevant to the query.
+
+    Reduces LLM input context (~1000 tokens saved for unrelated tools)
+    which cuts CPU inference time roughly proportionally.
+    Matched candidates de-duplicate; fallback to all schemas if no match.
+    """
+    q = query.lower()
+    selected: dict[str, dict] = {}
+    for keywords, tools in _TOOL_HINT_MAP:
+        if any(kw in q for kw in keywords):
+            for t in tools:
+                if t in _TOOL_SCHEMA_BY_NAME:
+                    selected[t] = _TOOL_SCHEMA_BY_NAME[t]
+    # Always include get_active_alerts for situational-awareness context
+    selected.setdefault("get_active_alerts", _TOOL_SCHEMA_BY_NAME["get_active_alerts"])
+    if not selected or len(selected) >= len(TOOL_SCHEMAS) - 1:
+        return TOOL_SCHEMAS
+    result = list(selected.values())
+    logger.debug("_select_tools: %d schemas selected for query", len(result))
+    return result
 
 
 async def _keyword_dispatch(query: str, db, rag_fn) -> dict:
@@ -143,6 +219,43 @@ async def run(
         except Exception as exc:
             logger.warning("quick_mode dispatch failed (%s): %s — falling through to full agent", quick_tool, exc)
 
+    # 1c. Multi-quick-mode: 2-3 signals matched → parallel tool calls, no LLM (~3s)
+    multi_tools = _detect_multi_quick(query)
+    if multi_tools:
+        try:
+            results = await asyncio.gather(
+                *[dispatch(t, {}, db, rag_fn=rag_fn) for t in multi_tools],
+                return_exceptions=True,
+            )
+            all_rows: list[dict] = []
+            per_tool_rows: list[tuple[str, list[dict]]] = []
+            tc_list = []
+            for tool_name, res in zip(multi_tools, results):
+                if isinstance(res, Exception):
+                    logger.warning("multi_quick tool %s failed: %s", tool_name, res)
+                    continue
+                rows = res.get("rows", [])
+                all_rows.extend(rows)
+                per_tool_rows.append((tool_name, rows))
+                tc_list.append({"tool": tool_name, "count": len(rows), "quick_mode": True})
+            if all_rows:
+                # Generate per-tool summaries and join — avoids _build_answer
+                # using only the first row type when schemas are heterogeneous.
+                parts = [_build_answer([], rows, query) for _, rows in per_tool_rows if rows]
+                answer = " | ".join(p for p in parts if p and "No se encontraron" not in p) or _build_answer([], all_rows, query)
+                clean_answer, triggered = sanitise(answer, all_rows)
+                logger.info("multi_quick hit: tools=%s rows=%d op=%s", multi_tools, len(all_rows), operator_id)
+                return AgentResult(
+                    answer=clean_answer,
+                    sources=json.loads(json.dumps(all_rows[:20], default=str)),
+                    tool_calls=tc_list,
+                    confidence=0.85 if all_rows else 0.4,
+                    redacted=bool(triggered),
+                    quick_mode=True,
+                )
+        except Exception as exc:
+            logger.warning("multi_quick failed: %s — falling through to full agent", exc)
+
     messages: list[dict] = [
         {"role": "system", "content": _SYSTEM},
         {"role": "user", "content": query},
@@ -151,6 +264,7 @@ async def run(
     all_tool_results: list[dict] = []
     tool_call_trace: list[dict] = []
     max_iters = settings.llm_max_tool_iters
+    selected_schemas = _select_tools(query)
 
     # 2. Agentic loop
     llm_failed = False
@@ -158,7 +272,7 @@ async def run(
         try:
             response = await gateway.chat(
                 messages=messages,
-                tools=TOOL_SCHEMAS,
+                tools=selected_schemas,
                 temperature=0.1,
             )
         except Exception as exc:
@@ -263,7 +377,10 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         trend = r.get("trend", "unknown")
         trend_es = {"rising": "↑ subiendo", "falling": "↓ bajando", "stable": "estable", "unknown": "—"}.get(trend, "—")
         change = r.get("level_change_1h_m")
-        change_str = f" ({change:+.3f} m en 1h)" if change is not None else ""
+        try:
+            change_str = f" ({float(change):+.3f} m en 1h)" if change is not None else ""
+        except (TypeError, ValueError):
+            change_str = ""
         # Highlight rising stations most critical for duty officer
         rising = [row for row in rows if row.get("trend") == "rising"]
         if rising:

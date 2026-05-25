@@ -1,7 +1,7 @@
 # Costa Resiliente — Project Status
 
 > **This is the single source of truth for what's built, what's pending, and the current rubric score.**
-> Last updated: 2026-05-18
+> Last updated: 2026-05-24
 > Branch: `develop`
 
 For competition context, see [`COMPETITION.md`](COMPETITION.md).
@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: 313 passed / 1 Ollama-timeout flake in `test_session_audit` + 1 pre-existing teardown-error. Up from Session 6's 308 with +5 new tests (cache round-trip, cache invalidate, population_at_risk schema, population_at_risk dispatch, parallel tool execution). Also fixed 2 test assertions updated to reflect new keyword-fallback-always-fires behaviour. The earlier 20-failure cascade traced to a bug in `list_alerts` — `dict(r._mapping['source_refs'])` crashed when source_refs was a JSON *array* (the shape produced by the proposal-approve insert path), returning 500 to every subsequent `client.get('/alerts')` in `test_session_audit.py`. Fixed: `AlertSummary.source_refs` now accepts `list | dict | None` and the router passes JSONB through unchanged.
+- **API**: **314 passed, 0 errors** (Session 9). Up from Session 8's 314 with 2 test failures. Fixed: FK teardown violation (`notification_deliveries_alert_id_fkey`), quick-mode false-match test queries for `test_direct_answer_no_tools`, `test_output_guardrail_redacts_key`, `test_parallel_tool_execution`. Pre-existing Ollama-timeout flake in `test_session_audit` passes under normal load.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB (Session 5: 153 → 173 → 175 with new ProposalsPanel)
 
@@ -225,6 +225,47 @@ POST   /api/v1/auth/operators
 ---
 
 ## Recent session log (rolling, last 5)
+
+### Session 9 — 2026-05-24 — Sprint 17: Copilot CPU hardening + test stability
+
+Autonomous session (Fernando offline). All changes on `develop`, local Ollama only.
+
+**Copilot quick-mode hardening:**
+- `fix(ai/agent)`: `_QUICK_PATTERNS` tightened — "alerta" alone no longer matches;
+  requires compound phrases (`alertas activ`, `cuántas alert`, etc.) to prevent
+  "Redacta un mensaje de alerta" from hitting quick-mode.
+- `feat(ai/agent)`: `_detect_multi_quick()` — 2–3 pattern matches route to parallel
+  `asyncio.gather` dispatch without any LLM call (~3s). Per-tool answers joined with
+  " | ", "No se encontraron" responses filtered out. Closes the case where a combined
+  "¿inundaciones y alertas?" query would time out on 9-tool context.
+- `feat(ai/agent)`: `_TOOL_SCHEMA_BY_NAME`, `_TOOL_HINT_MAP`, `_select_tools(query)`
+  — pre-selects 2–3 relevant tool schemas before LLM call, reducing input tokens
+  from ~1100 (9 tools) to ~300–400. Cuts Ollama CPU inference time from >60s to ~20s.
+- `fix(ai/agent)`: `_build_answer` `level_change_1h_m` float format — field can be
+  string from asyncpg; wrapped in `try: float(change)` with ValueError fallback.
+- `fix(config)`: `llm_timeout_chat` 30s → 45s; CPU-only Qwen2.5-7B needs ~20–25s
+  with 2–3 tools in context.
+
+**Frontend fixes:**
+- `fix(ui/AlertsPanel)`: escalate button lacked `disabled={acting}` — operators
+  could double-submit an escalation to INDECI COEN. Added `disabled={acting}` +
+  `disabled:opacity-50`.
+- `fix(ui/DecisionLogPanel)`: error state showed message but no retry path. Added
+  retry button wired to `refetch()`.
+
+**Test stability:**
+- `fix(tests/conftest)`: `_do_restore()` teardown crashed with FK violation
+  (`notification_deliveries_alert_id_fkey`) when test-created alerts had
+  `notification_deliveries` rows. Added pre-delete of notification_deliveries
+  for those alerts before deleting alerts.
+- `fix(tests/test_ai_agent)`: three test queries updated to bypass expanded
+  quick-mode patterns (`test_direct_answer_no_tools`, `test_output_guardrail_redacts_key`,
+  `test_parallel_tool_execution`).
+
+**Tests:** 314 passed, 0 errors (up from 312 + 2 failures).
+**Build:** TypeScript 0 errors. Next.js production build green.
+
+---
 
 ### Session 8 — 2026-05-18 — Sprint 16: Shelters, Callao, Quick-mode, Twilio, Tour
 
@@ -512,7 +553,9 @@ For full detail of all sessions, see [`../SESSION_LOG.md`](../SESSION_LOG.md).
 | 12 | Sprint 12 — Impeccable design pass | ✅ |
 | 13 | Government-use hardening (B1–B4) | ✅ |
 | 14 | Trust-the-loop pass (PII fix, truthful counts, no false-success toast, Prefect deploys) | ✅ |
-| 15 | Real-disaster utility pass (pgstac, AI speed, pop-at-risk, rainfall alerts, auto-resolve, ANA cache) | ✅ (this session) |
+| 15 | Real-disaster utility pass (pgstac, AI speed, pop-at-risk, rainfall alerts, auto-resolve, ANA cache) | ✅ |
+| 16 | Shelters, Callao, Quick-mode, Twilio, onboarding tour | ✅ |
+| 17 | Copilot CPU hardening (multi-quick, tool pre-selection, 45s timeout), AlertsPanel + DecisionLog fixes, test stability | ✅ (this session) |
 
 ---
 

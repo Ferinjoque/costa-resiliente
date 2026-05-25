@@ -45,9 +45,10 @@ import {
 const DEFAULT_OPERATOR_ID = "operator-1";
 
 const TYPE_ICON: Record<string, LucideIcon> = {
-  flood: AlertTriangle,
-  huayco: TrendingUp,
+  flood:          AlertTriangle,
+  huayco:         TrendingUp,
   social_cluster: Users,
+  rainfall:       Bell,
 };
 
 const SEVERITY_BAR: Record<string, string> = {
@@ -327,6 +328,7 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
     flood:          { es: "Inundación SAR", en: "SAR Flood" },
     huayco:         { es: "Huayco",         en: "Huayco" },
     social_cluster: { es: "Señal social",   en: "Social signal" },
+    rainfall:       { es: "Lluvia intensa", en: "Heavy rainfall" },
   };
   const typeLabel = TYPE_LABELS[alert.type]?.[locale] ?? alert.type.replace("_", " ");
 
@@ -406,7 +408,8 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
 
               <button
                 onClick={() => setShowEscalation(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-danger-soft border border-danger/30 hover:bg-danger/20 text-danger transition-colors"
+                disabled={acting}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-danger-soft border border-danger/30 hover:bg-danger/20 text-danger transition-colors disabled:opacity-50"
                 title={locale === "es" ? "Escala a INDECI COEN. Abre formulario de reporte editable." : "Escalate to INDECI COEN. Opens an editable escalation report."}
               >
                 <TrendingUp size={11} aria-hidden="true" />
