@@ -163,7 +163,7 @@ async def district_fusion(
             SELECT
                 COUNT(*)::int AS total,
                 COUNT(*) FILTER (
-                    WHERE triage_label IN ('needs_help', 'infrastructure_damage', 'road_blocked')
+                    WHERE triage_label IN ('needs_help', 'infrastructure_damage', 'road_blocked', 'huayco_observation', 'flood_observation')
                 )::int AS urgent
             FROM social.signals
             WHERE district_id = :district_id

@@ -276,10 +276,18 @@ _SOCIAL_CURRENT = [
     {
         "source": "bluesky",
         "content": "Lluvia intensa en Ate Vitarte desde las 3am. Calles inundadas en Los Jardines.",
-        "label": "weather_observation",
+        "label": "flood_observation",
         "confidence": 0.85,
         "lon": -76.9100, "lat": -12.0250,
         "offset_h": 2.0,
+    },
+    {
+        "source": "telegram",
+        "content": "Avistamos flujo de lodo en quebrada de Huaycoloro bajando hacia Lurigancho. Evacúen ya.",
+        "label": "huayco_observation",
+        "confidence": 0.95,
+        "lon": -76.9750, "lat": -11.9800,
+        "offset_h": 1.1,
     },
     {
         "source": "rss_andina",

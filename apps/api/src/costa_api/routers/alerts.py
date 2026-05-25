@@ -293,6 +293,8 @@ async def alerts_stream(request: Request) -> StreamingResponse:
 @router.get("/decision-log", response_model=list[DecisionLogEntry])
 async def list_decision_log(
     operator_id: Optional[str] = Query(None),
+    since: Optional[str] = Query(None, description="ISO-8601 start datetime (inclusive)"),
+    until: Optional[str] = Query(None, description="ISO-8601 end datetime (inclusive)"),
     limit: int = Query(100, ge=0, le=500),
     db: AsyncSession = Depends(get_db),
 ) -> list[DecisionLogEntry]:
@@ -302,6 +304,12 @@ async def list_decision_log(
     if operator_id:
         conditions.append("dl.operator_id = :op")
         params["op"] = operator_id
+    if since:
+        conditions.append("dl.logged_at >= :since")
+        params["since"] = since
+    if until:
+        conditions.append("dl.logged_at <= :until")
+        params["until"] = until
 
     where = " AND ".join(conditions)
     rows = await db.execute(
@@ -326,18 +334,27 @@ async def list_decision_log(
 @router.get("/decision-log/export")
 async def export_decision_log(
     operator_id: Optional[str] = Query(None),
+    since: Optional[str] = Query(None, description="ISO-8601 start datetime (inclusive)"),
+    until: Optional[str] = Query(None, description="ISO-8601 end datetime (inclusive)"),
     limit: int = Query(500, ge=0, le=2000),
     db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     """
     Export decision log as CSV for EDAN-Perú reporting.
     Columns: id, logged_at, operator_id, action_type, alert_id, session_id, payload_json
+    Supports ?since=2026-05-01T00:00:00Z&until=2026-05-31T23:59:59Z for shift/audit reports.
     """
     conditions = ["1=1"]
     params: dict = {"limit": limit}
     if operator_id:
         conditions.append("dl.operator_id = :op")
         params["op"] = operator_id
+    if since:
+        conditions.append("dl.logged_at >= :since")
+        params["since"] = since
+    if until:
+        conditions.append("dl.logged_at <= :until")
+        params["until"] = until
 
     where = " AND ".join(conditions)
     rows = await db.execute(
@@ -366,7 +383,12 @@ async def export_decision_log(
 
     output.seek(0)
     ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    filename = f"decision_log_{ts}.csv"
+    range_suffix = ""
+    if since or until:
+        s = (since or "")[:10].replace("-", "")
+        u = (until or "")[:10].replace("-", "")
+        range_suffix = f"_{s}-{u}" if s or u else ""
+    filename = f"decision_log{range_suffix}_{ts}.csv"
 
     return StreamingResponse(
         iter([output.getvalue()]),

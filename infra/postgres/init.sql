@@ -185,6 +185,7 @@ CREATE TABLE IF NOT EXISTS social.signals (
     geom            GEOMETRY(POINT, 4326),  -- coarsened to manzana centroid
     triage_label    TEXT CHECK (triage_label IN (
                         'needs_help','infrastructure_damage','road_blocked',
+                        'huayco_observation','flood_observation',
                         'weather_observation','false_alarm','irrelevant')),
     triage_confidence DOUBLE PRECISION,
     triage_model    TEXT,

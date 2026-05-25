@@ -47,6 +47,8 @@ class TriageLabel(str, Enum):
     NEEDS_HELP = "needs_help"
     INFRASTRUCTURE_DAMAGE = "infrastructure_damage"
     ROAD_BLOCKED = "road_blocked"
+    HUAYCO_OBSERVATION = "huayco_observation"
+    FLOOD_OBSERVATION = "flood_observation"
     WEATHER_OBSERVATION = "weather_observation"
     FALSE_ALARM = "false_alarm"
     IRRELEVANT = "irrelevant"
@@ -72,7 +74,9 @@ Etiquetas válidas:
 - needs_help: alguien solicita ayuda o rescate
 - infrastructure_damage: daño a edificios, puentes, carreteras, servicios
 - road_blocked: vía cortada o bloqueada
-- weather_observation: reporte de lluvia, caudal, nivel sin daño confirmado
+- huayco_observation: avistamiento confirmado de huayco, derrumbe o caída de lodo/rocas en quebrada
+- flood_observation: avistamiento confirmado de inundación o desborde de río/canal
+- weather_observation: reporte de lluvia fuerte, caudal o nivel de río sin daño confirmado
 - false_alarm: alerta que resultó ser falsa o exagerada
 - irrelevant: no relacionado con emergencias en Lima
 
