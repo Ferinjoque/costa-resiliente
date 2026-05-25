@@ -86,6 +86,7 @@ async def imerg_latest(
                 ia.acc_12h_mm,
                 ia.acc_24h_mm,
                 ia.acc_72h_mm,
+                ia.acc_168h_mm,
                 ST_AsGeoJSON(w.geom)::json AS geometry
             FROM geo.watersheds w
             LEFT JOIN LATERAL (
@@ -123,6 +124,7 @@ async def imerg_latest(
                     "acc_12h_mm": r["acc_12h_mm"],
                     "acc_24h_mm": r["acc_24h_mm"],
                     "acc_72h_mm": r["acc_72h_mm"],
+                    "acc_168h_mm": r["acc_168h_mm"],
                 },
                 "geometry": r["geometry"],
             }
