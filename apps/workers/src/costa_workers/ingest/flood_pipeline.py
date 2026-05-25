@@ -152,7 +152,6 @@ def run_flood_inference(scene_data: dict) -> list[dict]:
     """
     Run Sen1Floods11 inference on scene arrays. Returns polygon dicts.
     """
-    # Model is loaded once per flow run (see flow below)
     model = FloodSegmentationModel(
         weights_path=WEIGHTS_PATH,
         device=os.getenv("FLOOD_DEVICE", "cpu"),

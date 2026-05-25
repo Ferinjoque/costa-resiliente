@@ -1,4 +1,4 @@
-"""NASA IMERG Early Run V07B ingest + watershed accumulation rollups.
+"""NASA IMERG Late Run V07B ingest + watershed accumulation rollups.
 
 Flow:
   fetch_imerg_granules  →  clip_to_lima  →  compute_watershed_accumulations
@@ -392,12 +392,12 @@ def fetch_imerg_openmeteo_fallback(lookback_hours: int = 73) -> list[dict]:
 
 # ─── Flow ──────────────────────────────────────────────────────────────────────
 @flow(name="ingest-imerg", log_prints=True)
-def ingest_imerg_flow(lookback_hours: int = 25) -> dict:
+def ingest_imerg_flow(lookback_hours: int = 73) -> dict:
     """
     Fetch IMERG granules for lookback window and compute watershed accumulations.
     Falls back to Open-Meteo when NASA GES DISC returns 0 valid granules (auth
-    failure, data lag, or URL change). lookback_hours=25 ensures 72h accumulations
-    always have enough history. Flow is idempotent (ON CONFLICT).
+    failure, data lag, or URL change). lookback_hours=73 (72h + 1h buffer) ensures
+    72h accumulations always have enough history. Flow is idempotent (ON CONFLICT).
     """
     end_dt = datetime.now(timezone.utc)
     start_dt = end_dt - timedelta(hours=lookback_hours)
