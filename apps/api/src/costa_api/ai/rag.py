@@ -51,6 +51,7 @@ async def search_protocols(query: str, top_k: int = 3) -> list[dict]:
 
     try:
         async with get_ai_db_session() as session:
+            await session.execute(text("SET LOCAL statement_timeout = '10000'"))
             result = await session.execute(sql, {"k": top_k})
             rows = [dict(r._mapping) for r in result]
             return rows
