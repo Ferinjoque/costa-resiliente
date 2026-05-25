@@ -19,10 +19,13 @@ Idempotency:
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import json
 import logging
 import os
+import socket
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
 
 import httpx
 from prefect import flow, task
@@ -33,6 +36,42 @@ DB_DSN = os.getenv("DATABASE_URL", "postgresql://costa:costa@localhost:5432/cost
 
 SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 _NOTIFY_SEVERITIES = {"critical", "high"}  # auto-notify on these; operators see medium/low in UI
+_FAN_OUT_SUBSCRIBER_CAP = 100  # mirror notifications.py cap
+
+
+_PRIVATE_NETS = [
+    ipaddress.ip_network(cidr) for cidr in (
+        "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16",
+        "127.0.0.0/8", "169.254.0.0/16", "::1/128", "fc00::/7",
+    )
+]
+
+
+def _is_private_addr(addr_str: str) -> bool:
+    try:
+        addr = ipaddress.ip_address(addr_str)
+        return any(addr in net for net in _PRIVATE_NETS)
+    except ValueError:
+        return False
+
+
+def _reject_private_host(host: str) -> None:
+    """Raise ValueError if host is or resolves to a private/internal IP (SSRF guard)."""
+    try:
+        ipaddress.ip_address(host)
+        if _is_private_addr(host):
+            raise ValueError(f"webhook target is a private IP: {host}")
+        return
+    except ValueError as exc:
+        if "webhook target" in str(exc):
+            raise
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except OSError:
+        raise ValueError(f"webhook hostname could not be resolved: {host}")
+    for info in infos:
+        if _is_private_addr(info[4][0]):
+            raise ValueError(f"webhook target resolves to private IP ({info[4][0]})")
 
 
 async def _auto_notify(
@@ -57,7 +96,10 @@ async def _auto_notify(
             SELECT id, channel, target, label, severity_min, district_filter
             FROM ops.notification_subscribers
             WHERE active = TRUE
-            """
+            ORDER BY id
+            LIMIT $1
+            """,
+            _FAN_OUT_SUBSCRIBER_CAP,
         )
         for sub in subscribers:
             sub_min_rank = SEVERITY_RANK.get(sub["severity_min"], 2)
@@ -77,19 +119,29 @@ async def _auto_notify(
             channel = sub["channel"]
             status, err = "skipped", f"{channel} stub"
             if channel == "webhook":
-                async with httpx.AsyncClient(timeout=5.0) as client:
-                    for attempt in range(1, 4):
-                        try:
-                            resp = await client.post(sub["target"], json=payload,
-                                                    headers={"User-Agent": "CostaResililienteAlerts/1.0"})
-                            if resp.status_code < 300:
-                                status, err = "delivered", ""
-                                break
-                            err = f"HTTP {resp.status_code}"
-                        except Exception as exc:
-                            err = str(exc)
-                        if attempt < 3:
-                            await asyncio.sleep(2 ** attempt)
+                parsed = urlparse(sub["target"])
+                host = parsed.hostname or ""
+                try:
+                    _reject_private_host(host)
+                except ValueError as ssrf_exc:
+                    logger.warning("_auto_notify: SSRF guard blocked webhook target: %s", ssrf_exc)
+                    status, err = "failed", f"ssrf_blocked: {ssrf_exc}"
+                else:
+                    async with httpx.AsyncClient(timeout=5.0) as client:
+                        for attempt in range(1, 4):
+                            try:
+                                resp = await client.post(
+                                    sub["target"], json=payload,
+                                    headers={"User-Agent": "CostaResililienteAlerts/1.0"},
+                                )
+                                if resp.status_code < 300:
+                                    status, err = "delivered", ""
+                                    break
+                                err = f"HTTP {resp.status_code}"
+                            except Exception as exc:
+                                err = str(exc)
+                            if attempt < 3:
+                                await asyncio.sleep(2 ** attempt)
             await pool.execute(
                 """
                 INSERT INTO ops.notification_deliveries
