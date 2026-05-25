@@ -4,6 +4,7 @@ import { Suspense, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useApiHealth } from "@/lib/queries";
 import { useUIStore } from "@/store/ui";
+import { PanelErrorBoundary } from "@/components/ui/PanelErrorBoundary";
 import { LeftRail } from "@/components/ui/LeftRail";
 import { ScenarioPanel } from "@/components/panels/ScenarioPanel";
 import { AlertsPanel } from "@/components/panels/AlertsPanel";
@@ -154,17 +155,17 @@ export default function Home() {
           <DataFreshnessBar />
         </div>
 
-        {/* Panels — solid surface drawers */}
-        <ScenarioPanel />
-        <AlertsPanel />
-        <AskPanel />
-        <DecisionLogPanel />
-        <DataSourcesPanel />
-        <SharePanel />
-        <SocialFeedPanel />
-        <NotificationsPanel />
-        <ProposalsPanel />
-        <DistrictDashboardPanel />
+        {/* Panels — solid surface drawers, each isolated by an error boundary */}
+        <PanelErrorBoundary label="Escenario"><ScenarioPanel /></PanelErrorBoundary>
+        <PanelErrorBoundary label="Alertas"><AlertsPanel /></PanelErrorBoundary>
+        <PanelErrorBoundary label="Copiloto"><AskPanel /></PanelErrorBoundary>
+        <PanelErrorBoundary label="Bitácora"><DecisionLogPanel /></PanelErrorBoundary>
+        <PanelErrorBoundary label="Fuentes"><DataSourcesPanel /></PanelErrorBoundary>
+        <PanelErrorBoundary label="Compartir"><SharePanel /></PanelErrorBoundary>
+        <PanelErrorBoundary label="Señales Sociales"><SocialFeedPanel /></PanelErrorBoundary>
+        <PanelErrorBoundary label="Notificaciones"><NotificationsPanel /></PanelErrorBoundary>
+        <PanelErrorBoundary label="Propuestas"><ProposalsPanel /></PanelErrorBoundary>
+        <PanelErrorBoundary label="Dashboard Distrital"><DistrictDashboardPanel /></PanelErrorBoundary>
         <FusionCallout />
         <SituationBrief />
         <TutorialOverlay />
