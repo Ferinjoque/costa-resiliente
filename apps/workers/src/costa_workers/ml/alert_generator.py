@@ -394,63 +394,68 @@ async def generate_rainfall_alerts(db_dsn: str = DB_DSN) -> int:
 @task(retries=2, retry_delay_seconds=30, log_prints=True)
 async def resolve_stale_alerts(db_dsn: str = DB_DSN) -> int:
     """
-    Auto-resolve alerts whose triggering condition can no longer be active.
+    Auto-close alerts whose triggering condition can no longer be active.
     Flood: older than FLOOD_ALERT_TTL_DAYS.
     Huayco: older than HUAYCO_ALERT_TTL_H.
     Social: older than SOCIAL_ALERT_TTL_H.
     Rainfall: older than 6h (IMERG refreshes every 30min).
-    Only transitions active → resolved (append-only audit trail preserved).
+    Transitions active → closed. RETURNING COUNT(*) is invalid in PostgreSQL;
+    use RETURNING id and count on the Python side instead.
     """
     import asyncpg
 
     async with asyncpg.create_pool(db_dsn, min_size=1, max_size=2) as pool:
-        # Flood
-        flood_resolved = await pool.fetchval(
+        # Flood — SAR revisit cadence, keep alert alive for 7 days
+        flood_rows = await pool.fetch(
             """
-            UPDATE ops.alerts SET status = 'resolved'
+            UPDATE ops.alerts SET status = 'closed', updated_at = NOW()
             WHERE type = 'flood'
               AND status = 'active'
               AND created_at < NOW() - INTERVAL '1 day' * $1
-            RETURNING COUNT(*)
+            RETURNING id
             """,
             FLOOD_ALERT_TTL_DAYS,
         )
-        # Huayco
-        huayco_resolved = await pool.fetchval(
+        # Huayco — susceptibility recalculated daily, 48h window
+        huayco_rows = await pool.fetch(
             """
-            UPDATE ops.alerts SET status = 'resolved'
+            UPDATE ops.alerts SET status = 'closed', updated_at = NOW()
             WHERE type = 'huayco'
               AND status = 'active'
               AND created_at < NOW() - make_interval(hours => $1)
-            RETURNING COUNT(*)
+            RETURNING id
             """,
             HUAYCO_ALERT_TTL_H,
         )
-        # Social
-        social_resolved = await pool.fetchval(
+        # Social cluster — dissipates quickly, 4h window
+        social_rows = await pool.fetch(
             """
-            UPDATE ops.alerts SET status = 'resolved'
+            UPDATE ops.alerts SET status = 'closed', updated_at = NOW()
             WHERE type = 'social_cluster'
               AND status = 'active'
               AND created_at < NOW() - make_interval(hours => $1)
-            RETURNING COUNT(*)
+            RETURNING id
             """,
             SOCIAL_ALERT_TTL_H,
         )
-        # Rainfall
-        rain_resolved = await pool.fetchval(
+        # Rainfall — IMERG refreshes every 30min; close old alerts after 6h
+        rain_rows = await pool.fetch(
             """
-            UPDATE ops.alerts SET status = 'resolved'
+            UPDATE ops.alerts SET status = 'closed', updated_at = NOW()
             WHERE type = 'rainfall'
               AND status = 'active'
               AND created_at < NOW() - INTERVAL '6 hours'
-            RETURNING COUNT(*)
+            RETURNING id
             """
         )
 
-    total = (flood_resolved or 0) + (huayco_resolved or 0) + (social_resolved or 0) + (rain_resolved or 0)
+    flood_resolved = len(flood_rows)
+    huayco_resolved = len(huayco_rows)
+    social_resolved = len(social_rows)
+    rain_resolved = len(rain_rows)
+    total = flood_resolved + huayco_resolved + social_resolved + rain_resolved
     if total:
-        logger.info("Auto-resolved %d stale alerts (flood=%s, huayco=%s, social=%s, rain=%s)",
+        logger.info("Auto-closed %d stale alerts (flood=%d, huayco=%d, social=%d, rain=%d)",
                     total, flood_resolved, huayco_resolved, social_resolved, rain_resolved)
     return total
 
