@@ -251,7 +251,8 @@ async def get_river_levels(db: AsyncSession, hours_back: int = 24, river: str | 
     """Latest reading per station + 1h trend (rising/falling/stable/unknown)."""
     hours_back = min(max(int(hours_back), 1), 168)
     river_clause = "AND st.river ILIKE :river" if river else ""
-    sql = text(f"""
+    sql = text(
+        """
         WITH latest AS (
             SELECT DISTINCT ON (so.station_id)
                    so.station_id, so.time, so.level_m, so.flow_m3s, so.rain_mm
@@ -281,10 +282,13 @@ async def get_river_levels(db: AsyncSession, hours_back: int = 24, river: str | 
         FROM latest l
         JOIN hydro.stations st ON st.id = l.station_id
         LEFT JOIN prev_1h p ON p.station_id = l.station_id
-        WHERE TRUE {river_clause}
+        WHERE TRUE """
+        + river_clause
+        + """
         ORDER BY l.time DESC
         LIMIT 20
-    """)
+        """
+    )
     params: dict = {"hours": hours_back}
     if river:
         params["river"] = f"%{river}%"
