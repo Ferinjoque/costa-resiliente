@@ -74,10 +74,14 @@ async def list_proposals(
     return [dict(r._mapping) for r in result]
 
 
-# ─── Create (internal — called by copilot tool propose_alert) ────────────────
+# ─── Create (called by operators via copilot or directly) ────────────────────
 
 @router.post("", status_code=201)
-async def create_proposal(body: ProposalCreate, db: AsyncSession = Depends(get_db)) -> dict:
+async def create_proposal(
+    body: ProposalCreate,
+    db: AsyncSession = Depends(get_db),
+    _op: CurrentOperator = Depends(require_operator),
+) -> dict:
     if body.severity not in ("critical", "high", "medium", "low"):
         raise HTTPException(400, "Invalid severity")
     refs_json = json.dumps(body.source_refs or [], default=str)
