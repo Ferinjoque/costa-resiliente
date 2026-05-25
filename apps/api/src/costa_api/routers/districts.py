@@ -107,6 +107,7 @@ async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str,
     Returns GeoJSON FeatureCollection with risk_level + key metrics per district.
     Fast path: uses FK-indexed tables only (no heavy spatial joins).
     """
+    await db.execute(text("SET LOCAL statement_timeout = '15000'"))
     result = await db.execute(
         text("""
             SELECT
@@ -230,6 +231,8 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
         raise HTTPException(status_code=404, detail=f"District {ubigeo} not found")
 
     district_id = district["id"]
+
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
 
     # Active alerts
     alerts_result = await db.execute(
@@ -377,6 +380,7 @@ async def get_district_watersheds(
 ) -> dict[str, Any]:
     """Return watersheds that intersect a given district."""
     _validate_ubigeo(ubigeo)
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     result = await db.execute(
         text("""
             SELECT DISTINCT ON (w.id)
