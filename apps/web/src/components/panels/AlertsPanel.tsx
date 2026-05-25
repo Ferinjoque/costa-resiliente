@@ -695,23 +695,32 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
       next.delete(id);
     } else {
       next.add(id);
-      await logDecision({
-        operator_id: operatorId,
-        action_type: "protocol_step",
-        alert_id: primaryAlert?.id ?? null,
-        payload: { step: id, label, completed_at: new Date().toISOString() },
-        session_id: BROWSER_SESSION_ID,
-      });
-      const nextDone = [...next].filter((s) => steps.some((st) => st.id === s)).length;
-      if (nextDone === steps.length) {
+      try {
+        await logDecision({
+          operator_id: operatorId,
+          action_type: "protocol_step",
+          alert_id: primaryAlert?.id ?? null,
+          payload: { step: id, label, completed_at: new Date().toISOString() },
+          session_id: BROWSER_SESSION_ID,
+        });
+        const nextDone = [...next].filter((s) => steps.some((st) => st.id === s)).length;
+        if (nextDone === steps.length) {
+          addToast({
+            message: locale === "es" ? "Protocolo INDECI completado — log guardado" : "INDECI Protocol complete — log saved",
+            variant: "success",
+          } as Omit<LiveToast, "id" | "at">);
+        } else {
+          addToast({
+            message: locale === "es" ? `Paso ${nextDone}/${steps.length} completado — registrado` : `Step ${nextDone}/${steps.length} complete — logged`,
+            variant: "info",
+          } as Omit<LiveToast, "id" | "at">);
+        }
+      } catch {
         addToast({
-          message: locale === "es" ? "Protocolo INDECI completado — log guardado" : "INDECI Protocol complete — log saved",
-          variant: "success",
-        } as Omit<LiveToast, "id" | "at">);
-      } else {
-        addToast({
-          message: locale === "es" ? `Paso ${nextDone}/${steps.length} completado — registrado` : `Step ${nextDone}/${steps.length} complete — logged`,
-          variant: "info",
+          message: locale === "es"
+            ? "Paso marcado localmente — no se pudo registrar en el log. Verifica conectividad."
+            : "Step marked locally — could not log to server. Check connectivity.",
+          variant: "warn",
         } as Omit<LiveToast, "id" | "at">);
       }
     }
