@@ -273,6 +273,16 @@ export function AskPanel() {
       if (res.status === 400) {
         const err = await res.json();
         answerText = err.detail ?? (es ? "Consulta no permitida." : "Query not allowed.");
+      } else if (res.status === 503) {
+        const err = await res.json().catch(() => ({}));
+        answerText = (err as { detail?: string }).detail
+          ?? (es
+            ? "El asistente no respondió a tiempo. El modelo de IA está ocupado — reintenta en unos segundos."
+            : "The assistant timed out. The AI model is busy — please retry in a few seconds.");
+      } else if (!res.ok) {
+        answerText = es
+          ? `Error del servidor (${res.status}). Reintenta o usa una consulta diferente.`
+          : `Server error (${res.status}). Retry or try a different query.`;
       } else {
         const data = await res.json();
         answerText = data.answer ?? (es ? "Sin respuesta." : "No response.");
