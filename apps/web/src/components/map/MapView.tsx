@@ -287,7 +287,7 @@ export default function MapView() {
             };
             html = popupHtml(String(p.name ?? "Infraestructura crítica"), [
               ["Tipo", p.type ? (TYPES[String(p.type)] ?? String(p.type)) : null],
-              ["Distrito", p.district_id != null ? `ID ${p.district_id}` : null],
+              ["Distrito", p.district_name ? String(p.district_name) : null],
             ]);
           }
 
