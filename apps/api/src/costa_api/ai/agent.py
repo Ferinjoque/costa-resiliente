@@ -302,7 +302,8 @@ async def run(
             if isinstance(args, str):
                 try:
                     args = json.loads(args)
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as _json_err:
+                    logger.warning("Tool %s emitted malformed JSON args: %s — using empty args", name, _json_err)
                     args = {}
             parsed_calls.append((name, args))
 
