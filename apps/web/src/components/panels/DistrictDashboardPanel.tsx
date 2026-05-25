@@ -247,6 +247,10 @@ function buildMarkdown(d: ReportData): string {
   ]).join("\n");
 }
 
+function escHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 function buildReportHTML(d: ReportData): string {
   const es = d.locale === "es";
   const lc = d.level;
@@ -271,14 +275,14 @@ function buildReportHTML(d: ReportData): string {
     const sl = SEV_L[a.severity]??a.severity;
     return `<tr>
       <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;"><span style="background:${sc}18;color:${sc};font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;border:1px solid ${sc}30">${sl}</span></td>
-      <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#374151">${a.title}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;font-size:11px;color:#6b7280">${TYPE_L[a.type]??a.type}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#374151">${escHtml(a.title)}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;font-size:11px;color:#6b7280">${escHtml(TYPE_L[a.type]??a.type)}</td>
     </tr>`;
   }).join("");
 
   const distRows = [
-    ...d.highRiskDistricts.map(n=>`<tr><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-size:12px">${n}</td><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9"><span style="background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">${es?"ALTO":"HIGH"}</span></td></tr>`),
-    ...d.moderateDistricts.map(n=>`<tr><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-size:12px">${n}</td><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9"><span style="background:#fffbeb;color:#d97706;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">${es?"MODERADO":"MODERATE"}</span></td></tr>`),
+    ...d.highRiskDistricts.map(n=>`<tr><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-size:12px">${escHtml(n)}</td><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9"><span style="background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">${es?"ALTO":"HIGH"}</span></td></tr>`),
+    ...d.moderateDistricts.map(n=>`<tr><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-size:12px">${escHtml(n)}</td><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9"><span style="background:#fffbeb;color:#d97706;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">${es?"MODERADO":"MODERATE"}</span></td></tr>`),
   ].join("");
 
   const srcRows = (es ? [
