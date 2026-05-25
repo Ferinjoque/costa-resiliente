@@ -306,6 +306,12 @@ def vectorize_mask(
 
     clean = _remove_small_regions(binary_mask, min_pixels)
 
+    try:
+        transformer = Transformer.from_crs(crs_wkt, "EPSG:4326", always_xy=True)
+    except Exception as exc:
+        logger.warning("CRS transformer init failed: %s — no polygons returned", exc)
+        return []
+
     polygons = []
     for geom, value in rasterio_shapes(clean, mask=clean, transform=transform):
         if value != 1:
@@ -315,7 +321,6 @@ def vectorize_mask(
 
         # Reproject from native CRS to WGS84
         try:
-            transformer = Transformer.from_crs(crs_wkt, "EPSG:4326", always_xy=True)
             coords_wgs = [
                 list(transformer.transform(x, y)) for x, y in coords
             ]
