@@ -174,11 +174,8 @@ async def _keyword_dispatch(query: str, db, rag_fn) -> dict:
     q = query.lower()
     for keywords, tool_name in _KEYWORD_MAP:
         if any(kw in q for kw in keywords):
-            from costa_api.ai.tools.db_tools import dispatch
             args = {"query": query} if tool_name == "search_protocols" else {}
             return await dispatch(tool_name, args, db, rag_fn=rag_fn)
-    # Default: try flood status
-    from costa_api.ai.tools.db_tools import dispatch
     return await dispatch("get_flood_polygons", {}, db, rag_fn=rag_fn)
 
 
@@ -441,6 +438,24 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         return (
             f"Estimado {total:,} personas en zonas inundadas ({n} distrito{'s' if n != 1 else ''}). "
             f"Distrito más afectado: {top_d} (~{top_p:,} personas)."
+        )
+
+    if "flood_confidence" in first and "type" in first:
+        # Infrastructure rows (get_infrastructure_impact)
+        TYPE_ES: dict[str, str] = {
+            "hospital": "hospital(es)", "school": "colegio(s)",
+            "bridge": "puente(s)", "substation": "subestación(es)",
+            "fire_station": "bombero(s)", "shelter": "albergue(s)",
+        }
+        by_type: dict[str, int] = {}
+        for r in rows:
+            t = r.get("type") or "?"
+            by_type[t] = by_type.get(t, 0) + 1
+        parts = [f"{cnt} {TYPE_ES.get(t, t)}" for t, cnt in sorted(by_type.items(), key=lambda x: -x[1])]
+        breakdown = ", ".join(parts[:4])
+        return (
+            f"⚠ {n} infraestructura(s) crítica(s) dentro de zonas inundadas: {breakdown}. "
+            f"Verificar accesibilidad para respuesta de emergencia."
         )
 
     if "chunk" in first:
