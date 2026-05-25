@@ -143,6 +143,7 @@ async def _log_decision(
         "redacted": result.redacted,
     }
     try:
+        await db.execute(text("SET LOCAL statement_timeout = '5000'"))
         await db.execute(
             text("""
                 INSERT INTO ops.decision_log
@@ -169,6 +170,7 @@ async def _log_security_event(
     detail: str,
 ) -> None:
     try:
+        await db.execute(text("SET LOCAL statement_timeout = '5000'"))
         await db.execute(
             text("""
                 INSERT INTO ops.security_events
