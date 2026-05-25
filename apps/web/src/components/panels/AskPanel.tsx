@@ -213,10 +213,14 @@ export function AskPanel() {
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Cancel in-flight request when the operator navigates away from the panel
+  // Cancel in-flight request and typewriter animation when navigating away
   useEffect(() => {
     if (activePanel !== "ask") {
       abortRef.current?.abort();
+      if (typewriterRef.current) {
+        clearInterval(typewriterRef.current);
+        typewriterRef.current = null;
+      }
     }
   }, [activePanel]);
 
