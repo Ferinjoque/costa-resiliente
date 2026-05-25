@@ -29,7 +29,7 @@ async def search_protocols(query: str, top_k: int = 3) -> list[dict]:
     try:
         embedding = await gateway.embed(query)
     except Exception as exc:
-        logger.warning("RAG embed failed: %s", exc)
+        logger.error("RAG embed failed — search_protocols will return empty (Ollama unavailable?): %s", exc)
         return []
 
     if not embedding:
