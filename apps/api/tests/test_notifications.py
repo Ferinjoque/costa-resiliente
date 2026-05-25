@@ -120,3 +120,45 @@ async def test_deliveries_limit_param():
         resp = await c.get("/api/v1/notifications/deliveries?limit=5")
     assert resp.status_code == 200
     assert len(resp.json()) <= 5
+
+
+# ─── SubscriberCreate field constraint tests ──────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_subscriber_label_over_100_chars_rejected():
+    """SubscriberCreate.label has max_length=100; longer must be rejected."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post("/api/v1/notifications", json={
+            "channel": "webhook",
+            "target": "https://example.com/hook",
+            "label": "L" * 101,
+            "severity_min": "high",
+        })
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_subscriber_target_over_500_chars_rejected():
+    """SubscriberCreate.target has max_length=500; longer must be rejected."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post("/api/v1/notifications", json={
+            "channel": "webhook",
+            "target": "https://example.com/" + "x" * 490,
+            "label": "Big target",
+            "severity_min": "high",
+        })
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_subscriber_district_filter_over_12_chars_rejected():
+    """SubscriberCreate.district_filter has max_length=12; longer must be rejected."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post("/api/v1/notifications", json={
+            "channel": "sms_stub",
+            "target": "+51999000001",
+            "label": "District test",
+            "severity_min": "high",
+            "district_filter": "1" * 13,
+        })
+    assert resp.status_code == 422

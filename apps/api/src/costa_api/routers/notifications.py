@@ -22,7 +22,7 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
-from pydantic import BaseModel, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,12 +38,12 @@ SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 # ─── Schema ───────────────────────────────────────────────────────────────────
 
 class SubscriberCreate(BaseModel):
-    channel: str
-    target: str
-    label: str
-    severity_min: str = "high"
-    district_filter: Optional[str] = None
-    created_by: str = "operator"
+    channel: str = Field(..., min_length=1, max_length=20)
+    target: str = Field(..., min_length=1, max_length=500)
+    label: str = Field(..., min_length=1, max_length=100)
+    severity_min: str = Field("high", min_length=1, max_length=20)
+    district_filter: Optional[str] = Field(None, max_length=12)
+    created_by: str = Field("operator", min_length=1, max_length=100)
 
     @field_validator("channel")
     @classmethod

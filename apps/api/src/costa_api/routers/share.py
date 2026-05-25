@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,12 +21,12 @@ router = APIRouter(prefix="/share", tags=["share"])
 # ─── Schema ───────────────────────────────────────────────────────────────────
 
 class ScenarioSnapshot(BaseModel):
-    districtUbigeo: str | None = None
-    districtName: str | None = None
-    timeWindowHours: int = 24
+    districtUbigeo: str | None = Field(None, max_length=12)
+    districtName: str | None = Field(None, max_length=200)
+    timeWindowHours: int = Field(24, ge=1, le=168)
     isReplayMode: bool = False
-    replayDate: str | None = None
-    activeLayers: list[str] = ["districts", "imerg", "infrastructure"]
+    replayDate: str | None = Field(None, max_length=32)
+    activeLayers: list[str] = Field(default_factory=lambda: ["districts", "imerg", "infrastructure"], max_length=20)
 
 
 class MintRequest(BaseModel):

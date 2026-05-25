@@ -131,3 +131,36 @@ class TestResolveShareToken:
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get("/api/v1/share/!@#$%^&*()")
         assert resp.status_code == 404
+
+
+class TestScenarioSnapshotConstraints:
+    """ScenarioSnapshot field-level Pydantic constraints."""
+
+    @pytest.mark.asyncio
+    async def test_district_ubigeo_over_12_chars_rejected(self):
+        body = {"scenario": {**VALID_SCENARIO["scenario"], "districtUbigeo": "1" * 13}}
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.post("/api/v1/share", json=body)
+        assert resp.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_district_name_over_200_chars_rejected(self):
+        body = {"scenario": {**VALID_SCENARIO["scenario"], "districtName": "N" * 201}}
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.post("/api/v1/share", json=body)
+        assert resp.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_replay_date_over_32_chars_rejected(self):
+        body = {"scenario": {**VALID_SCENARIO["scenario"], "replayDate": "D" * 33}}
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.post("/api/v1/share", json=body)
+        assert resp.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_too_many_active_layers_rejected(self):
+        """activeLayers has max_length=20 items."""
+        body = {"scenario": {**VALID_SCENARIO["scenario"], "activeLayers": ["districts"] * 21}}
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.post("/api/v1/share", json=body)
+        assert resp.status_code == 422

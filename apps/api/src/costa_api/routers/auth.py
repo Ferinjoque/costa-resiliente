@@ -25,7 +25,7 @@ import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -124,11 +124,11 @@ class OperatorOut(BaseModel):
 
 
 class OperatorCreate(BaseModel):
-    username: str
-    full_name: str
-    role: str
-    district_ubigeo: Optional[str] = None
-    password: str
+    username: str = Field(..., min_length=1, max_length=64)
+    full_name: str = Field(..., min_length=1, max_length=200)
+    role: str = Field(..., min_length=1, max_length=20)
+    district_ubigeo: Optional[str] = Field(None, max_length=12)
+    password: str = Field(..., min_length=8, max_length=200)
 
 
 # ─── Token helpers ────────────────────────────────────────────────────────────
