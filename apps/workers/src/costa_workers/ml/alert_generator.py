@@ -86,6 +86,8 @@ async def _auto_notify(
     Fan out to notification_subscribers for newly generated alerts.
     Only fires for critical/high — medium/low visible in dashboard only.
     Mirrors the logic in api/notifications.py but runs in-process in the worker.
+    Subscribers are delivered in parallel via asyncio.gather to avoid blocking
+    the alert flow (worst case sequential: 100 subs × 3 retries × 5s ≈ 35 min).
     """
     if severity not in _NOTIFY_SEVERITIES:
         return
@@ -101,21 +103,22 @@ async def _auto_notify(
             """,
             _FAN_OUT_SUBSCRIBER_CAP,
         )
-        for sub in subscribers:
+        payload = {
+            "event": "new_alert",
+            "alert_id": alert_id,
+            "severity": severity,
+            "title": title,
+            "type": alert_type,
+            "source": "costa-resiliente-auto",
+        }
+
+        async def _deliver(sub) -> None:
             sub_min_rank = SEVERITY_RANK.get(sub["severity_min"], 2)
             if sev_rank < sub_min_rank:
-                continue
+                return
             if sub["district_filter"] and district_ubigeo:
                 if not district_ubigeo.startswith(sub["district_filter"]):
-                    continue
-            payload = {
-                "event": "new_alert",
-                "alert_id": alert_id,
-                "severity": severity,
-                "title": title,
-                "type": alert_type,
-                "source": "costa-resiliente-auto",
-            }
+                    return
             channel = sub["channel"]
             status, err = "skipped", f"{channel} stub"
             if channel == "webhook":
@@ -151,6 +154,8 @@ async def _auto_notify(
                 """,
                 sub["id"], alert_id, status, err or None, status,
             )
+
+        await asyncio.gather(*[_deliver(sub) for sub in subscribers], return_exceptions=True)
     except Exception as exc:
         logger.warning("_auto_notify failed (non-fatal): %s", exc)
 
