@@ -163,7 +163,7 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
         "rss": {"label": "RSS (RPP/Andina/Canal N…)", "schedule": "15min", **rss, **rss_run},
         "reddit": {"label": "Reddit (r/Peru, r/Lima)", "schedule": "15min", **reddit},
         "telegram": {"label": "Telegram (SENAMHI)", "schedule": "15min", **telegram},
-        "imerg": {"label": "NASA IMERG Early Run", "schedule": "30min", **imerg, **imerg_run},
+        "imerg": {"label": "NASA IMERG Late Run V07B", "schedule": "30min", **imerg, **imerg_run},
         "stations": {"label": "ANA/SENAMHI Stations", "schedule": "15min", **stations, **ana_scraper, **stations_run},
         "flood": {"label": "SAR Flood Polygons", "schedule": "daily", **flood},
         "alerts": {"label": "Auto-generated Alerts", "schedule": "5min", **alerts, **alerts_run},

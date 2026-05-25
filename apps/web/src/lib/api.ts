@@ -337,6 +337,37 @@ export function decisionLogCsvUrl(): string {
   return `${BASE}/api/v1/alerts/decision-log/export`;
 }
 
+/**
+ * Fetch a protected file endpoint with the stored Bearer token and trigger a
+ * browser download via a temporary object URL. Falls back silently if the
+ * download fails (caller shows no error — log only).
+ */
+export async function downloadAuthenticatedFile(
+  path: string,
+  filename: string,
+  mimeHint?: string,
+): Promise<void> {
+  const headers: Record<string, string> = { ...getAuthHeaders() };
+  if (mimeHint) headers["Accept"] = mimeHint;
+  try {
+    const res = await fetch(`${BASE}${path}`, { headers });
+    if (!res.ok) {
+      if (res.status === 401) _on401?.();
+      console.error(`downloadAuthenticatedFile: ${path} → ${res.status}`);
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  } catch (err) {
+    console.error("downloadAuthenticatedFile failed:", err);
+  }
+}
+
 // ─── Flood exposure (population at risk) ──────────────────────────────────────
 
 export interface ExposedDistrict {

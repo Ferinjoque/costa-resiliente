@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Any
@@ -13,6 +14,7 @@ from costa_api.config import settings
 logger = logging.getLogger(__name__)
 
 _RETRY_STATUSES = {429, 503, 502}
+_RETRY_DELAY_S = 0.5  # brief pause before retry so Ollama can shed load
 
 
 async def chat(
@@ -50,27 +52,38 @@ async def chat(
                     json=payload,
                 )
                 if resp.status_code in _RETRY_STATUSES and attempt < 1:
-                    logger.warning("Ollama %s (attempt %d), retrying", resp.status_code, attempt + 1)
+                    logger.warning("Ollama %s (attempt %d), retrying in %.1fs", resp.status_code, attempt + 1, _RETRY_DELAY_S)
+                    await asyncio.sleep(_RETRY_DELAY_S)
                     continue
                 resp.raise_for_status()
                 return resp.json()
             except httpx.TimeoutException:
                 # Don't retry on timeout — let callers fall back to keyword dispatch
-                logger.warning("Ollama timeout — not retrying")
+                logger.warning("Ollama chat timeout (attempt %d) — not retrying", attempt + 1)
                 raise
     raise RuntimeError("Ollama: all retries exhausted")
 
 
 async def embed(text: str, model: str | None = None) -> list[float]:
-    """POST /api/embeddings — returns embedding vector."""
+    """POST /api/embeddings — returns embedding vector (1 retry on 429/503/502)."""
     model = model or settings.llm_embed_model
     async with httpx.AsyncClient(timeout=settings.llm_timeout_embed) as client:
-        resp = await client.post(
-            f"{settings.llm_base_url}/api/embeddings",
-            json={"model": model, "prompt": text},
-        )
-        resp.raise_for_status()
-        return resp.json()["embedding"]
+        for attempt in range(2):
+            try:
+                resp = await client.post(
+                    f"{settings.llm_base_url}/api/embeddings",
+                    json={"model": model, "prompt": text},
+                )
+                if resp.status_code in _RETRY_STATUSES and attempt < 1:
+                    logger.warning("Ollama embed %s (attempt %d), retrying in %.1fs", resp.status_code, attempt + 1, _RETRY_DELAY_S)
+                    await asyncio.sleep(_RETRY_DELAY_S)
+                    continue
+                resp.raise_for_status()
+                return resp.json()["embedding"]
+            except httpx.TimeoutException:
+                logger.warning("Ollama embed timeout (attempt %d) — not retrying", attempt + 1)
+                raise
+    raise RuntimeError("Ollama embed: all retries exhausted")
 
 
 def extract_text(response: dict) -> str:

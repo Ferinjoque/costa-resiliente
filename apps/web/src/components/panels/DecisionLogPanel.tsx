@@ -18,6 +18,7 @@ import {
 import { useUIStore } from "@/store/ui";
 import { useDecisionLog, useApiHealth } from "@/lib/queries";
 import type { DecisionLogEntry } from "@/lib/api";
+import { downloadAuthenticatedFile } from "@/lib/api";
 import {
   PanelHeader,
   PanelTitle,
@@ -166,41 +167,44 @@ export function DecisionLogPanel() {
         </button>
 
         {/* Export CSV */}
-        {online ? (
-          <a
-            href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/alerts/decision-log/export`}
-            download
-            className="text-ink-muted hover:text-ink transition-colors flex items-center gap-1 text-xs rounded focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-            aria-label={exportLabel}
-          >
-            <Download size={13} />
-            <span className="hidden sm:inline">CSV</span>
-          </a>
-        ) : (
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={() => downloadCsv(entries)}
-            aria-label={exportLabel}
-            className="gap-1"
-          >
-            <Download size={13} />
-            <span className="hidden sm:inline">CSV</span>
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() =>
+            online
+              ? downloadAuthenticatedFile(
+                  "/api/v1/alerts/decision-log/export",
+                  `costa_resiliente_decision_log_${new Date().toISOString().slice(0, 10)}.csv`,
+                  "text/csv",
+                )
+              : downloadCsv(entries)
+          }
+          aria-label={exportLabel}
+          className="gap-1"
+        >
+          <Download size={13} />
+          <span className="hidden sm:inline">CSV</span>
+        </Button>
 
         {/* Export PDF (EDAN-Perú report) */}
         {online && (
-          <a
-            href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/alerts/decision-log/report`}
-            download
-            className="text-ink-muted hover:text-ink transition-colors flex items-center gap-1 text-xs rounded focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() =>
+              downloadAuthenticatedFile(
+                "/api/v1/alerts/decision-log/report",
+                `costa_resiliente_report_${new Date().toISOString().slice(0, 10)}.pdf`,
+                "application/pdf",
+              )
+            }
             aria-label={locale === "es" ? "Exportar informe PDF" : "Export PDF report"}
             title={locale === "es" ? "Informe situacional EDAN-Perú (PDF)" : "EDAN-Perú situational report (PDF)"}
+            className="gap-1"
           >
             <Download size={13} />
             <span className="hidden sm:inline">PDF</span>
-          </a>
+          </Button>
         )}
 
         {/* Close */}
