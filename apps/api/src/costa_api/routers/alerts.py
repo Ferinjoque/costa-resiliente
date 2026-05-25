@@ -320,11 +320,11 @@ async def alerts_stream(request: Request) -> StreamingResponse:
         return json.dumps(alerts)
 
     async def generate():
-        deadline = asyncio.get_event_loop().time() + _STREAM_MAX_LIFETIME_S
+        deadline = asyncio.get_running_loop().time() + _STREAM_MAX_LIFETIME_S
         while True:
             if await request.is_disconnected():
                 break
-            if asyncio.get_event_loop().time() >= deadline:
+            if asyncio.get_running_loop().time() >= deadline:
                 # Tell client to reconnect in 10 s then close this generator.
                 yield "retry: 10000\ndata: {\"reconnect\":true}\n\n"
                 break
