@@ -79,12 +79,17 @@ TOOL_SCHEMAS: list[dict] = [
             "name": "get_river_levels",
             "description": (
                 "Obtiene lecturas recientes de estaciones hidrométricas (nivel, caudal, lluvia). "
-                "Úsalo cuando pregunten sobre ríos, caudales, niveles de agua en estaciones."
+                "Úsalo cuando pregunten sobre ríos, caudales, niveles de agua en estaciones, "
+                "tendencia (subiendo/bajando), o si el río está en alerta."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "hours_back": {"type": "integer", "default": 24},
+                    "hours_back": {
+                        "type": "integer",
+                        "description": "Horas hacia atrás desde ahora. Mínimo 1, máximo 168.",
+                        "default": 24,
+                    },
                     "river": {
                         "type": "string",
                         "description": "Nombre del río (Rímac, Chillón, Lurín), opcional.",
@@ -100,13 +105,21 @@ TOOL_SCHEMAS: list[dict] = [
             "name": "get_social_clusters",
             "description": (
                 "Obtiene resumen de señales sociales (Bluesky, Reddit, RSS) clasificadas por triage. "
-                "Úsalo cuando pregunten sobre reportes ciudadanos, redes sociales, vecinos afectados."
+                "Úsalo cuando pregunten sobre reportes ciudadanos, redes sociales, vecinos afectados, "
+                "avistamientos de huayco o desborde, o solicitudes de ayuda."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "hours_back": {"type": "integer", "default": 24},
-                    "district_name": {"type": "string"},
+                    "hours_back": {
+                        "type": "integer",
+                        "description": "Horas hacia atrás desde ahora. Mínimo 1, máximo 168.",
+                        "default": 24,
+                    },
+                    "district_name": {
+                        "type": "string",
+                        "description": "Nombre del distrito de Lima, opcional.",
+                    },
                 },
                 "required": [],
             },
