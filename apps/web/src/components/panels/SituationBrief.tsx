@@ -52,7 +52,7 @@ export function SituationBrief() {
   const topDistrict = summary?.features
     .filter((f) => f.properties.risk_level !== "bajo")
     .sort((a, b) => {
-      const o: Record<string, number> = { alto: 2, moderado: 1, bajo: 0 };
+      const o: Record<string, number> = { muy_alto: 3, alto: 2, moderado: 1, bajo: 0 };
       return o[b.properties.risk_level] - o[a.properties.risk_level];
     })[0];
 

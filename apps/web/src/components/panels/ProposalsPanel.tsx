@@ -118,7 +118,7 @@ export function ProposalsPanel() {
   const operator = useAuthStore((s) => s.operator);
   const operatorId = operator?.username ?? "demo";
   const qc = useQueryClient();
-  const { data: proposals = [], isLoading, isError } = usePendingProposals();
+  const { data: proposals = [], isLoading, isError, refetch } = usePendingProposals();
 
   if (activePanel !== "proposals") return null;
 
@@ -221,10 +221,16 @@ export function ProposalsPanel() {
           </div>
         )}
         {isError && (
-          <div className="px-4 py-10 text-xs text-danger text-center" role="alert">
-            {locale === "es"
-              ? "No se pudieron cargar las propuestas."
-              : "Could not load proposals."}
+          <div className="px-4 py-8 flex flex-col items-center gap-2" role="alert">
+            <span className="text-xs text-danger text-center">
+              {locale === "es" ? "No se pudieron cargar las propuestas." : "Could not load proposals."}
+            </span>
+            <button
+              onClick={() => refetch()}
+              className="text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"
+            >
+              {locale === "es" ? "Reintentar" : "Retry"}
+            </button>
           </div>
         )}
         {!isLoading && !isError && proposals.length === 0 && (

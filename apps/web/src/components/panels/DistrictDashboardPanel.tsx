@@ -819,13 +819,23 @@ const SEVERITY_BADGE_CLS: Record<string, string> = {
 function DistrictDetail({ ubigeo }: { ubigeo: string }) {
   const { locale } = useUIStore();
   const tr = useT(locale);
-  const { data, isLoading, isError } = useDistrictDashboard(ubigeo);
+  const { data, isLoading, isError, refetch } = useDistrictDashboard(ubigeo);
   const { data: fusion } = useFusion(ubigeo);
 
   if (isLoading)
     return <p className="text-xs text-ink-muted px-1 py-4 text-center">{tr("dashboard", "loading")}</p>;
   if (isError || !data)
-    return <p className="text-xs text-danger px-1 py-4 text-center">{tr("dashboard", "errorLoad")}</p>;
+    return (
+      <div className="flex flex-col items-center gap-2 py-6">
+        <p className="text-xs text-danger text-center">{tr("dashboard", "errorLoad")}</p>
+        <button
+          onClick={() => refetch()}
+          className="text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"
+        >
+          {locale === "es" ? "Reintentar" : "Retry"}
+        </button>
+      </div>
+    );
 
   const imergValues = data.imerg_trend_30d.map((d) => d.acc_24h_mm);
   const maxImerg = Math.max(...imergValues, 0);
