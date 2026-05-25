@@ -232,18 +232,17 @@ async def get_huayco_risk(db: AsyncSession, min_risk: str = "high") -> list[dict
     _RISK_ORDER = {"low": 0, "medium": 1, "high": 2, "very_high": 3}
     min_val = _RISK_ORDER.get(min_risk, 2)
     valid = [k for k, v in _RISK_ORDER.items() if v >= min_val]
-    placeholders = ", ".join(f"'{r}'" for r in valid)
-    sql = text(f"""
+    sql = text("""
         SELECT q.name, q.priority, hs.probability, hs.risk_level,
                hs.computed_at, hs.trigger_rain_24h_mm
         FROM ml.huayco_susceptibility hs
         JOIN geo.quebradas q ON q.id = hs.quebrada_id
         WHERE hs.computed_at = (SELECT MAX(computed_at) FROM ml.huayco_susceptibility)
-          AND hs.risk_level IN ({placeholders})
+          AND hs.risk_level = ANY(:levels)
         ORDER BY hs.probability DESC
         LIMIT 10
     """)
-    result = await db.execute(sql)
+    result = await db.execute(sql, {"levels": valid})
     return [dict(r._mapping) for r in result]
 
 

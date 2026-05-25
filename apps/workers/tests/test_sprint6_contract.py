@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import importlib.util as _util
+
 import pytest
 from datetime import datetime, timezone
 
 _now = lambda: datetime.now(timezone.utc)
+_COSTA_API_AVAILABLE = _util.find_spec("costa_api") is not None
 
 
 # ─── Alert generator severity logic ──────────────────────────────────────────
@@ -58,6 +61,7 @@ class TestAlertConstants:
 
 # ─── Alerts API schema ────────────────────────────────────────────────────────
 
+@pytest.mark.skipif(not _COSTA_API_AVAILABLE, reason="costa_api not installed in worker env")
 class TestAlertApiSchema:
     def test_alert_summary_model(self):
         from costa_api.routers.alerts import AlertSummary
@@ -117,6 +121,7 @@ class TestDecisionLogAppendOnly:
 
 # ─── CSV export headers ───────────────────────────────────────────────────────
 
+@pytest.mark.skipif(not _COSTA_API_AVAILABLE, reason="costa_api not installed in worker env")
 class TestDecisionLogCsvExport:
     def test_csv_fieldnames_match_schema(self):
         """

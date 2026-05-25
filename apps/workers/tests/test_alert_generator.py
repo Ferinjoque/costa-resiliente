@@ -110,8 +110,28 @@ class TestConstants:
         assert FLOOD_ALERT_MIN_KM2 > 0
 
     def test_rain_thresholds_ordered(self):
-        from costa_workers.ml.alert_generator import RAIN_CRITICAL_72H_MM, RAIN_HIGH_72H_MM
+        from costa_workers.ml.alert_generator import (
+            RAIN_CRITICAL_72H_MM, RAIN_HIGH_72H_MM, RAIN_HIGH_24H_MM,
+        )
         assert RAIN_CRITICAL_72H_MM > RAIN_HIGH_72H_MM
+        assert RAIN_HIGH_72H_MM > RAIN_HIGH_24H_MM  # 24h threshold below 72h high
+
+    def test_rain_thresholds_positive(self):
+        from costa_workers.ml.alert_generator import (
+            RAIN_CRITICAL_72H_MM, RAIN_HIGH_72H_MM, RAIN_HIGH_24H_MM,
+        )
+        assert RAIN_CRITICAL_72H_MM > 0
+        assert RAIN_HIGH_72H_MM > 0
+        assert RAIN_HIGH_24H_MM > 0
+
+    def test_ttl_values_positive(self):
+        from costa_workers.ml.alert_generator import (
+            FLOOD_ALERT_TTL_DAYS, HUAYCO_ALERT_TTL_H, SOCIAL_ALERT_TTL_H,
+        )
+        assert FLOOD_ALERT_TTL_DAYS > 0
+        assert HUAYCO_ALERT_TTL_H > 0
+        assert SOCIAL_ALERT_TTL_H > 0
+        assert FLOOD_ALERT_TTL_DAYS * 24 > HUAYCO_ALERT_TTL_H > SOCIAL_ALERT_TTL_H
 
     def test_notify_severities(self):
         from costa_workers.ml.alert_generator import _NOTIFY_SEVERITIES
