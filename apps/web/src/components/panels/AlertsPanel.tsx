@@ -24,7 +24,7 @@ import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useAlerts, useFloodExposure } from "@/lib/queries";
-import { actOnAlert, logDecision, RateLimitError } from "@/lib/api";
+import { actOnAlert, logDecision, RateLimitError, BROWSER_SESSION_ID } from "@/lib/api";
 import type { LiveToast } from "@/store/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Alert, DecisionLogEntry } from "@/lib/api";
@@ -595,7 +595,7 @@ function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en
         action_type: "resource_dispatch",
         alert_id: primaryAlert?.id ?? null,
         payload: { resource: r.id, resource_name: label, dispatched_at: new Date().toISOString() },
-        session_id: "demo",
+        session_id: BROWSER_SESSION_ID,
       });
       addToast({
         message: locale === "es" ? `${label} despachado — registrado en log` : `${label} dispatched — logged`,
@@ -700,7 +700,7 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
         action_type: "protocol_step",
         alert_id: primaryAlert?.id ?? null,
         payload: { step: id, label, completed_at: new Date().toISOString() },
-        session_id: "demo",
+        session_id: BROWSER_SESSION_ID,
       });
       const nextDone = [...next].filter((s) => steps.some((st) => st.id === s)).length;
       if (nextDone === steps.length) {
