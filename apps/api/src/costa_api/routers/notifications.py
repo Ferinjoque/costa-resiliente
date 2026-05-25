@@ -18,13 +18,15 @@ import asyncio
 import ipaddress
 import json
 import logging
+import os
 import socket
 from datetime import datetime
 from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+import redis.asyncio as aioredis
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,6 +37,51 @@ from costa_api.routers.auth import require_operator, CurrentOperator
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/notifications", tags=["notifications"])
+
+# ─── Subscriber creation rate limit (10 per operator per hour) ───────────────
+_NOTIF_RATE_LIMIT = 10
+_NOTIF_RATE_WINDOW = 3600
+_notif_rl_client: aioredis.Redis | None = None
+
+
+def _get_notif_rl_client() -> aioredis.Redis | None:
+    global _notif_rl_client
+    if _notif_rl_client is None:
+        try:
+            _notif_rl_client = aioredis.from_url(
+                settings.redis_url,
+                encoding="utf-8",
+                decode_responses=True,
+                socket_connect_timeout=1,
+                socket_timeout=1,
+            )
+        except Exception as exc:
+            logger.warning("[notifications] Redis rate-limiter init failed: %s", exc)
+    return _notif_rl_client
+
+
+async def _check_notif_create_rate(operator_id: str) -> None:
+    """Raise 429 if operator has exceeded subscriber creation limit. Fails open on Redis outage."""
+    if os.environ.get("TESTING", "0") == "1":
+        return
+    client = _get_notif_rl_client()
+    if client is None:
+        return
+    key = f"costa:notif:create:{operator_id}"
+    try:
+        count = await client.incr(key)
+        if count == 1:
+            await client.expire(key, _NOTIF_RATE_WINDOW)
+        if count > _NOTIF_RATE_LIMIT:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Demasiadas suscripciones creadas. Espere antes de agregar más.",
+                headers={"Retry-After": str(_NOTIF_RATE_WINDOW)},
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("[notifications] Rate-limit check failed (fail-open): %s", exc)
 
 SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 
@@ -161,8 +208,14 @@ async def list_subscribers(
     db: AsyncSession = Depends(get_db),
     op: CurrentOperator = Depends(require_operator),
 ) -> list[SubscriberOut]:
-    where = "WHERE active = TRUE" if active_only else ""
-    result = await db.execute(text(f"SELECT * FROM ops.notification_subscribers {where} ORDER BY created_at DESC"))
+    result = await db.execute(
+        text(
+            "SELECT * FROM ops.notification_subscribers"
+            " WHERE (:active_only = FALSE OR active = TRUE)"
+            " ORDER BY created_at DESC"
+        ),
+        {"active_only": active_only},
+    )
     return [SubscriberOut(**dict(r)) for r in result.mappings().all()]
 
 
@@ -172,6 +225,7 @@ async def create_subscriber(
     db: AsyncSession = Depends(get_db),
     op: CurrentOperator = Depends(require_operator),
 ) -> SubscriberOut:
+    await _check_notif_create_rate(op.username)
     row = await db.execute(
         text("""
             INSERT INTO ops.notification_subscribers
