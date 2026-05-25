@@ -44,9 +44,9 @@ _ALLOWED_LABELS = {
 class FieldReport(BaseModel):
     operator_id: str = Field(..., min_length=1, max_length=64)
     text: str = Field(..., min_length=1, max_length=2000)
-    label: str
-    district_ubigeo: Optional[str] = None
-    session_id: Optional[str] = None
+    label: str = Field(..., min_length=1, max_length=40)
+    district_ubigeo: Optional[str] = Field(None, max_length=12)
+    session_id: Optional[str] = Field(None, max_length=64)
 
 
 @router.post("/field-report", status_code=201)

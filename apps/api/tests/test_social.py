@@ -153,6 +153,47 @@ def test_field_report_rejects_empty_operator_id(client):
     assert resp.status_code == 422
 
 
+def test_field_report_rejects_label_over_40_chars(client):
+    """FieldReport.label has max_length=40; longer should be rejected."""
+    resp = client.post(
+        "/social/field-report",
+        json={
+            "operator_id": "coen_lima",
+            "text": "Reporte válido",
+            "label": "x" * 41,
+        },
+    )
+    assert resp.status_code == 422
+
+
+def test_field_report_rejects_district_ubigeo_over_12_chars(client):
+    """FieldReport.district_ubigeo has max_length=12; longer should be rejected."""
+    resp = client.post(
+        "/social/field-report",
+        json={
+            "operator_id": "coen_lima",
+            "text": "Reporte válido",
+            "label": "needs_help",
+            "district_ubigeo": "1" * 13,
+        },
+    )
+    assert resp.status_code == 422
+
+
+def test_field_report_rejects_session_id_over_64_chars(client):
+    """FieldReport.session_id has max_length=64; longer should be rejected."""
+    resp = client.post(
+        "/social/field-report",
+        json={
+            "operator_id": "coen_lima",
+            "text": "Reporte válido",
+            "label": "needs_help",
+            "session_id": "s" * 65,
+        },
+    )
+    assert resp.status_code == 422
+
+
 # ─── Idempotent duplicate behavior ────────────────────────────────────────────
 
 def test_field_report_duplicate_returns_existing_signal(client):
