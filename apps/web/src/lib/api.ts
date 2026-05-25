@@ -821,6 +821,7 @@ export interface AlertProposal {
   severity: "critical" | "high" | "medium" | "low";
   alert_type: string;
   district_ubigeo: string | null;
+  district_name: string | null;
   title: string;
   summary: string;
   status: "pending" | "approved" | "rejected";
