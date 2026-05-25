@@ -179,8 +179,8 @@ async def _record_delivery(
         )
 
 
-async def _send_webhook(target: str, payload: dict, timeout: float = 5.0, retries: int = 3) -> tuple[bool, str]:
-    """POST payload to webhook URL. Returns (success, error_message)."""
+async def _send_webhook(target: str, payload: dict, timeout: float = 5.0, retries: int = 3) -> tuple[bool, str, int]:
+    """POST payload to webhook URL. Returns (success, error_message, attempt_count)."""
     last_err = ""
     async with httpx.AsyncClient(timeout=timeout) as client:
         for attempt in range(1, retries + 1):
@@ -191,13 +191,13 @@ async def _send_webhook(target: str, payload: dict, timeout: float = 5.0, retrie
                     headers={"Content-Type": "application/json", "User-Agent": "CostaResilienteAlerts/1.0"},
                 )
                 if resp.status_code < 300:
-                    return True, ""
+                    return True, "", attempt
                 last_err = f"HTTP {resp.status_code}"
             except Exception as exc:
                 last_err = str(exc)
             if attempt < retries:
                 await asyncio.sleep(2 ** attempt)
-    return False, last_err
+    return False, last_err, retries
 
 
 async def _send_sms(to_number: str, body: str) -> tuple[bool, str]:
@@ -261,9 +261,9 @@ async def fan_out_notifications(
 
             channel = sub["channel"]
             if channel == "webhook":
-                success, err = await _send_webhook(sub["target"], payload)
+                success, err, attempts = await _send_webhook(sub["target"], payload)
                 status = "delivered" if success else "failed"
-                await _record_delivery(sub["id"], alert_id, trigger_event, status, 3 if not success else 1, err or None)
+                await _record_delivery(sub["id"], alert_id, trigger_event, status, attempts, err or None)
             elif channel == "sms":
                 sms_body = (
                     f"[COSTA RESILIENTE] {payload['severity'].upper()}: {payload['title']}. "
