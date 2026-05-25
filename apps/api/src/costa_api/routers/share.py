@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.config import settings
 from costa_api.db import get_db
+from costa_api.routers.auth import require_operator, CurrentOperator
 
 router = APIRouter(prefix="/share", tags=["share"])
 
@@ -67,12 +68,9 @@ def _validate_scenario(s: ScenarioSnapshot) -> None:
 async def mint_share_token(
     body: MintRequest,
     db: AsyncSession = Depends(get_db),
+    _op: CurrentOperator = Depends(require_operator),
 ) -> MintResponse:
-    """Mint a share token capturing a scenario snapshot.
-
-    No authentication required — any client can create a read-only link.
-    Rate-limiting should be added at the reverse-proxy layer (Caddy/nginx).
-    """
+    """Mint a share token capturing a scenario snapshot. Requires auth to prevent spam."""
     _validate_scenario(body.scenario)
 
     token = secrets.token_urlsafe(24)
