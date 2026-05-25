@@ -217,3 +217,86 @@ async def test_subscriber_district_filter_over_12_chars_rejected():
             "district_filter": "1" * 13,
         }, headers=AUTH)
     assert resp.status_code == 422
+
+
+# ─── DNS SSRF guard unit tests ────────────────────────────────────────────────
+
+def test_reject_private_host_blocks_hostname_resolving_to_private_ip():
+    """_reject_private_host must block hostnames that resolve to private IPs (DNS SSRF)."""
+    from unittest.mock import patch
+    from costa_api.routers.notifications import _reject_private_host
+
+    fake_addrinfo = [(None, None, None, None, ("10.0.0.1", 0))]
+    with patch("costa_api.routers.notifications.socket.getaddrinfo", return_value=fake_addrinfo):
+        with pytest.raises(ValueError, match="private IP"):
+            _reject_private_host("internal.corp.local")
+
+
+def test_reject_private_host_blocks_link_local_resolved():
+    """169.254.x.x (AWS metadata, link-local) resolved via DNS must be blocked."""
+    from unittest.mock import patch
+    from costa_api.routers.notifications import _reject_private_host
+
+    fake_addrinfo = [(None, None, None, None, ("169.254.169.254", 0))]
+    with patch("costa_api.routers.notifications.socket.getaddrinfo", return_value=fake_addrinfo):
+        with pytest.raises(ValueError, match="private IP"):
+            _reject_private_host("metadata.example.com")
+
+
+def test_reject_private_host_blocks_unresolvable_hostname():
+    """Unresolvable hostname must be blocked (conservative — unknown target = deny)."""
+    from unittest.mock import patch
+    import socket as _socket
+    from costa_api.routers.notifications import _reject_private_host
+
+    with patch("costa_api.routers.notifications.socket.getaddrinfo", side_effect=_socket.gaierror("NXDOMAIN")):
+        with pytest.raises(ValueError, match="could not be resolved"):
+            _reject_private_host("does-not-exist.invalid")
+
+
+def test_reject_private_host_allows_public_ip():
+    """Public IP must pass the guard without raising."""
+    from costa_api.routers.notifications import _reject_private_host
+    _reject_private_host("1.1.1.1")  # Cloudflare public DNS — must not raise
+
+
+# ─── Notifications rate limiter unit tests ───────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_notif_rate_limiter_raises_429_when_limit_exceeded():
+    """_check_notif_create_rate must raise 429 when Redis counter exceeds _NOTIF_RATE_LIMIT."""
+    import os
+    from fastapi import HTTPException
+    from unittest.mock import AsyncMock, patch
+    from costa_api.routers.notifications import _check_notif_create_rate, _NOTIF_RATE_LIMIT
+
+    mock_redis = AsyncMock()
+    mock_redis.incr = AsyncMock(return_value=_NOTIF_RATE_LIMIT + 1)
+    mock_redis.expire = AsyncMock()
+
+    with (
+        patch("costa_api.routers.notifications._get_notif_rl_client", return_value=mock_redis),
+        patch.dict(os.environ, {"TESTING": "0"}),
+    ):
+        with pytest.raises(HTTPException) as exc_info:
+            await _check_notif_create_rate("test_operator")
+
+    assert exc_info.value.status_code == 429
+    assert "Retry-After" in exc_info.value.headers
+
+
+@pytest.mark.asyncio
+async def test_notif_rate_limiter_fails_open_on_redis_error():
+    """Redis unavailability must never block legitimate operators (fail-open)."""
+    import os
+    from unittest.mock import AsyncMock, patch
+    from costa_api.routers.notifications import _check_notif_create_rate
+
+    mock_redis = AsyncMock()
+    mock_redis.incr = AsyncMock(side_effect=ConnectionError("Redis down"))
+
+    with (
+        patch("costa_api.routers.notifications._get_notif_rl_client", return_value=mock_redis),
+        patch.dict(os.environ, {"TESTING": "0"}),
+    ):
+        await _check_notif_create_rate("test_operator")  # must not raise
