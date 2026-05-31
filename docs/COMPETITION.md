@@ -194,7 +194,7 @@ The Phase 2 concept text below describes the state at June 5, 2026. The Phase 3 
 | Frontend panels | 6 main surfaces | 9 main surfaces: added ProposalsPanel, NotificationsPanel, DistrictDashboardPanel, SharePanel, FusionCallout |
 | Services | 9 containers | 9 containers (same); pgstac bootstrapped with pypgstac so Sentinel-1 and flood-seg flows now ingest new scenes |
 
-**Session 21 additions (2026-05-31, 73+ commits, 663 tests):** 7 active alerts (3 critical huayco + 1 critical rain + 3 high), 39 districts ALTO risk, sequential tool dispatch (race condition fix), quebrada geometries for district join, auth hardening, SINPAD exact match fix. See STATUS.md for full Session 21 commit list.
+**Session 21 additions (2026-05-31, 131+ commits, 667 tests):** 7 active alerts (3 critical huayco + 1 critical rain + 3 high), 39 districts ALTO, sequential dispatch (race fixed), near-threshold warnings, multi-watershed sitrep, combined action directives, idempotent alert actions, auth hardening, quebrada geometries, SINPAD exact match. See STATUS.md.
 
 **Session 20 additions (2026-05-31, 199+ commits, 640 tests):**
 
