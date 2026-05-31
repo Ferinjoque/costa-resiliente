@@ -180,8 +180,8 @@ function isGreeting(q: string): boolean {
 }
 
 const GREETING_REPLY: Record<"es" | "en", string> = {
-  es: "¡Hola! Soy el copiloto de Costa Resiliente. Puedo ayudarte con información sobre alertas activas, distritos en riesgo, niveles hidrológicos, pronóstico de lluvias, señales sociales y más.\n\n¿Qué deseas consultar?",
-  en: "Hi! I'm the Costa Resiliente copilot. I can help with active alerts, at-risk districts, hydrological levels, rainfall forecasts, social signals, and more.\n\nWhat would you like to know?",
+  es: "¡Hola! Soy el copiloto de Costa Resiliente. Prueba **'Dame el resumen completo'** para un SITREP en ~3s, o pregunta sobre alertas activas, niveles de ríos, lluvia acumulada, señales sociales, protocolos INDECI y más.\n\n¿Qué deseas consultar?",
+  en: "Hi! I'm the Costa Resiliente copilot. Try **'Situation report please'** for a full SITREP in ~3s, or ask about active alerts, river levels, accumulated rainfall, social signals, INDECI protocols, and more.\n\nWhat would you like to know?",
 };
 
 // ─── Suggestion chips ─────────────────────────────────────────────────────────
