@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **626 passed, 0 errors** (Session 20). Up from 568 (+58: SLA/sitrep/health/quick-pattern/sitrep-answer/river-flow/rainfall-windows/answer-quality/copilot-http tests). Workers: 148 passed, 8 skipped.
+- **API**: **627 passed, 0 errors** (Session 20). Up from 568 (+59: SLA/sitrep/health/quick-pattern/sitrep-answer/river-flow/rainfall-windows/answer-quality/copilot-http/IMERG-label tests). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB
