@@ -489,6 +489,17 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
 
+  "¿Qué acciones debo tomar en nivel EMERGENCIA?": {
+    answer: "**NIVEL EMERGENCIA — Acciones inmediatas SINAGERD:**\n\n1. **NOTIFICAR**: Escalar a COEN Nacional por radio. Solicitar Declaratoria de Emergencia.\n2. **EVACUAR**: Activar evacuación obligatoria de quebradas críticas (Jicamarca, Pedregal, Quirio). Código de sirenas: 3 tonos cortos = EVACUACIÓN INMEDIATA.\n3. **ALBERGUES**: Habilitar todos los albergues INDECI designados en Lima (Coliseo Eduardo Dibós, UNMSM, estadios).\n4. **RECURSOS**: Solicitar apoyo FFAA (Ejército, Marina, FAP).\n5. **COMUNICACIÓN**: Comunicado cada hora + alerta SMS masivo (Claro/Entel/Movistar/Bitel).\n6. **EDAN**: Completar ficha EDAN-Perú para COEN (formato A4).\n7. **EOC**: Activar EOC conjunto COER-COEL en zonas afectadas.\n\nContactos: COEN (01) 225-9898 · COER Lima (01) 748-0080 · ANA Chirilu (01) 224-3298 ext. 3710\n\nFuente: SINAGERD Guía de Acciones Rápidas COER Lima + INDECI.",
+    intent: "evacuation_priority",
+    confidence: 0.97,
+    query_plan: "sinagerd_emergency_protocol",
+    sources: [
+      { protocol: "SINAGERD_Acciones_Rapidas", level: "EMERGENCIA", action: "escalar_a_COEN" },
+      { protocol: "SINAGERD_Acciones_Rapidas", level: "EMERGENCIA", action: "evacuar_quebradas" },
+    ],
+  },
+
   // ─── English-locale responses (matched by suggestion click) ──────────────────
 
   "What are the active alerts right now?": {
