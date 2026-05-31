@@ -77,7 +77,10 @@ class TestMintShareToken:
 
     @pytest.mark.asyncio
     async def test_all_valid_time_windows(self):
-        for hours in (1, 3, 6, 12, 24, 72, 168):
+        """All 8 valid time windows must be accepted: 1,3,6,12,24,48,72,168.
+        Regression: 48h was listed in the error message but missing from the allowed set.
+        """
+        for hours in (1, 3, 6, 12, 24, 48, 72, 168):
             body = {"scenario": {**VALID_SCENARIO["scenario"], "timeWindowHours": hours}}
             async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
                 resp = await c.post("/api/v1/share", json=body, headers=AUTH)
