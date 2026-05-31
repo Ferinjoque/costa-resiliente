@@ -419,16 +419,17 @@ def test_build_answer_no_rows():
 
 
 def test_build_answer_flood_polygons():
-    """area_km2 rows → plural polygon count + total area."""
+    """area_km2 rows → plural polygon count + total area + district."""
     from costa_api.ai.agent import _build_answer
     rows = [
-        {"scene_id": "S1A_001", "area_km2": 2.5, "confidence": 0.88},
-        {"scene_id": "S1A_002", "area_km2": 1.3, "confidence": 0.81},
+        {"scene_id": "S1A_001", "area_km2": 2.5, "confidence": 0.88, "district_name": "Lurigancho"},
+        {"scene_id": "S1A_002", "area_km2": 1.3, "confidence": 0.81, "district_name": "Ate"},
     ]
     answer = _build_answer([], rows, "inundaciones")
     assert "2" in answer
     assert "polígono" in answer.lower()
     assert "3.8" in answer  # 2.5 + 1.3
+    assert "Lurigancho" in answer  # largest district shown
 
 
 def test_build_answer_single_flood_polygon():
@@ -442,7 +443,7 @@ def test_build_answer_single_flood_polygon():
 
 
 def test_build_answer_huayco_risk():
-    """risk_level rows → quebrada count + top name."""
+    """risk_level rows → quebrada count + top name + probability."""
     from costa_api.ai.agent import _build_answer
     rows = [
         {"name": "Jicamarca", "risk_level": "very_high", "probability": 0.91},
@@ -451,6 +452,8 @@ def test_build_answer_huayco_risk():
     answer = _build_answer([], rows, "huayco")
     assert "quebrada" in answer.lower()
     assert "Jicamarca" in answer
+    assert "MUY ALTO" in answer
+    assert "0.91" in answer
 
 
 def test_build_answer_river_levels_rising():
@@ -768,6 +771,46 @@ async def test_get_infrastructure_impact_hours_clamped():
 
 
 # ─── New quick patterns added in Session 20 ──────────────────────────────────
+
+def test_build_answer_rainfall_includes_24h():
+    """acc_72h_mm rows → EMERGENCIA label + 24h window shown."""
+    from costa_api.ai.agent import _build_answer
+    rows = [{"watershed": "Rímac", "acc_72h_mm": 63.2, "acc_24h_mm": 20.1, "acc_1h_mm": 1.8}]
+    answer = _build_answer([], rows, "lluvia")
+    assert "EMERGENCIA" in answer
+    assert "63" in answer   # 72h value
+    assert "20" in answer   # 24h value
+    assert "Rímac" in answer
+
+
+def test_build_answer_rainfall_aviso_24h():
+    """acc_24h_mm >= 15 but 72h < 25 → AVISO level."""
+    from costa_api.ai.agent import _build_answer
+    rows = [{"watershed": "Lurín", "acc_72h_mm": 14.0, "acc_24h_mm": 18.5, "acc_1h_mm": 2.0}]
+    answer = _build_answer([], rows, "lluvia")
+    assert "AVISO" in answer
+
+
+def test_build_answer_rainfall_below_threshold():
+    """Low rainfall → below-threshold message."""
+    from costa_api.ai.agent import _build_answer
+    rows = [{"watershed": "Lurín", "acc_72h_mm": 5.0, "acc_24h_mm": 2.0, "acc_1h_mm": 0.1}]
+    answer = _build_answer([], rows, "lluvia")
+    assert "EMERGENCIA" not in answer
+    assert "ALERTA" not in answer
+    assert "umbral" in answer.lower() or "bajo" in answer.lower()
+
+
+def test_build_answer_river_rising_shows_flow():
+    """Rising trend rows include flow rate m3/s and change/h."""
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"name": "Chosica", "level_m": 2.8, "flow_m3s": 185, "trend": "rising", "level_change_1h_m": 0.15},
+    ]
+    answer = _build_answer([], rows, "río")
+    assert "185" in answer   # flow rate shown
+    assert "+0.15" in answer or "0.15" in answer  # change/h
+
 
 def test_detect_quick_situacion_actual():
     """'situación actual' routes to get_active_alerts."""
