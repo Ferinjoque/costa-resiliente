@@ -1,0 +1,64 @@
+GUÍA DE ACCIONES RÁPIDAS SINAGERD — COER LIMA
+Sistema Nacional de Gestión del Riesgo de Desastres
+
+NIVEL NORMAL (sin alertas activas):
+- Monitoreo rutinario: revisión de IMERG cada 30 min, lecturas ANA cada 15 min.
+- Verificar que los albergues de referencia estén operativos.
+- Actualizar inventario de recursos USAR e INDECI Lima.
+- Revisar pronóstico SENAMHI para 24-48 horas.
+
+NIVEL AVISO (1+ alertas activas, severidad media):
+- Activar brigadas de campo en quebradas de la cuenca afectada.
+- Notificar a municipios distritales vía SIAT-Lima.
+- Verificar estaciones ANA/SENAMHI en tiempo real.
+- Pre-alertar albergues designados.
+- Contactar COEL de distritos en zona de riesgo.
+
+NIVEL ALERTA (25+ mm/72h o alertas altas):
+- Activar monitoreo permanente 24/7 en el COER Lima.
+- Desplegar brigadas de Defensa Civil en puntos de vigilancia de quebradas.
+- Abrir albergues de emergencia (Coliseo Eduardo Dibós, UNMSM, IE designadas).
+- Restringir acceso a zonas de riesgo identificadas.
+- Coordinar con CGBVP, PNP y Ejército para preposicionamiento.
+- Emitir comunicados cada 2 horas a medios de comunicación.
+- Activar sistema de sirenas SIAT-Lima en zonas afectadas (1 tono largo = prepararse).
+- Iniciar EDAN preliminar para COEN.
+
+NIVEL EMERGENCIA (50+ mm/72h o alertas críticas):
+1. NOTIFICAR: Escalar a COEN Nacional por radio. Solicitar Declaratoria de Emergencia.
+2. EVACUAR: Activar evacucación obligatoria de quebradas críticas (Jicamarca, Pedregal, Quirio).
+3. SIRENAS: Activar sistema 3 tonos cortos = EVACUACIÓN INMEDIATA.
+4. ALBERGUES: Habilitar todos los albergues INDECI designados en Lima.
+5. RECURSOS: Solicitar apoyo FFAA (Ejército, Marina, FAP).
+6. MEDIOS: Comunicado de emergencia cada hora + alerta por SMS masivo (Claro/Entel/Movistar).
+7. EDAN: Completar ficha EDAN-Perú para COEN (formato A4).
+8. COORDINACIÓN: Activar EOC conjunto COER-COEL en las zonas afectadas.
+
+PROTOCOLOS POR TIPO DE EVENTO:
+
+HUAYCO (quebrada activa):
+- Evacuar familias en primera línea de la quebrada.
+- Desplegar USAR con cuerdas y equipo de rescate.
+- Cerrar vía a la Sierra (carretera central) si es necesario.
+- Punto de reunión predeterminado: fuera del cauce, en zona alta.
+
+DESBORDE DE RÍO:
+- Desplegar botes de rescate en zonas inundadas.
+- Coordinar con SEDAPAL para corte preventivo de agua potable.
+- Verificar estado de puentes críticos (Ñaña, Huachipa, Carabayllo).
+- Instalar barreras de contención si hay tiempo.
+
+LLUVIA TORRENCIAL (sin huayco confirmado):
+- Monitoreo intensivo de cuencas altas vía SENAMHI.
+- Pre-evacuación voluntaria de zonas muy alto riesgo.
+- Preparar maquinaria pesada para limpieza de cauces.
+
+CONTACTOS DE EMERGENCIA CLAVE:
+- COEN Nacional: (01) 225-9898
+- COER Lima: (01) 748-0080
+- ANA Guardia Hidrológica: (01) 224-3298 ext. 3710
+- CGBVP Central: (01) 224-3232
+- PNP Emergencias: 105
+- Defensa Civil Lima: (01) 748-0080
+
+FUENTE: INDECI Plan Operativo Lima 2024 + SENAMHI Protocolos de Alerta.
