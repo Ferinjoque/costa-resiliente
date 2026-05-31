@@ -758,6 +758,9 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm{detail_24h} ⚠ EMERGENCIA (>50 mm ANA)")
             if not action:
                 action = "Escalar a COEN. Activar evacuación preventiva quebradas cuenca " + ws + "."
+            elif "EDAN" in action:
+                # Augment existing critical-alert action with specific evacuation directive
+                action = action.rstrip(".") + f". Activar evacuación preventiva quebradas cuenca {ws}."
         elif mx >= 25.0:
             sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm{detail_24h} — ALERTA (>25 mm ANA)")
             if not action:
