@@ -39,8 +39,8 @@ Click the first suggestion: **"Dame el resumen completo de la situación"**
 
 **What happens:**
 - Sitrep mode triggers (4 tools in parallel, ~3 seconds, no LLM)
-- Response includes: active alerts count/severity, watershed rainfall (63mm EMERGENCIA), river trend, SAR flood area
-- Badge shows **"Modo rápido · sin LLM · ~3s"**
+- Response includes: active alerts count/severity + rainfall mm (63mm EMERGENCIA), river trend, SAR flood area
+- Badge shows **"SITREP · 4 herramientas · sin LLM · ~3s"** (distinct from regular quick mode)
 
 **Why this matters:** No LLM inference cost. Duty officer gets the full picture in 3 seconds at 3am.
 
