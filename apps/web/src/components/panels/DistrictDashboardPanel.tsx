@@ -682,9 +682,24 @@ function CityOverview() {
     return v > mx ? v : mx;
   }, 0) ?? 0;
 
+  const criticalCount = alerts.filter((a) => a.status === "active" && a.severity === "critical").length;
+  const highCount = alerts.filter((a) => a.status === "active" && a.severity === "high").length;
+  const sinagerdLevel = criticalCount > 0 ? "EMERGENCIA" : highCount > 1 || activeCount > 4 ? "ALERTA" : activeCount > 0 ? "AVISO" : "NORMAL";
+  const sinagerdColors: Record<string, string> = {
+    EMERGENCIA: "text-danger bg-danger-soft border-danger/20",
+    ALERTA: "text-warn-muted bg-warn-soft border-warn/20",
+    AVISO: "text-warn-muted bg-warn-soft/60 border-warn/10",
+    NORMAL: "text-ok-muted bg-ok-soft border-ok/20",
+  };
+
   return (
     <section aria-label={tr("dashboard", "lima")}>
-      <SectionLabel className="mb-3">{tr("dashboard", "lima")}</SectionLabel>
+      <div className="flex items-center justify-between mb-3">
+        <SectionLabel>{tr("dashboard", "lima")}</SectionLabel>
+        <span className={clsx("text-2xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border", sinagerdColors[sinagerdLevel])}>
+          {sinagerdLevel}
+        </span>
+      </div>
 
       <div className="grid grid-cols-2 gap-4 py-4">
         {/* Active alerts */}
