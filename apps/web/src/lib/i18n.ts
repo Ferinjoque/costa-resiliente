@@ -22,7 +22,7 @@ const strings = {
     title:        { es: "Alertas",                   en: "Alerts" },
     noAlerts:     { es: "No hay alertas activas",    en: "No active alerts" },
     loading:      { es: "Cargando alertas…",         en: "Loading alerts…" },
-    error:        { es: "Error al cargar alertas",   en: "Failed to load alerts" },
+    error:        { es: "Error al cargar alertas — mostrando datos de demostración", en: "Failed to load alerts — showing demo data" },
     acknowledge:  { es: "Reconocer alerta",          en: "Acknowledge alert" },
     personsAtRisk:{ es: "personas en zona inundada", en: "people in flood zone" },
     updated:      { es: "Actualizado",               en: "Updated" },

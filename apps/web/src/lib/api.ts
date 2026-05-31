@@ -362,16 +362,22 @@ export async function logDecision(entry: {
   payload: Record<string, unknown>;
   session_id?: string | null;
 }): Promise<void> {
+  let res: Response;
   try {
-    await fetch(`${BASE}/api/v1/alerts/log`, {
+    res = await fetch(`${BASE}/api/v1/alerts/log`, {
       method: "POST",
       signal: AbortSignal.timeout(5_000),
       headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders() },
       body: JSON.stringify(entry),
     });
   } catch (err) {
-    // best-effort — decision log failures don't block operator actions
-    console.warn("[logDecision] failed (best-effort, not blocking):", err);
+    // Network / timeout — best-effort, do not block the operator action
+    console.warn("[logDecision] network error (best-effort):", err);
+    return;
+  }
+  if (!res.ok) {
+    // Server rejected the write (4xx / 5xx) — throw so callers can surface this
+    throw new Error(`Decision log write failed: HTTP ${res.status}`);
   }
 }
 
