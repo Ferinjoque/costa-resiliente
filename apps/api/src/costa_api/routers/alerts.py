@@ -313,7 +313,9 @@ async def alerts_stream(request: Request) -> StreamingResponse:
                                source_refs
                         FROM ops.alerts
                         WHERE status = 'active'
-                        ORDER BY created_at DESC
+                        ORDER BY
+                            CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+                            created_at DESC
                         LIMIT 20
                     """)
                 )
