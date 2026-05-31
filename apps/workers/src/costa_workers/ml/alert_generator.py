@@ -292,6 +292,14 @@ async def generate_huayco_alerts(db_dsn: str = DB_DSN) -> int:
                   SELECT 1 FROM ops.alerts a
                   WHERE a.source_refs->>'huayco_susceptibility_id' = hs.id::text
               )
+              AND NOT EXISTS (
+                  -- Prevent duplicates when ML pipeline creates new susceptibility IDs:
+                  -- don't alert for same quebrada if active alert exists within 48h window
+                  SELECT 1 FROM ops.alerts a
+                  WHERE a.source_refs->>'quebrada_id' = hs.quebrada_id::text
+                    AND a.status IN ('active', 'acknowledged', 'escalated')
+                    AND a.created_at > NOW() - INTERVAL '48 hours'
+              )
             ORDER BY hs.probability DESC
             """,
             list(HUAYCO_ALERT_LEVELS),
