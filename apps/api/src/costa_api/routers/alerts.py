@@ -304,7 +304,8 @@ async def alerts_stream(request: Request) -> StreamingResponse:
             await conn.execute(text("SET LOCAL statement_timeout = '7000'"))
             result = await conn.execute(
                 text("""
-                    SELECT id, type, severity, title, status, created_at, district_id
+                    SELECT id, type, severity, title, status, created_at, district_id,
+                           source_refs
                     FROM ops.alerts
                     WHERE status = 'active'
                     ORDER BY created_at DESC
@@ -318,7 +319,7 @@ async def alerts_stream(request: Request) -> StreamingResponse:
             if isinstance(d.get("created_at"), datetime):
                 d["created_at"] = d["created_at"].isoformat()
             alerts.append(d)
-        return json.dumps(alerts)
+        return json.dumps(alerts, default=str)
 
     async def generate():
         deadline = asyncio.get_running_loop().time() + _STREAM_MAX_LIFETIME_S
