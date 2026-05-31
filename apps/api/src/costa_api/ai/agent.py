@@ -687,7 +687,13 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
         if high: sev_note.append(f"{high} alta{'s' if high != 1 else ''}")
         sev_str = f" ({', '.join(sev_note)})" if sev_note else ""
         top_crit = next((r for r in alert_rows if r.get("severity") == "critical"), None)
-        crit_note = f" · más crítica: {top_crit.get('title','')}" if top_crit and top_crit.get("title") else ""
+        if top_crit and top_crit.get("title"):
+            refs = top_crit.get("source_refs") or {}
+            mm72 = refs.get("acc_72h_mm") if isinstance(refs, dict) else None
+            rain_note = f" ({float(mm72):.0f} mm/72h)" if mm72 is not None else ""
+            crit_note = f" · más crítica: {top_crit['title']}{rain_note}"
+        else:
+            crit_note = ""
         sections.append(f"**Alertas:** {total} activa{'s' if total != 1 else ''}{sev_str} — nivel SINAGERD {level}{crit_note}")
         if crit > 0:
             action = "Activar protocolo EDAN y escalar a COEN para alertas críticas."
