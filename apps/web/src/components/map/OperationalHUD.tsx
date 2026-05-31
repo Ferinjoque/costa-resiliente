@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useUIStore } from "@/store/ui";
 import { useAlerts, useFloodExposure, useApiHealth, useSocialSignals, useScraperHealth, useImerg } from "@/lib/queries";
+import { URGENT_SOCIAL_LABELS } from "@/lib/constants";
 import { clsx } from "clsx";
 
 // ─── HUD: solid surface chip anchored top-right ───────────────────────────────
@@ -30,7 +31,7 @@ export function OperationalHUD() {
   const { locale, scenario } = useUIStore();
   const { data: alerts = [] } = useAlerts();
   const { data: exposure } = useFloodExposure();
-  const { data: health, isError: apiDown } = useApiHealth();
+  const { data: health, isError: apiDown, isLoading: healthLoading } = useApiHealth();
   const { data: socialData } = useSocialSignals(48);
   const { data: scraperHealth } = useScraperHealth();
   const { data: imergData } = useImerg(72);
@@ -67,9 +68,8 @@ export function OperationalHUD() {
   const cfg = LEVEL_CONFIG[level];
   const floodKm2   = exposure?.districts.reduce((s, d) => s + d.overlap_km2, 0) ?? 0;
   const affectedPop = exposure?.total_affected_population ?? 0;
-  const _urgentLabels = new Set(["needs_help", "road_blocked", "huayco_observation", "flood_observation"]);
   const urgentSocial = socialData?.features.filter(
-    (f) => _urgentLabels.has(f.properties.triage_label ?? ""),
+    (f) => URGENT_SOCIAL_LABELS.has(f.properties.triage_label ?? ""),
   ).length ?? 0;
   const online = health?.status === "ok" && !apiDown;
 
@@ -201,7 +201,8 @@ export function OperationalHUD() {
               REPLAY {scenario.replayDate?.slice(0, 7) ?? "2017"}
             </span>
           )}
-          {!online && (
+          {/* Show DEMO badge only when we have a confirmed error, not during initial load */}
+          {apiDown && !healthLoading && (
             <span className="ml-1 text-2xs font-semibold text-warn bg-warn-soft px-1.5 py-0.5 rounded-full animate-pulse" title={locale === "en" ? "API unavailable — showing demo data" : "API no disponible — mostrando datos de demostración"}>
               {locale === "en" ? "DEMO DATA" : "DATOS DEMO"}
             </span>

@@ -184,16 +184,23 @@ export function NotificationsPanel() {
   const { data: deliveries = [], isLoading: delLoading, isError: delError, refetch: refetchDels } = useNotificationDeliveries();
   const [showForm, setShowForm] = useState(false);
   const [tab, setTab] = useState<"subscribers" | "log">("subscribers");
+  // Track in-flight deletes by subscriber ID to prevent double-clicks
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
 
   if (activePanel !== "notifications") return null;
 
   async function handleDelete(id: number) {
+    if (deletingIds.has(id)) return;
+    setDeletingIds((s) => new Set([...s, id]));
     try {
       await deleteNotificationSubscriber(id);
-      await qc.invalidateQueries({ queryKey: ["notification-subscribers"] });
       addToast({ message: locale === "es" ? "Suscriptor desactivado" : "Subscriber disabled", variant: "info" });
     } catch {
-      addToast({ message: locale === "es" ? "Error al desactivar" : "Error disabling", variant: "warn" });
+      addToast({ message: locale === "es" ? "Error al desactivar — reintenta" : "Error disabling — retry", variant: "warn" });
+    } finally {
+      setDeletingIds((s) => { const n = new Set(s); n.delete(id); return n; });
+      // Always refetch to ensure UI reflects actual server state
+      await qc.invalidateQueries({ queryKey: ["notification-subscribers"] });
     }
   }
 
@@ -312,7 +319,8 @@ export function NotificationsPanel() {
                 </div>
                 <button
                   onClick={() => handleDelete(sub.id)}
-                  className="p-1 rounded text-ink-subtle hover:text-danger transition-colors shrink-0"
+                  disabled={deletingIds.has(sub.id)}
+                  className="p-1 rounded text-ink-subtle hover:text-danger transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label={locale === "es" ? "Desactivar suscriptor" : "Disable subscriber"}
                   title={locale === "es" ? "Desactivar" : "Disable"}
                 >

@@ -107,12 +107,19 @@ export const useUIStore = create<UIState>((set) => ({
 
   toasts: [],
   addToast: (toast) =>
-    set((state) => ({
-      toasts: [
-        ...state.toasts.slice(-3),
-        { ...toast, id: `${Date.now()}-${Math.random()}`, at: Date.now() },
-      ],
-    })),
+    set((state) => {
+      const newToast = { ...toast, id: `${Date.now()}-${Math.random()}`, at: Date.now() };
+      const current = state.toasts;
+      if (current.length < 4) return { toasts: [...current, newToast] };
+      // At cap: prefer dropping non-danger toasts to preserve critical operator feedback
+      const dropIdx = current.findLastIndex((t) => t.variant !== "danger");
+      if (dropIdx >= 0) {
+        const pruned = [...current.slice(0, dropIdx), ...current.slice(dropIdx + 1)];
+        return { toasts: [...pruned, newToast] };
+      }
+      // All existing are danger — drop oldest
+      return { toasts: [...current.slice(1), newToast] };
+    }),
   removeToast: (id) =>
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
 
