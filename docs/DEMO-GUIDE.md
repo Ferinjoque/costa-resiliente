@@ -11,7 +11,7 @@
 
 ```bash
 curl http://localhost:8000/api/v1/health
-# → {"status":"ok","version":"0.1.0","sinagerd_level":"EMERGENCIA","active_alerts":2,
+# → {"status":"ok","version":"0.1.0","sinagerd_level":"EMERGENCIA","active_alerts":7,
 #    "max_rain_72h_mm":63.2,"rain_level":"emergencia"}
 ```
 
@@ -22,10 +22,10 @@ The health endpoint reports SINAGERD level + active alerts + ANA rainfall level 
 Open http://localhost:3000.
 
 **What judges see:**
-- Top-right HUD: **"EMERGENCIA"** (pulsing red) — from 2 active rainfall alerts
+- Top-right HUD: **"EMERGENCIA"** (pulsing red) — from 7 active alerts (3 critical huayco + 1 critical rain)
 - Rainfall chip: **63 mm** (red, Rímac watershed above 50mm EMERGENCIA threshold)
 - Clock: Lima time (PET, UTC-5)
-- Map: Lima Metropolitana with SAR flood polygon (Lurigancho), huayco risk dots, rainfall layer
+- Map: Lima Metropolitana — **39 districts colored ALTO** (red), SAR flood polygon, huayco risk dots, rainfall layer
 
 The FEEDS chip (core sources only) shows all 5 core sources active: Bluesky ✓ RSS ✓ IMERG ✓ Stations ✓ Alerts ✓
 
