@@ -15,6 +15,7 @@ import { clsx } from "clsx";
 import type { Alert, AlertTrendDay, SocialBreakdown } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
+import { URGENT_SOCIAL_LABELS } from "@/lib/constants";
 import {
   DEMO_FORECAST, HUAYCO_THRESHOLD_MM, DEMO_RESOURCES,
   type ForecastStep, type ResourceCategory,
@@ -1433,9 +1434,8 @@ function IncidentTimeline({ locale }: { locale: Locale }) {
     });
   }
 
-  const _URGENT_LABELS = new Set(["needs_help", "road_blocked", "huayco_observation", "flood_observation"]);
   for (const f of (socialData?.features ?? [])
-    .filter((f) => _URGENT_LABELS.has(f.properties.triage_label ?? ""))
+    .filter((f) => URGENT_SOCIAL_LABELS.has(f.properties.triage_label ?? ""))
     .slice(0, 3)) {
     const src = SOURCE_LABEL_SHORT[f.properties.source ?? ""] ?? f.properties.source ?? "?";
     const txt = (f.properties.text?.slice(0, 60) ?? (locale === "es" ? "Señal social" : "Social signal"));

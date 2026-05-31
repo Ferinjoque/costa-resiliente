@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { useSocialSignals, useAlerts, useImerg } from "@/lib/queries";
+import { URGENT_SOCIAL_LABELS } from "@/lib/constants";
 import { useUIStore } from "@/store/ui";
 import { clsx } from "clsx";
 
@@ -67,12 +68,10 @@ export function LiveTicker() {
       };
     });
 
-  // Only show urgent social signals (needs_help, huayco_observation, flood_observation)
-  const _URGENT_LABELS = new Set(["needs_help", "huayco_observation", "flood_observation", "road_blocked"]);
   const socialItems: TickerItem[] = (socialData?.features ?? [])
     .filter((f) => {
       const lbl = f.properties.triage_label;
-      return lbl && _URGENT_LABELS.has(lbl);
+      return lbl && URGENT_SOCIAL_LABELS.has(lbl);
     })
     .slice(0, 6)
     .map((f) => {
