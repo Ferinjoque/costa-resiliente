@@ -245,3 +245,29 @@ async def test_district_dashboard_rainfall_alerts_included(app):
     assert "UNION" in src or "union" in src.lower(), (
         "district_dashboard must UNION district-specific and rainfall alerts"
     )
+
+
+@pytest.mark.asyncio
+async def test_sinpad_uses_exact_match_not_substring(app):
+    """SINPAD historical event count uses exact ubigeo or exact name match.
+
+    Regression guard: prior ILIKE '%name%' substring match overcounted events —
+    e.g. 'Lurigancho' returned 50 events (includes 'Lurigancho-Chosica' and others).
+    Fix: exact ubigeo match + exact case-insensitive name fallback = 27 events.
+    """
+    from inspect import getsource
+    from costa_api.routers.districts import district_dashboard
+    src = getsource(district_dashboard)
+
+    # Exact match patterns must be present
+    assert "ubigeo = :ubigeo" in src, (
+        "SINPAD query must use exact ubigeo match to avoid substring overcounting"
+    )
+    assert "LOWER(TRIM(distrito))" in src, (
+        "SINPAD query must use exact normalized name match as fallback"
+    )
+    # Substring match must NOT be present
+    assert "ILIKE '%' || :name || '%'" not in src, (
+        "SINPAD query must not use substring ILIKE match — it overcounts events "
+        "from adjacent/similarly-named districts"
+    )
