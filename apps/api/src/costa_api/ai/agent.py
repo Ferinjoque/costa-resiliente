@@ -833,6 +833,7 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
         return "No se encontraron datos en ninguna fuente. Sistema posiblemente sin datos recientes."
 
     body = "\n".join(f"• {s}" for s in sections)
-    if action:
-        return f"**SITREP — Lima Metropolitana**\n\n{body}\n\nAcción recomendada: {action}"
-    return f"**SITREP — Lima Metropolitana**\n\n{body}"
+    # Always end with an action — default to monitoring if no specific trigger
+    if not action:
+        action = "Mantener monitoreo activo. Verificar scrapers y revisar fuentes en panel Datos."
+    return f"**SITREP — Lima Metropolitana**\n\n{body}\n\nAcción recomendada: {action}"
