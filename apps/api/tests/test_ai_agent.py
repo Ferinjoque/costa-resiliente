@@ -1099,6 +1099,10 @@ def test_build_sitrep_answer_no_critical():
     assert "Acción recomendada:" in answer or "acción" in answer.lower(), (
         "Sitrep must always include an action recommendation, even when no critical alerts"
     )
+    # With high alerts + ALERTA rain, action should mention brigades
+    assert "brigadas" in answer.lower() or "monitoreo" in answer.lower(), (
+        "Sitrep action for ALERTA rain should mention brigades or monitoring"
+    )
 
 
 # ─── get_active_alerts: minimum-severity filter ──────────────────────────────
