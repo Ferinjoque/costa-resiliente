@@ -148,6 +148,7 @@ async def list_alerts(
             WHERE {where}
             ORDER BY
                 CASE a.status WHEN 'active' THEN 0 WHEN 'escalated' THEN 1 ELSE 2 END,
+                CASE a.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
                 a.created_at DESC
             LIMIT :limit
         """),
