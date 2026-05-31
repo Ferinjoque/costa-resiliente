@@ -351,16 +351,13 @@ export function useDistrictRiskSummary(
   return useQuery({
     queryKey: ["district-risk-summary"],
     queryFn: async () => {
-      try {
-        const data = await fetchDistrictRiskSummary();
-        return data.features.length > 0 ? data : DEMO_DISTRICT_RISK_SUMMARY;
-      } catch {
-        return DEMO_DISTRICT_RISK_SUMMARY;
-      }
+      const data = await fetchDistrictRiskSummary();
+      return data.features.length > 0 ? data : DEMO_DISTRICT_RISK_SUMMARY;
     },
     staleTime: 2 * MIN,
     refetchInterval: 2 * MIN,
-    placeholderData: (prev) => prev,
+    // Keep showing previous risk colors (never blank the map)
+    placeholderData: (prev) => prev ?? DEMO_DISTRICT_RISK_SUMMARY,
     ...opts,
   });
 }
