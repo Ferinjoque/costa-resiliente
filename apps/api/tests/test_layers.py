@@ -297,6 +297,53 @@ class TestFloodExposure:
         assert total >= 0
 
 
+# ─── _parse_replay_time ──────────────────────────────────────────────────────
+
+class TestParseReplayTime:
+    """Unit tests for the _parse_replay_time helper in layers.py."""
+
+    def _parse(self, at_str):
+        from costa_api.routers.layers import _parse_replay_time
+        return _parse_replay_time(at_str)
+
+    def test_none_returns_now(self):
+        """None input → returns a current datetime (not None)."""
+        from datetime import datetime, timezone
+        result = self._parse(None)
+        assert isinstance(result, datetime)
+        assert result.tzinfo is not None
+
+    def test_date_only_promoted_to_end_of_day(self):
+        """YYYY-MM-DD input must be promoted to 23:59:59 (full day visible)."""
+        result = self._parse("2026-05-31")
+        assert result.hour == 23
+        assert result.minute == 59
+
+    def test_explicit_midnight_not_promoted(self):
+        """T00:00:00 (explicit midnight) must NOT be bumped to 23:59.
+
+        Prior bug: condition was `if dt.hour == 0 and ... == 0` — this
+        incorrectly bumped an explicit T00:00:00Z query to end-of-day,
+        hiding data published before midnight.
+        """
+        result = self._parse("2026-05-31T00:00:00Z")
+        assert result.hour == 0, (
+            "Explicit midnight should stay at 00:00:00, not be bumped to 23:59 — "
+            "only bare date inputs (no time component) should be promoted"
+        )
+
+    def test_explicit_time_preserved(self):
+        """An explicit T12:30:00 timestamp must not be modified."""
+        result = self._parse("2026-05-31T12:30:00")
+        assert result.hour == 12
+        assert result.minute == 30
+
+    def test_timezone_aware_returned(self):
+        """All returned datetimes must be timezone-aware."""
+        result = self._parse("2026-05-15")
+        assert result.tzinfo is not None
+
+
 # ─── /layers/social ──────────────────────────────────────────────────────────
 
 class TestSocialLayer:
