@@ -348,11 +348,20 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
       <div className="px-4 py-3 border-b border-border bg-warn-soft/40">
         <div className="flex items-start gap-2 text-xs text-warn-muted">
           <AlertTriangle size={12} className="shrink-0 mt-0.5" aria-hidden="true" />
-          <p>
-            {locale === "es"
-              ? "Inicia sesión para enviar reportes de campo. Los reportes quedan registrados con tu identidad de operador."
-              : "Log in to submit field reports. Reports are recorded under your operator identity."}
-          </p>
+          <div className="flex-1">
+            <p className="mb-1.5">
+              {locale === "es"
+                ? "Los reportes de campo requieren autenticación de operador."
+                : "Field reports require operator authentication."}
+            </p>
+            <button
+              type="button"
+              onClick={() => useAuthStore.getState().setLoginModalOpen(true)}
+              className="text-accent underline underline-offset-2 hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded transition-colors"
+            >
+              {locale === "es" ? "Iniciar sesión →" : "Sign in →"}
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -34,7 +34,7 @@ export function OperationalHUD() {
   const { data: health, isError: apiDown, isLoading: healthLoading } = useApiHealth();
   const { data: socialData } = useSocialSignals(48);
   const { data: scraperHealth } = useScraperHealth();
-  const { data: imergData } = useImerg(72);
+  const { data: imergData, isError: imergError } = useImerg(72);
 
   const [clock, setClock] = useState("");
   useEffect(() => {
@@ -140,8 +140,19 @@ export function OperationalHUD() {
         {urgentSocial > 0 && (
           <HudMetric value={String(urgentSocial)} label={locale === "es" ? "señales" : "signals"} border />
         )}
+        {/* Rainfall data-gap chip — shown when IMERG fetch failed so operator knows data is missing */}
+        {imergError && (
+          <div
+            className="flex items-center gap-1 px-2.5 py-1.5 border-r border-border-subtle"
+            title={locale === "es" ? "Datos de lluvia IMERG no disponibles — verifica conexión" : "IMERG rainfall data unavailable — check connection"}
+          >
+            <span className="text-2xs font-bold uppercase tracking-widest text-ink-subtle">
+              {locale === "es" ? "LLUVIA?" : "RAIN?"}
+            </span>
+          </div>
+        )}
         {/* Rainfall chip — only show when above AVISO threshold (≥25 mm/72h) */}
-        {rainLevel !== "ok" && maxRain72h > 0 && (
+        {!imergError && rainLevel !== "ok" && maxRain72h > 0 && (
           <div
             className={clsx(
               "flex items-center gap-1 px-2.5 py-1.5 border-r border-border-subtle",

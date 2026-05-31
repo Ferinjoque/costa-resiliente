@@ -279,7 +279,14 @@ async def run(
             tc_list = []
             for tool_name, res in zip(sitrep_tools, sitrep_results):
                 if isinstance(res, Exception):
-                    logger.warning("sitrep tool %s failed: %s", tool_name, res)
+                    # Raised before dispatch() — very rare (cache or network layer)
+                    logger.warning("sitrep tool %s raised before dispatch: %s", tool_name, res)
+                    continue
+                if res.get("error"):
+                    # dispatch() caught a DB exception and wrapped it — tool failed.
+                    # Don't include in per_tool_rows so quorum guard counts only
+                    # tools that actually ran successfully (error or calm).
+                    logger.warning("sitrep tool %s DB error: %s", tool_name, res["error"])
                     continue
                 rows = res.get("rows", [])
                 all_rows.extend(rows)
@@ -300,16 +307,27 @@ async def run(
                         mode="sitrep",
                     )
             elif per_tool_rows:
-                # All tools returned but all have zero rows — system is calm
-                logger.info("sitrep_mode: all 5 tools returned 0 rows — no active emergency")
-                return AgentResult(
-                    answer="**SITREP — Lima Metropolitana**: Sin alertas activas, sin inundaciones SAR detectadas, sin riesgo crítico de huayco, niveles hidrológicos normales. Sistema en estado NORMAL.",
-                    sources=[],
-                    tool_calls=tc_list,
-                    confidence=0.85,
-                    quick_mode=True,
-                    mode="sitrep",
-                )
+                # Only declare NORMAL when ≥3 of 5 tools succeeded (≥3/5 = quorum).
+                # If fewer tools responded, some may have failed with exceptions —
+                # declaring "no emergency" when alerts/rainfall tools are down would
+                # give operators a false sense of calm during a real crisis.
+                if len(per_tool_rows) >= 3:
+                    logger.info("sitrep_mode: %d/5 tools returned 0 rows — no active emergency", len(per_tool_rows))
+                    return AgentResult(
+                        answer="**SITREP — Lima Metropolitana**: Sin alertas activas, sin inundaciones SAR detectadas, sin riesgo crítico de huayco, niveles hidrológicos normales. Sistema en estado NORMAL.",
+                        sources=[],
+                        tool_calls=tc_list,
+                        confidence=0.85,
+                        quick_mode=True,
+                        mode="sitrep",
+                    )
+                else:
+                    # Too few tools responded — partial data, don't assert NORMAL.
+                    # Fall through to the full LLM agent for a best-effort answer.
+                    logger.warning(
+                        "sitrep_mode: only %d/5 tools responded — not enough for NORMAL assertion, falling through",
+                        len(per_tool_rows),
+                    )
         except Exception as exc:
             logger.warning("sitrep_mode failed: %s — falling through to full agent", exc)
 
