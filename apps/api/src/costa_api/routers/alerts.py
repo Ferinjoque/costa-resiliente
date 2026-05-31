@@ -146,7 +146,9 @@ async def list_alerts(
             FROM ops.alerts a
             LEFT JOIN geo.districts d ON d.id = a.district_id
             WHERE {where}
-            ORDER BY a.created_at DESC
+            ORDER BY
+                CASE a.status WHEN 'active' THEN 0 WHEN 'escalated' THEN 1 ELSE 2 END,
+                a.created_at DESC
             LIMIT :limit
         """),
         params,
@@ -301,18 +303,20 @@ async def alerts_stream(request: Request) -> StreamingResponse:
     """
     async def _fetch_alerts() -> str:
         async with engine.connect() as conn:
-            await conn.execute(text("SET LOCAL statement_timeout = '7000'"))
-            result = await conn.execute(
-                text("""
-                    SELECT id, type, severity, title, status, created_at, district_id,
-                           source_refs
-                    FROM ops.alerts
-                    WHERE status = 'active'
-                    ORDER BY created_at DESC
-                    LIMIT 20
-                """)
-            )
-            rows = result.mappings().all()
+            async with conn.begin():
+                # SET LOCAL requires an explicit transaction to take effect
+                await conn.execute(text("SET LOCAL statement_timeout = '7000'"))
+                result = await conn.execute(
+                    text("""
+                        SELECT id, type, severity, title, status, created_at, district_id,
+                               source_refs
+                        FROM ops.alerts
+                        WHERE status = 'active'
+                        ORDER BY created_at DESC
+                        LIMIT 20
+                    """)
+                )
+                rows = result.mappings().all()
         alerts = []
         for r in rows:
             d = dict(r)

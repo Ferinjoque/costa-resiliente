@@ -72,9 +72,12 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
     try:
         rain_row = await db.execute(
             text("""
-                SELECT MAX(acc_72h_mm) AS max_rain
-                FROM hydro.imerg_accumulations
-                WHERE time = (SELECT MAX(time) FROM hydro.imerg_accumulations)
+                SELECT MAX(latest.acc_72h_mm) AS max_rain
+                FROM (
+                    SELECT DISTINCT ON (watershed_id) acc_72h_mm
+                    FROM hydro.imerg_accumulations
+                    ORDER BY watershed_id, time DESC
+                ) latest
             """)
         )
         r = rain_row.scalar()
