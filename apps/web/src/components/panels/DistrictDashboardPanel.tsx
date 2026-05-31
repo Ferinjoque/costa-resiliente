@@ -207,7 +207,11 @@ function buildMarkdown(d: ReportData): string {
     `## 3. Evaluación de Impacto`,``,
     `- SAR Sentinel-1 detecta **${d.floodArea.toFixed(1)} km²** de área inundada`,
     `- Población estimada en zona de riesgo: **${d.popStr} habitantes**`,
-    `- Distritos con nivel de riesgo alto: **${d.highRiskDistricts.length}**`,``,
+    `- Distritos con nivel de riesgo alto: **${d.highRiskDistricts.length}**`,
+    ...(d.maxRain72h != null && d.maxRain72h >= 25 ? [
+      `- Lluvia acumulada 72h: **${d.maxRain72h.toFixed(0)} mm${d.maxRainWs ? ` (cuenca ${d.maxRainWs})` : ""}** — ${d.maxRain72h >= 50 ? "⚠ supera umbral EMERGENCIA ANA (>50 mm)" : "supera umbral ALERTA ANA (>25 mm)"}`,
+    ] : []),
+    ``,
     `## 4. Fuentes de Datos`,``,
     `| Fuente | Detalle | Actualización |`,`|--------|---------|---------------|`,
     `| SAR | Sentinel-1 · Microsoft Planetary Computer | ~6 días |`,
