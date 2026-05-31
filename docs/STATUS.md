@@ -226,7 +226,7 @@ POST   /api/v1/auth/operators
 2. **Multi-quick-mode** — 2–3 matching patterns → parallel asyncio.gather, no LLM
 3. **Sitrep mode** — "resumen completo", "inicio de guardia", "sitrep" → 4 tools parallel → `_build_sitrep_answer()` SITREP narrative
 
-**RAG protocol corpus (6 documents, 46 chunks):** INDECI Plan Familiar, CENEPRED Movimientos en Masa, MINSA Protocolo Emergencias, SENAMHI Guía Hidrometeorológica, MML Plan Huaycos Lima, ANA Umbrales Lluvia Lima.
+**RAG protocol corpus (7 documents, 51 chunks):** INDECI Plan Familiar, CENEPRED Movimientos en Masa, MINSA Protocolo Emergencias, SENAMHI Guía Hidrometeorológica, MML Plan Huaycos Lima, ANA Umbrales Lluvia Lima, SINAGERD Acciones Rápidas COER Lima.
 
 **Anti-fabrication invariant:** LLM never executes raw SQL. All numerical claims trace to a DB row; if a tool returns 0 rows, the system says so explicitly.
 
@@ -265,7 +265,7 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 **Tests (+53):** 621 passed (↑53 from 568). Includes sitrep detection, sitrep answer builder, new quick patterns, infrastructure _build_answer, health Redis key, sitrep integration tests. TypeScript: 0 errors.
 
-**Commits (90+):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `9cd9099` fusion-prose → `b6cd160` huayco-trigger → `b7bf186` rainfall-alert-chips → `5c5b8cf` flood-district → `913850f` albergue-routing → `4067e4b` station-thresholds → `079f0dd` SlaChip-near-breach → `ec26dae` city-rainfall → `e4fe85a` health-sinagerd → `ae82f36` health-rain + more.
+**Commits (98+):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `9cd9099` fusion-prose → `b6cd160` huayco-trigger → `b7bf186` rainfall-alert-chips → `5c5b8cf` flood-district → `913850f` albergue-routing → `4067e4b` station-thresholds → `079f0dd` SlaChip-near-breach → `ec26dae` city-rainfall → `e4fe85a` health-sinagerd → `ae82f36` health-rain → `cb8dcf1` city-SINAGERD → `8b9473e` rag-7docs + more.
 
 ---
 
