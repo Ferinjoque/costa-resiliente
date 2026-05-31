@@ -132,8 +132,8 @@ export function OperationalHUD() {
               "hover:bg-surface-sunken transition-colors",
             )}
             title={locale === "es"
-              ? `${offlineSources} fuente(s) sin datos, ${staleSources} con retraso. Click para detalles.`
-              : `${offlineSources} source(s) offline, ${staleSources} stale. Click for details.`}
+              ? `Fuentes clave: ${offlineSources} sin datos, ${staleSources} con retraso (Bluesky/RSS/IMERG/estaciones/alertas). Click para detalles.`
+              : `Core feeds: ${offlineSources} offline, ${staleSources} stale (Bluesky/RSS/IMERG/stations/alerts). Click for details.`}
             aria-label={locale === "es" ? "Estado de fuentes degradado" : "Data source status degraded"}
           >
             <span
