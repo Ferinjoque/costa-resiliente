@@ -90,8 +90,9 @@ export function MapLegend() {
   const showFlood    = activeLayers.has("flood");
   const showStations = activeLayers.has("stations");
   const showInfra    = activeLayers.has("infrastructure");
+  const showShelters = activeLayers.has("shelters");
 
-  if (!showRisk && !showRain && !showSocial && !showHuayco && !showFlood && !showStations && !showInfra) return null;
+  if (!showRisk && !showRain && !showSocial && !showHuayco && !showFlood && !showStations && !showInfra && !showShelters) return null;
 
   return (
     // Sits just above the MapLibre navigation control (+/-) at bottom-right.
@@ -176,6 +177,12 @@ export function MapLegend() {
               {INFRA_ITEMS.map(({ color, label }) => (
                 <DotRow key={label.es} color={color} label={label[locale]} shape="circle" />
               ))}
+            </Section>
+          )}
+
+          {showShelters && (
+            <Section label={locale === "es" ? "Albergues INDECI" : "INDECI Shelters"}>
+              <DotRow color="#34d399" label={locale === "es" ? "Albergue de evacuación" : "Evacuation shelter"} shape="circle" />
             </Section>
           )}
 
