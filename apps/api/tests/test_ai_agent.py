@@ -900,6 +900,20 @@ def test_detect_quick_vias_bloqueadas():
     assert _detect_quick("¿Qué vías bloqueadas hay reportadas?") == "get_social_clusters"
 
 
+def test_detect_quick_subestaciones():
+    """'subestaci' routes to get_infrastructure_impact (added Session 21).
+    Note: 'en zona inundada' also matches flood patterns → use a query without
+    flood keyword for single-tool quick-mode test.
+    """
+    from costa_api.ai.agent import _detect_quick, _detect_multi_quick
+    # Without flood keyword — single match
+    assert _detect_quick("¿Qué subestaciones están activas en Lima?") == "get_infrastructure_impact"
+    # With flood keyword — multi-quick returns both tools
+    multi = _detect_multi_quick("¿Cuántas subestaciones están en zona inundada?")
+    assert "get_infrastructure_impact" in multi, "subestaci + inundada → infra + flood multi-quick"
+    assert "get_flood_polygons" in multi
+
+
 def test_detect_quick_viviendas_afectadas():
     """'viviendas afectadas' routes to get_population_at_risk."""
     from costa_api.ai.agent import _detect_quick
