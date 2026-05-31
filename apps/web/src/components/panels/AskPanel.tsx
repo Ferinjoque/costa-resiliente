@@ -173,9 +173,12 @@ function findDemoResponse(query: string): string | null {
 }
 
 const GREETING_WORDS = new Set([
-  "hey", "hola", "hi", "hello", "hallo", "oi", "ola", "sup", "yo", "ok", "okay",
-  "test", "prueba", "buenos días", "buenas", "good morning", "good afternoon",
+  "hey", "hola", "hi", "hello", "hallo", "oi", "ola", "sup", "okay",
+  "buenos días", "good morning", "good afternoon",
 ]);
+// Note: "ok", "yo", "test", "prueba", "buenas" are intentionally excluded —
+// they can appear in terse operational commands ("ok prueba", "yo buenas") and
+// must not be silently dropped as greetings during an active emergency.
 
 function isGreeting(q: string): boolean {
   const words = q.toLowerCase().trim().split(/\s+/);
