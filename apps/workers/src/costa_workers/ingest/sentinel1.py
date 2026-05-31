@@ -214,9 +214,19 @@ def ingest_sentinel1_flow(
 
     results = []
     for scene in scenes:
-        minio_path = download_scene_to_minio(scene)
-        scene_id = register_in_stac(scene, minio_path)
-        results.append(scene_id)
+        try:
+            minio_path = download_scene_to_minio(scene)
+        except Exception as exc:
+            log.warning("Sentinel-1: download failed for %s, skipping: %s", scene.get("id", "unknown"), exc)
+            continue
+        if not minio_path:
+            log.warning("Sentinel-1: download returned None for %s, skipping registration", scene.get("id", "unknown"))
+            continue
+        try:
+            scene_id = register_in_stac(scene, minio_path)
+            results.append(scene_id)
+        except Exception as exc:
+            log.warning("Sentinel-1: STAC registration failed for %s: %s", scene.get("id", "unknown"), exc)
 
     log.info("Sentinel-1 ingest complete: %d scenes", len(results))
     return {"scenes_processed": len(results), "scene_ids": results}
