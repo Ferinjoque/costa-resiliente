@@ -494,9 +494,16 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         level_es = {"very_high": "MUY ALTO", "high": "ALTO", "medium": "MEDIO"}.get(top_level, top_level.upper())
         prob_str = f" (prob. {float(top_prob):.2f})" if top_prob is not None else ""
         trigger_str = f" · umbral activación: {float(top_trigger):.0f} mm/24h" if top_trigger is not None else ""
+        # Count very_high (imminent activation) vs high
+        very_high = [r for r in rows if r.get("risk_level") == "very_high"]
+        if very_high:
+            vh_names = ", ".join(r.get("name", "?") for r in very_high[:2])
+            vh_note = f" · {len(very_high)} quebrada{'s' if len(very_high) != 1 else ''} en umbral CRÍTICO: {vh_names}"
+        else:
+            vh_note = ""
         return (
             f"Se identificaron {n} quebrada{'s' if n != 1 else ''} con riesgo elevado. "
-            f"La más crítica: {top_name} — {level_es}{prob_str}{trigger_str}."
+            f"La más crítica: {top_name} — {level_es}{prob_str}{trigger_str}{vh_note}."
         )
     if "level_m" in first:
         r = rows[0]
