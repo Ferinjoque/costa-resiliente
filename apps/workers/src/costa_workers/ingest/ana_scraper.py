@@ -548,8 +548,8 @@ async def ingest_hydro_stations_flow() -> dict:
             )
         finally:
             await r.aclose()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("ana_scraper: heartbeat write failed (non-critical): %s", exc)
 
     return {
         "observations_stored": total,
