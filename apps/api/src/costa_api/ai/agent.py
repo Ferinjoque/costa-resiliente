@@ -705,9 +705,9 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
 
 
 def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
-    """Synthesise a cohesive SITREP narrative from 4 parallel tool results.
+    """Synthesise a cohesive SITREP narrative from 5 sequential tool results.
 
-    Format:  ALERTAS · LLUVIA · RÍOS · INUNDACIÓN → ordered bullets → acción.
+    Format:  ALERTAS · LLUVIA · RÍOS · INUNDACIÓN · HUAYCO → ordered bullets → acción.
     More readable than a pipe-joined string of independent _build_answer() calls.
     """
     sections: list[str] = []
