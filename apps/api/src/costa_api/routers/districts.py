@@ -383,7 +383,7 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
                 WHERE o.station_id = s.id ORDER BY o.time DESC LIMIT 1
             ) obs ON TRUE
             WHERE ST_DWithin(s.geom::geography,
-                (SELECT ST_Centroid(ST_MakeValid(geom))::geography FROM geo.districts WHERE id = :did),
+                (SELECT ST_MakeValid(geom)::geography FROM geo.districts WHERE id = :did),
                 30000)
             ORDER BY s.name
             LIMIT 5
