@@ -12,6 +12,7 @@ const T = {
     huayco: "Riesgo huayco",
     social: "Señales sociales",
     population: "Población",
+    rainfall: "Lluvia 72h",
     noData: "Sin datos activos",
     loading: "Calculando…",
     polygons: (n: number) => `${n} polígono${n !== 1 ? "s" : ""} activo${n !== 1 ? "s" : ""}`,
@@ -30,6 +31,7 @@ const T = {
     huayco: "Huayco risk",
     social: "Social signals",
     population: "Population",
+    rainfall: "72h rainfall",
     noData: "No active data",
     loading: "Computing…",
     polygons: (n: number) => `${n} active polygon${n !== 1 ? "s" : ""}`,
@@ -141,6 +143,14 @@ export function FusionCallout() {
               }
               dim={data.social.total_signals_3h === 0}
             />
+            {data.rainfall?.acc_72h_mm != null && (
+              <FRow
+                label={t.rainfall}
+                value={`${data.rainfall.acc_72h_mm.toFixed(0)} mm${data.rainfall.watershed ? ` (${data.rainfall.watershed})` : ""}`}
+                warn={data.rainfall.level === "alerta" || data.rainfall.level === "aviso"}
+                danger={data.rainfall.level === "emergencia"}
+              />
+            )}
 
             <Divider className="my-2" />
 
@@ -168,15 +178,20 @@ function FRow({
   label,
   value,
   dim = false,
+  warn = false,
+  danger = false,
 }: {
   label: string;
   value: string;
   dim?: boolean;
+  warn?: boolean;
+  danger?: boolean;
 }) {
+  const valueClass = danger ? "text-danger font-bold" : warn ? "text-warn-muted font-semibold" : "text-ink font-medium";
   return (
     <div className={`flex items-baseline gap-2 py-0.5 ${dim ? "opacity-50" : ""}`}>
       <span className="text-xs text-ink-subtle w-24 shrink-0">{label}</span>
-      <span className="text-sm text-ink font-medium tabular-nums leading-snug">{value}</span>
+      <span className={`text-sm tabular-nums leading-snug ${valueClass}`}>{value}</span>
     </div>
   );
 }

@@ -644,6 +644,13 @@ export interface FusionSocial {
   urgent_signals_3h: number;
 }
 
+export interface FusionRainfall {
+  watershed: string | null;
+  acc_72h_mm: number | null;
+  acc_24h_mm: number | null;
+  level: "emergencia" | "alerta" | "aviso" | "normal" | null;
+}
+
 export interface DistrictFusion {
   retrieved_at: string;
   district: FusionDistrict;
@@ -653,6 +660,7 @@ export interface DistrictFusion {
   flood: FusionFlood;
   huayco: FusionHuayco;
   social: FusionSocial;
+  rainfall?: FusionRainfall;
 }
 
 export function fetchDistrictFusion(ubigeo: string): Promise<DistrictFusion> {
