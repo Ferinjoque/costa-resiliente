@@ -72,8 +72,10 @@ export function DemoLiveSimulator() {
       const signal = SIGNAL_POOL[indexRef.current % SIGNAL_POOL.length];
       indexRef.current++;
 
-      queryClient.setQueryData<SocialSignalCollection>(
-        ["social-signals", 48, undefined],
+      // Use setQueriesData with partial key to update all social-signal caches
+      // regardless of hours/label params (same pattern as SocialFeedPanel field report)
+      queryClient.setQueriesData<SocialSignalCollection>(
+        { queryKey: ["social-signals"] },
         (old) => {
           if (!old) return old;
           const newFeature: SocialSignalCollection["features"][number] = {
