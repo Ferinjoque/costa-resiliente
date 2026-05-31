@@ -82,10 +82,19 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
         if max_rain is not None:
             if max_rain >= 50.0:
                 rain_level = "emergencia"
+                # Elevate SINAGERD level if rainfall alone exceeds EMERGENCIA threshold
+                if level not in ("EMERGENCIA",):
+                    level = "EMERGENCIA"
             elif max_rain >= 25.0:
                 rain_level = "alerta"
+                # Elevate to ALERTA if only AVISO or NORMAL from alerts
+                if level in ("AVISO", "NORMAL"):
+                    level = "ALERTA"
             elif max_rain >= 15.0:
                 rain_level = "aviso"
+                # Elevate to AVISO if only NORMAL from alerts
+                if level == "NORMAL":
+                    level = "AVISO"
     except Exception:
         pass
 
