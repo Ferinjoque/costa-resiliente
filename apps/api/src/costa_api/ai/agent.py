@@ -602,13 +602,15 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
     if "triage_label" in first:
         total = sum(r.get("count") or 0 for r in rows)
         # Highlight urgent label breakdown (huayco > needs_help > flood > infra > road)
-        _URGENT_ORDER = ["huayco_observation", "needs_help", "flood_observation", "infrastructure_damage", "road_blocked"]
+        _URGENT_ORDER = ["huayco_observation", "needs_help", "flood_observation",
+                         "infrastructure_damage", "road_blocked", "weather_observation"]
         _LABEL_ES = {
             "huayco_observation": "avistamientos huayco",
             "needs_help": "solicitudes de ayuda",
             "flood_observation": "avistamientos inundación",
             "infrastructure_damage": "daños infraestructura",
             "road_blocked": "vías bloqueadas",
+            "weather_observation": "observaciones meteo",
         }
         urgent_parts = []
         huayco_cnt = 0
