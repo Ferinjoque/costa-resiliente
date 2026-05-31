@@ -306,16 +306,37 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
     for a in alerts:
         a["created_at"] = _iso(a["created_at"])
 
-    # Alerts 7-day trend (count per day by severity)
+    # Alerts 7-day trend (count per day by severity).
+    # Includes district-specific alerts AND watershed rainfall alerts that spatially
+    # intersect the district (rainfall alerts have district_id=NULL — UNION captures them).
     trend_result = await db.execute(
         text("""
             SELECT
                 DATE_TRUNC('day', created_at)::date AS day,
                 severity,
                 COUNT(*) AS cnt
-            FROM ops.alerts
-            WHERE district_id = :did
-              AND created_at >= NOW() - INTERVAL '7 days'
+            FROM (
+                -- District-specific alerts (huayco, flood, social_cluster)
+                SELECT created_at, severity
+                FROM ops.alerts
+                WHERE district_id = :did
+                  AND created_at >= NOW() - INTERVAL '7 days'
+                UNION ALL
+                -- Watershed rainfall alerts intersecting this district
+                SELECT a.created_at, a.severity
+                FROM ops.alerts a
+                WHERE a.type = 'rainfall'
+                  AND a.district_id IS NULL
+                  AND a.created_at >= NOW() - INTERVAL '7 days'
+                  AND EXISTS (
+                    SELECT 1 FROM geo.watersheds w
+                    WHERE w.id::text = a.source_refs->>'watershed_id'
+                      AND ST_Intersects(
+                        ST_MakeValid(w.geom),
+                        (SELECT ST_MakeValid(geom) FROM geo.districts WHERE id = :did)
+                      )
+                  )
+            ) combined
             GROUP BY 1, 2
             ORDER BY 1
         """),
