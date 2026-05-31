@@ -43,6 +43,15 @@ class TestImergLatest:
         assert "NASA IMERG" in resp.json().get("source", "")
 
     @pytest.mark.asyncio
+    async def test_source_label_is_late_run(self):
+        """IMERG source must say 'Late Run' not 'Early Run' — regression guard."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get("/api/v1/layers/imerg/latest")
+        source = resp.json().get("source", "")
+        assert "Late Run" in source, f"Expected 'Late Run' in source label, got: {source!r}"
+        assert "Early Run" not in source, "IMERG source must not say 'Early Run'"
+
+    @pytest.mark.asyncio
     async def test_watershed_filter_accepted(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get("/api/v1/layers/imerg/latest?watershed_id=1")
