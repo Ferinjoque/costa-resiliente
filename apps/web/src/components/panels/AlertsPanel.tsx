@@ -827,15 +827,21 @@ export function AlertsPanel() {
   const [tab, setTab]               = useState<FilterTab>("active");
   const [province, setProvince]     = useState<string>("Lima");
   const [district, setDistrict]     = useState<string>("");
+  const [severityFilter, setSeverityFilter] = useState<"" | "critical" | "high">("");
 
   const filters = {
     ...(province ? { province } : {}),
     ...(district ? { district } : {}),
   };
 
-  const { data: alerts = [], isLoading, isError, dataUpdatedAt, refetch } = useAlerts(
+  const { data: rawAlerts = [], isLoading, isError, dataUpdatedAt, refetch } = useAlerts(
     Object.keys(filters).length > 0 ? filters : undefined,
   );
+
+  // Apply severity filter client-side (avoids extra API call for common filter)
+  const alerts = severityFilter
+    ? rawAlerts.filter((a) => a.severity === severityFilter)
+    : rawAlerts;
   const { data: exposure } = useFloodExposure();
 
   // Track which alert IDs have already triggered a breach toast this session
@@ -947,6 +953,30 @@ export function AlertsPanel() {
             <X size={12} />
           </button>
         )}
+
+        {/* Severity quick-filter */}
+        <div className="flex rounded-md border border-border-subtle overflow-hidden shrink-0 ml-auto">
+          {([
+            { value: "" as const,         label: locale === "es" ? "Todas" : "All" },
+            { value: "critical" as const, label: locale === "es" ? "⚠ Crit" : "⚠ Crit" },
+            { value: "high" as const,     label: locale === "es" ? "Alta" : "High" },
+          ]).map(({ value, label }) => (
+            <button
+              key={value || "all-sev"}
+              onClick={() => setSeverityFilter(value)}
+              className={clsx(
+                "px-2 py-1 text-2xs font-medium transition-colors",
+                severityFilter === value
+                  ? value === "critical" ? "bg-danger text-white" : value === "high" ? "bg-warn text-white" : "bg-accent text-white"
+                  : "text-ink-subtle hover:text-ink hover:bg-surface-sunken",
+              )}
+              aria-pressed={severityFilter === value}
+              aria-label={`${locale === "es" ? "Filtrar por severidad" : "Filter by severity"}: ${label}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Filter tabs */}
