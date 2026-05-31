@@ -255,3 +255,20 @@ class TestRiskProse:
         assert "28" in prose
         assert "Chillón" in prose
         assert "EMERGENCIA" not in prose
+
+
+class TestRainfallRiskElevation:
+    """Verify that EMERGENCIA rainfall elevates risk_level to 'alto'."""
+
+    @pytest.mark.asyncio
+    async def test_emergencia_rainfall_elevates_risk_to_alto(self):
+        """risk_level must be 'alto' when rainfall is at EMERGENCIA (>= 50mm) even if no flood/huayco."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get(f"/api/v1/fusion/{LURIGANCHO_UBIGEO}")
+        body = resp.json()
+        # Lurigancho has EMERGENCIA rainfall (63mm) → risk should be elevated to 'alto'
+        assert body["risk_level"] == "alto", (
+            f"EMERGENCIA rainfall should elevate risk_level to 'alto', got {body['risk_level']!r}"
+        )
+        # Confirm rainfall is actually at emergencia
+        assert body["rainfall"]["level"] == "emergencia"
