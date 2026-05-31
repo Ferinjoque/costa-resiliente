@@ -443,17 +443,18 @@ def test_build_answer_single_flood_polygon():
 
 
 def test_build_answer_huayco_risk():
-    """risk_level rows → quebrada count + top name + probability."""
+    """risk_level rows → quebrada count + top name + probability + trigger_rain_24h_mm."""
     from costa_api.ai.agent import _build_answer
     rows = [
-        {"name": "Jicamarca", "risk_level": "very_high", "probability": 0.91},
-        {"name": "Pedregal", "risk_level": "high", "probability": 0.74},
+        {"name": "Jicamarca", "risk_level": "very_high", "probability": 0.91, "trigger_rain_24h_mm": 12.0},
+        {"name": "Pedregal", "risk_level": "high", "probability": 0.74, "trigger_rain_24h_mm": 15.0},
     ]
     answer = _build_answer([], rows, "huayco")
     assert "quebrada" in answer.lower()
     assert "Jicamarca" in answer
     assert "MUY ALTO" in answer
     assert "0.91" in answer
+    assert "12" in answer  # trigger_rain_24h_mm shown
 
 
 def test_build_answer_river_levels_rising():
