@@ -320,7 +320,7 @@ async def run(
             return AgentResult(
                 answer=clean_answer,
                 sources=json.loads(json.dumps(rows[:20], default=str)),
-                tool_calls=[{"tool": quick_tool, "args": {}, "count": len(rows), "quick_mode": True}],
+                tool_calls=[{"tool": quick_tool, "args": quick_args, "count": len(rows), "quick_mode": True}],
                 confidence=0.9 if rows else 0.4,
                 redacted=bool(triggered),
                 quick_mode=True,
