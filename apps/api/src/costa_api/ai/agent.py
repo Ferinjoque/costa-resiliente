@@ -249,15 +249,21 @@ async def run(
             confidence=0.0,
         )
 
-    # 1b-sitrep: start-of-shift comprehensive snapshot — 5 tools in parallel (~3s)
+    # 1b-sitrep: start-of-shift comprehensive snapshot — 5 tools sequentially.
+    # Tools run sequentially (not gather) to avoid concurrent-session race on
+    # the shared AsyncSession — parallel dispatch was causing some tools to
+    # return empty results when they should have returned data.
     if _is_sitrep_query(query):
         try:
             sitrep_tools = ["get_active_alerts", "get_rainfall_accumulation",
                             "get_river_levels", "get_flood_polygons", "get_huayco_risk"]
-            sitrep_results = await asyncio.gather(
-                *[dispatch(t, {}, db, rag_fn=rag_fn) for t in sitrep_tools],
-                return_exceptions=True,
-            )
+            sitrep_results = []
+            for t in sitrep_tools:
+                try:
+                    sitrep_results.append(await dispatch(t, {}, db, rag_fn=rag_fn))
+                except Exception as exc:
+                    logger.warning("sitrep tool %s failed: %s", t, exc)
+                    sitrep_results.append(exc)
             all_rows: list[dict] = []
             per_tool_rows: list[tuple[str, list[dict]]] = []
             tc_list = []
