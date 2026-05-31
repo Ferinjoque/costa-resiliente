@@ -470,8 +470,20 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         # Highlight rising stations most critical for duty officer
         rising = [row for row in rows if row.get("trend") == "rising"]
         if rising:
+            # Show top rising station with full detail
+            top = rising[0]
+            top_change = top.get("level_change_1h_m")
+            try:
+                top_change_str = f" ({float(top_change):+.3f} m/h)" if top_change is not None else ""
+            except (TypeError, ValueError):
+                top_change_str = ""
+            top_flow = top.get("flow_m3s")
+            top_flow_str = f" · {top_flow} m³/s" if top_flow is not None else ""
             names = ", ".join(row.get("name", "?") for row in rising[:3])
-            return f"⚠ {len(rising)} estación(es) con nivel en ascenso: {names}. {r.get('name','?')}: {r.get('level_m','—')} m {trend_es}{change_str}."
+            return (
+                f"⚠ {len(rising)} estación(es) en ascenso — acción inmediata: {names}. "
+                f"{top.get('name','?')}: {top.get('level_m','—')} m{top_change_str}{top_flow_str}."
+            )
         return f"Última lectura: {r.get('name','?')} — nivel {r.get('level_m','—')} m ({trend_es}{change_str}), caudal {r.get('flow_m3s','—')} m³/s."
     if "triage_label" in first:
         total = sum(r.get("count") or 0 for r in rows)
@@ -508,13 +520,23 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
     if "acc_72h_mm" in first:
         mx = max((r.get("acc_72h_mm") or 0) for r in rows)
         mx_ws = next((r.get("watershed") for r in rows if (r.get("acc_72h_mm") or 0) == mx), "cuenca")
+        mx_row = next((r for r in rows if (r.get("acc_72h_mm") or 0) == mx), first)
+        acc_24h = mx_row.get("acc_24h_mm")
+        acc_1h = mx_row.get("acc_1h_mm")
         if mx >= 50.0:
             status = f"⚠ EMERGENCIA — supera umbral CRÍTICO ANA (>{50:.0f} mm/72h)"
         elif mx >= 25.0:
             status = f"⚠ ALERTA — supera umbral ALTO ANA (>{25:.0f} mm/72h)"
+        elif (acc_24h or 0) >= 15:
+            status = f"⚠ AVISO — lluvia 24h supera umbral ANA ({acc_24h:.0f} mm)"
         else:
             status = "Por debajo del umbral de alerta SENAMHI (25 mm/72h)"
-        return f"Lluvia máxima 72h: {mx:.1f} mm en cuenca {mx_ws}. {status}."
+        # Build detail string with 24h and 1h windows when available
+        detail_parts = [f"72h: {mx:.1f} mm"]
+        if acc_24h is not None: detail_parts.append(f"24h: {acc_24h:.1f} mm")
+        if acc_1h is not None: detail_parts.append(f"1h: {acc_1h:.1f} mm")
+        detail = " · ".join(detail_parts)
+        return f"Cuenca {mx_ws} — {detail}. {status}."
     if "estimated_population_at_risk" in first:
         total = sum(int(r.get("estimated_population_at_risk") or 0) for r in rows)
         top_d = rows[0].get("district", "?")
