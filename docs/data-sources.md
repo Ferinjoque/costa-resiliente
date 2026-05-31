@@ -17,12 +17,12 @@
 - **Storage**: MinIO (raw GRD) + pgstac catalog + `ml.flood_polygons` (derived)
 - **Status**: ✅ Implemented and running
 
-### NASA IMERG Early Run (V07B)
+### NASA IMERG Late Run V07B (GPM)
 - **Endpoint**: NASA GES DISC OPeNDAP
 - **Credentials**: `EARTHDATA_USERNAME` / `EARTHDATA_PASSWORD` (set in `.env`)
 - **Resolution**: 0.1° (~11km), half-hourly granules
-- **Latency**: ~4h after observation
-- **Accumulations stored**: 1h, 3h, 6h, 12h, 24h, 72h per Lima watershed
+- **Latency**: ~12h after observation (higher accuracy than Early Run)
+- **Accumulations stored**: 1h, 3h, 6h, 12h, 24h, 72h, 168h per Lima watershed
 - **Implementation**: `apps/workers/src/costa_workers/ingest/imerg.py`
 - **Storage**: `hydro.imerg_accumulations` (TimescaleDB hypertable)
 - **Status**: ✅ Implemented and running
