@@ -211,6 +211,31 @@ class TestAlertAction:
         assert body["new_status"] == "acknowledged"
 
     @pytest.mark.asyncio
+    async def test_idempotent_action_returns_200(self):
+        """Applying the same action twice must return 200 (idempotent no-op).
+
+        Regression guard: prior code unconditionally updated status so duplicate
+        escalations (two operators clicking simultaneously) fired double fan-out
+        notifications. Fix: if alert already in target status, return 200 immediately.
+        """
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            alerts = (await c.get("/api/v1/alerts?status=active&limit=1")).json()
+            if not alerts:
+                pytest.skip("no active alerts available")
+            alert_id = alerts[0]["id"]
+            # First ack
+            r1 = await c.post(f"/api/v1/alerts/{alert_id}/action",
+                              json={"action": "acknowledge"}, headers=AUTH)
+            assert r1.status_code == 200
+            # Second ack — must also return 200 (idempotent)
+            r2 = await c.post(f"/api/v1/alerts/{alert_id}/action",
+                              json={"action": "acknowledge"}, headers=AUTH)
+            assert r2.status_code == 200, (
+                "Idempotent alert action must return 200 when alert already in target status"
+            )
+            assert r2.json()["new_status"] == "acknowledged"
+
+    @pytest.mark.asyncio
     async def test_action_unauthenticated_returns_401(self):
         """No auth header → 401 before any DB operations."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
