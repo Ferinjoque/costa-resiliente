@@ -21,6 +21,8 @@ router = APIRouter(tags=["health"])
 class HealthResponse(BaseModel):
     status: str
     version: str
+    sinagerd_level: str = "NORMAL"  # EMERGENCIA / ALERTA / AVISO / NORMAL
+    active_alerts: int = 0
 
 
 class SeedStatus(BaseModel):
@@ -35,8 +37,33 @@ class SeedStatus(BaseModel):
 
 
 @router.get("/health", response_model=HealthResponse)
-async def health_check() -> HealthResponse:
-    return HealthResponse(status="ok", version="0.1.0")
+async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
+    """Basic health check with current SINAGERD operational level."""
+    try:
+        await db.execute(text("SET LOCAL statement_timeout = '3000'"))
+        result = await db.execute(
+            text("""
+                SELECT COUNT(*) AS total,
+                       COUNT(*) FILTER (WHERE severity = 'critical') AS critical_count,
+                       COUNT(*) FILTER (WHERE severity = 'high') AS high_count
+                FROM ops.alerts WHERE status = 'active'
+            """)
+        )
+        row = result.mappings().first()
+        total = int(row["total"] or 0) if row else 0
+        critical = int(row["critical_count"] or 0) if row else 0
+        high = int(row["high_count"] or 0) if row else 0
+        if critical > 0:
+            level = "EMERGENCIA"
+        elif high > 1 or total > 4:
+            level = "ALERTA"
+        elif total > 0:
+            level = "AVISO"
+        else:
+            level = "NORMAL"
+    except Exception:
+        total, level = 0, "NORMAL"
+    return HealthResponse(status="ok", version="0.1.0", sinagerd_level=level, active_alerts=total)
 
 
 @router.get("/health/seed", response_model=SeedStatus)
