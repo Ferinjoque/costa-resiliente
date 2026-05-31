@@ -473,8 +473,10 @@ async def run(
         # truncated answer looks complete and could be acted on as if it were authoritative.
         clean_answer = clean_answer + " [⚠ contenido filtrado por guardrail de seguridad]"
 
-    # Confidence: based on data availability
+    # Confidence: based on data availability + guardrail/fallback state
     confidence = 0.85 if all_tool_results else 0.3
+    if redacted or any(t.get("fallback") for t in tool_call_trace):
+        confidence = min(confidence, 0.6)  # lower when guardrail fired or keyword fallback used
 
     return AgentResult(
         answer=clean_answer,
