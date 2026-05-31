@@ -214,13 +214,15 @@ def _select_tools(query: str) -> list[dict]:
 
 
 async def _keyword_dispatch(query: str, db, rag_fn) -> dict:
-    """Fast keyword-based tool dispatch — fallback when LLM is unavailable."""
+    """Fast keyword-based tool dispatch — fallback when LLM is unavailable.
+    Falls back to get_active_alerts (more operationally relevant than flood polygons).
+    """
     q = query.lower()
     for keywords, tool_name in _KEYWORD_MAP:
         if any(kw in q for kw in keywords):
             args = {"query": query} if tool_name == "search_protocols" else {}
             return await dispatch(tool_name, args, db, rag_fn=rag_fn)
-    return await dispatch("get_flood_polygons", {}, db, rag_fn=rag_fn)
+    return await dispatch("get_active_alerts", {}, db, rag_fn=rag_fn)
 
 
 async def run(
