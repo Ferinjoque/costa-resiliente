@@ -235,11 +235,18 @@ async def get_flood_polygons(db: AsyncSession, hours_back: int = 168, district_n
     sql = text("""
         SELECT fp.scene_id, fp.acquired_at, fp.confidence,
                fp.area_km2, fp.model_version,
-               ST_AsGeoJSON(fp.geom)::jsonb AS geojson
+               d.name AS district_name
         FROM ml.flood_polygons fp
+        LEFT JOIN LATERAL (
+            SELECT d2.name
+            FROM geo.districts d2
+            WHERE ST_Intersects(ST_MakeValid(d2.geom), ST_MakeValid(fp.geom))
+            ORDER BY ST_Area(ST_Intersection(ST_MakeValid(d2.geom), ST_MakeValid(fp.geom))) DESC
+            LIMIT 1
+        ) d ON TRUE
         WHERE fp.acquired_at >= NOW() - make_interval(hours => :hours)
           AND NOT ST_IsEmpty(fp.geom)
-        ORDER BY fp.acquired_at DESC
+        ORDER BY fp.area_km2 DESC NULLS LAST
         LIMIT 10
     """)
     result = await db.execute(sql, {"hours": hours_back})
