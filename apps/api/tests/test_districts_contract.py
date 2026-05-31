@@ -208,3 +208,40 @@ async def test_risk_summary_includes_rainfall_risk(app):
     assert "rain_sev" in src, (
         "district_risk_summary must compute rain_sev and pass it to risk_level()"
     )
+
+
+@pytest.mark.asyncio
+async def test_district_dashboard_returns_active_alerts(app):
+    """GET /districts/{ubigeo}/dashboard must return active alerts list.
+
+    Regression guard: district dashboard now includes rainfall alerts
+    (district_id = NULL, watershed-level) in addition to district-specific alerts.
+    """
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/api/v1/districts/150118/dashboard")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "active_alerts" in body
+    assert isinstance(body["active_alerts"], list)
+    assert "district" in body
+    assert body["district"]["ubigeo"] == "150118"
+
+
+@pytest.mark.asyncio
+async def test_district_dashboard_rainfall_alerts_included(app):
+    """District dashboard active_alerts now includes watershed rainfall alerts.
+
+    Regression: prior query only filtered by district_id = :did, so rainfall
+    alerts (district_id = NULL) never appeared in district dashboards even
+    during EMERGENCIA events.
+    """
+    from inspect import getsource
+    from costa_api.routers.districts import district_dashboard
+    src = getsource(district_dashboard)
+    assert "type = 'rainfall'" in src, (
+        "district_dashboard must include a UNION for rainfall alerts "
+        "since they have district_id = NULL but affect watershed-intersecting districts"
+    )
+    assert "UNION" in src or "union" in src.lower(), (
+        "district_dashboard must UNION district-specific and rainfall alerts"
+    )
