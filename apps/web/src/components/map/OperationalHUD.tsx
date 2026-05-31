@@ -52,7 +52,11 @@ export function OperationalHUD() {
     const v = f.properties.acc_72h_mm ?? 0;
     return v > mx ? v : mx;
   }, 0) ?? 0;
-  const maxRainWs = imergData?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? "";
+  // Only attribute a watershed name when rainfall is actually above zero to avoid
+  // false attribution when maxRain72h=0 (find() matches first feature with 0mm).
+  const maxRainWs = maxRain72h > 0
+    ? imergData?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? ""
+    : "";
   const rainLevel: "ok" | "warn" | "danger" = maxRain72h >= 50 ? "danger" : maxRain72h >= 25 ? "warn" : "ok";
 
   // Factor in rainfall for SINAGERD level (consistent with health API, CityOverview, SituationBrief)
@@ -61,7 +65,7 @@ export function OperationalHUD() {
     high > 1 || active.length > 4 ? "ALERTA" :
     active.length > 0    ? "AVISO" :
                            "NORMAL";
-  if (maxRain72h >= 50 && level !== "EMERGENCIA") level = "EMERGENCIA";
+  if (maxRain72h >= 50) level = "EMERGENCIA";
   else if (maxRain72h >= 25 && (level === "AVISO" || level === "NORMAL")) level = "ALERTA";
   else if (maxRain72h >= 15 && level === "NORMAL") level = "AVISO";
 
