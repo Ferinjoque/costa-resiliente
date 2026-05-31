@@ -478,6 +478,11 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             f"Se identificaron {n} quebrada{'s' if n != 1 else ''} con riesgo elevado. "
             f"La más crítica: {top_name} — {level_es}{prob_str}."
         )
+    # SENAMHI alert thresholds (meters) per station name fragment
+    _STATION_THRESHOLDS: dict[str, float] = {
+        "chosica": 2.5, "carapongo": 2.0, "chaclacayo": 1.5,
+        "carabayllo": 2.5, "huachipa": 1.8, "manchay": 1.2, "obrajillo": 1.8,
+    }
     if "level_m" in first:
         r = rows[0]
         trend = r.get("trend", "unknown")
@@ -489,6 +494,17 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             change_str = ""
         # Highlight rising stations most critical for duty officer
         rising = [row for row in rows if row.get("trend") == "rising"]
+        def _threshold_note(row: dict) -> str:
+            name_lower = (row.get("name") or "").lower()
+            for key, threshold in _STATION_THRESHOLDS.items():
+                if key in name_lower:
+                    level = row.get("level_m")
+                    if level is not None:
+                        over = float(level) >= threshold
+                        label = "⚠ sobre umbral ALERTA SENAMHI" if over else "bajo umbral"
+                        return f" · umbral: {threshold:.1f} m ({label})"
+            return ""
+
         if rising:
             # Show top rising station with full detail
             top = rising[0]
@@ -499,12 +515,13 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                 top_change_str = ""
             top_flow = top.get("flow_m3s")
             top_flow_str = f" · {top_flow} m³/s" if top_flow is not None else ""
+            threshold_note = _threshold_note(top)
             names = ", ".join(row.get("name", "?") for row in rising[:3])
             return (
                 f"⚠ {len(rising)} estación(es) en ascenso — acción inmediata: {names}. "
-                f"{top.get('name','?')}: {top.get('level_m','—')} m{top_change_str}{top_flow_str}."
+                f"{top.get('name','?')}: {top.get('level_m','—')} m{top_change_str}{top_flow_str}{threshold_note}."
             )
-        return f"Última lectura: {r.get('name','?')} — nivel {r.get('level_m','—')} m ({trend_es}{change_str}), caudal {r.get('flow_m3s','—')} m³/s."
+        return f"Última lectura: {r.get('name','?')} — nivel {r.get('level_m','—')} m ({trend_es}{change_str}), caudal {r.get('flow_m3s','—')} m³/s{_threshold_note(r)}."
     if "triage_label" in first:
         total = sum(r.get("count") or 0 for r in rows)
         # Highlight urgent label breakdown (huayco > needs_help > flood > infra > road)
