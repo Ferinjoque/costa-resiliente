@@ -542,12 +542,15 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
 
   // Use actual district name from the top critical/high alert when available
   const topDistrict = firstCritical?.district_name ?? (high[0]?.district_name ?? null);
+  const isRainfall = firstCritical?.type === "rainfall" || active.some((a) => a.type === "rainfall" && (a.severity === "critical" || a.severity === "high"));
 
   let rec: string;
   if (locale === "es") {
     if (critical.length > 0 && isHuayco) {
       const districtNote = topDistrict ? ` en ${topDistrict}` : "";
       rec = `Evacuación preventiva inmediata${districtNote} — quebrada activa detectada. Umbral EMERGENCIA ANA (50 mm/72h) superado. Desplegar USAR. Notificar INDECI COEN y activar albergues.`;
+    } else if (critical.length > 0 && isRainfall) {
+      rec = `${firstCritical!.title}. Umbral EMERGENCIA ANA superado. Activar brigadas en quebradas de cuencas afectadas. Escalar a COEN y pre-alertar municipios.`;
     } else if (critical.length > 0) {
       const districtNote = topDistrict ? ` (${topDistrict})` : "";
       rec = `Alerta crítica activa${districtNote}: ${firstCritical!.title}. Activar protocolo DELTA COEN. Preposicionar botes. Confirmar capacidad de albergues.`;
@@ -559,6 +562,8 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
     if (critical.length > 0 && isHuayco) {
       const districtNote = topDistrict ? ` in ${topDistrict}` : "";
       rec = `Immediate preventive evacuation${districtNote} — active quebrada detected. ANA EMERGENCY threshold (50 mm/72h) exceeded. Deploy USAR. Notify INDECI COEN and activate shelters.`;
+    } else if (critical.length > 0 && isRainfall) {
+      rec = `${firstCritical!.title}. ANA EMERGENCY threshold exceeded. Deploy brigades to quebradas in affected watersheds. Escalate to COEN and pre-alert municipalities.`;
     } else if (critical.length > 0) {
       const districtNote = topDistrict ? ` (${topDistrict})` : "";
       rec = `Critical alert active${districtNote}: ${firstCritical!.title}. Activate COEN DELTA protocol. Pre-position boats. Confirm shelter capacity.`;
