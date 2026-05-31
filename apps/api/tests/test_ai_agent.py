@@ -1075,6 +1075,26 @@ def test_build_sitrep_answer_all_tools():
     )
 
 
+def test_build_sitrep_stable_near_threshold_river():
+    """Stable rivers near SENAMHI threshold still get a warning note.
+
+    Regression guard: prior code only showed threshold for rising stations.
+    Fix: stable stations within 90% of threshold also show '⚠ cerca del umbral'.
+    """
+    from costa_api.ai.agent import _build_sitrep_answer
+    per_tool_rows = [
+        ("get_river_levels", [
+            {"name": "Chosica", "level_m": 2.42, "flow_m3s": 68.0, "trend": "stable", "level_change_1h_m": 0.01},
+        ]),
+    ]
+    answer = _build_sitrep_answer(per_tool_rows)
+    assert "Chosica" in answer
+    assert "estable" in answer.lower() or "stable" in answer.lower(), "Should show stable trend"
+    assert "umbral" in answer.lower(), (
+        "Stable station within 90% of SENAMHI threshold should show '⚠ cerca del umbral' warning"
+    )
+
+
 def test_build_sitrep_answer_multi_watershed():
     """Sitrep shows additional elevated watersheds when multiple are above threshold.
 
