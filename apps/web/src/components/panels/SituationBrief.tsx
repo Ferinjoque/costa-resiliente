@@ -52,7 +52,8 @@ export function SituationBrief() {
     : high > 1 || active.length > 4 ? "ALERTA"
     : active.length > 0 ? "AVISO"
     : "NORMAL";
-  if (maxRain72h >= 50 && level !== "EMERGENCIA") level = "EMERGENCIA";
+  // >=50mm always EMERGENCIA (consistent with health API); 25-49mm upgrades AVISO/NORMAL
+  if (maxRain72h >= 50) level = "EMERGENCIA";
   else if (maxRain72h >= 25 && (level === "AVISO" || level === "NORMAL")) level = "ALERTA";
   else if (maxRain72h >= 15 && level === "NORMAL") level = "AVISO";
 
