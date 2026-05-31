@@ -100,7 +100,7 @@ _QUICK_PATTERNS: list[tuple[list[str], str]] = [
       "vías bloqueadas", "vias bloqueadas", "heridos", "muertos", "víctimas",
       "informe de campo", "observacion", "daños reportad"], "get_social_clusters"),
     (["hospital", "escuela", "puente", "infraestructura", "vial",
-      "abastecimiento", "servicios básicos"], "get_infrastructure_impact"),
+      "abastecimiento", "servicios básicos", "subestaci", "bomba", "bomberos"], "get_infrastructure_impact"),
     (["protocolo", "indeci", "sinagerd", "procedimiento", "evacu",
       "plan de evacuación", "plan de respuesta", "minsa", "cenepred",
       "qué hacer", "que hacer", "pasos a seguir", "acción inmediata",
