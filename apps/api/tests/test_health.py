@@ -22,11 +22,17 @@ async def test_health_returns_ok():
     assert "active_alerts" in data
     assert isinstance(data["active_alerts"], int)
     assert data["active_alerts"] >= 0
-    # Verify SINAGERD level is consistent with active_alerts count
+    # Verify SINAGERD level is consistent with active_alerts + rain_level
     # (rainfall can also elevate the level even with 0 alerts)
     if data["active_alerts"] == 0 and data["rain_level"] == "normal":
         # No active alerts AND no rainfall above threshold → NORMAL
         assert data["sinagerd_level"] == "NORMAL", f"0 alerts + normal rain should → NORMAL, got {data['sinagerd_level']!r}"
+
+    # Verify rainfall-elevated SINAGERD levels
+    if data["rain_level"] == "emergencia":
+        assert data["sinagerd_level"] == "EMERGENCIA", (
+            f"emergencia rain should → EMERGENCIA level, got {data['sinagerd_level']!r}"
+        )
     assert "max_rain_72h_mm" in data
     assert data["max_rain_72h_mm"] is None or isinstance(data["max_rain_72h_mm"], (int, float))
     assert "rain_level" in data
