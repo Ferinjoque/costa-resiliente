@@ -89,7 +89,7 @@ Click on Lurigancho district on the map.
 - Risk level pill: ALTO (elevation from rainfall EMERGENCIA + SAR flood + very high huayco)
 - Prose (Spanish): "Lurigancho: 1 polígono SAR activo (3.0 km²; ~213,386 personas) · Riesgo huayco muy alto (91%) · Lluvia 72h cuenca Rímac: 63 mm — ⚠ EMERGENCIA."
 
-Click **"Análisis completo"** → DistrictDashboardPanel with charts and EDAN export.
+Click **"Análisis completo"** → DistrictDashboardPanel shows **6 active alerts** (4 huayco + 2 rainfall) thanks to Session 21 watershed-to-district integration.
 
 ---
 
