@@ -713,7 +713,11 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
     flood_rows = tool_rows.get("get_flood_polygons", [])
     if flood_rows:
         total_km2 = sum(r.get("area_km2") or 0 for r in flood_rows)
-        sections.append(f"**Inundación SAR:** {len(flood_rows)} polígono{'s' if len(flood_rows) != 1 else ''} · {total_km2:.1f} km² activos")
+        # Show top district if available
+        largest = max(flood_rows, key=lambda r: r.get("area_km2") or 0)
+        dn = largest.get("district_name")
+        district_note = f" · mayor en {dn}" if dn else ""
+        sections.append(f"**Inundación SAR:** {len(flood_rows)} polígono{'s' if len(flood_rows) != 1 else ''} · {total_km2:.1f} km² activos{district_note}")
 
     if not sections:
         return "No se encontraron datos en ninguna fuente. Sistema posiblemente sin datos recientes."
