@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **658 passed, 0 errors** (Session 21). Up from 640 (+18). Workers: 148 passed, 8 skipped.
+- **API**: **659 passed, 0 errors** (Session 21). Up from 640 (+19). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 184 kB (Session 20: +9 kB from rainfall HUD, fusion rainfall, CityOverview, SlaChip improvements)
@@ -256,15 +256,30 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 **Tests (+14):** Severity minimum filter (3), river trend anchor, flood exposure 7-day filter, total pop type check, huayco prose null prob, replay time (5 cases), pop-at-risk confidence, district risk summary (2). Suite: 654 passed.
 
-**Commits (Session 21):**
-- `9873a39` fix(critical): severity filter, river trend, fusion rainfall, flood exposure, demo transparency
+**Commits (Session 21, 20 total):**
+- `9873a39` fix(critical): severity filter, river trend, fusion rainfall, flood exposure, demo transparency (+6 tests)
 - `45ffdb4` fix(ux): AskPanel typewriter, SLA breach pruning, agent dead code
 - `a512bfb` fix(ops): alerts active-first sort, stream timeout txn, health per-watershed rain
 - `d78dd30` fix(data): pop-at-risk confidence note, replay midnight fix
-- `e69083d` test: replay time (5 cases), pop-at-risk confidence note
+- `e69083d` test: replay time (5 cases), pop-at-risk confidence note (+6)
 - `0cf10a3` fix(workers): delivery attempts count, huayco rain zero-check, triage similarity floor
-- `71a8019` feat(geo): district risk summary and dashboard include rainfall alerts
-- `3063b0a` test: district risk summary includes watershed rainfall
+- `71a8019` feat(geo): district risk summary and dashboard include rainfall alerts (39 districts→alto)
+- `3063b0a` test: district risk summary includes watershed rainfall (+2)
+- `fd21515` test(health): per-watershed rainfall query regression guard (+2)
+- `df62c86` fix(frontend): toast cap, DEMO badge, notifications delete race, social labels
+- `3b6db4b` refactor(frontend): consolidate URGENT_SOCIAL_LABELS (adds infrastructure_damage)
+- `bfaadb6` docs(demo): update test count, add Session 21 differentiators
+- `895f007` fix(demo): huayco per-quebrada latest + auto-refresh on ML overwrite
+- `3d0f4e3` test: district dashboard rainfall UNION guard (+2)
+- `0f1b4a0` test: alert active-first sort regression guard (+1)
+- `fc64761` feat(demo): quebrada geometries + corrected huayco susceptibility names
+
+**Demo state improvements (Session 21):**
+- 7 active alerts: 3 critical (2 huayco + 1 rainfall) + 4 high (3 huayco + 1 rainfall)
+- 39 Lima districts show "alto" risk due to watershed rainfall alerts
+- Lurigancho dashboard shows 6 active alerts (4 huayco + 2 rainfall)
+- All 10 priority quebradas have geometries for spatial district join
+- Copilot sitrep shows Pedregal 91% very_high + Rímac 63mm EMERGENCIA
 
 ---
 
