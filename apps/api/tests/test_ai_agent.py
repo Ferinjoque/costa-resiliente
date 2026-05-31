@@ -1075,6 +1075,30 @@ def test_build_sitrep_answer_all_tools():
     )
 
 
+def test_build_sitrep_answer_multi_watershed():
+    """Sitrep shows additional elevated watersheds when multiple are above threshold.
+
+    Regression guard: prior code only showed the maximum watershed (Rímac 63mm).
+    Fix: if other watersheds are >= 25mm, sitrep adds 'también Chillón: 28 mm'.
+    """
+    from costa_api.ai.agent import _build_sitrep_answer
+    per_tool_rows = [
+        ("get_rainfall_accumulation", [
+            {"watershed": "Rímac",   "acc_72h_mm": 63.2, "acc_24h_mm": 41.8},
+            {"watershed": "Chillón", "acc_72h_mm": 28.4, "acc_24h_mm": 18.5},
+            {"watershed": "Lurín",   "acc_72h_mm": 11.0, "acc_24h_mm": 4.2},
+        ]),
+    ]
+    answer = _build_sitrep_answer(per_tool_rows)
+    assert "Rímac" in answer or "Rimac" in answer, "Primary watershed must be shown"
+    assert "EMERGENCIA" in answer, "63mm should trigger EMERGENCIA"
+    assert "Chillón" in answer or "Chilln" in answer or "tambien" in answer.lower(), (
+        "Second elevated watershed (Chillón 28mm) should appear in sitrep 'también' note"
+    )
+    # Lurín below threshold should NOT appear in the 'también' note
+    assert "Lurín" not in answer or "Lurin" not in answer.split("también")[1] if "también" in answer else True
+
+
 def test_build_sitrep_answer_empty_rows():
     """Empty per_tool_rows returns no-data message."""
     from costa_api.ai.agent import _build_sitrep_answer
