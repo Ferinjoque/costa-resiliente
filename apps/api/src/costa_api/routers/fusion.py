@@ -195,7 +195,8 @@ async def district_fusion(
                 hs.risk_level,
                 hs.probability,
                 q.name AS quebrada_name,
-                hs.computed_at
+                hs.computed_at,
+                hs.trigger_rain_24h_mm
             FROM ml.huayco_susceptibility hs
             JOIN geo.quebradas q ON q.id = hs.quebrada_id
             JOIN geo.watersheds w ON w.id = q.watershed_id
@@ -212,6 +213,7 @@ async def district_fusion(
     huayco_prob: float | None = float(huayco["probability"]) if huayco and huayco["probability"] is not None else None
     quebrada_name: str | None = huayco["quebrada_name"] if huayco else None
     huayco_at = huayco["computed_at"].isoformat() if huayco and huayco["computed_at"] else None
+    huayco_trigger_mm = float(huayco["trigger_rain_24h_mm"]) if huayco and huayco.get("trigger_rain_24h_mm") is not None else None
 
     # ── Rainfall (latest IMERG for district's intersecting watersheds) ──────────
     rainfall_row = await db.execute(
@@ -303,6 +305,7 @@ async def district_fusion(
             "highest_risk_level": huayco_risk,
             "highest_probability": round(huayco_prob, 3) if huayco_prob is not None else None,
             "quebrada_name": quebrada_name,
+            "trigger_rain_24h_mm": huayco_trigger_mm,
             "computed_at": huayco_at,
         },
         "social": {
