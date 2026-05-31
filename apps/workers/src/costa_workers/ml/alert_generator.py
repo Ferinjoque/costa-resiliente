@@ -124,6 +124,7 @@ async def _auto_notify(
                     return
             channel = sub["channel"]
             status, err = "skipped", f"{channel} stub"
+            num_attempts = 0
             if channel == "webhook":
                 parsed = urlparse(sub["target"])
                 host = parsed.hostname or ""
@@ -132,9 +133,11 @@ async def _auto_notify(
                 except ValueError as ssrf_exc:
                     logger.warning("_auto_notify: SSRF guard blocked webhook target: %s", ssrf_exc)
                     status, err = "failed", f"ssrf_blocked: {ssrf_exc}"
+                    num_attempts = 1
                 else:
                     async with httpx.AsyncClient(timeout=5.0) as client:
                         for attempt in range(1, 4):
+                            num_attempts = attempt
                             try:
                                 resp = await client.post(
                                     sub["target"], json=payload,
@@ -152,10 +155,10 @@ async def _auto_notify(
                 """
                 INSERT INTO ops.notification_deliveries
                     (subscriber_id, alert_id, trigger_event, status, attempts, last_error, delivered_at)
-                VALUES ($1, $2, 'auto_generated', $3, 1, $4,
+                VALUES ($1, $2, 'auto_generated', $3, $6, $4,
                         CASE WHEN $5 = 'delivered' THEN NOW() ELSE NULL END)
                 """,
-                sub["id"], alert_id, status, err or None, status,
+                sub["id"], alert_id, status, err or None, status, max(num_attempts, 1),
             )
 
         await asyncio.gather(*[_deliver(sub) for sub in subscribers], return_exceptions=True)
@@ -306,7 +309,7 @@ async def generate_huayco_alerts(db_dsn: str = DB_DSN) -> int:
             title = f"Riesgo de huayco — {row['quebrada_name']}"
             desc = (
                 f"Susceptibilidad: {float(row['probability']):.0%} ({row['risk_level']}). "
-                + (f"Lluvia 24h: {float(rain):.1f} mm." if rain else "")
+                + (f"Lluvia 24h: {float(rain):.1f} mm." if rain is not None else "")
             )
             new_id = await pool.fetchval(
                 """

@@ -167,14 +167,18 @@ async def _resolve_district_id(pool, district_name: str | None) -> int | None:
         return None
     row = await pool.fetchrow(
         """
-        SELECT id FROM geo.districts
+        SELECT id, similarity(name, $1) AS sim FROM geo.districts
         WHERE name % $1
         ORDER BY similarity(name, $1) DESC
         LIMIT 1
         """,
         district_name,
     )
-    return row["id"] if row else None
+    # Require minimum trigram similarity to avoid mapping vague terms ("centro",
+    # "zona norte") to arbitrary districts and corrupting social-cluster alerts.
+    if row and float(row["sim"]) >= 0.3:
+        return row["id"]
+    return None
 
 
 # ─── Prefect pipeline task ────────────────────────────────────────────────────
