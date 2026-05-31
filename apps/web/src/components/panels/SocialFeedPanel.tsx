@@ -9,6 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSocialSignals, useDistrictList } from "@/lib/queries";
 import { submitFieldReport, RateLimitError, BROWSER_SESSION_ID } from "@/lib/api";
 import type { SocialSignalProperties, SocialSignalCollection } from "@/lib/api";
+import { URGENT_SOCIAL_LABELS } from "@/lib/constants";
 import {
   PanelHeader,
   PanelTitle,
@@ -297,8 +298,9 @@ function FieldReport({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
         session_id: BROWSER_SESSION_ID,
       });
 
-      // Optimistic update to social feed cache — backed by a real DB row now.
-      qc.setQueryData<SocialSignalCollection>(["social-signals", 48, undefined], (old) => {
+      // Optimistic update to ALL social-signal caches (partial key match) so the
+      // report appears regardless of the hours/label params the caller used.
+      qc.setQueriesData<SocialSignalCollection>({ queryKey: ["social-signals"] }, (old) => {
         if (!old) return old;
         const feature = {
           type: "Feature" as const,
@@ -462,8 +464,7 @@ export function SocialFeedPanel() {
       : features.filter((f) => f.properties.triage_label === labelFilter);
 
   const newestAt = features[0]?.properties.ingested_at;
-  const _urgentLabels = new Set(["needs_help", "huayco_observation", "flood_observation", "road_blocked"]);
-  const urgentCount = features.filter((f) => _urgentLabels.has(f.properties.triage_label ?? "")).length;
+  const urgentCount = features.filter((f) => URGENT_SOCIAL_LABELS.has(f.properties.triage_label ?? "")).length;
 
   const FILTER_TABS: Array<{ value: Label | "all"; es: string; en: string }> = [
     { value: "all",                   es: "Todos",   en: "All"      },
