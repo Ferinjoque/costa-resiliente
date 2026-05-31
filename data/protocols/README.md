@@ -19,6 +19,7 @@ Each file corresponds to a key in `apps/workers/src/costa_workers/rag/ingest.py:
 | `senamhi_guia_hidrometeorologica.txt` | SENAMHI Guía Hidrometeorológica | senamhi.gob.pe | ✅ |
 | `mml_plan_huaycos_lima.txt` | MML Plan Lima ante Huaycos | munlima.gob.pe | ✅ |
 | `ana_umbrales_lluvia_lima.txt` | ANA Umbrales de Lluvia para Alertas Lima (INDECI/ANA) | ana.gob.pe | ✅ |
+| `sinagerd_acciones_rapidas.txt` | SINAGERD Guía de Acciones Rápidas COER Lima | indeci.gob.pe | ✅ |
 
 ## Privacy
 
