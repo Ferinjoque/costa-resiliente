@@ -31,7 +31,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 - **API**: **633 passed, 0 errors** (Session 20). Up from 568 (+65). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
-- **Build**: Next.js production build green; first-load JS `/` = 175 kB
+- **Build**: Next.js production build green; first-load JS `/` = 184 kB (Session 20: +9 kB from rainfall HUD, fusion rainfall, CityOverview, SlaChip improvements)
 
 Test command (in container):
 ```bash
