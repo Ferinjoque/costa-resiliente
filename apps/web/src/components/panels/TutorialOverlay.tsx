@@ -343,7 +343,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
     popover: {
       title: es ? "6 — Copiloto operacional (9 herramientas)" : "6 — Operational Copilot (9 tools)",
       description: es ? `
-        <span class="cr-tour-ts">Modo rápido · Sin LLM · ~3 s · SITREP completo en 1 consulta</span>
+        <span class="cr-tour-ts">Modo rápido · Sin LLM · ~3 s · SITREP en 1 consulta · 5 herramientas</span>
         <div class="cr-tour-metrics">
           <div class="cr-tour-metric cr-tour-metric--ok">
             <span class="cr-tour-num">9</span>
@@ -364,7 +364,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
           <span class="cr-tour-badge">protocolos</span>
         </div>
       ` : `
-        <span class="cr-tour-ts">Quick-mode · No LLM · ~3 s · full SITREP in one query</span>
+        <span class="cr-tour-ts">Quick-mode · No LLM · ~3 s · full SITREP · 5 tools</span>
         <div class="cr-tour-metrics">
           <div class="cr-tour-metric cr-tour-metric--ok">
             <span class="cr-tour-num">9</span>
