@@ -483,7 +483,7 @@ def test_build_answer_river_levels_no_rising():
 
 
 def test_build_answer_active_alerts_with_critical():
-    """severity rows → total + critical/high breakdown + top critical alert title + rainfall mm."""
+    """severity rows → total + SINAGERD level + critical/high breakdown + title + rainfall mm."""
     from costa_api.ai.agent import _build_answer
     rows = [
         {"id": 1, "severity": "critical", "alert_type": "rainfall",
@@ -497,6 +497,7 @@ def test_build_answer_active_alerts_with_critical():
     ]
     answer = _build_answer([], rows, "alertas")
     assert "4" in answer  # total active
+    assert "EMERGENCIA" in answer  # 1 critical → EMERGENCIA level shown
     assert "crítica" in answer.lower()
     assert "alta" in answer.lower()
     assert "Rímac" in answer  # top critical alert title should appear
