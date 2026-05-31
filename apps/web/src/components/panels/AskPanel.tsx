@@ -22,6 +22,7 @@ interface ChatMessage {
   isDemo?: boolean;
   isRedacted?: boolean;
   quickMode?: boolean;
+  mode?: "sitrep" | "quick" | "full";
 }
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
@@ -331,6 +332,12 @@ export function AskPanel() {
         answerText = data.answer ?? (es ? "Sin respuesta." : "No response.");
         isRedacted = !!data.redacted;
         isQuickMode = !!data.quick_mode;
+        const responseMode = (data.mode ?? "full") as "sitrep" | "quick" | "full";
+        const asstId = Math.random().toString(36).slice(2);
+        setMessages((prev) => [...prev, { id: asstId, role: "assistant", content: answerText, displayed: "", isRedacted, quickMode: isQuickMode, mode: responseMode }]);
+        animateMessage(answerText, asstId);
+        setLoading(false);
+        return;  // early return so we don't run the setMessages below
       }
       const asstId = Math.random().toString(36).slice(2);
       setMessages((prev) => [...prev, { id: asstId, role: "assistant", content: answerText, displayed: "", isRedacted, quickMode: isQuickMode }]);
@@ -503,7 +510,9 @@ export function AskPanel() {
                       )}
                       {msg.quickMode && (
                         <p className="text-[10px] text-accent mt-2 opacity-70 border-t border-border pt-1.5">
-                          {es ? "Modo rápido · sin LLM · ~2s" : "Quick mode · no LLM · ~2s"}
+                          {msg.mode === "sitrep"
+                            ? (es ? "SITREP · 4 herramientas · sin LLM · ~3s" : "SITREP · 4 tools · no LLM · ~3s")
+                            : (es ? "Modo rápido · sin LLM · ~2s" : "Quick mode · no LLM · ~2s")}
                         </p>
                       )}
                       {msg.isRedacted && (
