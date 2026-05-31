@@ -1005,6 +1005,7 @@ def test_build_sitrep_answer_all_tools():
     assert "EMERGENCIA" in answer      # 1 critical alert → nivel EMERGENCIA
     assert "63" in answer              # rainfall 63.2mm (appears in both alerts and rainfall section)
     assert "Chosica" in answer         # rising river
+    assert "2.8" in answer             # river level shown for rising station
     assert "1.5" in answer             # flood area
     assert "Acción" in answer or "acción" in answer   # action recommended
     assert "Rímac" in answer           # critical alert title
