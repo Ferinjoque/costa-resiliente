@@ -198,7 +198,7 @@ The Phase 2 concept text below describes the state at June 5, 2026. The Phase 3 
 
 | Area | Session 19 | Session 20 |
 |------|------------|------------|
-| Copilot speed | Quick-mode (~2s, 9 patterns) | **SITREP mode** (~3s): start-of-shift query → 4 tools parallel, structured narrative (ALERTAS · LLUVIA · RÍOS · INUNDACIÓN). 35+ sitrep trigger phrases. |
+| Copilot speed | Quick-mode (~2s, 9 patterns) | **SITREP mode** (~3s): start-of-shift query → **5 tools parallel** (alerts + rainfall + river + flood + huayco), structured narrative. 35+ trigger phrases. |
 | Copilot answers | Generic | **SENAMHI thresholds** in river answers; **huayco probability** shown; **hospital names** when infrastructure affected; **rainfall windows** (72h/24h/1h); **top critical alert title + district** |
 | Fusion endpoint | flood + huayco + social | **+ rainfall**: watershed 72h/24h/mm + ANA level (emergencia/alerta); prose includes rainfall when above threshold; risk_level elevated by rainfall |
 | Protocol RAG | 5 documents | **+ ANA Umbrales Lluvia Lima** (6th doc): 25/50mm/72h ANA thresholds, quebrada-specific triggers, emergency contacts |
