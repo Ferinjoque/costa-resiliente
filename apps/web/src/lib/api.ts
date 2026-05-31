@@ -496,8 +496,17 @@ export function alertsStreamUrl(): string {
 
 // ─── Health check ────────────────────────────────────────────────────────────
 
-export async function fetchHealth(): Promise<{ status: string; version: string }> {
-  return get<{ status: string; version: string }>("/api/v1/health");
+export interface ApiHealth {
+  status: string;
+  version: string;
+  sinagerd_level: "EMERGENCIA" | "ALERTA" | "AVISO" | "NORMAL";
+  active_alerts: number;
+  max_rain_72h_mm: number | null;
+  rain_level: "emergencia" | "alerta" | "aviso" | "normal";
+}
+
+export async function fetchHealth(): Promise<ApiHealth> {
+  return get<ApiHealth>("/api/v1/health");
 }
 
 // ─── Share tokens ─────────────────────────────────────────────────────────────
