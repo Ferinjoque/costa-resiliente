@@ -72,6 +72,26 @@ class TestListAlerts:
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
+    async def test_province_filter_includes_district_less_alerts(self):
+        """Province filter must include rainfall alerts (district_id=NULL).
+
+        Regression guard: before the fix, district-less alerts (rainfall type)
+        were excluded from Lima Metro view because the LEFT JOIN returns no province.
+        """
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            all_alerts = (await c.get("/api/v1/alerts")).json()
+            lima_alerts = (await c.get("/api/v1/alerts?province=Lima")).json()
+
+        # Any alert without a district_id should appear in the Lima province filter
+        district_less = [a for a in all_alerts if a.get("district_id") is None]
+        lima_ids = {a["id"] for a in lima_alerts}
+        for a in district_less:
+            assert a["id"] in lima_ids, (
+                f"District-less alert {a['id']} ({a['type']}/{a['title']!r}) "
+                f"missing from Lima Metro province filter"
+            )
+
+    @pytest.mark.asyncio
     async def test_limit_respected(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get("/api/v1/alerts?limit=3")
