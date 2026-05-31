@@ -143,7 +143,7 @@ class TestListAlerts:
 
         Regression guard: prior ORDER BY a.created_at DESC could push active alerts
         out of the LIMIT window when many closed alerts exist. Fix: sort by status
-        priority (active=0, escalated=1, else=2) then created_at DESC.
+        priority (active=0, escalated=1, else=2) then severity (critical=0, high=1) then created_at DESC.
         """
         from inspect import getsource
         from costa_api.routers.alerts import list_alerts
@@ -152,6 +152,10 @@ class TestListAlerts:
         assert "CASE a.status" in src and "THEN 0" in src, (
             "list_alerts must include status-priority sort so active alerts "
             "always appear before closed ones within the LIMIT window"
+        )
+        # Verify severity sort within status group
+        assert "CASE a.severity" in src and "'critical' THEN 0" in src, (
+            "list_alerts must sort critical before high within each status group"
         )
 
         # Integration: active alerts appear in first position when they exist
@@ -167,6 +171,17 @@ class TestListAlerts:
                 f"First returned alert should be active/escalated, got {first_status!r}. "
                 "Active alerts should always appear before closed ones."
             )
+
+        # Critical before high within active group
+        if len(active_alerts) > 1:
+            severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+            for i in range(len(active_alerts) - 1):
+                si = severity_order.get(active_alerts[i].get("severity", "low"), 3)
+                si1 = severity_order.get(active_alerts[i+1].get("severity", "low"), 3)
+                assert si <= si1, (
+                    f"Active alerts out of severity order at position {i}: "
+                    f"{active_alerts[i]['severity']} before {active_alerts[i+1]['severity']}"
+                )
 
 
 # ─── POST /api/v1/alerts/{id}/action ─────────────────────────────────────────
