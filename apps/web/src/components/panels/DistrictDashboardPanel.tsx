@@ -749,6 +749,13 @@ function CityOverview() {
             <p className="text-xs text-ink-muted mt-1">
               {locale === "es" ? "Lluvia máx. 72h" : "Max 72h rain"}
             </p>
+            {maxRain72h >= 25 && (
+              <p className={clsx("text-2xs font-semibold mt-0.5", maxRain72h >= 50 ? "text-danger" : "text-warn-muted")}>
+                {maxRain72h >= 50
+                  ? (locale === "es" ? "⚠ EMERGENCIA ANA" : "⚠ EMERGENCY ANA")
+                  : (locale === "es" ? "ALERTA ANA" : "ALERT ANA")}
+              </p>
+            )}
           </div>
         )}
 
