@@ -368,6 +368,7 @@ async def run(
                     confidence=0.85 if all_rows else 0.4,
                     redacted=bool(triggered),
                     quick_mode=True,
+                    mode="quick",
                 )
             else:
                 logger.warning("multi_quick: all tools returned empty rows for tools=%s — falling through to full agent", multi_tools)
