@@ -265,7 +265,7 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 **Tests (+53):** 621 passed (↑53 from 568). Includes sitrep detection, sitrep answer builder, new quick patterns, infrastructure _build_answer, health Redis key, sitrep integration tests. TypeScript: 0 errors.
 
-**Commits (18):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `da4a350` calm-state → `cc4a6e9` richer-answers → `311bc87` protocol-dedup → `df42d39` huayco-prob → `17b59e3` tests → `d7b9a05` runbook → `733bb3c` redis-ui → `110ffb2` ANA-rag → `8d9b0bd` severity-filter → `0965d32` edan-prompt → `1c7e7f1` final-count.
+**Commits (26):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `da4a350` calm-state → `cc4a6e9` richer-answers → `311bc87` protocol-dedup → `df42d39` huayco-prob → `17b59e3` tests → `d7b9a05` runbook → `733bb3c` redis-ui → `110ffb2` ANA-rag → `8d9b0bd` severity-filter → `0965d32` edan-prompt → `256cf6e` sitrep-24h → `90d8749` shelter-legend → `e90e863` imerg-label → `ec8f392` log-badge + more.
 
 ---
 
