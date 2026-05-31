@@ -727,7 +727,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                 seen_titles.add(title)
                 title_list.append(title)
             if len(parts) < 3:
-                parts.append(chunk[:250] + ("…" if len(chunk) > 250 else ""))
+                parts.append(chunk[:350] + ("…" if len(chunk) > 350 else ""))
         combined = " ".join(parts)
         titles_str = " / ".join(title_list[:3])
         return f"Protocolos relevantes: {titles_str}. {combined}"
