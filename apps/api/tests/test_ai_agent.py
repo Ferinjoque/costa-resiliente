@@ -523,15 +523,23 @@ def test_build_answer_active_alerts_with_critical():
 
 
 def test_build_answer_social_signals_breakdown():
-    """triage_label rows → total + label breakdown."""
+    """triage_label rows → total + label breakdown including weather_observation."""
     from costa_api.ai.agent import _build_answer
     rows = [
         {"triage_label": "needs_help", "count": 8, "district": "Lurigancho"},
         {"triage_label": "huayco_observation", "count": 3, "district": "Lurigancho"},
+        {"triage_label": "weather_observation", "count": 2, "district": "Lurigancho"},
     ]
     answer = _build_answer([], rows, "social")
     assert "señal" in answer.lower()
     assert "ayuda" in answer.lower() or "huayco" in answer.lower()
+    # Regression: weather_observation was excluded from breakdown before Session 22.
+    # Total showed 13 but breakdown showed only 11 — confusing discrepancy.
+    assert "meteo" in answer.lower() or "observ" in answer.lower(), (
+        "weather_observation signals must appear in breakdown, not just in total count"
+    )
+    # Total must be accurate (includes all types)
+    assert "13" in answer
 
 
 def test_build_answer_population_at_risk():
@@ -1072,6 +1080,10 @@ def test_build_sitrep_answer_all_tools():
     assert "EDAN" in answer, "Sitrep action must include EDAN protocol for critical alerts"
     assert "evacuaci" in answer.lower() or "Rímac" in answer, (
         "Sitrep action must add evacuation directive when EMERGENCIA rain is present"
+    )
+    # Regression guard: sitrep action must name specific quebradas when very_high risk
+    assert "Jicamarca" in answer or "Pedregal" in answer, (
+        "Sitrep action must name specific very_high quebradas so operators know WHERE to dispatch USAR"
     )
 
 
