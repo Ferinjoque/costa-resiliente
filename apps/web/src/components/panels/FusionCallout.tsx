@@ -149,7 +149,7 @@ export function FusionCallout() {
             {data.rainfall?.acc_72h_mm != null && (
               <FRow
                 label={t.rainfall}
-                value={`${data.rainfall.acc_72h_mm.toFixed(0)} mm${data.rainfall.watershed ? ` (${data.rainfall.watershed})` : ""}`}
+                value={`${data.rainfall.acc_72h_mm.toFixed(0)} mm${data.rainfall.watershed ? ` (${data.rainfall.watershed})` : ""}${data.rainfall.level && data.rainfall.level !== "normal" ? ` · ${data.rainfall.level === "emergencia" ? "⚠ EMERGENCIA" : data.rainfall.level === "alerta" ? "ALERTA" : "AVISO"} ANA` : ""}`}
                 warn={data.rainfall.level === "alerta" || data.rainfall.level === "aviso"}
                 danger={data.rainfall.level === "emergencia"}
               />
