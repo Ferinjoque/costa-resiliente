@@ -53,7 +53,7 @@ const SOURCES: Source[] = [
     name: "NASA IMERG Late Run V07B",
     provider: "NASA GES DISC",
     coverage: "Global — 0.1° (~11 km), cada 30 min",
-    latency: "~4 h tras observación",
+    latency: "~12 h tras observación",
     url: "https://gpm.nasa.gov/data/imerg",
     status: "ok",
     healthKey: "imerg",
