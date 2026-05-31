@@ -523,11 +523,11 @@ async def dispatch(tool_name: str, args: dict, db: AsyncSession, rag_fn=None) ->
         return cached
 
     try:
-        # Cap per-tool DB time at 30s (agent has 90s overall; spatial joins can
-        # be expensive if query planner picks a bad plan under concurrent load).
-        await db.execute(text("SET LOCAL statement_timeout = '30000'"))
-        # Use inspect.signature to get only declared parameters (not all local vars).
-        # co_varnames includes locals too, which could pass unexpected kwargs through.
+        # Note: SET LOCAL statement_timeout is intentionally omitted here because
+        # parallel tool dispatch via asyncio.gather shares the same AsyncSession.
+        # Concurrent SET LOCAL calls race on the same connection and can corrupt
+        # each other's timeout settings or return wrong results. The outer
+        # asyncio.wait_for(run(...), timeout=agent_timeout) caps overall duration.
         valid_params = set(inspect.signature(fn).parameters) - {"db"}
         filtered = {k: v for k, v in args.items() if k in valid_params}
         rows = await fn(db, **filtered)
