@@ -632,15 +632,22 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
     rain_rows = tool_rows.get("get_rainfall_accumulation", [])
     if rain_rows:
         mx = max((r.get("acc_72h_mm") or 0) for r in rain_rows)
-        ws = next((r.get("watershed", "") for r in rain_rows if (r.get("acc_72h_mm") or 0) == mx), "cuenca")
+        mx_row = next((r for r in rain_rows if (r.get("acc_72h_mm") or 0) == mx), rain_rows[0])
+        ws = mx_row.get("watershed", "cuenca")
+        acc_24h = mx_row.get("acc_24h_mm")
+        detail_24h = f" · 24h: {acc_24h:.0f} mm" if acc_24h is not None else ""
         if mx >= 50.0:
-            sections.append(f"**Lluvia 72h:** {mx:.0f} mm en {ws} ⚠ EMERGENCIA (>50 mm ANA)")
+            sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm{detail_24h} ⚠ EMERGENCIA (>50 mm ANA)")
             if not action:
-                action = "Verificar umbral de evacuación en quebradas de cuenca " + ws + "."
+                action = "Escalar a COEN. Activar evacuación preventiva quebradas cuenca " + ws + "."
         elif mx >= 25.0:
-            sections.append(f"**Lluvia 72h:** {mx:.0f} mm en {ws} — ALERTA (>25 mm ANA)")
+            sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm{detail_24h} — ALERTA (>25 mm ANA)")
+            if not action:
+                action = "Activar brigadas de campo en quebradas cuenca " + ws + "."
+        elif acc_24h is not None and acc_24h >= 15:
+            sections.append(f"**Lluvia:** {ws} — 24h: {acc_24h:.0f} mm — AVISO (>15 mm/24h ANA)")
         elif mx > 0:
-            sections.append(f"**Lluvia 72h:** {mx:.0f} mm en {ws} — bajo umbral")
+            sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm — bajo umbral")
 
     # 3. River levels
     river_rows = tool_rows.get("get_river_levels", [])
