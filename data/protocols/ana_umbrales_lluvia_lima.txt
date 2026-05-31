@@ -1,0 +1,63 @@
+UMBRALES DE LLUVIA PARA ACTIVACIÓN DE ALERTAS — LIMA METROPOLITANA
+Autoridad Nacional del Agua (ANA) — Observatorio Chirilu
+
+UMBRALES DE PRECIPITACIÓN (ACUMULADA) PARA GESTIÓN DE EMERGENCIAS
+
+Los siguientes umbrales fueron definidos por ANA en coordinación con INDECI y SENAMHI para el sistema de alerta temprana de Lima Metropolitana. Se expresan en milímetros (mm) de precipitación acumulada.
+
+VENTANA 72 HORAS (3 días):
+- NORMAL: < 15 mm/72h — Sin riesgo significativo.
+- AVISO: 15–24 mm/72h — Monitoreo reforzado. Revisión de quebradas.
+- ALERTA: 25–49 mm/72h — Umbral ANA de activación. Prealerta COER Lima. Activar brigadas de campo.
+- EMERGENCIA: ≥ 50 mm/72h — Umbral crítico ANA. Escalar a COEN. Evacuación preventiva de quebradas prioritarias.
+
+VENTANA 24 HORAS (1 día):
+- NORMAL: < 10 mm/24h — Sin acción requerida.
+- AVISO: 10–14 mm/24h — Monitoreo.
+- ALERTA: 15–29 mm/24h — Activar protocolo de vigilancia COER Lima.
+- EMERGENCIA: ≥ 30 mm/24h — Riesgo inminente. Escalar a COEN.
+
+VENTANA 1 HORA:
+- ALERTA: ≥ 10 mm/1h — Lluvia intensa. Posible activación inmediata de quebradas. Evacuar zonas bajas.
+- EMERGENCIA: ≥ 20 mm/1h — Lluvia torrencial. Huayco inminente en quebradas activas.
+
+QUEBRADAS PRIORITARIAS LIMA METROPOLITANA (por riesgo):
+1. Quebrada Jicamarca (Lurigancho-Chosica) — umbral activación: 12 mm/24h.
+2. Quebrada Pedregal (Carabayllo) — umbral activación: 15 mm/24h.
+3. Quebrada Quirio (Ate) — umbral activación: 18 mm/24h.
+4. Quebrada Carapongo (Lurigancho) — umbral activación: 14 mm/24h.
+5. Quebrada Cashahuacra (Lurigancho-Chosica) — umbral activación: 10 mm/24h.
+
+PROCEDIMIENTO ANTE SUPERACIÓN DE UMBRAL ALERTA (≥ 25 mm/72h):
+1. COER Lima activa guardia permanente (24/7).
+2. Brigadas de campo desplegadas en quebradas prioritarias.
+3. Coordinación con ANA para lecturas horarias de estaciones.
+4. Información pública vía Radio Nacional y SMS masivo.
+5. Preposicionamiento de recursos INDECI (botes, maquinaria).
+
+PROCEDIMIENTO ANTE SUPERACIÓN DE UMBRAL EMERGENCIA (≥ 50 mm/72h):
+1. Activar nivel EMERGENCIA SINAGERD.
+2. Escalar a COEN Nacional — solicitar Declaratoria de Emergencia.
+3. Evacuación obligatoria de Jicamarca, Pedregal, Quirio y Carapongo.
+4. Activar albergues designados (ver plan INDECI Lima albergues).
+5. Solicitar apoyo logístico FFAA (Ejército, Marina, FAP).
+6. Emitir alerta por sistema de sirenas SIAT-Lima.
+7. Cierre preventivo Carretera Central km 20–50.
+
+FUENTES DE DATOS PARA MONITOREO:
+- Pluviómetros ANA en tiempo real: ana.gob.pe/hidrologia (actualización 15 min)
+- Estaciones SENAMHI: senamhi.gob.pe/alertas
+- IMERG NASA: giovanni.gsfc.nasa.gov (latencia 4–12h)
+- Costa Resiliente: sistema integrado con actualización automática cada 30 minutos
+
+CONTACTOS DE EMERGENCIA:
+- COER Lima: (01) 748-0080 / 748-0081
+- COEN INDECI: (01) 225-9898
+- ANA Chirilu (guardia hidrológica): (01) 224-3298 ext. 3710
+- SENAMHI Meteorología: (01) 614-1414
+
+DATOS HISTÓRICOS DE REFERENCIA (El Niño Costero 2017 — cuenca Rímac):
+- Acumulado máximo 72h (marzo 2017): 180 mm (Estación San Mateo, cuenca alta)
+- Acumulado 24h máximo: 42 mm (15 de marzo de 2017)
+- Pico de caudal Rímac-Chosica: 850 m³/s (9 de marzo de 2017)
+- Afectados Lima: 330,000 personas
