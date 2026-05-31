@@ -281,7 +281,7 @@ async def issue_token(
     """Issue a JWT for username+password."""
     await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     result = await db.execute(
-        text("SELECT id, password_hash, full_name, role, district_ubigeo, active FROM ops.operators WHERE username = :u"),
+        text("SELECT id, username, password_hash, full_name, role, district_ubigeo, active FROM ops.operators WHERE username = :u"),
         {"u": form.username},
     )
     row = result.mappings().first()
@@ -295,11 +295,14 @@ async def issue_token(
             detail="Usuario o contraseña incorrectos.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = _issue_token(row["id"], form.username, row["role"], row["district_ubigeo"])
+    # Use DB-canonical username (not raw form input) for token and response
+    # so audit trail is always keyed on the normalized record value.
+    canonical_username = row["username"]
+    token = _issue_token(row["id"], canonical_username, row["role"], row["district_ubigeo"])
     return TokenResponse(
         access_token=token,
         operator_id=row["id"],
-        username=form.username,
+        username=canonical_username,
         full_name=row["full_name"],
         role=row["role"],
         district_ubigeo=row["district_ubigeo"],
