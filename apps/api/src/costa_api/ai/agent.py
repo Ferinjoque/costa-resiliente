@@ -615,8 +615,11 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             by_type[t] = by_type.get(t, 0) + 1
         parts = [f"{cnt} {TYPE_ES.get(t, t)}" for t, cnt in sorted(by_type.items(), key=lambda x: -x[1])]
         breakdown = ", ".join(parts[:4])
+        # Show names of critical infrastructure (hospitals first)
+        hosp_names = [r.get("name") for r in rows if r.get("type") == "hospital" and r.get("name")][:2]
+        name_note = f" Hospitales afectados: {', '.join(hosp_names)}." if hosp_names else ""
         return (
-            f"⚠ {n} infraestructura(s) crítica(s) dentro de zonas inundadas: {breakdown}. "
+            f"⚠ {n} infraestructura(s) crítica(s) dentro de zonas inundadas: {breakdown}.{name_note} "
             f"Verificar accesibilidad para respuesta de emergencia."
         )
 
