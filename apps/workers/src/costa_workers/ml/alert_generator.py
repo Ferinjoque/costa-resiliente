@@ -461,11 +461,14 @@ async def generate_rainfall_alerts(db_dsn: str = DB_DSN) -> int:
             """
             SELECT ia.watershed_id, w.name AS watershed_name,
                    ia.time, ia.acc_24h_mm, ia.acc_72h_mm
-            FROM hydro.imerg_accumulations ia
-            JOIN geo.watersheds w ON w.id = ia.watershed_id
-            WHERE ia.time = (
-                SELECT MAX(time) FROM hydro.imerg_accumulations
-            )
+            FROM geo.watersheds w
+            JOIN LATERAL (
+                SELECT watershed_id, time, acc_24h_mm, acc_72h_mm
+                FROM hydro.imerg_accumulations
+                WHERE watershed_id = w.id
+                ORDER BY time DESC
+                LIMIT 1
+            ) ia ON true
             ORDER BY ia.acc_72h_mm DESC NULLS LAST
             """
         )
