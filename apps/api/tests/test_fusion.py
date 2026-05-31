@@ -216,6 +216,21 @@ class TestRiskProse:
         assert "huayco" in prose.lower()
         assert "85%" in prose
 
+    def test_includes_huayco_even_when_probability_is_none(self):
+        """Huayco risk prose must appear when probability is NULL.
+
+        Prior bug: condition was `if huayco_risk and huayco_prob is not None`,
+        so when the ML model wrote risk_level but not probability, the huayco
+        hazard was silently omitted from the prose even though risk_level='high'.
+        """
+        prose = self._prose(huayco_risk="high", huayco_prob=None)
+        assert "huayco" in prose.lower(), (
+            "huayco prose must appear even when probability is None — "
+            "risk_level alone is sufficient to surface the hazard"
+        )
+        # Must NOT show a percentage (no probability to display)
+        assert "%" not in prose
+
     def test_includes_social_when_present(self):
         prose = self._prose(social_urgent=3, social_total=5)
         assert "3" in prose

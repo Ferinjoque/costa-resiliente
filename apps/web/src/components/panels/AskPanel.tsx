@@ -217,15 +217,23 @@ export function AskPanel() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const animatingMsgRef = useRef<{ id: string; content: string } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Cancel in-flight request and typewriter animation when navigating away
+  // Cancel in-flight request and finalize typewriter animation when navigating away
   useEffect(() => {
     if (activePanel !== "ask") {
       abortRef.current?.abort();
       if (typewriterRef.current) {
         clearInterval(typewriterRef.current);
         typewriterRef.current = null;
+      }
+      if (animatingMsgRef.current) {
+        const pending = animatingMsgRef.current;
+        setMessages((msgs) =>
+          msgs.map((m) => m.id === pending.id ? { ...m, displayed: pending.content } : m)
+        );
+        animatingMsgRef.current = null;
       }
     }
   }, [activePanel]);
@@ -243,7 +251,21 @@ export function AskPanel() {
   const es = locale === "es";
 
   function animateMessage(fullContent: string, msgId: string) {
-    if (typewriterRef.current) clearInterval(typewriterRef.current);
+    // Finalize any previously in-progress animation so the prior response is
+    // never left truncated when a new query starts (e.g. user submits before
+    // typewriter finishes).
+    if (typewriterRef.current) {
+      clearInterval(typewriterRef.current);
+      typewriterRef.current = null;
+    }
+    if (animatingMsgRef.current) {
+      const prev = animatingMsgRef.current;
+      setMessages((msgs) =>
+        msgs.map((m) => m.id === prev.id ? { ...m, displayed: prev.content } : m)
+      );
+      animatingMsgRef.current = null;
+    }
+    animatingMsgRef.current = { id: msgId, content: fullContent };
     let i = 0;
     typewriterRef.current = setInterval(() => {
       i += 5;
@@ -253,6 +275,7 @@ export function AskPanel() {
       if (i >= fullContent.length) {
         clearInterval(typewriterRef.current!);
         typewriterRef.current = null;
+        animatingMsgRef.current = null;
         setMessages((prev) =>
           prev.map((m) => m.id === msgId ? { ...m, displayed: fullContent } : m)
         );
