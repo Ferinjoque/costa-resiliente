@@ -873,6 +873,12 @@ def test_detect_quick_novedades():
     assert _detect_quick("¿Cuáles son las novedades de la guardia?") == "get_active_alerts"
 
 
+def test_detect_quick_lluvia_72h():
+    """'lluvia 72h' routes to get_rainfall_accumulation."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("¿Cuánta lluvia 72h?") == "get_rainfall_accumulation"
+
+
 def test_detect_quick_edan():
     """'edan' routes to search_protocols."""
     from costa_api.ai.agent import _detect_quick
