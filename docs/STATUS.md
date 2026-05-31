@@ -253,11 +253,21 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 - `fix(auto_seed)`: Social signals went dark after 48h — three bugs compounded: (1) `NOW = datetime.now()` was a module-level constant frozen at container start, so `_ts()` always returned startup time not current time; (2) early-return check counted ALL social signals (64 live untriaged Bluesky/RSS) not LOCATABLE ones visible on map, so `_social (64) >= len(_SOCIAL_CURRENT) (9)` → refresh never ran; (3) ON CONFLICT upsert path was after the early-return so never executed. All three fixed. Demo social feed now self-heals on each seed call — all 9 demo signals (needs_help, huayco_observation, road_blocked, infrastructure_damage, weather_observation) with correct timestamps.
 - `fix(agent)`: RAG chunk display limit increased 250 → 350 chars — protocol answers were truncating mid-sentence.
 
+**Additional Session 22 improvements:**
+- `feat(agent)`: Sitrep action now names specific very_high quebradas (Pedregal + Huaycoloro) — "Evacuar quebrada(s) Pedregal + Huaycoloro" appended to action directive.
+- `fix(agent)`: `weather_observation` added to social cluster breakdown (was counted in total but excluded from label breakdown — discrepancy was confusing).
+- `fix(agent)`: `bloqueado`/`bloqueada` added to social quick-mode patterns ("puentes bloqueados" now routes to multi-quick: social + infrastructure).
+- `fix(agent)`: `victimas`/`nivel de emergencia`/`qué pasa` added to quick-mode patterns — unaccented Spanish variants now route correctly.
+- `fix(share)`: Atomic expiry check eliminates TOCTOU — expired tokens no longer get spurious `accessed_at` updates.
+- `feat(districts)`: `alerts_trend_7d` now includes watershed rainfall alerts via UNION (district 7-day chart shows full alert picture including EMERGENCIA rainfall).
+- `feat(dashboard)`: IMERG sparkline adds dashed ALERTA (25mm) and EMERGENCIA (50mm) reference lines — operators see threshold context at a glance.
+
 **Tests (+2, 670 total):**
 - `test(agent)`: `test_sitrep_less_than_quorum_tools_falls_through_to_llm` — regression guard for sitrep quorum fix.
 - `test(agent)`: `test_full_agent_tool_error_dict_produces_degraded_not_empty` — guard that copilot never returns empty string when all DB tools fail.
+- `test(agent)`: Regression guards updated for quebrada names in sitrep + weather_observation in social breakdown.
 
-**Commits (8):** `369d21e` robustness hardening → `4e8f3c0` demo threshold fix → `839f63d` INDECI checklist + login CTAs → `4e5cde9` copilot error dict test → `06cb4da` RAG chunk limit → docs → `72dff0e` auto_seed social fix → STATUS update.
+**Commits (17):** `369d21e` → `4e8f3c0` → `839f63d` → `4e5cde9` → `06cb4da` → `72dff0e` → `2bc6b3f` → `6de8572` → `2d7c199` → `37c12ca` → `7c8ba11` → `c2c1c1e` → `ff6fb32` → `e55a282` → `bb6d8fd` → + docs.
 
 ---
 
