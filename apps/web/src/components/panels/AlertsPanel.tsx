@@ -27,7 +27,7 @@ import { useAlerts, useFloodExposure } from "@/lib/queries";
 import { actOnAlert, logDecision, RateLimitError, AuthError, BROWSER_SESSION_ID } from "@/lib/api";
 import type { LiveToast } from "@/store/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Alert, DecisionLogEntry } from "@/lib/api";
+import type { Alert } from "@/lib/api";
 import { timeAgo } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import {
