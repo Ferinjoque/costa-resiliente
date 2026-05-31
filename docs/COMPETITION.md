@@ -194,7 +194,24 @@ The Phase 2 concept text below describes the state at June 5, 2026. The Phase 3 
 | Frontend panels | 6 main surfaces | 9 main surfaces: added ProposalsPanel, NotificationsPanel, DistrictDashboardPanel, SharePanel, FusionCallout |
 | Services | 9 containers | 9 containers (same); pgstac bootstrapped with pypgstac so Sentinel-1 and flood-seg flows now ingest new scenes |
 
-**Rubric alignment note:** The Phase 2 submission referenced "8 whitelisted database tools" and did not describe notifications, auth, HITL, or PDF export. All of these are now fully implemented and tested. Tool count correction for Phase 3 judges: **9 tools**.
+**Session 20 additions (2026-05-31, 54 commits):**
+
+| Area | Session 19 | Session 20 |
+|------|------------|------------|
+| Copilot speed | Quick-mode (~2s, 9 patterns) | **SITREP mode** (~3s): start-of-shift query → 4 tools parallel, structured narrative (ALERTAS · LLUVIA · RÍOS · INUNDACIÓN). 35+ sitrep trigger phrases. |
+| Copilot answers | Generic | **SENAMHI thresholds** in river answers; **huayco probability** shown; **hospital names** when infrastructure affected; **rainfall windows** (72h/24h/1h); **top critical alert title + district** |
+| Fusion endpoint | flood + huayco + social | **+ rainfall**: watershed 72h/24h/mm + ANA level (emergencia/alerta); prose includes rainfall when above threshold; risk_level elevated by rainfall |
+| Protocol RAG | 5 documents | **+ ANA Umbrales Lluvia Lima** (6th doc): 25/50mm/72h ANA thresholds, quebrada-specific triggers, emergency contacts |
+| HUD | No rainfall | **Rainfall chip** shows when ≥25mm/72h (ALERTA/EMERGENCIA color) |
+| FEEDS chip | All sources | **Only core sources** (bluesky/rss/imerg/stations/alerts) — no false red from expected-offline reddit/telegram/SAR |
+| SLA | Visual only | **SLA breach toast** (danger variant) fires when alert exceeds SLA — visible even outside Alerts panel |
+| AlertsPanel | Province/district filter | **+ severity filter** (Todas/Crit/Alta toggle) |
+| FusionCallout | flood/huayco/social | **+ rainfall row** with ANA level color coding |
+| DataFreshnessBar | No staleness | **Color coding** by layer age (ok/warn/stale thresholds per layer) |
+| LiveTicker | Generic | **Severity prefix** [EMERG/ALERT/AVISO] + **rainfall item** when ≥25mm + urgent-only social filter |
+| Tests | 568 passed | **633 passed** (+65: sitrep, rainfall, SENAMHI threshold, fusion-rainfall, EDAN pattern, IMERG label regression, copilot HTTP) |
+
+**Rubric alignment note:** The Phase 2 submission referenced "8 whitelisted database tools" and did not describe notifications, auth, HITL, or PDF export. All of these are now fully implemented and tested. Tool count correction for Phase 3 judges: **9 tools + sitrep multi-tool fast path**.
 
 ---
 
