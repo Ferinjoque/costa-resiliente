@@ -249,11 +249,15 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 - `feat(AlertsPanel)`: INDECI protocol checklist persists via `sessionStorage` (tab-scoped, key = top-5 urgent alert IDs). Survives panel open/close — operator doesn't lose progress tracking.
 - `fix(demoData)`: Chosica threshold corrected from 2.0m/3.5m to 2.5m SENAMHI across 6 occurrences (alert description, fusion prose ES+EN, copilot river/station answers).
 
+**Critical demo data fix:**
+- `fix(auto_seed)`: Social signals went dark after 48h — three bugs compounded: (1) `NOW = datetime.now()` was a module-level constant frozen at container start, so `_ts()` always returned startup time not current time; (2) early-return check counted ALL social signals (64 live untriaged Bluesky/RSS) not LOCATABLE ones visible on map, so `_social (64) >= len(_SOCIAL_CURRENT) (9)` → refresh never ran; (3) ON CONFLICT upsert path was after the early-return so never executed. All three fixed. Demo social feed now self-heals on each seed call — all 9 demo signals (needs_help, huayco_observation, road_blocked, infrastructure_damage, weather_observation) with correct timestamps.
+- `fix(agent)`: RAG chunk display limit increased 250 → 350 chars — protocol answers were truncating mid-sentence.
+
 **Tests (+2, 670 total):**
 - `test(agent)`: `test_sitrep_less_than_quorum_tools_falls_through_to_llm` — regression guard for sitrep quorum fix.
 - `test(agent)`: `test_full_agent_tool_error_dict_produces_degraded_not_empty` — guard that copilot never returns empty string when all DB tools fail.
 
-**Commits (6):** `369d21e` robustness hardening → `4e8f3c0` demo threshold fix → `839f63d` INDECI checklist + login CTAs → `4e5cde9` copilot error dict test → docs + DEMO-GUIDE.
+**Commits (8):** `369d21e` robustness hardening → `4e8f3c0` demo threshold fix → `839f63d` INDECI checklist + login CTAs → `4e5cde9` copilot error dict test → `06cb4da` RAG chunk limit → docs → `72dff0e` auto_seed social fix → STATUS update.
 
 ---
 
