@@ -527,19 +527,19 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   let rec: string;
   if (locale === "es") {
     if (critical.length > 0 && isHuayco) {
-      rec = `Evacuación preventiva inmediata — Quebrada Jicamarca. Probabilidad huayco 91%, umbral 42 mm superado. Desplegar USAR Equipo Alfa al punto de reunión por Av. Las Torres antes de las 15:00. Notificar INDECI COEN.`;
+      rec = `Evacuación preventiva inmediata — quebrada activa detectada. Umbral EMERGENCIA ANA (50 mm/72h) superado. Desplegar USAR Equipo Alfa al punto de reunión antes de las 15:00. Notificar INDECI COEN.`;
     } else if (critical.length > 0) {
-      rec = `Alerta crítica activa en ${firstCritical!.title}. Activar protocolo DELTA COEN. Preposicionar botes en Chosica y Carabayllo norte. Confirmar capacidad de albergues.`;
+      rec = `Alerta crítica activa: ${firstCritical!.title}. Activar protocolo DELTA COEN. Preposicionar botes en Chosica y Carabayllo norte. Confirmar capacidad de albergues.`;
     } else {
-      rec = `Riesgo compuesto ALTO en ${high.length} distritos. Pre-alertar personal INDECI en Lurigancho, Ate y Carabayllo. Monitorear estaciones Chosica y Carabayllo cada 15 min.`;
+      rec = `Riesgo compuesto ALTO en ${high.length} distrit${high.length !== 1 ? "os" : "o"}. Pre-alertar personal INDECI en Lurigancho, Ate y Carabayllo. Monitorear estaciones Chosica y Carabayllo cada 15 min.`;
     }
   } else {
     if (critical.length > 0 && isHuayco) {
-      rec = `Immediate preventive evacuation — Quebrada Jicamarca. Huayco probability 91%, threshold exceeded. Deploy USAR Team Alpha to assembly point via Av. Las Torres before 15:00. Notify INDECI COEN.`;
+      rec = `Immediate preventive evacuation — active quebrada detected. ANA EMERGENCY threshold (50 mm/72h) exceeded. Deploy USAR Team Alpha to assembly point before 15:00. Notify INDECI COEN.`;
     } else if (critical.length > 0) {
-      rec = `Critical alert active at ${firstCritical!.title}. Activate COEN protocol DELTA. Pre-position boats in Chosica and Carabayllo norte. Confirm shelter capacity.`;
+      rec = `Critical alert active: ${firstCritical!.title}. Activate COEN DELTA protocol. Pre-position boats in Chosica and Carabayllo norte. Confirm shelter capacity.`;
     } else {
-      rec = `HIGH composite risk across ${high.length} districts. Pre-alert INDECI personnel in Lurigancho, Ate, Carabayllo. Monitor Chosica and Carabayllo stations every 15 min.`;
+      rec = `HIGH composite risk across ${high.length} district${high.length !== 1 ? "s" : ""}. Pre-alert INDECI personnel in Lurigancho, Ate, Carabayllo. Monitor Chosica and Carabayllo stations every 15 min.`;
     }
   }
 
