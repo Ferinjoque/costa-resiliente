@@ -472,11 +472,13 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         top_name = top.get("name", "?")
         top_prob = top.get("probability")
         top_level = top.get("risk_level", "")
+        top_trigger = top.get("trigger_rain_24h_mm")
         level_es = {"very_high": "MUY ALTO", "high": "ALTO", "medium": "MEDIO"}.get(top_level, top_level.upper())
         prob_str = f" (prob. {float(top_prob):.2f})" if top_prob is not None else ""
+        trigger_str = f" · umbral activación: {float(top_trigger):.0f} mm/24h" if top_trigger is not None else ""
         return (
             f"Se identificaron {n} quebrada{'s' if n != 1 else ''} con riesgo elevado. "
-            f"La más crítica: {top_name} — {level_es}{prob_str}."
+            f"La más crítica: {top_name} — {level_es}{prob_str}{trigger_str}."
         )
     # SENAMHI alert thresholds (meters) per station name fragment
     _STATION_THRESHOLDS: dict[str, float] = {
