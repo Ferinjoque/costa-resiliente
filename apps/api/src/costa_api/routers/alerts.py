@@ -215,30 +215,22 @@ async def act_on_alert(
     if not meta:
         raise HTTPException(status_code=404, detail=f"Alert {alert_id} not found")
 
-    # Idempotency guard: skip the update if alert is already in target status.
-    # Prevents duplicate fan-out notifications when two operators click simultaneously.
-    current_row = await db.execute(
-        text("SELECT status FROM ops.alerts WHERE id = :id"),
-        {"id": alert_id},
-    )
-    current = current_row.mappings().first()
-    if not current:
-        raise HTTPException(status_code=404, detail=f"Alert {alert_id} not found")
-    if current["status"] == new_status:
-        # Already in target state — idempotent no-op, return success with current status
-        return {"alert_id": alert_id, "new_status": new_status}
-
+    # Atomic idempotency: only update when current status differs from target.
+    # Single UPDATE statement prevents the read-then-write race that allowed two
+    # concurrent escalation clicks to both trigger fan-out notifications.
+    # We already confirmed the alert exists via meta_row above.
     result = await db.execute(
         text("""
             UPDATE ops.alerts
             SET status = :status, updated_at = NOW()
-            WHERE id = :id
+            WHERE id = :id AND status != :status
             RETURNING id
         """),
         {"status": new_status, "id": alert_id},
     )
     if not result.fetchone():
-        raise HTTPException(status_code=404, detail=f"Alert {alert_id} not found")
+        # 0 rows returned: alert is already in target state — idempotent no-op.
+        return {"alert_id": alert_id, "new_status": new_status}
 
     payload = {
         "action": action.action,

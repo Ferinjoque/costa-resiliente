@@ -1285,3 +1285,55 @@ async def test_get_river_levels_prev1h_anchored_to_latest():
     assert "BETWEEN NOW() - make_interval(hours => :hours) - INTERVAL '30 min'" not in sql_text, (
         "prev_1h must not use the old absolute NOW()-based window (anchors to wrong time)"
     )
+
+
+# ─── Sitrep quorum: < 3/5 tools OK → fall through to LLM, not NORMAL ────────
+
+@pytest.mark.asyncio
+async def test_sitrep_less_than_quorum_tools_falls_through_to_llm():
+    """When <3 of 5 sitrep tools succeed (all with 0 rows), must NOT return NORMAL.
+
+    Prior bug: even 1 successful tool with 0 rows triggered the 'no active emergency'
+    NORMAL message, hiding that 4 other tools had failed with exceptions.
+    Fix: require ≥3/5 tool successes before asserting NORMAL (quorum guard).
+    """
+    db = AsyncMock()
+
+    # Only 2 of 5 tools succeed (with 0 rows), 3 fail with exceptions
+    async def _fake_alerts_empty(db, **kwargs): return []
+    async def _fake_rain_empty(db, **kwargs): return []
+    async def _fake_river_fails(db, **kwargs): raise RuntimeError("DB timeout")
+    async def _fake_flood_fails(db, **kwargs): raise RuntimeError("DB timeout")
+    async def _fake_huayco_fails(db, **kwargs): raise RuntimeError("DB timeout")
+
+    direct_response = _make_llm_response("No se pudo determinar el estado completo del sistema.")
+
+    with (
+        patch("costa_api.ai.agent.gateway") as mock_gw,
+        patch.dict(db_tools._TOOL_MAP, {
+            "get_active_alerts": _fake_alerts_empty,
+            "get_rainfall_accumulation": _fake_rain_empty,
+            "get_river_levels": _fake_river_fails,
+            "get_flood_polygons": _fake_flood_fails,
+            "get_huayco_risk": _fake_huayco_fails,
+        }),
+        patch("costa_api.ai.tools.db_tools.get_cached", AsyncMock(return_value=None)),
+        patch("costa_api.ai.tools.db_tools.set_cached", AsyncMock()),
+    ):
+        mock_gw.chat = AsyncMock(return_value=direct_response)
+        mock_gw.extract_tool_calls = MagicMock(return_value=[])
+        mock_gw.extract_text = MagicMock(return_value=direct_response["message"]["content"])
+        result = await agent_run(
+            query="Dame el resumen completo de la situación actual",
+            operator_id="op1",
+            db=db,
+        )
+
+    # Must NOT be sitrep mode (quorum not met) — fell through to LLM
+    assert result.mode != "sitrep", (
+        f"With only 2/5 tools succeeding, must NOT assert NORMAL — mode={result.mode!r}"
+    )
+    # The NORMAL message must not appear in the answer
+    assert "NORMAL" not in result.answer or "no active" not in result.answer.lower(), (
+        "Must not claim sistema NORMAL when majority of sitrep tools failed"
+    )
