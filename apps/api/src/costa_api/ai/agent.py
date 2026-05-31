@@ -756,15 +756,28 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
         ws = mx_row.get("watershed", "cuenca")
         acc_24h = mx_row.get("acc_24h_mm")
         detail_24h = f" · 24h: {acc_24h:.0f} mm" if acc_24h is not None else ""
+        # Check for additional elevated watersheds (deduplicated by watershed name)
+        seen_ws = {ws}
+        other_elevated: list[dict] = []
+        for r in rain_rows:
+            r_ws = r.get("watershed") or ""
+            if r_ws and r_ws not in seen_ws and (r.get("acc_72h_mm") or 0) >= 25.0:
+                seen_ws.add(r_ws)
+                other_elevated.append(r)
+        other_note = ""
+        if other_elevated:
+            other_parts = [f"{r.get('watershed','?')}: {int(r.get('acc_72h_mm') or 0)} mm" for r in other_elevated[:2]]
+            other_note = f" · también {', '.join(other_parts)}"
+
         if mx >= 50.0:
-            sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm{detail_24h} ⚠ EMERGENCIA (>50 mm ANA)")
+            sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm{detail_24h} ⚠ EMERGENCIA (>50 mm ANA){other_note}")
             if not action:
                 action = "Escalar a COEN. Activar evacuación preventiva quebradas cuenca " + ws + "."
             elif "EDAN" in action:
                 # Augment existing critical-alert action with specific evacuation directive
                 action = action.rstrip(".") + f". Activar evacuación preventiva quebradas cuenca {ws}."
         elif mx >= 25.0:
-            sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm{detail_24h} — ALERTA (>25 mm ANA)")
+            sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm{detail_24h} — ALERTA (>25 mm ANA){other_note}")
             if not action:
                 action = "Activar brigadas de campo en quebradas cuenca " + ws + "."
             elif action and "brigadas" not in action:
