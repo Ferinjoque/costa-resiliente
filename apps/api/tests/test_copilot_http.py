@@ -175,6 +175,21 @@ async def test_copilot_sitrep_query_returns_200():
 
 
 @pytest.mark.asyncio
+async def test_copilot_mode_field_present():
+    """All copilot responses must include a 'mode' field."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/copilot/ask",
+            json={"query": "¿Cuántas alertas activas hay?", "operator_id": "test_op"},
+            headers=AUTH,
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "mode" in data
+    assert data["mode"] in ("sitrep", "quick", "full"), f"Invalid mode: {data.get('mode')!r}"
+
+
+@pytest.mark.asyncio
 async def test_copilot_blocked_query_returns_400():
     """Guardrail-blocked query must return 400 with detail."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
