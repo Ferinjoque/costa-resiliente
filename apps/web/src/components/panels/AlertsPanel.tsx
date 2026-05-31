@@ -568,7 +568,10 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
       const districtNote = topDistrict ? ` en ${topDistrict}` : "";
       rec = `Evacuación preventiva inmediata${districtNote} — quebrada activa detectada. Umbral EMERGENCIA ANA (50 mm/72h) superado. Desplegar USAR. Notificar INDECI COEN y activar albergues.`;
     } else if (critical.length > 0 && isRainfall) {
-      rec = `${firstCritical!.title}. Umbral EMERGENCIA ANA superado. Activar brigadas en quebradas de cuencas afectadas. Escalar a COEN y pre-alertar municipios.`;
+      const refs = firstCritical!.source_refs && typeof firstCritical!.source_refs === "object" && !Array.isArray(firstCritical!.source_refs) ? firstCritical!.source_refs as Record<string, number> : {};
+      const mm72 = refs.acc_72h_mm;
+      const mmNote = mm72 != null ? ` (${mm72.toFixed(0)} mm/72h)` : "";
+      rec = `${firstCritical!.title}${mmNote}. Umbral EMERGENCIA ANA superado. Activar brigadas en quebradas. Escalar a COEN y pre-alertar municipios distritales.`;
     } else if (critical.length > 0) {
       const districtNote = topDistrict ? ` (${topDistrict})` : "";
       rec = `Alerta crítica activa${districtNote}: ${firstCritical!.title}. Activar protocolo DELTA COEN. Preposicionar botes. Confirmar capacidad de albergues.`;
@@ -581,7 +584,10 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
       const districtNote = topDistrict ? ` in ${topDistrict}` : "";
       rec = `Immediate preventive evacuation${districtNote} — active quebrada detected. ANA EMERGENCY threshold (50 mm/72h) exceeded. Deploy USAR. Notify INDECI COEN and activate shelters.`;
     } else if (critical.length > 0 && isRainfall) {
-      rec = `${firstCritical!.title}. ANA EMERGENCY threshold exceeded. Deploy brigades to quebradas in affected watersheds. Escalate to COEN and pre-alert municipalities.`;
+      const refs = firstCritical!.source_refs && typeof firstCritical!.source_refs === "object" && !Array.isArray(firstCritical!.source_refs) ? firstCritical!.source_refs as Record<string, number> : {};
+      const mm72 = refs.acc_72h_mm;
+      const mmNote = mm72 != null ? ` (${mm72.toFixed(0)} mm/72h)` : "";
+      rec = `${firstCritical!.title}${mmNote}. ANA EMERGENCY threshold exceeded. Deploy brigades to quebradas. Escalate to COEN and pre-alert district municipalities.`;
     } else if (critical.length > 0) {
       const districtNote = topDistrict ? ` (${topDistrict})` : "";
       rec = `Critical alert active${districtNote}: ${firstCritical!.title}. Activate COEN DELTA protocol. Pre-position boats. Confirm shelter capacity.`;
