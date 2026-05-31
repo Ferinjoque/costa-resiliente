@@ -818,7 +818,16 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
         else:
             top = river_rows[0]
             _trend_es = {"rising": "↑ ascenso", "falling": "↓ descenso", "stable": "estable"}.get(top.get("trend", ""), "—")
-            sections.append(f"**Ríos:** {top.get('name','?')} {top.get('level_m','—')} m — {_trend_es}")
+            # Check near-threshold even for stable stations
+            stable_threshold = ""
+            top_name_lower = (top.get("name") or "").lower()
+            for key, threshold in _STATION_THRESHOLDS.items():
+                if key in top_name_lower:
+                    lv = top.get("level_m")
+                    if lv is not None and float(lv) >= threshold * 0.9:
+                        stable_threshold = f" ⚠ cerca del umbral {threshold:.1f}m"
+                    break
+            sections.append(f"**Ríos:** {top.get('name','?')} {top.get('level_m','—')} m — {_trend_es}{stable_threshold}")
 
     # 4. Flood polygons
     flood_rows = tool_rows.get("get_flood_polygons", [])
