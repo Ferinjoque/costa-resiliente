@@ -113,6 +113,7 @@ function InfoPopover({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
           [es ? "Modelo" : "Model",           "Qwen 2.5 · 7B-Instruct"],
           [es ? "Infraestructura" : "Infra",   es ? "Local · Docker" : "Local · Docker"],
           [es ? "Datos" : "Data",              "PostGIS · IMERG · ANA"],
+          [es ? "SITREP" : "SITREP",           es ? "~3s · 4 herramientas paralelo" : "~3s · 4 tools parallel"],
           [es ? "Modo rápido" : "Quick mode",   es ? "~2s · sin LLM" : "~2s · no LLM"],
           [es ? "Modo completo" : "Full mode",   es ? "15–30s · CPU" : "15–30s · CPU"],
           [es ? "Privacidad" : "Privacy",      es ? "Sin datos externos" : "No third-party data"],
