@@ -260,7 +260,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
             <span class="cr-tour-lbl">zona inundada</span>
           </div>
         </div>
-        <p class="cr-tour-body">El motor de fusión cruza polígonos SAR × riesgo de huayco × señales sociales. Cada alerta incluye exposición poblacional por distrito y nivel SINAGERD.</p>
+        <p class="cr-tour-body">El motor de fusión cruza SAR × huayco × lluvia ANA × señales sociales. Incluye exposición poblacional por distrito, nivel SINAGERD, y SLA de reconocimiento (5/10/30 min). Toast de aviso al vencer el SLA.</p>
         <div class="cr-tour-badges">
           <span class="cr-tour-badge cr-tour-badge--crit">Evacuación Ate</span>
           <span class="cr-tour-badge cr-tour-badge--warn">Alerta Chosica</span>
@@ -279,7 +279,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
             <span class="cr-tour-lbl">in flood zone</span>
           </div>
         </div>
-        <p class="cr-tour-body">The fusion engine crosses SAR polygons × huayco risk × social signals. Each alert includes district-level population exposure and SINAGERD level.</p>
+        <p class="cr-tour-body">Fusion engine crosses SAR × huayco × ANA rainfall × social signals. Includes district population exposure, SINAGERD level, and SLA acknowledgement timer (5/10/30 min). Toast fires when SLA is breached.</p>
         <div class="cr-tour-badges">
           <span class="cr-tour-badge cr-tour-badge--crit">Evacuate Ate</span>
           <span class="cr-tour-badge cr-tour-badge--warn">Chosica Alert</span>
