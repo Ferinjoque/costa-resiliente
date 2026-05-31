@@ -211,7 +211,10 @@ The Phase 2 concept text below describes the state at June 5, 2026. The Phase 3 
 | LiveTicker | Generic | **Severity prefix** [EMERG/ALERT/AVISO] + **rainfall item** when ≥25mm + urgent-only social filter |
 | Tests | 568 passed | **633 passed** (+65: sitrep, rainfall, SENAMHI threshold, fusion-rainfall, EDAN pattern, IMERG label regression, copilot HTTP, health-level) |
 | Health API | Basic ok/version | **`/health` returns sinagerd_level + active_alerts + max_rain_72h_mm** — one-curl monitoring |
-| RAG corpus | 5 documents | **7 documents, 51 chunks** — added ANA rainfall thresholds + SINAGERD quick-action guide per COER Lima |
+| RAG corpus | 5 documents | **7 documents, 51 chunks** — added ANA rainfall thresholds + SINAGERD quick-action guide (AVISO/ALERTA/EMERGENCIA procedures + contacts) |
+| Fusion endpoint | flood + huayco + social | **+ rainfall + huayco trigger_rain_24h_mm + risk elevation from EMERGENCIA** |
+| EDAN export | SAR + population + districts | **+ rainfall metric card (ALERTA/EMERGENCIA) in all 3 formats (Markdown ES, Markdown EN, HTML)** |
+| Protocol checklist | Huayco + generic | **+ rainfall-specific protocol (brigades + SIAT-Lima pre-alert)** |
 
 **Rubric alignment note:** The Phase 2 submission referenced "8 whitelisted database tools" and did not describe notifications, auth, HITL, or PDF export. All of these are now fully implemented and tested. Tool count correction for Phase 3 judges: **9 tools + sitrep multi-tool fast path**.
 
