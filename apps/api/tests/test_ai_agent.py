@@ -520,15 +520,21 @@ def test_build_answer_social_signals_breakdown():
 
 
 def test_build_answer_population_at_risk():
-    """estimated_population_at_risk rows → total + top district."""
+    """estimated_population_at_risk rows → total + top district + confidence."""
     from costa_api.ai.agent import _build_answer
     rows = [
-        {"district": "Ate", "estimated_population_at_risk": 24000, "flood_scenes": 2},
-        {"district": "Lurigancho", "estimated_population_at_risk": 15000, "flood_scenes": 1},
+        {"district": "Ate", "estimated_population_at_risk": 24000, "flood_scenes": 2,
+         "max_confidence": 0.87},
+        {"district": "Lurigancho", "estimated_population_at_risk": 15000, "flood_scenes": 1,
+         "max_confidence": 0.75},
     ]
     answer = _build_answer([], rows, "personas")
     assert "39,000" in answer or "39000" in answer.replace(",", "")
     assert "Ate" in answer
+    # Confidence note should appear (87% from max_confidence=0.87)
+    assert "confianza" in answer.lower() or "%" in answer, (
+        "Population answer should include model confidence so operators know SAR reliability"
+    )
 
 
 def test_build_answer_protocol_rag():
