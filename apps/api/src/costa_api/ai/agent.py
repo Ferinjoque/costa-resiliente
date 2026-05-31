@@ -767,6 +767,9 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm{detail_24h} — ALERTA (>25 mm ANA)")
             if not action:
                 action = "Activar brigadas de campo en quebradas cuenca " + ws + "."
+            elif action and "brigadas" not in action:
+                # Augment existing action with ALERTA rain directive
+                action = action.rstrip(".") + f". Activar brigadas de campo en quebradas cuenca {ws}."
         elif acc_24h is not None and acc_24h >= 15:
             sections.append(f"**Lluvia:** {ws} — 24h: {acc_24h:.0f} mm — AVISO (>15 mm/24h ANA)")
         elif mx > 0:
