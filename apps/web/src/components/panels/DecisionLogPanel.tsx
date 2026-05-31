@@ -36,28 +36,31 @@ function csvEscape(value: string): string {
   return value;
 }
 
-function downloadCsv(entries: DecisionLogEntry[]) {
+function downloadCsv(entries: DecisionLogEntry[], isDemo = false) {
   const COLS = ["id", "logged_at", "operator_id", "action_type", "alert_id", "session_id", "payload"];
   const header = COLS.join(",") + "\n";
   const rows = entries
-    .map((e) =>
-      [
+    .map((e) => {
+      let payloadStr: string;
+      try { payloadStr = JSON.stringify(e.payload); } catch { payloadStr = "{}"; }
+      return [
         e.id,
         e.logged_at,
         csvEscape(e.operator_id),
         csvEscape(e.action_type),
         e.alert_id ?? "",
         csvEscape(e.session_id ?? ""),
-        csvEscape(JSON.stringify(e.payload)),
-      ].join(",")
-    )
+        csvEscape(payloadStr),
+      ].join(",");
+    })
     .join("\n");
   // UTF-8 BOM (﻿) ensures Excel opens accented characters correctly
   const blob = new Blob(["﻿" + header + rows], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `costa_resiliente_decision_log_${new Date().toISOString().slice(0, 10)}.csv`;
+  const prefix = isDemo ? "DEMO_" : "";
+  a.download = `${prefix}costa_resiliente_decision_log_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
@@ -186,7 +189,9 @@ export function DecisionLogPanel() {
               );
               if (!ok) addToast({ message: locale === "es" ? "Error al exportar CSV — reintenta" : "CSV export failed — please retry", variant: "danger" });
             } else {
-              downloadCsv(entries);
+              // When offline and query errored, entries are demo/placeholder data.
+              // Prefix filename to prevent accidental submission as official record.
+              downloadCsv(entries, isError);
             }
           }}
           aria-label={exportLabel}
