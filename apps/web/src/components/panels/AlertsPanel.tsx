@@ -803,7 +803,9 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
       >
         <Siren size={13} className={clsx("shrink-0 transition-colors", allDone ? "text-ok-muted" : "text-warn-muted")} aria-hidden="true" />
         <SectionLabel className="flex-1">
-          {locale === "es" ? "Protocolo INDECI" : "INDECI Protocol"}
+          {locale === "es"
+            ? (isRainfall ? "Protocolo Lluvia — SIAT" : isHuayco ? "Protocolo Huayco — USAR" : "Protocolo INDECI")
+            : (isRainfall ? "Rainfall Protocol — SIAT" : isHuayco ? "Huayco Protocol — USAR" : "INDECI Protocol")}
         </SectionLabel>
         <span className={clsx("text-xs tabular-nums font-mono", allDone ? "text-ok-muted font-semibold" : "text-ink-subtle")}>
           {done}/{steps.length}
