@@ -267,6 +267,16 @@ async def run(
                         redacted=bool(triggered),
                         quick_mode=True,
                     )
+            elif per_tool_rows:
+                # All tools returned but all have zero rows — system is calm
+                logger.info("sitrep_mode: all 4 tools returned 0 rows — no active emergency")
+                return AgentResult(
+                    answer="**SITREP — Lima Metropolitana**: Sin alertas activas, sin inundaciones SAR detectadas, niveles hidrológicos normales. Sistema en estado NORMAL.",
+                    sources=[],
+                    tool_calls=tc_list,
+                    confidence=0.85,
+                    quick_mode=True,
+                )
         except Exception as exc:
             logger.warning("sitrep_mode failed: %s — falling through to full agent", exc)
 

@@ -343,7 +343,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
     popover: {
       title: es ? "6 — Copiloto operacional (9 herramientas)" : "6 — Operational Copilot (9 tools)",
       description: es ? `
-        <span class="cr-tour-ts">Modo rápido · Sin LLM · ~2 s de respuesta</span>
+        <span class="cr-tour-ts">Modo rápido · Sin LLM · ~3 s · SITREP completo en 1 consulta</span>
         <div class="cr-tour-metrics">
           <div class="cr-tour-metric cr-tour-metric--ok">
             <span class="cr-tour-num">9</span>
@@ -351,20 +351,20 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
             <span class="cr-tour-lbl">PostGIS en español</span>
           </div>
           <div class="cr-tour-metric cr-tour-metric--ok">
-            <span class="cr-tour-num">~2s</span>
+            <span class="cr-tour-num">~3s</span>
             <span class="cr-tour-unit">&nbsp;</span>
             <span class="cr-tour-lbl">modo rápido</span>
           </div>
         </div>
-        <p class="cr-tour-body">Prueba: <em>«¿cuántas personas están en riesgo?»</em> — el modo rápido detecta la consulta, salta el LLM y responde con datos PostGIS en ~2 segundos.</p>
+        <p class="cr-tour-body">Prueba: <em>«Dame el resumen completo de la situación»</em> — llama 4 herramientas en paralelo (alertas + lluvia + ríos + SAR) y produce un SITREP estructurado sin LLM.</p>
         <div class="cr-tour-badges">
+          <span class="cr-tour-badge">sitrep</span>
           <span class="cr-tour-badge">inundaciones</span>
-          <span class="cr-tour-badge">niveles de río</span>
-          <span class="cr-tour-badge">alertas</span>
+          <span class="cr-tour-badge">nivel de ríos</span>
           <span class="cr-tour-badge">protocolos</span>
         </div>
       ` : `
-        <span class="cr-tour-ts">Quick-mode · No LLM · ~2 s response</span>
+        <span class="cr-tour-ts">Quick-mode · No LLM · ~3 s · full SITREP in one query</span>
         <div class="cr-tour-metrics">
           <div class="cr-tour-metric cr-tour-metric--ok">
             <span class="cr-tour-num">9</span>
@@ -372,16 +372,16 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
             <span class="cr-tour-lbl">PostGIS in Spanish</span>
           </div>
           <div class="cr-tour-metric cr-tour-metric--ok">
-            <span class="cr-tour-num">~2s</span>
+            <span class="cr-tour-num">~3s</span>
             <span class="cr-tour-unit">&nbsp;</span>
             <span class="cr-tour-lbl">quick-mode</span>
           </div>
         </div>
-        <p class="cr-tour-body">Try: <em>«¿cuántas personas están en riesgo?»</em> — quick-mode detects the query, skips the LLM, and answers with PostGIS data in ~2 seconds.</p>
+        <p class="cr-tour-body">Try: <em>"Situation report please"</em> — calls 4 tools in parallel (alerts + rainfall + rivers + SAR) and produces a structured SITREP without the LLM.</p>
         <div class="cr-tour-badges">
+          <span class="cr-tour-badge">sitrep</span>
           <span class="cr-tour-badge">floods</span>
           <span class="cr-tour-badge">river levels</span>
-          <span class="cr-tour-badge">alerts</span>
           <span class="cr-tour-badge">protocols</span>
         </div>
       `,
