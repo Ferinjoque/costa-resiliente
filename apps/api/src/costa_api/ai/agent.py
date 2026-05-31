@@ -145,7 +145,7 @@ def _detect_multi_quick(query: str) -> list[str]:
     """Return all matched tool names when 2-3 quick patterns fire.
 
     Multi-signal queries (e.g. "río + huayco", "lluvia + inundación") are
-    executed in parallel without LLM, giving fast (~3s) combined answers.
+    executed sequentially without LLM, giving fast (~3-5s) combined answers.
     LLM path is reserved for open-ended, synthesis, or drafting queries
     where no quick pattern matches at all.
     """
