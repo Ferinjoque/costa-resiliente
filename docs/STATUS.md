@@ -256,9 +256,9 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 **Tests (+25):** 665 total (up from 640). Regression guards for: severity min-filter, river trend, district risk rainfall, health per-watershed, sitrep sequential, near-threshold river warning, subestacion multi-quick, decision-log null payload, auth canonical username, SINPAD exact match, flood exposure 7-day, and more.
 
-**Session 21 — 100 commits, comprehensive hardening:**
+**Session 21 — 136 commits, comprehensive hardening + advanced sitrep:**
 
-Backend: severity min-filter, river trend CTE, fusion LATERAL rainfall, flood exposure 7-day, alerts active-first + critical-first sort, SSE stream sort, health per-watershed, SINPAD exact match, proposals district warning, sequential sitrep dispatch (race fixed), agent multi-quick mode field, guardrail marker, search_protocols trace args, share 48h window, fan_out engine.begin, SMS body defensive, JWT canonical username, decision-log null payload, SSE critical sort, rainfall alert LATERAL, huayco dedup quebrada_id 48h, auto_seed quebrada geometries, near-threshold river warnings (90%), sitrep shows both critical quebradas
+Backend: severity min-filter, river trend CTE, fusion LATERAL rainfall, flood exposure 7-day, alerts active-first + critical-first sort, SSE flush heartbeat, health per-watershed, SINPAD exact match, proposals district warning, sequential sitrep dispatch (race fixed), agent multi-quick mode field, guardrail marker, search_protocols trace args, share 48h window, fan_out engine.begin, SMS body defensive, JWT canonical username, decision-log null payload, SSE critical sort, rainfall alert LATERAL, huayco dedup quebrada_id 48h, auto_seed quebrada geometries, near-threshold warnings (90%), sitrep both critical quebradas, sitrep multi-watershed, combined action, ALERTA rain action, confidence honest, idempotent act_on_alert, sitrep always-action, stable near-threshold river
 
 Frontend: error propagation (useAlerts/useDecisionLog/useFusion/useDistrictDashboard/useDistrictRiskSummary), AskPanel typewriter truncation, SLA breach pruning, social feed partial key match, DEMO badge on confirmed error, toast danger-preserving cap, notifications delete pending state, URGENT_SOCIAL_LABELS shared constant (+infrastructure_damage), AskPanel sitrep badge ~5s
 
