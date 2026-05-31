@@ -210,3 +210,23 @@ class TestRiskProse:
     def test_no_flood_text_says_sin_inundaciones(self):
         prose = self._prose()
         assert "Sin inundaciones" in prose
+
+    def test_includes_rainfall_emergencia_when_above_50mm(self):
+        """Rainfall >= 50mm/72h → EMERGENCIA tag in prose."""
+        prose = self._prose(
+            flood_area_km2=0.0, flood_polygon_count=0,
+            rainfall_72h=63.2, rainfall_ws="Rímac", rainfall_level="emergencia",
+        )
+        assert "EMERGENCIA" in prose
+        assert "63" in prose
+        assert "Rímac" in prose
+
+    def test_rainfall_below_threshold_not_in_prose(self):
+        """Rainfall at normal level → not mentioned in prose."""
+        prose = self._prose(
+            flood_area_km2=0.0, flood_polygon_count=0,
+            rainfall_72h=10.0, rainfall_ws="Lurín", rainfall_level="normal",
+        )
+        assert "EMERGENCIA" not in prose
+        assert "ALERTA" not in prose
+        assert "Lurín" not in prose
