@@ -210,6 +210,30 @@ async def test_rate_limiter_fails_open_when_redis_unavailable():
         await _check_rate_limit(mock_request)
 
 
+# ─── Canonical username from DB (not raw form input) ─────────────────────────
+
+@pytest.mark.asyncio
+async def test_login_returns_db_canonical_username():
+    """Token and response username must come from the DB record, not raw form input.
+
+    Regression guard: prior code used `form.username` (raw input) for both the JWT
+    claim and the TokenResponse. Using the DB canonical value ensures audit-trail
+    attribution is consistent even if operators differ in case or whitespace.
+    """
+    from inspect import getsource
+    from costa_api.routers.auth import issue_token
+    src = getsource(issue_token)
+
+    # The fix adds `username` to the SELECT and uses `canonical_username`
+    assert "canonical_username" in src, (
+        "issue_token must select and use the DB canonical username, "
+        "not form.username, for the token claim and response"
+    )
+    assert 'row["username"]' in src, (
+        "issue_token must read username from the DB row for canonical attribution"
+    )
+
+
 # ─── JWT decode errors ────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
