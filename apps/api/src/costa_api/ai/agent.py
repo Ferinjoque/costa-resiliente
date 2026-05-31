@@ -580,7 +580,14 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         top_crit = next((r for r in rows if r.get("severity") == "critical"), None)
         if top_crit and top_crit.get("title"):
             district_note = f" ({top_crit.get('district_name')})" if top_crit.get("district_name") else ""
-            base += f" ⚠ Más crítica: {top_crit['title']}{district_note}."
+            # For rainfall alerts, include the accumulation values from source_refs
+            refs = top_crit.get("source_refs") or {}
+            rain_note = ""
+            if top_crit.get("alert_type") == "rainfall" and isinstance(refs, dict):
+                mm72 = refs.get("acc_72h_mm")
+                if mm72 is not None:
+                    rain_note = f" — {float(mm72):.0f} mm/72h"
+            base += f" ⚠ Más crítica: {top_crit['title']}{district_note}{rain_note}."
         return base
     if "acc_72h_mm" in first:
         mx = max((r.get("acc_72h_mm") or 0) for r in rows)
