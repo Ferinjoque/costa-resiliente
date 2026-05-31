@@ -964,7 +964,7 @@ def test_is_sitrep_query_rejects_specific():
 
 @pytest.mark.asyncio
 async def test_sitrep_mode_calls_five_tools():
-    """Sitrep mode calls 5 tools in parallel and returns quick_mode=True."""
+    """Sitrep mode calls 5 tools sequentially and returns quick_mode=True."""
     db = AsyncMock()
     fake_alerts = [{"id": 1, "severity": "critical", "_total_active": 2}]
     fake_rain = [{"watershed": "Rímac", "acc_72h_mm": 63.2, "acc_24h_mm": 20.1}]
