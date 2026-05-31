@@ -1,7 +1,7 @@
 # Costa Resiliente — Project Status
 
 > **This is the single source of truth for what's built, what's pending, and the current rubric score.**
-> Last updated: 2026-05-25 (Session 19)
+> Last updated: 2026-05-31 (Session 20)
 > Branch: `develop`
 
 For competition context, see [`COMPETITION.md`](COMPETITION.md).
@@ -28,10 +28,10 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **568 passed, 0 errors** (Session 19). Up from 548 (+20: rate limiter, SSRF guard, Spanish guardrail tests). Workers: 148 passed, 8 skipped.
+- **API**: **621 passed, 0 errors** (Session 20). Up from 568 (+53: SLA/sitrep/health/quick-pattern/infrastructure tests). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
-- **Build**: Next.js production build green; first-load JS `/` = 175 kB (Session 5: 153 → 173 → 175 with new ProposalsPanel)
+- **Build**: Next.js production build green; first-load JS `/` = 175 kB
 
 Test command (in container):
 ```bash
@@ -226,6 +226,41 @@ POST   /api/v1/auth/operators
 ---
 
 ## Recent session log (rolling, last 5)
+
+### Session 20 — 2026-05-31 — Operational hardening + sitrep mode + UX improvements
+
+Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
+
+**Backend fixes:**
+- `fix(health)`: Silent `except: pass` → `log.warning` in `_parse_scraper_status` and `_parse_last_run`.
+- `fix(sentinel1)`: Null-guard on `minio_path` before STAC registration; per-scene try/except in ingest loop.
+- `fix(alert_generator)`: `except: pass` on heartbeat write → `logger.debug`.
+- `fix(alerts)`: `except Exception: detail=""` in PDF report → `logger.debug`.
+
+**Copilot enhancements:**
+- `feat(ai/agent)`: `_is_sitrep_query()` + sitrep fast path — "inicio de guardia", "resumen completo", "sitrep", etc. → 4 tools (alerts + rainfall + river + flood) in parallel (~3s), no LLM.
+- `feat(ai/agent)`: `_build_sitrep_answer()` — coherent SITREP narrative (ALERTAS · LLUVIA · RÍOS · INUNDACIÓN bullets + acción recomendada).
+- `feat(ai/agent)`: `_QUICK_PATTERNS` expanded — situación actual, albergue, refugio, pronóst, novedades, qué hacer, huaycoloro (30+ new phrases).
+- `feat(ai/agent)`: Improved `_SYSTEM` prompt — action recommendation on critical, SINAGERD rainfall levels, district/quebrada specificity.
+- `feat(ai/db_tools)`: `get_infrastructure_impact` description includes albergues/refugios.
+- `feat(demoData)`: sitrep demo responses (ES + EN) added as 4-tool compound answers.
+- `feat(AskPanel)`: sitrep as first suggestion chip; keyword route for "resumen completo".
+
+**Frontend UX improvements:**
+- `feat(AlertsPanel)`: SLA breach toast — fires once per alert per session when SLA exceeded, `variant: "danger"`.
+- `fix(AskPanel)`: isDemo banner moved ABOVE response text (was below — dangerous for operators acting on sim data).
+- `feat(AlertsPanel/SocialFeedPanel/DecisionLogPanel)`: Error states show minutes since last good data vs generic text.
+- `feat(ProposalsPanel)`: Approval toast includes cached subscriber count ("N suscriptores notificados").
+- `feat(LeftRail)`: Keyboard shortcut badge on hover for primary nav; `[N]` label on Notifications SecBtn.
+- `feat(DataFreshnessBar)`: Staleness color coding — ok/warn/danger by layer age (IMERG 70min, SAR 360min, Huayco 240min).
+- `feat(SituationBrief)`: Rainfall bullet when 72h >= 25mm + Social quick-action button in mobile view.
+- `feat(LiveTicker)`: Severity prefix [EMERG/ALERT/AVISO/INFO] + rainfall warning item + urgent-only social filter.
+
+**Tests (+53):** 621 passed (↑53 from 568). Includes sitrep detection, sitrep answer builder, new quick patterns, infrastructure _build_answer, health Redis key, sitrep integration tests. TypeScript: 0 errors.
+
+**Commits (8):** `acf4437` session-20 batch1 → `a6b269e` session-20b → `2706f12` session-20c → `200ab15` ticker.
+
+---
 
 ### Session 19 — 2026-05-25 — Security hardening + robustness + guardrail coverage
 
