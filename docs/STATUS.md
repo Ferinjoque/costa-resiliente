@@ -263,9 +263,22 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 - `feat(SituationBrief)`: Rainfall bullet when 72h >= 25mm + Social quick-action button in mobile view.
 - `feat(LiveTicker)`: Severity prefix [EMERG/ALERT/AVISO/INFO] + rainfall warning item + urgent-only social filter.
 
-**Tests (+53):** 621 passed (↑53 from 568). Includes sitrep detection, sitrep answer builder, new quick patterns, infrastructure _build_answer, health Redis key, sitrep integration tests. TypeScript: 0 errors.
+**Additional Session 20 improvements (beyond batch1):**
+- fusion endpoint: rainfall + trigger_rain_24h_mm, risk elevation from rainfall, huayco trigger in FusionCallout
+- health endpoint: sinagerd_level + active_alerts + max_rain_72h_mm + rain_level
+- alerts: province filter includes district-less alerts (rainfall type); rainfall chips on alert cards
+- copilot: alerts answer shows rainfall mm, sitrep shows crit title + rainfall, `_STATION_THRESHOLDS` to module level
+- OperationalHUD: FEEDS chip core-only (no reddit/telegram/SAR), rainfall metric chip
+- DataSourcesPanel: Redis health in footer
+- DistrictDashboardPanel: CityOverview adds rainfall metric + SINAGERD level pill + near-threshold station warning
+- 7 RAG documents (51 chunks): +ANA thresholds + SINAGERD quick-action guide
+- SlaChip: near-breach warning (2min remaining) in warn color
+- SocialFeedPanel: huayco_observation = danger priority (same as needs_help)
+- DEMO-GUIDE.md: comprehensive 5-step demo walkthrough
 
-**Commits (114+):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `9cd9099` fusion-prose → `b6cd160` huayco-trigger → `b7bf186` rainfall-alert-chips → `5c5b8cf` flood-district → `913850f` albergue-routing → `4067e4b` station-thresholds → `079f0dd` SlaChip-near-breach → `ec26dae` city-rainfall → `e4fe85a` health-sinagerd → `ae82f36` health-rain → `cb8dcf1` city-SINAGERD → `8b9473e` rag-7docs → `2df7148` province-filter-fix → `8696d72` rainfall-mm-alerts → `99465d4` near-threshold → `c13b559` test-rainfall-mm + more.
+**Tests (+67):** 635 passed (↑67 from 568). Includes rain province filter, source_refs, health sinagerd/rain_level, sitrep detection, near-threshold, fusion-rainfall prose. TypeScript: 0 errors.
+
+**Commits (117+):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `e4fe85a` health-sinagerd → `ae82f36` health-rain → `8b9473e` rag-7docs → `2df7148` province-filter-fix → `8696d72` rainfall-mm-alerts → `99465d4` near-threshold → `822f008` fusion-trigger-rain → `925bb0f` city-threshold-label + more.
 
 ---
 
