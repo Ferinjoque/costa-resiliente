@@ -850,3 +850,65 @@ def test_build_answer_infrastructure_impact():
     # Should mention at least one infrastructure type in Spanish
     spanish_types = ["hospital", "colegio", "puente", "albergue", "bombero", "subestación"]
     assert any(t in answer.lower() for t in spanish_types)
+
+
+# ─── Situation report (sitrep) fast path ─────────────────────────────────────
+
+def test_is_sitrep_query_matches():
+    """Known sitrep phrases trigger the 4-tool comprehensive snapshot."""
+    from costa_api.ai.agent import _is_sitrep_query
+    assert _is_sitrep_query("Dame el resumen completo de la situación")
+    assert _is_sitrep_query("Necesito el sitrep de la guardia")
+    assert _is_sitrep_query("Inicio de guardia — ¿cómo está todo?")
+    assert _is_sitrep_query("Dame un resumen general de la emergencia")
+    assert _is_sitrep_query("Situación general de Lima Metropolitana")
+
+
+def test_is_sitrep_query_rejects_specific():
+    """Specific single-tool queries should NOT trigger sitrep."""
+    from costa_api.ai.agent import _is_sitrep_query
+    assert not _is_sitrep_query("¿Cuántas alertas activas hay?")
+    assert not _is_sitrep_query("Nivel del río Rímac en Chosica")
+    assert not _is_sitrep_query("¿Cuánta lluvia acumuló en 72h?")
+    assert not _is_sitrep_query("Estado de las quebradas")
+
+
+@pytest.mark.asyncio
+async def test_sitrep_mode_calls_four_tools():
+    """Sitrep mode calls 4 tools in parallel and returns quick_mode=True."""
+    db = AsyncMock()
+    fake_alerts = [{"id": 1, "severity": "critical", "_total_active": 2}]
+    fake_rain = [{"watershed": "Rímac", "acc_72h_mm": 63.2, "acc_24h_mm": 20.1}]
+    fake_river = [{"name": "Chosica", "level_m": 2.8, "flow_m3s": 210, "trend": "rising"}]
+    fake_flood = [{"scene_id": "S1A_001", "area_km2": 1.5, "confidence": 0.87}]
+
+    async def _fake_alerts(db, **kwargs): return fake_alerts
+    async def _fake_rain(db, **kwargs): return fake_rain
+    async def _fake_river(db, **kwargs): return fake_river
+    async def _fake_flood(db, **kwargs): return fake_flood
+
+    with (
+        patch("costa_api.ai.agent.gateway") as mock_gw,
+        patch.dict(db_tools._TOOL_MAP, {
+            "get_active_alerts": _fake_alerts,
+            "get_rainfall_accumulation": _fake_rain,
+            "get_river_levels": _fake_river,
+            "get_flood_polygons": _fake_flood,
+        }),
+        patch("costa_api.ai.tools.db_tools.get_cached", AsyncMock(return_value=None)),
+        patch("costa_api.ai.tools.db_tools.set_cached", AsyncMock()),
+    ):
+        mock_gw.chat = AsyncMock(side_effect=AssertionError("LLM must not be called in sitrep mode"))
+        result = await agent_run(
+            query="Dame el resumen completo de la situación actual",
+            operator_id="op1",
+            db=db,
+        )
+
+    assert result.quick_mode is True
+    assert not result.blocked
+    assert not mock_gw.chat.called
+    # Should have data from all 4 tools
+    tool_names = {tc["tool"] for tc in result.tool_calls}
+    assert "get_active_alerts" in tool_names
+    assert "get_rainfall_accumulation" in tool_names

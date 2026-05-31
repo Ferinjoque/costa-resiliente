@@ -101,6 +101,22 @@ _QUICK_PATTERNS: list[tuple[list[str], str]] = [
 ]
 
 
+_SITREP_PHRASES = [
+    "resumen completo", "informe de situación", "informe de situacion",
+    "sitrep", "sit rep", "inicio de guardia", "relevo de guardia",
+    "traspaso de guardia", "dame todo", "dame un resumen general",
+    "qué hay de nuevo", "que hay de nuevo", "cómo está la emergencia",
+    "estado general de", "situacion general", "situación general",
+    "panorama completo", "vision general", "visión general",
+    "reporte de situación", "reporte de situacion",
+]
+
+def _is_sitrep_query(query: str) -> bool:
+    """True when the operator wants a comprehensive multi-source situation summary."""
+    q = query.lower()
+    return any(phrase in q for phrase in _SITREP_PHRASES)
+
+
 def _detect_quick(query: str) -> str | None:
     """Return tool_name if exactly one quick-mode pattern matches, else None."""
     q = query.lower()
@@ -218,7 +234,44 @@ async def run(
             confidence=0.0,
         )
 
-    # 1b. Quick-mode: bypass LLM for 5 common query types (~2s vs 15-30s)
+    # 1b-sitrep: start-of-shift comprehensive snapshot — 4 tools in parallel (~3s)
+    if _is_sitrep_query(query):
+        try:
+            sitrep_tools = ["get_active_alerts", "get_rainfall_accumulation",
+                            "get_river_levels", "get_flood_polygons"]
+            sitrep_results = await asyncio.gather(
+                *[dispatch(t, {}, db, rag_fn=rag_fn) for t in sitrep_tools],
+                return_exceptions=True,
+            )
+            all_rows: list[dict] = []
+            per_tool_rows: list[tuple[str, list[dict]]] = []
+            tc_list = []
+            for tool_name, res in zip(sitrep_tools, sitrep_results):
+                if isinstance(res, Exception):
+                    logger.warning("sitrep tool %s failed: %s", tool_name, res)
+                    continue
+                rows = res.get("rows", [])
+                all_rows.extend(rows)
+                per_tool_rows.append((tool_name, rows))
+                tc_list.append({"tool": tool_name, "count": len(rows), "quick_mode": True})
+            if all_rows:
+                parts = [_build_answer([], rows, query) for _, rows in per_tool_rows if rows]
+                combined = " | ".join(p for p in parts if p and "No se encontraron" not in p)
+                if combined:
+                    clean_answer, triggered = sanitise(combined, all_rows)
+                    logger.info("sitrep_mode hit: tools=%s rows=%d op=%s", sitrep_tools, len(all_rows), operator_id)
+                    return AgentResult(
+                        answer=clean_answer,
+                        sources=json.loads(json.dumps(all_rows[:20], default=str)),
+                        tool_calls=tc_list,
+                        confidence=0.9,
+                        redacted=bool(triggered),
+                        quick_mode=True,
+                    )
+        except Exception as exc:
+            logger.warning("sitrep_mode failed: %s — falling through to full agent", exc)
+
+    # 1c. Quick-mode: bypass LLM for single common query type (~2s vs 15-30s)
     quick_tool = _detect_quick(query)
     if quick_tool:
         try:
@@ -240,7 +293,7 @@ async def run(
         except Exception as exc:
             logger.warning("quick_mode dispatch failed (%s): %s — falling through to full agent", quick_tool, exc)
 
-    # 1c. Multi-quick-mode: 2-3 signals matched → parallel tool calls, no LLM (~3s)
+    # 1d. Multi-quick-mode: 2-3 signals matched → parallel tool calls, no LLM (~3s)
     multi_tools = _detect_multi_quick(query)
     if multi_tools:
         try:

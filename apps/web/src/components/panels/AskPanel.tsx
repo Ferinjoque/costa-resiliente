@@ -154,6 +154,8 @@ const KEYWORD_ROUTES: Array<{ keys: string[]; demo: string }> = [
   { keys: ["san juan", "sjl", "lurigancho distrito", "150133"], demo: "¿Cuál es el riesgo en San Juan de Lurigancho?" },
   { keys: ["2017", "el niño costero", "evento 2017", "niño 2017", "que pasó", "what happened"], demo: "¿Qué pasó en el evento El Niño Costero 2017?" },
   { keys: ["recursos", "resources", "personal", "efectivos", "equipos", "deployed", "deployment"], demo: "¿Cuántos recursos de respuesta están desplegados?" },
+  { keys: ["resumen completo", "sitrep", "sit rep", "situación general", "inicio de guardia",
+           "relevo", "traspaso", "resumen general", "situation report", "full briefing"], demo: "Dame el resumen completo de la situación" },
 ];
 
 function findDemoResponse(query: string): string | null {
@@ -184,11 +186,11 @@ const GREETING_REPLY: Record<"es" | "en", string> = {
 // ─── Suggestion chips ─────────────────────────────────────────────────────────
 
 const SUGGESTIONS: { es: string; en: string }[] = [
+  { es: "Dame el resumen completo de la situación",        en: "Situation report please" },
   { es: "¿Cuáles son las alertas activas ahora?",         en: "What are the active alerts right now?" },
   { es: "¿Qué distritos debo evacuar primero?",           en: "Which districts should I evacuate first?" },
   { es: "¿Cuáles son los distritos en mayor riesgo?",     en: "Which districts have the highest risk?" },
   { es: "¿Cuál es el pronóstico para las próximas 24h?",  en: "What is the 24-hour forecast?" },
-  { es: "¿Qué rutas de evacuación están bloqueadas?",     en: "Which evacuation routes are blocked?" },
   { es: "¿Cuántas personas están en zona de inundación?", en: "How many people are in active flood zones?" },
 ];
 
