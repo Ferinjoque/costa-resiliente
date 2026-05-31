@@ -123,6 +123,8 @@ _SITREP_PHRASES = [
     "cómo vamos", "como vamos", "panorama actual", "estado de situación",
     "como esta lima", "estado del sistema", "novedades de la emergencia",
     "me pones al día", "ponme al dia", "actualización del cuartel",
+    "estado general", "que esta pasand", "que hay de nuevo", "qué hay de nuevo",
+    "cómo estamos", "como estamos", "panorama general",
 ]
 
 def _is_sitrep_query(query: str) -> bool:
