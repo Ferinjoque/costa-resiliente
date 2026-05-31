@@ -57,6 +57,7 @@ class AgentResult:
     blocked: bool = False
     block_reason: str = ""
     quick_mode: bool = False  # True when LLM was bypassed for a fast template answer
+    mode: str = "full"  # "sitrep" | "quick" | "full"
 
 
 # ─── Quick-mode patterns ──────────────────────────────────────────────────────
@@ -281,6 +282,7 @@ async def run(
                         confidence=0.9,
                         redacted=bool(triggered),
                         quick_mode=True,
+                        mode="sitrep",
                     )
             elif per_tool_rows:
                 # All tools returned but all have zero rows — system is calm
@@ -291,6 +293,7 @@ async def run(
                     tool_calls=tc_list,
                     confidence=0.85,
                     quick_mode=True,
+                    mode="sitrep",
                 )
         except Exception as exc:
             logger.warning("sitrep_mode failed: %s — falling through to full agent", exc)
@@ -313,6 +316,7 @@ async def run(
                 confidence=0.9 if rows else 0.4,
                 redacted=bool(triggered),
                 quick_mode=True,
+                mode="quick",
             )
         except Exception as exc:
             logger.warning("quick_mode dispatch failed (%s): %s — falling through to full agent", quick_tool, exc)

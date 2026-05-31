@@ -108,6 +108,7 @@ class CopilotResponse(BaseModel):
     blocked: bool = False
     redacted: bool = False
     quick_mode: bool = False  # True when LLM was bypassed (keyword → template, ~2s)
+    mode: str = "full"  # "sitrep" | "quick" | "full" — differentiates query paths
 
 
 # ─── Backward-compat exports (referenced by sprint5 contract tests) ───────────
@@ -240,4 +241,5 @@ async def ask(
         blocked=result.blocked,
         redacted=result.redacted,
         quick_mode=result.quick_mode,
+        mode=result.mode,
     )
