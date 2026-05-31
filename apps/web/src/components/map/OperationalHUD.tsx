@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUIStore } from "@/store/ui";
-import { useAlerts, useFloodExposure, useApiHealth, useSocialSignals, useScraperHealth } from "@/lib/queries";
+import { useAlerts, useFloodExposure, useApiHealth, useSocialSignals, useScraperHealth, useImerg } from "@/lib/queries";
 import { clsx } from "clsx";
 
 // ─── HUD: solid surface chip anchored top-right ───────────────────────────────
@@ -33,6 +33,7 @@ export function OperationalHUD() {
   const { data: health, isError: apiDown } = useApiHealth();
   const { data: socialData } = useSocialSignals(48);
   const { data: scraperHealth } = useScraperHealth();
+  const { data: imergData } = useImerg(72);
 
   const [clock, setClock] = useState("");
   useEffect(() => {
@@ -58,6 +59,13 @@ export function OperationalHUD() {
     (f) => _urgentLabels.has(f.properties.triage_label ?? ""),
   ).length ?? 0;
   const online = health?.status === "ok" && !apiDown;
+
+  // Max 72h rainfall for rain metric chip
+  const maxRain72h = imergData?.features.reduce((mx, f) => {
+    const v = f.properties.acc_72h_mm ?? 0;
+    return v > mx ? v : mx;
+  }, 0) ?? 0;
+  const rainLevel: "ok" | "warn" | "danger" = maxRain72h >= 50 ? "danger" : maxRain72h >= 25 ? "warn" : "ok";
 
   // Scraper degradation: count offline sources for an at-a-glance chip.
   // Exclude best-effort / long-cadence sources (reddit, telegram, flood/SAR)
@@ -121,6 +129,24 @@ export function OperationalHUD() {
         )}
         {urgentSocial > 0 && (
           <HudMetric value={String(urgentSocial)} label={locale === "es" ? "señales" : "signals"} border />
+        )}
+        {/* Rainfall chip — only show when above AVISO threshold (≥25 mm/72h) */}
+        {rainLevel !== "ok" && maxRain72h > 0 && (
+          <div
+            className={clsx(
+              "flex items-center gap-1 px-2.5 py-1.5 border-r border-border-subtle",
+            )}
+            title={locale === "es"
+              ? `Lluvia 72h: ${maxRain72h.toFixed(0)} mm — ${rainLevel === "danger" ? "EMERGENCIA (>50mm)" : "ALERTA (>25mm)"}`
+              : `72h rain: ${maxRain72h.toFixed(0)} mm — ${rainLevel === "danger" ? "EMERGENCY (>50mm)" : "ALERT (>25mm)"}`}
+          >
+            <span className="text-xs font-mono tabular-nums">
+              <span className={rainLevel === "danger" ? "text-danger font-bold" : "text-warn-muted font-semibold"}>
+                {maxRain72h.toFixed(0)}
+              </span>
+              <span className="text-ink-muted text-2xs"> mm</span>
+            </span>
+          </div>
         )}
         {/* Scraper degradation chip (only when not ok) */}
         {scraperLevel !== "ok" && scraperHealth && (
