@@ -162,8 +162,16 @@ Nine whitelisted parameterised tools available to the copilot. The LLM never exe
 | `get_infrastructure_impact` | `geo.infrastructure` | Hospitals, bridges, substations in flood zones |
 | `get_rainfall_accumulation` | `hydro.imerg_accumulations` | 1h–72h per watershed; ANA-aligned thresholds |
 | `get_active_alerts` | `ops.alerts` | Full count + severity breakdown; uncapped total |
-| `search_protocols` | pgvector RAG | INDECI / MINSA / CENEPRED protocol embeddings |
+| `search_protocols` | pgvector RAG | INDECI / MINSA / CENEPRED / ANA / MML protocol embeddings (6 docs, 46 chunks) |
 | `get_population_at_risk` | `geo.districts` × `ml.flood_polygons` | INEI 2017 census × SAR spatial join; estimates affected persons per district |
+
+**RAG Protocol Corpus (6 documents):**
+- `INDECI Plan Familiar de Emergencia 2024` — family emergency plan
+- `CENEPRED Susceptibilidad por Movimientos en Masa` — debris flow susceptibility
+- `MINSA Protocolo de Emergencias y Desastres` — health emergency protocol
+- `SENAMHI Guía Hidrometeorológica` — ANA station thresholds + IMERG interpretation
+- `MML Plan Lima ante Huaycos` — Lima municipal huayco response plan
+- `ANA Umbrales de Lluvia para Alertas Lima` — ANA/INDECI rainfall thresholds (15/25/50 mm at 24/72h windows)
 
 ---
 
