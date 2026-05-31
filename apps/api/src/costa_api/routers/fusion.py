@@ -27,6 +27,9 @@ def _risk_prose_es(
     social_urgent: int,
     social_total: int,
     district_name: str,
+    rainfall_72h: float | None = None,
+    rainfall_ws: str | None = None,
+    rainfall_level: str | None = None,
 ) -> str:
     parts: list[str] = []
 
@@ -46,6 +49,11 @@ def _risk_prose_es(
             f"(probabilidad {huayco_prob * 100:.0f}%)"
         )
 
+    if rainfall_72h is not None and rainfall_level in ("emergencia", "alerta"):
+        ws_note = f" cuenca {rainfall_ws}" if rainfall_ws else ""
+        level_tag = "⚠ EMERGENCIA" if rainfall_level == "emergencia" else "ALERTA"
+        parts.append(f"Lluvia 72h{ws_note}: {rainfall_72h:.0f} mm — {level_tag}")
+
     if social_total > 0:
         parts.append(
             f"{social_urgent} señal(es) urgente(s) de {social_total} reportes ciudadanos (últimas 3 h)"
@@ -63,6 +71,9 @@ def _risk_prose_en(
     social_urgent: int,
     social_total: int,
     district_name: str,
+    rainfall_72h: float | None = None,
+    rainfall_ws: str | None = None,
+    rainfall_level: str | None = None,
 ) -> str:
     parts: list[str] = []
 
@@ -81,6 +92,11 @@ def _risk_prose_en(
             f"{RISK_EN.get(huayco_risk, huayco_risk)} mudslide risk "
             f"(probability {huayco_prob * 100:.0f}%)"
         )
+
+    if rainfall_72h is not None and rainfall_level in ("emergencia", "alerta"):
+        ws_note = f" {rainfall_ws} watershed" if rainfall_ws else ""
+        level_tag = "⚠ EMERGENCY" if rainfall_level == "emergencia" else "ALERT"
+        parts.append(f"72h{ws_note} rainfall: {rainfall_72h:.0f} mm — ANA {level_tag}")
 
     if social_total > 0:
         parts.append(
@@ -258,12 +274,14 @@ async def district_fusion(
         huayco_risk, huayco_prob,
         social_urgent, social_total,
         district_name,
+        rainfall_72h=rainfall_72h, rainfall_ws=rainfall_ws, rainfall_level=rainfall_level,
     )
     prose_en = _risk_prose_en(
         population, flood_area, flood_count,
         huayco_risk, huayco_prob,
         social_urgent, social_total,
         district_name,
+        rainfall_72h=rainfall_72h, rainfall_ws=rainfall_ws, rainfall_level=rainfall_level,
     )
 
     return {
