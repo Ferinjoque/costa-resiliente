@@ -822,7 +822,7 @@ const LIMA_METRO_DISTRICTS = [
 ];
 
 export function AlertsPanel() {
-  const { activePanel, locale, alertStreamConnected: sseConnected } = useUIStore();
+  const { activePanel, locale, alertStreamConnected: sseConnected, addToast } = useUIStore();
   const tr = useT(locale);
   const [tab, setTab]               = useState<FilterTab>("active");
   const [province, setProvince]     = useState<string>("Lima");
@@ -837,6 +837,28 @@ export function AlertsPanel() {
     Object.keys(filters).length > 0 ? filters : undefined,
   );
   const { data: exposure } = useFloodExposure();
+
+  // Track which alert IDs have already triggered a breach toast this session
+  const notifiedBreachIds = useRef<Set<number>>(new Set());
+
+  // Fire a danger toast whenever an active alert crosses its SLA threshold
+  useEffect(() => {
+    const now = Date.now();
+    alerts.forEach((alert) => {
+      if (alert.status !== "active") return;
+      const ageMin = Math.floor((now - new Date(alert.created_at).getTime()) / 60_000);
+      const sla = SLA_MINUTES[alert.severity] ?? 30;
+      if (ageMin >= sla && !notifiedBreachIds.current.has(alert.id)) {
+        notifiedBreachIds.current.add(alert.id);
+        addToast({
+          message: locale === "es"
+            ? `SLA vencido: "${alert.title}" sin acción por ${ageMin}m (límite ${sla}min)`
+            : `SLA breach: "${alert.title}" unactioned for ${ageMin}m (limit ${sla}min)`,
+          variant: "danger",
+        } as Omit<LiveToast, "id" | "at">);
+      }
+    });
+  }, [alerts, addToast, locale]);
 
   if (activePanel !== "alerts") return null;
 
@@ -1003,8 +1025,21 @@ export function AlertsPanel() {
             </li>
           )}
           {isError && (
-            <li className="px-4 py-8 flex flex-col items-center gap-2" role="alert">
-              <span className="text-xs text-danger text-center">{tr("alerts", "error")}</span>
+            <li className="px-4 py-8 flex flex-col items-center gap-3" role="alert">
+              <div className="text-center space-y-1">
+                <span className="text-xs text-danger font-medium block">{tr("alerts", "error")}</span>
+                {dataUpdatedAt ? (
+                  <span className="text-[11px] text-ink-muted block">
+                    {locale === "es"
+                      ? `Últimos datos: hace ${Math.floor((Date.now() - dataUpdatedAt) / 60_000)}min`
+                      : `Last good data: ${Math.floor((Date.now() - dataUpdatedAt) / 60_000)}min ago`}
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-ink-muted block">
+                    {locale === "es" ? "Sin datos en caché" : "No cached data"}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => refetch()}
                 className="text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"

@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { usePendingProposals } from "@/lib/queries";
-import { approveProposal, rejectProposal, RateLimitError } from "@/lib/api";
+import { approveProposal, rejectProposal, RateLimitError, type NotificationSubscriber } from "@/lib/api";
 import type { AlertProposal } from "@/lib/api";
 import type { LiveToast } from "@/store/ui";
 import { Button, Pill, EmptyState } from "@/components/ui/primitives";
@@ -130,10 +130,16 @@ export function ProposalsPanel() {
     try {
       if (kind === "approve") {
         await approveProposal(id, operatorId);
+        // Count cached subscribers so the operator knows who will be notified
+        const subscribers = qc.getQueryData<NotificationSubscriber[]>(["notification-subscribers"]) ?? [];
+        const subCount = subscribers.length;
+        const subNote = subCount > 0
+          ? (locale === "es" ? ` · ${subCount} suscriptor${subCount !== 1 ? "es" : ""} notificados` : ` · ${subCount} subscriber${subCount !== 1 ? "s" : ""} notified`)
+          : "";
         addToast({
           message: locale === "es"
-            ? "Propuesta aprobada — publicada como alerta"
-            : "Proposal approved — published as alert",
+            ? `Propuesta aprobada — publicada como alerta${subNote}`
+            : `Proposal approved — published as alert${subNote}`,
           variant: "success",
         } as Omit<LiveToast, "id" | "at">);
         qc.invalidateQueries({ queryKey: ["alerts"] });

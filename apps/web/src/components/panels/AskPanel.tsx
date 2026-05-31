@@ -481,6 +481,14 @@ export function AskPanel() {
                     <p>{msg.content}</p>
                   ) : (
                     <div className="text-sm text-ink leading-relaxed">
+                      {/* Demo banner ABOVE the response to prevent operators acting on simulated data */}
+                      {msg.isDemo && (
+                        <div className="flex items-center gap-1.5 mb-2 px-2 py-1.5 rounded-lg bg-warn-soft border border-warn/30">
+                          <span className="text-[10px] font-semibold text-warn uppercase tracking-wide">
+                            {es ? "⚠ DEMO — Sin datos en vivo" : "⚠ DEMO — No live data"}
+                          </span>
+                        </div>
+                      )}
                       <MarkdownText text={msg.displayed ?? ""} />
                       {(msg.displayed?.length ?? 0) < msg.content.length && (
                         <span
@@ -491,11 +499,6 @@ export function AskPanel() {
                       {msg.quickMode && (
                         <p className="text-[10px] text-accent mt-2 opacity-70 border-t border-border pt-1.5">
                           {es ? "Modo rápido · sin LLM · ~2s" : "Quick mode · no LLM · ~2s"}
-                        </p>
-                      )}
-                      {msg.isDemo && (
-                        <p className="text-[10px] text-ink-subtle mt-2 opacity-60 border-t border-border pt-1.5">
-                          {es ? "Respuesta de demostración · sin datos en vivo" : "Demo response · no live data"}
                         </p>
                       )}
                       {msg.isRedacted && (

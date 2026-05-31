@@ -37,8 +37,12 @@ REGLAS:
 - Personas afectadas → usa get_population_at_risk.
 - Tendencia de ríos → usa get_river_levels (campo trend: rising/falling/stable).
 - Protocolos INDECI/SINAGERD → usa search_protocols.
-- Responde en español, 2-4 oraciones. Menciona nivel SINAGERD cuando aplique.
-- Si algún río tiene trend=rising, destácalo como prioridad inmediata de evacuación."""
+- Albergues o infraestructura crítica → usa get_infrastructure_impact.
+- Responde en español, 2-4 oraciones concisas. Menciona nivel SINAGERD (EMERGENCIA/ALERTA/AVISO) cuando aplique.
+- Si algún río tiene trend=rising, destácalo como prioridad inmediata de evacuación.
+- Si lluvia 72h >= 50mm → menciona EMERGENCIA. Si >= 25mm → menciona ALERTA.
+- Nombra los distritos y quebradas específicos cuando los datos los incluyan.
+- Termina con una acción concreta recomendada al operador cuando la severidad sea alta o crítica."""
 
 
 @dataclass
@@ -64,24 +68,36 @@ _QUICK_PATTERNS: list[tuple[list[str], str]] = [
     (["alertas activ", "alerta activ", "cuántas alert", "cuantas alert",
       "emergencia activ", "qué alertas", "que alertas", "alertas ahora",
       "alertas critic", "nivel crítico", "nivel critico",
-      "alertas en lima", "alertas de"], "get_active_alerts"),
+      "alertas en lima", "alertas de", "situacion actual", "situación actual",
+      "resumen de", "resumen operacional", "qué está pasando", "que esta pasando",
+      "estado actual", "novedades", "reporte actual"], "get_active_alerts"),
     (["nivel del río", "nivel del rim", "nivel del chill", "nivel del lurin",
       "caudal", "río rímac", "río rimac", "rio rimac", "río chillon", "río lurín",
       "rimac", "rímac", "chillon", "chillón", "lurin", "lurín",
-      "chosica", "carapongo", "ñaña", "estacion hidrol"], "get_river_levels"),
+      "chosica", "carapongo", "ñaña", "estacion hidrol",
+      "lectura del río", "cota", "aforo", "stage"], "get_river_levels"),
     (["inundad", "inundaci", "inundación", "flood", "sar", "polígono", "poligono",
       "zona inund", "km² inund", "km2 inund",
-      "desborde", "desbordamiento", "anegad", "anegami"], "get_flood_polygons"),
-    (["lluvia", "precipitaci", "imerg", "acumul", "mm"], "get_rainfall_accumulation"),
+      "desborde", "desbordamiento", "anegad", "anegami",
+      "extensión inundada", "area inundada", "zona afectada por agua"], "get_flood_polygons"),
+    (["lluvia", "precipitaci", "imerg", "acumul", "mm",
+      "cuánta lluvia", "cuanta lluvia", "pronóst", "pronost",
+      "rain", "precipitación acumul", "lluvia 72h", "lluvia 24h"], "get_rainfall_accumulation"),
     (["poblaci", "personas", "habitantes", "afectad", "riesgo pob",
-      "cuántas personas", "cuántos", "cuantos"], "get_population_at_risk"),
+      "cuántas personas", "cuántos", "cuantos",
+      "población en riesgo", "cuántas familias", "cuantas familias"], "get_population_at_risk"),
     (["huayco", "quebrada", "deslizami", "flujo de barro", "lahar",
-      "colapso", "rotura", "dique"], "get_huayco_risk"),
+      "colapso", "rotura", "dique", "zona de riesgo", "riesgo alto",
+      "huaycoloro", "pedregal", "quirio", "carapongo"], "get_huayco_risk"),
     (["social", "señal", "vecin", "bluesky", "reddit", "telegram",
       "reporte de campo", "campo", "huayco_observ", "flood_observ",
-      "avistamiento", "reportes reciente"], "get_social_clusters"),
-    (["hospital", "escuela", "puente", "infraestructura", "vial"], "get_infrastructure_impact"),
-    (["protocolo", "indeci", "sinagerd", "procedimiento", "evacu"], "search_protocols"),
+      "avistamiento", "reportes reciente", "ciudadanos", "comunidad"], "get_social_clusters"),
+    (["hospital", "escuela", "puente", "infraestructura", "vial",
+      "albergue", "refugio", "centro de evacuaci", "centro evacu",
+      "abastecimiento", "servicios básicos"], "get_infrastructure_impact"),
+    (["protocolo", "indeci", "sinagerd", "procedimiento", "evacu",
+      "plan de evacuación", "plan de respuesta", "minsa", "cenepred",
+      "qué hacer", "que hacer", "pasos a seguir", "acción inmediata"], "search_protocols"),
 ]
 
 
@@ -109,15 +125,16 @@ def _detect_multi_quick(query: str) -> list[str]:
 
 
 _KEYWORD_MAP: list[tuple[list[str], str]] = [
-    (["poblaci", "personas", "habitantes", "afectad", "riesgo pob"], "get_population_at_risk"),
-    (["inundaci", "desborde", "flood", "sar", "sentinel", "poligono"], "get_flood_polygons"),
-    (["huayco", "quebrada", "deslizami", "flujo", "lahar", "colapso", "rotura", "dique"], "get_huayco_risk"),
-    (["río", "rio", "nivel", "caudal", "estaci", "chosica", "rimac", "chillon"], "get_river_levels"),
-    (["social", "reporte", "bluesky", "reddit", "señal", "vecino"], "get_social_clusters"),
-    (["hospital", "escuela", "puente", "infraestructura"], "get_infrastructure_impact"),
-    (["lluvia", "precipitaci", "imerg", "acumul", "mm", "rain"], "get_rainfall_accumulation"),
-    (["alerta", "alert", "activ", "emergencia"], "get_active_alerts"),
-    (["protocolo", "evacu", "indeci", "minsa", "cenepred", "procedimiento"], "search_protocols"),
+    (["poblaci", "personas", "habitantes", "afectad", "riesgo pob", "familias"], "get_population_at_risk"),
+    (["inundaci", "desborde", "flood", "sar", "sentinel", "poligono", "anegad"], "get_flood_polygons"),
+    (["huayco", "quebrada", "deslizami", "flujo", "lahar", "colapso", "rotura", "dique",
+      "huaycoloro", "pedregal", "zona de riesgo"], "get_huayco_risk"),
+    (["río", "rio", "nivel", "caudal", "estaci", "chosica", "rimac", "chillon", "cota", "aforo"], "get_river_levels"),
+    (["social", "reporte", "bluesky", "reddit", "señal", "vecino", "ciudadano", "avistamiento"], "get_social_clusters"),
+    (["hospital", "escuela", "puente", "infraestructura", "albergue", "refugio", "evacu"], "get_infrastructure_impact"),
+    (["lluvia", "precipitaci", "imerg", "acumul", "mm", "rain", "pronóst"], "get_rainfall_accumulation"),
+    (["alerta", "alert", "activ", "emergencia", "situacion", "novedades"], "get_active_alerts"),
+    (["protocolo", "indeci", "minsa", "cenepred", "procedimiento", "qué hacer", "pasos"], "search_protocols"),
 ]
 
 

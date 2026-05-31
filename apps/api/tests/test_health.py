@@ -119,3 +119,28 @@ async def test_post_seed_coen_allowed():
         resp = await c.post("/api/v1/health/seed", headers=_COEN)
     assert resp.status_code == 200
     assert resp.json()["status"] == "ok"
+
+
+# ─── Redis probe in /health/scraper ───────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_health_scraper_has_redis_key():
+    """/health/scraper response must include a 'redis' key with status field."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.get("/api/v1/health/scraper")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "redis" in body, "Missing 'redis' key in scraper health"
+    assert "status" in body["redis"], "'redis' block must contain 'status'"
+    assert body["redis"]["status"] in ("ok", "offline"), f"Unexpected redis status: {body['redis']['status']!r}"
+
+
+@pytest.mark.asyncio
+async def test_health_scraper_overall_status_valid():
+    """overall_status in scraper response must be a valid SINAGERD-aligned value."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.get("/api/v1/health/scraper")
+    body = resp.json()
+    assert body["overall_status"] in ("ok", "stale", "offline"), (
+        f"overall_status must be ok/stale/offline, got {body['overall_status']!r}"
+    )

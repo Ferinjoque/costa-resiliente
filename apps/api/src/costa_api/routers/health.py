@@ -159,7 +159,8 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
                     ok_pct = stations_ok / max(total, 1)
                     status = "ok" if ok_pct >= 0.5 else ("stale" if ok_pct > 0 else "offline")
                     return {"scraper_live_stations": stations_ok, "scraper_total": total, "scraper_status": status}
-                except Exception:
+                except Exception as exc:
+                    log.warning("health: _parse_scraper_status failed on raw=%r: %s", raw[:80] if raw else raw, exc)
                     return {}
 
             def _parse_last_run(raw: str | None, stale_min: int) -> dict:
@@ -170,7 +171,8 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
                     age_min = (now - last_run).total_seconds() / 60
                     status = "ok" if age_min < stale_min else ("stale" if age_min < 120 else "offline")
                     return {"scraper_last_run_at": raw, "status": status}
-                except Exception:
+                except Exception as exc:
+                    log.warning("health: _parse_last_run failed on raw=%r: %s", raw[:80] if raw else raw, exc)
                     return {}
 
             ana_scraper = _parse_scraper_status(raw_ana)
