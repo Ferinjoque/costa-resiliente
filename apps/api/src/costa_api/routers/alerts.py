@@ -399,7 +399,7 @@ async def list_decision_log(
     )
     return [
         DecisionLogEntry(
-            **{**dict(r._mapping), "payload": dict(r._mapping["payload"])}
+            **{**dict(r._mapping), "payload": dict(r._mapping["payload"]) if r._mapping["payload"] else {}}
         )
         for r in rows
     ]
