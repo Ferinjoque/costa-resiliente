@@ -377,7 +377,8 @@ async def _dispatch_to_subscriber(
             await _record_delivery(sub["id"], alert_id, trigger_event, status, attempts, err or None)
         elif channel == "sms":
             sms_body = (
-                f"[COSTA RESILIENTE] {payload['severity'].upper()}: {payload['title']}. "
+                f"[COSTA RESILIENTE] {(payload.get('severity') or 'ALERTA').upper()}: "
+                f"{payload.get('title') or trigger_event}. "
                 f"Distrito: {payload.get('district_ubigeo', 'Lima')}. "
                 f"Evento: {trigger_event}."
             )
@@ -404,7 +405,8 @@ async def fan_out_notifications(
     try:
         sev_rank = SEVERITY_RANK.get(alert_severity, 0)
 
-        async with engine.connect() as conn:
+        async with engine.begin() as conn:
+            # engine.begin() opens an explicit transaction so SET LOCAL takes effect
             await conn.execute(text("SET LOCAL statement_timeout = '5000'"))
             # Apply severity and district filters in SQL so LIMIT is on matched rows,
             # not on the full subscriber table. Without this, high-ID subscribers (added
