@@ -145,7 +145,7 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 | Feature | Why it matters |
 |---------|----------------|
 | **SITREP mode (~5s)** | Start-of-shift: 5 tools sequential, all sections guaranteed (no race condition) |
-| **SENAMHI thresholds in copilot** | Level 2.41m at Chosica rising +0.130m/h → "⚠ sobre umbral ALERTA SENAMHI (2.5m)" |
+| **SENAMHI thresholds in copilot** | Level 2.41m at Chosica rising +0.130m/h → "⚠ acercándose al umbral 2.5m" (near-threshold) |
 | **Rainfall in FusionCallout** | District-level rainfall context (Rímac watershed 63mm) integrated into multi-hazard view |
 | **SLA breach toasts** | Operator never misses an unacknowledged alert even if Alerts panel is closed |
 | **ANA protocol RAG (7 docs)** | "¿cómo lleno el EDAN?" + "¿qué hago en EMERGENCIA?" from real INDECI/ANA/SINAGERD documents |
@@ -153,7 +153,7 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 | **FEEDS chip (core only)** | No false alarms from expected-offline reddit/telegram/SAR between acquisitions |
 | **Province filter bug fix** | Rainfall alerts (district-less) correctly appear in Lima Metro view |
 | **Local Ollama (zero cloud)** | All ML inference local — no API keys, no data egress, works offline |
-| **663 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, rainfall-mm, province filter, risk elevation |
+| **667 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, multi-watershed, near-threshold, idempotency |
 | **SINAGERD level consistency** | Rainfall ≥50mm always elevates to EMERGENCIA across health API, HUD, SituationBrief, CityOverview, EDAN — 5 consistent surfaces |
 | **Append-only decision log** | DB trigger rejects UPDATE/DELETE — full audit trail for SINAGERD post-event review |
 | **Map: 39 districts show ALTO** | District risk map includes watershed rainfall — Rímac EMERGENCIA elevates all intersecting districts |
@@ -163,6 +163,7 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 | **Copilot: sequential tool dispatch** | All 3 dispatch paths run tools sequentially — eliminates AsyncSession race, all sections always present |
 | **Copilot: combined action directive** | SITREP action augments with specific evacuation directive when EMERGENCIA rain AND critical huayco present |
 | **Alerts: idempotent actions** | Acknowledging/escalating an alert twice returns 200 (no duplicate fan-out notifications) |
+| **Multi-watershed sitrep** | Rímac 63mm EMERGENCIA + "también Chillón: 28mm ALERTA" shown in single sitrep bullet |
 | **Near-threshold warnings** | Chosica 2.41m → "⚠ acercándose al umbral 2.5m" shown in copilot + dashboard |
 
 ---
