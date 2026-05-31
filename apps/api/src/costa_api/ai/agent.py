@@ -591,10 +591,10 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             status = f"⚠ AVISO — lluvia 24h supera umbral ANA ({acc_24h:.0f} mm)"
         else:
             status = "Por debajo del umbral de alerta SENAMHI (25 mm/72h)"
-        # Build detail string with 24h and 1h windows when available
+        # Build detail string — skip windows with 0mm (not operationally useful)
         detail_parts = [f"72h: {mx:.1f} mm"]
-        if acc_24h is not None: detail_parts.append(f"24h: {acc_24h:.1f} mm")
-        if acc_1h is not None: detail_parts.append(f"1h: {acc_1h:.1f} mm")
+        if acc_24h is not None and acc_24h > 0: detail_parts.append(f"24h: {acc_24h:.1f} mm")
+        if acc_1h is not None and acc_1h > 0: detail_parts.append(f"1h: {acc_1h:.1f} mm")
         detail = " · ".join(detail_parts)
         return f"Cuenca {mx_ws} — {detail}. {status}."
     if "estimated_population_at_risk" in first:
