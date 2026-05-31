@@ -641,7 +641,8 @@ async def export_pdf_report(
                 payload = json.loads(r["payload_json"] or "{}")
                 detail = payload.get("note") or payload.get("action") or ""
                 detail = str(detail)[:60]
-            except Exception:
+            except Exception as _json_exc:
+                log.debug("PDF report: failed to parse payload_json for log row %s: %s", r.get("id"), _json_exc)
                 detail = ""
             log_data.append([
                 str(r["id"]),
