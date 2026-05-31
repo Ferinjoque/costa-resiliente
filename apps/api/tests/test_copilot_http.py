@@ -170,6 +170,8 @@ async def test_copilot_sitrep_query_returns_200():
     assert "quick_mode" in data
     # sitrep always runs quick_mode (4 parallel tools, no LLM)
     assert data["quick_mode"] is True
+    assert "mode" in data
+    assert data["mode"] == "sitrep", f"SITREP query must return mode='sitrep', got {data.get('mode')!r}"
 
 
 @pytest.mark.asyncio
