@@ -1,7 +1,7 @@
 # Costa Resiliente — Project Status
 
 > **This is the single source of truth for what's built, what's pending, and the current rubric score.**
-> Last updated: 2026-05-31 (Session 20)
+> Last updated: 2026-05-31 (Session 21)
 > Branch: `develop`
 
 For competition context, see [`COMPETITION.md`](COMPETITION.md).
@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **640 passed, 0 errors** (Session 20). Up from 568 (+72). Workers: 148 passed, 8 skipped.
+- **API**: **646 passed, 0 errors** (Session 21). Up from 640 (+6). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 184 kB (Session 20: +9 kB from rainfall HUD, fusion rainfall, CityOverview, SlaChip improvements)
@@ -233,6 +233,32 @@ POST   /api/v1/auth/operators
 ---
 
 ## Recent session log (rolling, last 5)
+
+### Session 21 — 2026-05-31 — Correctness audit + critical bug fixes
+
+Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
+
+**Critical backend fixes (found via architect code review):**
+- `fix(db_tools)`: `get_active_alerts severity='high'` was exact-match — silently excluded `critical` alerts (the most dangerous). Fixed to minimum-severity `ANY(:sev)` filter. LLM asking for "high severity" now correctly returns high + critical.
+- `fix(db_tools)`: `get_river_levels` `prev_1h` CTE used absolute `NOW()` window — for long `hours_back` the "1h ago" reading was actually many hours old, making trend (rising/falling/stable) meaningless. Fixed: `JOIN latest` so each station compares to its own latest reading − 1h.
+- `fix(fusion)`: `district_fusion` rainfall used `WHERE ia.time = (SELECT MAX(time) FROM hydro.imerg_accumulations)` — global MAX missed rainfall when one watershed ingested slightly later. Fixed to per-watershed LATERAL JOIN matching `layers.py` pattern.
+- `fix(layers)`: `flood_exposure` had no `acquired_at` filter — accumulated all historical flood polygons into `total_affected_population`, vastly overstating current exposure. Added 7-day filter matching flood alert auto-resolution cadence.
+- `fix(fusion)`: Huayco prose omitted entirely when `probability IS NULL` (model wrote risk_level but not probability). Fixed: renders huayco risk always, shows probability only when available.
+- `fix(agent)`: `_build_answer` AVISO branch used `{acc_24h:.0f}` without float() cast — defensive `float()` wrap added.
+- `fix(agent)`: bare `"mm"` keyword in rainfall quick-mode matched substrings in unrelated words. Narrowed to word-boundary forms (` mm `, `mm/`, `/mm`).
+
+**Critical frontend fixes:**
+- `fix(queries)`: `useAlerts`/`useDecisionLog` swallowed all errors → `isError` was permanently false → operators could never tell if alert data was live or demo. Fixed: errors now propagate; `placeholderData` ensures UI never blanks; error banner shows "mostrando datos de demostración".
+- `fix(api)`: `logDecision` swallowed all failures → "registrado en log" shown even on 500/401. Fixed: throws on server errors (4xx/5xx), keeps network-timeout as best-effort.
+- `fix(AlertsPanel)`: `handleAction` discarded `actOnAlert` return value — UI status diverged from DB when server assigned different `new_status`. Fixed: applies `result.new_status` from server response.
+- `fix(DecisionLogPanel)`: offline CSV export used same filename for demo and real data. Fixed: prefixes `DEMO_` when `isError` to prevent accidental submission of fabricated data as official EDAN record. Also wrapped `JSON.stringify(payload)` in try/catch to prevent export crash on unusual payloads.
+- `fix(i18n)`: alerts error message now reads "Error al cargar alertas — mostrando datos de demostración".
+
+**Tests (+6):** `test_get_active_alerts_severity_high_includes_critical`, `test_get_active_alerts_severity_critical_only`, `test_get_active_alerts_severity_medium_includes_higher`, `test_get_river_levels_prev1h_anchored_to_latest`, `test_flood_exposure_has_time_filter`, `test_total_affected_population_is_integer`. Suite: 646 passed.
+
+**Commit:** `9873a39` fix(critical): severity filter, river trend, fusion rainfall, flood exposure, demo transparency.
+
+---
 
 ### Session 20 — 2026-05-31 — Operational hardening + sitrep mode + UX improvements
 
