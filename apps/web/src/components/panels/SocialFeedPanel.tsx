@@ -113,12 +113,12 @@ function formatSignalDate(published_at: string | null | undefined, ingested_at: 
   return `${dateStr} ${timeStr}`;
 }
 
-// Urgency sort: needs_help first, then chronological desc
+// Urgency sort: SINAGERD-aligned severity — needs_help first (life safety), huayco second (imminent structural)
 const LABEL_PRIORITY: Record<string, number> = {
   needs_help:            0,
-  road_blocked:          1,
-  huayco_observation:    2,
+  huayco_observation:    1,
   flood_observation:     2,
+  road_blocked:          3,
   infrastructure_damage: 3,
   weather_observation:   4,
 };
@@ -129,7 +129,8 @@ function labelPriority(label: string | null): number {
 
 function labelToPillVariant(label: string): "danger" | "warn" | "accent" | "default" {
   if (label === "needs_help") return "danger";
-  if (label === "road_blocked" || label === "huayco_observation" || label === "flood_observation") return "warn";
+  if (label === "huayco_observation") return "danger";  // huayco = imminent structural risk → same as needs_help
+  if (label === "road_blocked" || label === "flood_observation") return "warn";
   if (label === "infrastructure_damage") return "accent";
   return "default";
 }
