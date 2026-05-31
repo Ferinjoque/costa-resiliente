@@ -130,14 +130,7 @@ function SlaChip({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   );
 }
 
-// ─── Monotonic action id generator ───────────────────────────────────────────
-let _lastTs = 0;
-function nextActionId(): number {
-  const now = Date.now();
-  const id  = now <= _lastTs ? _lastTs + 1 : now;
-  _lastTs   = id;
-  return id;
-}
+
 
 // ─── EscalationModal ─────────────────────────────────────────────────────────
 
