@@ -72,7 +72,7 @@ Type: **"Nivel del río en Chosica"**
 
 **What happens:**
 - Quick mode: `get_river_levels`
-- Answer: level in meters, flow m³/s, trend (↑ rising), **SENAMHI threshold comparison** ("⚠ sobre umbral ALERTA SENAMHI: 2.5m")
+- Answer: level in meters, flow m³/s, trend (↑ rising), **SENAMHI threshold comparison** — "⚠ acercándose al umbral 2.5m" (2.41m, within 90% threshold — Session 21 near-threshold warning)
 
 ---
 
