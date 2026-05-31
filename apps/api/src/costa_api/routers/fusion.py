@@ -197,6 +197,37 @@ async def district_fusion(
     quebrada_name: str | None = huayco["quebrada_name"] if huayco else None
     huayco_at = huayco["computed_at"].isoformat() if huayco and huayco["computed_at"] else None
 
+    # ── Rainfall (latest IMERG for district's intersecting watersheds) ──────────
+    rainfall_row = await db.execute(
+        text("""
+            SELECT
+                w.name AS watershed,
+                ia.acc_72h_mm,
+                ia.acc_24h_mm,
+                ia.time AS imerg_time
+            FROM hydro.imerg_accumulations ia
+            JOIN geo.watersheds w ON w.id = ia.watershed_id
+            WHERE ia.time = (
+                SELECT MAX(time) FROM hydro.imerg_accumulations
+            )
+              AND ST_Intersects(ST_MakeValid(w.geom), (
+                SELECT ST_MakeValid(geom) FROM geo.districts WHERE id = :district_id
+              ))
+            ORDER BY ia.acc_72h_mm DESC NULLS LAST
+            LIMIT 1
+        """),
+        {"district_id": district_id},
+    )
+    rainfall_r = rainfall_row.mappings().first()
+    rainfall_ws = rainfall_r["watershed"] if rainfall_r else None
+    rainfall_72h = float(rainfall_r["acc_72h_mm"]) if rainfall_r and rainfall_r["acc_72h_mm"] is not None else None
+    rainfall_24h = float(rainfall_r["acc_24h_mm"]) if rainfall_r and rainfall_r["acc_24h_mm"] is not None else None
+    rainfall_level = None
+    if rainfall_72h is not None:
+        rainfall_level = "emergencia" if rainfall_72h >= 50 else ("alerta" if rainfall_72h >= 25 else "normal")
+    elif rainfall_24h is not None and rainfall_24h >= 15:
+        rainfall_level = "aviso"
+
     # ── Social signals (last 3 hours) ─────────────────────────────────────────
     social_row = await db.execute(
         text("""
@@ -217,6 +248,11 @@ async def district_fusion(
 
     # ── Compose ──────────────────────────────────────────────────────────────
     risk_level = _overall_risk(flood_area, huayco_risk, social_urgent)
+    # Elevate risk_level if rainfall is above ANA threshold
+    if rainfall_level == "emergencia" and risk_level != "alto":
+        risk_level = "alto"
+    elif rainfall_level == "alerta" and risk_level == "bajo":
+        risk_level = "moderado"
     prose_es = _risk_prose_es(
         population, flood_area, flood_count,
         huayco_risk, huayco_prob,
@@ -254,5 +290,11 @@ async def district_fusion(
         "social": {
             "total_signals_3h": social_total,
             "urgent_signals_3h": social_urgent,
+        },
+        "rainfall": {
+            "watershed": rainfall_ws,
+            "acc_72h_mm": round(rainfall_72h, 1) if rainfall_72h is not None else None,
+            "acc_24h_mm": round(rainfall_24h, 1) if rainfall_24h is not None else None,
+            "level": rainfall_level,  # emergencia / alerta / aviso / normal / null
         },
     }
