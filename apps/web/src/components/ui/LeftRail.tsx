@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useAlerts, useSocialSignals, usePendingProposals } from "@/lib/queries";
+import { URGENT_SOCIAL_LABELS } from "@/lib/constants";
 import { clsx } from "clsx";
 import { Badge } from "@/components/ui/primitives";
 import { OperatorChip } from "@/components/panels/LoginPanel";
@@ -51,9 +52,8 @@ export function LeftRail() {
   const { data: pendingProposals = [] } = usePendingProposals();
 
   const alertBadge = alerts.filter((a) => a.status === "active").length;
-  const _urgentSet = new Set(["needs_help", "road_blocked", "huayco_observation", "flood_observation"]);
   const socialBadge = (socialData?.features ?? []).filter(
-    (f) => _urgentSet.has(f.properties.triage_label ?? ""),
+    (f) => URGENT_SOCIAL_LABELS.has(f.properties.triage_label ?? ""),
   ).length;
   const proposalsBadge = pendingProposals.filter(
     (p) => p.severity === "critical" || p.severity === "high",
