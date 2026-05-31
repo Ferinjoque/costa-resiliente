@@ -142,20 +142,23 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 
 | Feature | Why it matters |
 |---------|----------------|
-| **SITREP mode (3s)** | Start-of-shift situational awareness without LLM inference |
-| **SENAMHI thresholds in copilot** | Level 2.8m at Chosica → "⚠ sobre umbral ALERTA SENAMHI (2.5m)" |
-| **Rainfall in FusionCallout** | District-level rainfall context (Rímac watershed) integrated into multi-hazard view |
+| **SITREP mode (~5s)** | Start-of-shift: 5 tools sequential, all sections guaranteed (no race condition) |
+| **SENAMHI thresholds in copilot** | Level 2.41m at Chosica rising +0.130m/h → "⚠ sobre umbral ALERTA SENAMHI (2.5m)" |
+| **Rainfall in FusionCallout** | District-level rainfall context (Rímac watershed 63mm) integrated into multi-hazard view |
 | **SLA breach toasts** | Operator never misses an unacknowledged alert even if Alerts panel is closed |
 | **ANA protocol RAG (7 docs)** | "¿cómo lleno el EDAN?" + "¿qué hago en EMERGENCIA?" from real INDECI/ANA/SINAGERD documents |
-| **Health API** | `curl /health` → `sinagerd_level:EMERGENCIA, active_alerts:2, rain_level:emergencia` — single-call monitoring |
+| **Health API** | `curl /health` → `sinagerd_level:EMERGENCIA, active_alerts:7, rain_level:emergencia` — single-call monitoring |
 | **FEEDS chip (core only)** | No false alarms from expected-offline reddit/telegram/SAR between acquisitions |
 | **Province filter bug fix** | Rainfall alerts (district-less) correctly appear in Lima Metro view |
 | **Local Ollama (zero cloud)** | All ML inference local — no API keys, no data egress, works offline |
-| **656 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, rainfall-mm, province filter, risk elevation |
-| **SINAGERD level consistency** | Rainfall now factors into level across health API, OperationalHUD, SituationBrief, CityOverview, EDAN — 5 consistent surfaces |
+| **663 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, rainfall-mm, province filter, risk elevation |
+| **SINAGERD level consistency** | Rainfall ≥50mm always elevates to EMERGENCIA across health API, HUD, SituationBrief, CityOverview, EDAN — 5 consistent surfaces |
 | **Append-only decision log** | DB trigger rejects UPDATE/DELETE — full audit trail for SINAGERD post-event review |
-| **Map: 39 districts show ALTO** | District risk map now includes watershed rainfall in coloring — Rímac EMERGENCIA elevates all 20+ intersecting districts (Session 21) |
-| **Copilot: minimum severity filter** | `get_active_alerts(severity="high")` now returns high+critical (prior exact-match silently hid critical alerts) |
+| **Map: 39 districts show ALTO** | District risk map includes watershed rainfall — Rímac EMERGENCIA elevates all intersecting districts |
+| **7 active alerts + 3 critical** | El Niño scenario: 2 critical huayco (Huaycoloro/Pedregal) + 1 critical rainfall + 4 high alerts |
+| **Alerts sorted critical-first** | Critical alerts always appear before high within active group — no operator context loss |
+| **Copilot: minimum severity filter** | `get_active_alerts(severity="high")` returns both high+critical (prior exact-match hid criticals) |
+| **Copilot: sequential tool dispatch** | All 3 dispatch paths run tools sequentially — eliminates AsyncSession race, all sections always present |
 
 ---
 
