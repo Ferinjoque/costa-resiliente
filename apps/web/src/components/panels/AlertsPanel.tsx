@@ -916,9 +916,16 @@ export function AlertsPanel() {
   // Track which alert IDs have already triggered a breach toast this session
   const notifiedBreachIds = useRef<Set<number>>(new Set());
 
-  // Fire a danger toast whenever an active alert crosses its SLA threshold
+  // Fire a danger toast whenever an active alert crosses its SLA threshold.
+  // Prune notified IDs that are no longer in the active alert set so a new
+  // alert reusing a previously-closed ID gets its breach toast correctly.
   useEffect(() => {
     const now = Date.now();
+    const activeIds = new Set(alerts.filter((a) => a.status === "active").map((a) => a.id));
+    // Remove IDs that are no longer active (closed/acked/false-positive)
+    notifiedBreachIds.current.forEach((id) => {
+      if (!activeIds.has(id)) notifiedBreachIds.current.delete(id);
+    });
     alerts.forEach((alert) => {
       if (alert.status !== "active") return;
       const ageMin = Math.floor((now - new Date(alert.created_at).getTime()) / 60_000);
