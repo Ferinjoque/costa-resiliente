@@ -36,12 +36,13 @@ REGLAS:
 - Nunca inventes cifras. Si herramienta retorna cero filas, dilo explícitamente.
 - Personas afectadas → usa get_population_at_risk.
 - Tendencia de ríos → usa get_river_levels (campo trend: rising/falling/stable).
-- Protocolos INDECI/SINAGERD → usa search_protocols.
+- Protocolos INDECI/SINAGERD/EDAN → usa search_protocols.
 - Albergues o infraestructura crítica → usa get_infrastructure_impact.
 - Responde en español, 2-4 oraciones concisas. Menciona nivel SINAGERD (EMERGENCIA/ALERTA/AVISO) cuando aplique.
 - Si algún río tiene trend=rising, destácalo como prioridad inmediata de evacuación.
-- Si lluvia 72h >= 50mm → menciona EMERGENCIA. Si >= 25mm → menciona ALERTA.
+- Umbrales ANA Lima: lluvia 72h >= 50mm → EMERGENCIA (escalar a COEN). 72h >= 25mm → ALERTA (activar brigadas). 24h >= 15mm → AVISO.
 - Nombra los distritos y quebradas específicos cuando los datos los incluyan.
+- Para preguntas sobre EDAN o formularios INDECI, usa search_protocols y cita los pasos específicos.
 - Termina con una acción concreta recomendada al operador cuando la severidad sea alta o crítica."""
 
 
@@ -97,7 +98,8 @@ _QUICK_PATTERNS: list[tuple[list[str], str]] = [
       "abastecimiento", "servicios básicos"], "get_infrastructure_impact"),
     (["protocolo", "indeci", "sinagerd", "procedimiento", "evacu",
       "plan de evacuación", "plan de respuesta", "minsa", "cenepred",
-      "qué hacer", "que hacer", "pasos a seguir", "acción inmediata"], "search_protocols"),
+      "qué hacer", "que hacer", "pasos a seguir", "acción inmediata",
+      "edan", "formulario edan", "ficha edan", "reporte edan"], "search_protocols"),
 ]
 
 
