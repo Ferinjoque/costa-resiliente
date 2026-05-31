@@ -78,9 +78,10 @@ TOOL_SCHEMAS: list[dict] = [
         "function": {
             "name": "get_river_levels",
             "description": (
-                "Obtiene lecturas recientes de estaciones hidrométricas (nivel, caudal, lluvia). "
+                "Obtiene lecturas recientes de estaciones hidrométricas ANA/SENAMHI (nivel, caudal, lluvia). "
                 "Úsalo cuando pregunten sobre ríos, caudales, niveles de agua en estaciones, "
-                "tendencia (subiendo/bajando), o si el río está en alerta."
+                "tendencia (subiendo/bajando), o si el río está en alerta. "
+                "Respuesta incluye nivel en metros, caudal en m³/s, tendencia y comparación con umbrales SENAMHI."
             ),
             "parameters": {
                 "type": "object",
