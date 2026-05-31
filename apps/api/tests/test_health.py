@@ -25,6 +25,12 @@ async def test_health_returns_ok():
     assert data["max_rain_72h_mm"] is None or isinstance(data["max_rain_72h_mm"], (int, float))
     assert "rain_level" in data
     assert data["rain_level"] in ("emergencia", "alerta", "aviso", "normal")
+    # Verify rain_level is at least as severe as 72h value implies
+    mm = data["max_rain_72h_mm"]
+    if mm is not None and mm >= 50:
+        assert data["rain_level"] == "emergencia", f">=50mm should be emergencia, got {data['rain_level']!r}"
+    if mm is not None and mm >= 25 and mm < 50:
+        assert data["rain_level"] in ("alerta", "emergencia"), f">= 25mm should be alerta+, got {data['rain_level']!r}"
 
 
 @pytest.mark.asyncio
