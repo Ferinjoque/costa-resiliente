@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **624 passed, 0 errors** (Session 20). Up from 568 (+56: SLA/sitrep/health/quick-pattern/infrastructure/answer-quality tests). Workers: 148 passed, 8 skipped.
+- **API**: **624 passed, 0 errors** (Session 20). Up from 568 (+56: SLA/sitrep/health/quick-pattern/sitrep-answer/river-flow/rainfall-windows/answer-quality tests). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB
@@ -214,12 +214,19 @@ POST   /api/v1/auth/operators
 |-----------|------|
 | Gateway (thin Ollama facade) | `ai/gateway.py` |
 | Ollama provider (async httpx, retries, tool_calls) | `ai/providers/ollama.py` |
-| Agent loop (parallel asyncio.gather, keyword fallback) | `ai/agent.py` |
-| Input guardrail (regex + length) | `ai/guardrails/input_filter.py` |
+| Agent loop (parallel asyncio.gather, keyword fallback, sitrep mode) | `ai/agent.py` |
+| Input guardrail (regex + length + Spanish injection patterns) | `ai/guardrails/input_filter.py` |
 | Output guardrail (PII + secret redaction) | `ai/guardrails/output_filter.py` |
 | Redis tool cache (per-tool TTL, silent fallback) | `ai/cache.py` |
 | Whitelisted DB tools (9) | `ai/tools/db_tools.py` |
-| Protocol RAG (`nomic-embed-text` + pgvector) | `ai/rag.py` |
+| Protocol RAG (`nomic-embed-text` + pgvector, 6 documents) | `ai/rag.py` |
+
+**Quick-mode fast paths (bypass LLM, ~2–3s):**
+1. **Single quick-mode** — 9 pattern groups (alertas, lluvia, río, inundación, huayco, social, infraestructura, albergue, protocolo) → one tool dispatch
+2. **Multi-quick-mode** — 2–3 matching patterns → parallel asyncio.gather, no LLM
+3. **Sitrep mode** — "resumen completo", "inicio de guardia", "sitrep" → 4 tools parallel → `_build_sitrep_answer()` SITREP narrative
+
+**RAG protocol corpus (6 documents, 46 chunks):** INDECI Plan Familiar, CENEPRED Movimientos en Masa, MINSA Protocolo Emergencias, SENAMHI Guía Hidrometeorológica, MML Plan Huaycos Lima, ANA Umbrales Lluvia Lima.
 
 **Anti-fabrication invariant:** LLM never executes raw SQL. All numerical claims trace to a DB row; if a tool returns 0 rows, the system says so explicitly.
 
@@ -258,7 +265,7 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 **Tests (+53):** 621 passed (↑53 from 568). Includes sitrep detection, sitrep answer builder, new quick patterns, infrastructure _build_answer, health Redis key, sitrep integration tests. TypeScript: 0 errors.
 
-**Commits (8):** `acf4437` session-20 batch1 → `a6b269e` session-20b → `2706f12` session-20c → `200ab15` ticker.
+**Commits (18):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `da4a350` calm-state → `cc4a6e9` richer-answers → `311bc87` protocol-dedup → `df42d39` huayco-prob → `17b59e3` tests → `d7b9a05` runbook → `733bb3c` redis-ui → `110ffb2` ANA-rag → `8d9b0bd` severity-filter → `0965d32` edan-prompt → `1c7e7f1` final-count.
 
 ---
 
