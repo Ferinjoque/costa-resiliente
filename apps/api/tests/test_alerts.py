@@ -137,6 +137,37 @@ class TestListAlerts:
         if invalid_status:
             assert resp.status_code == 400, f"status={invalid_status!r} should be invalid, got {resp.status_code}"
 
+    @pytest.mark.asyncio
+    async def test_active_alerts_appear_before_closed(self):
+        """Active/escalated alerts must appear before closed/acknowledged in default sort.
+
+        Regression guard: prior ORDER BY a.created_at DESC could push active alerts
+        out of the LIMIT window when many closed alerts exist. Fix: sort by status
+        priority (active=0, escalated=1, else=2) then created_at DESC.
+        """
+        from inspect import getsource
+        from costa_api.routers.alerts import list_alerts
+        src = getsource(list_alerts)
+        # Verify the status priority sort is present
+        assert "CASE a.status" in src and "THEN 0" in src, (
+            "list_alerts must include status-priority sort so active alerts "
+            "always appear before closed ones within the LIMIT window"
+        )
+
+        # Integration: active alerts appear in first position when they exist
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            all_resp = await c.get("/api/v1/alerts")
+            active_resp = await c.get("/api/v1/alerts?status=active")
+        all_alerts = all_resp.json()
+        active_alerts = active_resp.json()
+        if active_alerts and all_alerts:
+            # First returned alert should be active or escalated (highest priority)
+            first_status = all_alerts[0].get("status")
+            assert first_status in ("active", "escalated"), (
+                f"First returned alert should be active/escalated, got {first_status!r}. "
+                "Active alerts should always appear before closed ones."
+            )
+
 
 # ─── POST /api/v1/alerts/{id}/action ─────────────────────────────────────────
 
