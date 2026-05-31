@@ -444,6 +444,9 @@ async def run(
     redacted = bool(triggered)
     if redacted:
         logger.warning("output_guardrail triggered for op=%s labels=%s", operator_id, triggered)
+        # Append visible marker so operators know content was filtered — a silently
+        # truncated answer looks complete and could be acted on as if it were authoritative.
+        clean_answer = clean_answer + " [⚠ contenido filtrado por guardrail de seguridad]"
 
     # Confidence: based on data availability
     confidence = 0.85 if all_tool_results else 0.3
