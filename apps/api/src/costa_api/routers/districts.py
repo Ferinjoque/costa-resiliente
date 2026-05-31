@@ -107,9 +107,45 @@ async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str,
     """
     Lightweight risk summary for all districts — used to color-fill the map.
     Returns GeoJSON FeatureCollection with risk_level + key metrics per district.
-    Fast path: uses FK-indexed tables only (no heavy spatial joins).
+    Includes rainfall alerts via watershed intersection (pre-computed CTE, 3 watersheds).
     """
     await db.execute(text("SET LOCAL statement_timeout = '15000'"))
+
+    # Pre-fetch active rainfall alerts' max severity per watershed (small result set)
+    rainfall_result = await db.execute(
+        text("""
+            SELECT
+                (source_refs->>'watershed_id')::integer AS watershed_id,
+                MAX(CASE severity WHEN 'critical' THEN 4 WHEN 'high' THEN 3 ELSE 2 END) AS rain_sev
+            FROM ops.alerts
+            WHERE type = 'rainfall' AND status = 'active' AND source_refs->>'watershed_id' IS NOT NULL
+            GROUP BY 1
+        """)
+    )
+    # Build map: watershed_id → max severity score from rainfall alerts
+    watershed_rain_sev: dict[int, int] = {
+        int(r["watershed_id"]): int(r["rain_sev"])
+        for r in rainfall_result.mappings()
+    }
+
+    # If rainfall alerts exist, find which districts intersect those watersheds (spatial, but only 3 watersheds)
+    rainfall_district_sev: dict[str, int] = {}  # ubigeo → max rainfall severity score
+    if watershed_rain_sev:
+        wids = list(watershed_rain_sev.keys())
+        intersect_result = await db.execute(
+            text("""
+                SELECT d.ubigeo, w.id AS watershed_id
+                FROM geo.watersheds w
+                JOIN geo.districts d ON ST_Intersects(ST_MakeValid(w.geom), ST_MakeValid(d.geom))
+                WHERE w.id = ANY(:wids)
+            """),
+            {"wids": wids},
+        )
+        for r in intersect_result.mappings():
+            ubigeo = r["ubigeo"]
+            sev = watershed_rain_sev.get(int(r["watershed_id"]), 0)
+            rainfall_district_sev[ubigeo] = max(rainfall_district_sev.get(ubigeo, 0), sev)
+
     result = await db.execute(
         text("""
             SELECT
@@ -117,7 +153,7 @@ async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str,
                 d.name,
                 d.population,
                 ST_AsGeoJSON(d.geom)::json AS geometry,
-                -- Active alerts: severity-weighted
+                -- Active alerts: severity-weighted (district-specific)
                 COALESCE((
                     SELECT COUNT(*) FROM ops.alerts a
                     WHERE a.district_id = d.id AND a.status = 'active'
@@ -149,8 +185,8 @@ async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str,
     )
     rows = result.mappings().all()
 
-    def risk_level(row: Any) -> str:
-        sev = int(row["max_severity_score"])
+    def risk_level(row: Any, rain_sev: int) -> str:
+        sev = max(int(row["max_severity_score"]), rain_sev)
         alerts = int(row["active_alerts"])
         urgent = int(row["urgent_social_3h"])
         if sev >= 4 or (sev >= 3 and alerts >= 2) or urgent >= 3:
@@ -161,7 +197,8 @@ async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str,
 
     features = []
     for row in rows:
-        rl = risk_level(row)
+        rain_sev = rainfall_district_sev.get(row["ubigeo"], 0)
+        rl = risk_level(row, rain_sev)
         features.append({
             "type": "Feature",
             "properties": {
@@ -237,12 +274,30 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
 
     await db.execute(text("SET LOCAL statement_timeout = '10000'"))
 
-    # Active alerts
+    # Active alerts — district-specific + rainfall alerts for intersecting watersheds
+    # Rainfall alerts have district_id = NULL (watershed-level), so we include them
+    # separately when the watershed intersects this district.
     alerts_result = await db.execute(
         text("""
-            SELECT id, type, severity, status, title, created_at
-            FROM ops.alerts
-            WHERE district_id = :did AND status IN ('active','acknowledged','escalated')
+            SELECT id, type, severity, status, title, created_at FROM (
+                SELECT id, type, severity, status, title, created_at
+                FROM ops.alerts
+                WHERE district_id = :did AND status IN ('active','acknowledged','escalated')
+                UNION ALL
+                SELECT a.id, a.type, a.severity, a.status, a.title, a.created_at
+                FROM ops.alerts a
+                WHERE a.type = 'rainfall'
+                  AND a.status IN ('active','acknowledged','escalated')
+                  AND a.district_id IS NULL
+                  AND EXISTS (
+                    SELECT 1 FROM geo.watersheds w
+                    WHERE w.id::text = a.source_refs->>'watershed_id'
+                      AND ST_Intersects(
+                        ST_MakeValid(w.geom),
+                        (SELECT ST_MakeValid(geom) FROM geo.districts WHERE id = :did)
+                      )
+                  )
+            ) combined
             ORDER BY created_at DESC LIMIT 10
         """),
         {"did": district_id},
