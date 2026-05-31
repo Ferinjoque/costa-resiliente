@@ -703,7 +703,11 @@ function CityOverview() {
 
   const criticalCount = alerts.filter((a) => a.status === "active" && a.severity === "critical").length;
   const highCount = alerts.filter((a) => a.status === "active" && a.severity === "high").length;
-  const sinagerdLevel = criticalCount > 0 ? "EMERGENCIA" : highCount > 1 || activeCount > 4 ? "ALERTA" : activeCount > 0 ? "AVISO" : "NORMAL";
+  // Also factor in rainfall for SINAGERD level (consistent with health API logic)
+  let sinagerdLevel = criticalCount > 0 ? "EMERGENCIA" : highCount > 1 || activeCount > 4 ? "ALERTA" : activeCount > 0 ? "AVISO" : "NORMAL";
+  if (maxRain72h >= 50 && sinagerdLevel !== "EMERGENCIA") sinagerdLevel = "EMERGENCIA";
+  else if (maxRain72h >= 25 && sinagerdLevel === "AVISO") sinagerdLevel = "ALERTA";
+  else if (maxRain72h >= 15 && sinagerdLevel === "NORMAL") sinagerdLevel = "AVISO";
   const sinagerdColors: Record<string, string> = {
     EMERGENCIA: "text-danger bg-danger-soft border-danger/20",
     ALERTA: "text-warn-muted bg-warn-soft border-warn/20",
