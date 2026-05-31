@@ -194,7 +194,7 @@ The Phase 2 concept text below describes the state at June 5, 2026. The Phase 3 
 | Frontend panels | 6 main surfaces | 9 main surfaces: added ProposalsPanel, NotificationsPanel, DistrictDashboardPanel, SharePanel, FusionCallout |
 | Services | 9 containers | 9 containers (same); pgstac bootstrapped with pypgstac so Sentinel-1 and flood-seg flows now ingest new scenes |
 
-**Session 20 additions (2026-05-31, 54 commits):**
+**Session 20 additions (2026-05-31, 181+ commits, 640 tests):**
 
 | Area | Session 19 | Session 20 |
 |------|------------|------------|
