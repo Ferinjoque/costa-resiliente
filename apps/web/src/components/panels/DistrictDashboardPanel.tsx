@@ -707,6 +707,7 @@ function CityOverview() {
     const v = f.properties.acc_72h_mm ?? 0;
     return v > mx ? v : mx;
   }, 0) ?? 0;
+  const maxRainWsCity = imergCity?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? "";
 
   const criticalCount = alerts.filter((a) => a.status === "active" && a.severity === "critical").length;
   const highCount = alerts.filter((a) => a.status === "active" && a.severity === "high").length;
@@ -777,7 +778,7 @@ function CityOverview() {
               <span className="text-base font-normal text-ink-subtle ml-1">mm</span>
             </p>
             <p className="text-xs text-ink-muted mt-1">
-              {locale === "es" ? "Lluvia máx. 72h" : "Max 72h rain"}
+              {locale === "es" ? `Lluvia 72h${maxRainWsCity ? ` (${maxRainWsCity})` : ""}` : `72h rain${maxRainWsCity ? ` (${maxRainWsCity})` : ""}`}
             </p>
             {maxRain72h >= 25 && (
               <p className={clsx("text-2xs font-semibold mt-0.5", maxRain72h >= 50 ? "text-danger" : "text-warn-muted")}>
