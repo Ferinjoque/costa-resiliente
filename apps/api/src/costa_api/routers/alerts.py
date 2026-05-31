@@ -85,7 +85,7 @@ class DecisionLogEntry(BaseModel):
     operator_id: str
     action_type: str
     alert_id: Optional[int] = None
-    payload: dict
+    payload: dict = {}
     session_id: Optional[str] = None
 
 
