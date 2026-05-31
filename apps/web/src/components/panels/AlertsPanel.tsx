@@ -524,22 +524,31 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   const firstCritical = critical[0];
   const isHuayco = firstCritical?.type === "huayco" || active.some((a) => a.type === "huayco");
 
+  // Use actual district name from the top critical/high alert when available
+  const topDistrict = firstCritical?.district_name ?? (high[0]?.district_name ?? null);
+
   let rec: string;
   if (locale === "es") {
     if (critical.length > 0 && isHuayco) {
-      rec = `Evacuación preventiva inmediata — quebrada activa detectada. Umbral EMERGENCIA ANA (50 mm/72h) superado. Desplegar USAR Equipo Alfa al punto de reunión antes de las 15:00. Notificar INDECI COEN.`;
+      const districtNote = topDistrict ? ` en ${topDistrict}` : "";
+      rec = `Evacuación preventiva inmediata${districtNote} — quebrada activa detectada. Umbral EMERGENCIA ANA (50 mm/72h) superado. Desplegar USAR. Notificar INDECI COEN y activar albergues.`;
     } else if (critical.length > 0) {
-      rec = `Alerta crítica activa: ${firstCritical!.title}. Activar protocolo DELTA COEN. Preposicionar botes en Chosica y Carabayllo norte. Confirmar capacidad de albergues.`;
+      const districtNote = topDistrict ? ` (${topDistrict})` : "";
+      rec = `Alerta crítica activa${districtNote}: ${firstCritical!.title}. Activar protocolo DELTA COEN. Preposicionar botes. Confirmar capacidad de albergues.`;
     } else {
-      rec = `Riesgo compuesto ALTO en ${high.length} distrit${high.length !== 1 ? "os" : "o"}. Pre-alertar personal INDECI en Lurigancho, Ate y Carabayllo. Monitorear estaciones Chosica y Carabayllo cada 15 min.`;
+      const topName = topDistrict ?? "Lima Metro";
+      rec = `Riesgo compuesto ALTO — ${high.length} alerta${high.length !== 1 ? "s" : ""} alta${high.length !== 1 ? "s" : ""}, zona prioritaria: ${topName}. Pre-alertar INDECI y monitorear estaciones cada 15 min.`;
     }
   } else {
     if (critical.length > 0 && isHuayco) {
-      rec = `Immediate preventive evacuation — active quebrada detected. ANA EMERGENCY threshold (50 mm/72h) exceeded. Deploy USAR Team Alpha to assembly point before 15:00. Notify INDECI COEN.`;
+      const districtNote = topDistrict ? ` in ${topDistrict}` : "";
+      rec = `Immediate preventive evacuation${districtNote} — active quebrada detected. ANA EMERGENCY threshold (50 mm/72h) exceeded. Deploy USAR. Notify INDECI COEN and activate shelters.`;
     } else if (critical.length > 0) {
-      rec = `Critical alert active: ${firstCritical!.title}. Activate COEN DELTA protocol. Pre-position boats in Chosica and Carabayllo norte. Confirm shelter capacity.`;
+      const districtNote = topDistrict ? ` (${topDistrict})` : "";
+      rec = `Critical alert active${districtNote}: ${firstCritical!.title}. Activate COEN DELTA protocol. Pre-position boats. Confirm shelter capacity.`;
     } else {
-      rec = `HIGH composite risk across ${high.length} district${high.length !== 1 ? "s" : ""}. Pre-alert INDECI personnel in Lurigancho, Ate, Carabayllo. Monitor Chosica and Carabayllo stations every 15 min.`;
+      const topName = topDistrict ?? "Lima Metro";
+      rec = `HIGH composite risk — ${high.length} high alert${high.length !== 1 ? "s" : ""}, priority zone: ${topName}. Pre-alert INDECI and monitor stations every 15 min.`;
     }
   }
 
