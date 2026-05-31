@@ -617,13 +617,14 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         return f"Cuenca {mx_ws} — {detail}. {status}."
     if "estimated_population_at_risk" in first:
         total = sum(int(r.get("estimated_population_at_risk") or 0) for r in rows)
-        top_d = rows[0].get("district", "?")
-        top_p = int(rows[0].get("estimated_population_at_risk") or 0)
         # Show top 3 districts for context
         top_districts = [f"{r.get('district', '?')} (~{int(r.get('estimated_population_at_risk') or 0):,})" for r in rows[:3]]
         district_list = ", ".join(top_districts)
+        # Include total flood scenes for context
+        total_scenes = sum(int(r.get("flood_scenes") or 0) for r in rows)
+        scene_note = f" · {total_scenes} polígono{'s' if total_scenes != 1 else ''} SAR" if total_scenes > 0 else ""
         return (
-            f"Estimado {total:,} personas en zonas inundadas ({n} distrito{'s' if n != 1 else ''}): {district_list}."
+            f"Estimado {total:,} personas en zonas inundadas ({n} distrito{'s' if n != 1 else ''}{scene_note}): {district_list}."
         )
 
     if "flood_confidence" in first and "type" in first:
