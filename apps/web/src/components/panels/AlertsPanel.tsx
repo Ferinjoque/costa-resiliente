@@ -727,6 +727,7 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   if (urgent.length === 0) return null;
 
   const isHuayco = active.some((a) => a.type === "huayco" && (a.severity === "critical" || a.severity === "high"));
+  const isRainfall = !isHuayco && active.some((a) => a.type === "rainfall" && (a.severity === "critical" || a.severity === "high"));
   const primaryAlert = urgent[0];
 
   const steps = isHuayco
@@ -735,6 +736,14 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
         { id: "s2", es: "Evacuar Quebrada Jicamarca — ruta Av. Las Torres", en: "Evacuate Quebrada Jicamarca via Av. Las Torres" },
         { id: "s3", es: "Verificar albergues habilitados y capacidad", en: "Verify enabled shelters and capacity" },
         { id: "s4", es: "Desplegar USAR y botes en zona de descarga",  en: "Deploy USAR and boats to discharge zone" },
+        { id: "s5", es: "Preparar ficha EDAN para COER",               en: "Prepare EDAN form for COER" },
+      ]
+    : isRainfall
+    ? [
+        { id: "s1", es: "Notificar COEN/INDECI por radio",            en: "Notify COEN/INDECI via radio" },
+        { id: "s2", es: "Activar brigadas en quebradas de cuencas afectadas", en: "Deploy brigades to quebradas in affected watersheds" },
+        { id: "s3", es: "Verificar albergues (capacidad / estado)",    en: "Verify shelters (capacity / status)" },
+        { id: "s4", es: "Pre-alertar municipios distritales vía SIAT-Lima", en: "Pre-alert district municipalities via SIAT-Lima" },
         { id: "s5", es: "Preparar ficha EDAN para COER",               en: "Prepare EDAN form for COER" },
       ]
     : [
