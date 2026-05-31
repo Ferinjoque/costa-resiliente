@@ -114,7 +114,7 @@ function InfoPopover({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
           [es ? "Modelo" : "Model",           "Qwen 2.5 · 7B-Instruct"],
           [es ? "Infraestructura" : "Infra",   es ? "Local · Docker" : "Local · Docker"],
           [es ? "Datos" : "Data",              "PostGIS · IMERG · ANA"],
-          [es ? "SITREP" : "SITREP",           es ? "~3s · 4 herramientas paralelo" : "~3s · 4 tools parallel"],
+          [es ? "SITREP" : "SITREP",           es ? "~3s · 5 herramientas paralelo" : "~3s · 5 tools parallel"],
           [es ? "Modo rápido" : "Quick mode",   es ? "~2s · sin LLM" : "~2s · no LLM"],
           [es ? "Modo completo" : "Full mode",   es ? "15–30s · CPU" : "15–30s · CPU"],
           [es ? "Privacidad" : "Privacy",      es ? "Sin datos externos" : "No third-party data"],
@@ -511,7 +511,7 @@ export function AskPanel() {
                       {msg.quickMode && (
                         <p className="text-[10px] text-accent mt-2 opacity-70 border-t border-border pt-1.5">
                           {msg.mode === "sitrep"
-                            ? (es ? "SITREP · 4 herramientas · sin LLM · ~3s" : "SITREP · 4 tools · no LLM · ~3s")
+                            ? (es ? "SITREP · 5 herramientas · sin LLM · ~3s" : "SITREP · 5 tools · no LLM · ~3s")
                             : (es ? "Modo rápido · sin LLM · ~2s" : "Quick mode · no LLM · ~2s")}
                         </p>
                       )}

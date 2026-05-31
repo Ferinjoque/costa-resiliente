@@ -1007,6 +1007,7 @@ def test_build_sitrep_answer_all_tools():
         ("get_rainfall_accumulation", [{"watershed": "Rímac", "acc_72h_mm": 63.2, "acc_24h_mm": 20.1}]),
         ("get_river_levels", [{"name": "Chosica", "level_m": 2.8, "flow_m3s": 210, "trend": "rising"}]),
         ("get_flood_polygons", [{"scene_id": "S1A_001", "area_km2": 1.5, "confidence": 0.87}]),
+        ("get_huayco_risk", [{"name": "Jicamarca", "risk_level": "very_high", "probability": 0.91, "trigger_rain_24h_mm": 12.0}]),
     ]
     answer = _build_sitrep_answer(per_tool_rows)
     assert "SITREP" in answer
@@ -1017,6 +1018,7 @@ def test_build_sitrep_answer_all_tools():
     assert "1.5" in answer             # flood area
     assert "Acción" in answer or "acción" in answer   # action recommended
     assert "Rímac" in answer           # critical alert title
+    assert "Jicamarca" in answer       # huayco quebrada (NEW: 5th tool)
 
 
 def test_build_sitrep_answer_empty_rows():
