@@ -450,7 +450,7 @@ function EDANReportButton() {
     const v = f.properties.acc_72h_mm ?? 0;
     return v > mx ? v : mx;
   }, 0) ?? undefined;
-  const maxRainWs = maxRain72h != null
+  const maxRainWs = maxRain72h != null && maxRain72h > 0
     ? imergEdan?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name
     : undefined;
 
@@ -708,13 +708,15 @@ function CityOverview() {
     const v = f.properties.acc_72h_mm ?? 0;
     return v > mx ? v : mx;
   }, 0) ?? 0;
-  const maxRainWsCity = imergCity?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? "";
+  const maxRainWsCity = maxRain72h > 0
+    ? imergCity?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? ""
+    : "";
 
   const criticalCount = alerts.filter((a) => a.status === "active" && a.severity === "critical").length;
   const highCount = alerts.filter((a) => a.status === "active" && a.severity === "high").length;
   // Also factor in rainfall for SINAGERD level (consistent with health API logic)
   let sinagerdLevel = criticalCount > 0 ? "EMERGENCIA" : highCount > 1 || activeCount > 4 ? "ALERTA" : activeCount > 0 ? "AVISO" : "NORMAL";
-  if (maxRain72h >= 50 && sinagerdLevel !== "EMERGENCIA") sinagerdLevel = "EMERGENCIA";
+  if (maxRain72h >= 50) sinagerdLevel = "EMERGENCIA";
   else if (maxRain72h >= 25 && sinagerdLevel === "AVISO") sinagerdLevel = "ALERTA";
   else if (maxRain72h >= 15 && sinagerdLevel === "NORMAL") sinagerdLevel = "AVISO";
   const sinagerdColors: Record<string, string> = {
