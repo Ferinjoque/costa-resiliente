@@ -330,14 +330,20 @@ async def run(
     multi_tools = _detect_multi_quick(query)
     if multi_tools:
         try:
-            results = await asyncio.gather(
-                *[dispatch(t, {"query": query} if t == "search_protocols" else {}, db, rag_fn=rag_fn) for t in multi_tools],
-                return_exceptions=True,
-            )
+            # Run tools sequentially to avoid concurrent-session race on shared AsyncSession
+            raw_results = []
+            for t in multi_tools:
+                try:
+                    raw_results.append(await dispatch(
+                        t, {"query": query} if t == "search_protocols" else {}, db, rag_fn=rag_fn
+                    ))
+                except Exception as exc:
+                    logger.warning("multi_quick tool %s failed: %s", t, exc)
+                    raw_results.append(exc)
             all_rows: list[dict] = []
             per_tool_rows: list[tuple[str, list[dict]]] = []
             tc_list = []
-            for tool_name, res in zip(multi_tools, results):
+            for tool_name, res in zip(multi_tools, raw_results):
                 if isinstance(res, Exception):
                     logger.warning("multi_quick tool %s failed: %s", tool_name, res)
                     continue
