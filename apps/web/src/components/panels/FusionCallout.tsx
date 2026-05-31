@@ -62,6 +62,8 @@ export function FusionCallout() {
   const dismiss = () =>
     setScenario({ districtUbigeo: null, districtName: null });
 
+  // Fallback is "bajo" only when data is available but risk_level is missing.
+  // When data is null/loading/error, the Pill is hidden via the `{data && ...}` guard.
   const riskKey = data?.risk_level ?? "bajo";
 
   return (
