@@ -131,7 +131,7 @@ export function FusionCallout() {
                       : "") +
                     (data.huayco.quebrada_name ? ` · ${data.huayco.quebrada_name}` : "") +
                     (data.huayco.trigger_rain_24h_mm != null
-                      ? ` · umbral: ${data.huayco.trigger_rain_24h_mm.toFixed(0)} mm/24h`
+                      ? ` · ${locale === "es" ? "umbral" : "trigger"}: ${data.huayco.trigger_rain_24h_mm.toFixed(0)} mm/24h`
                       : "")
                   : t.noData
               }
