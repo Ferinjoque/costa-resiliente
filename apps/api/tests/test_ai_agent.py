@@ -1068,6 +1068,11 @@ def test_build_sitrep_answer_all_tools():
     assert "Jicamarca" in answer       # huayco quebrada (5th tool)
     # With 2 very_high quebradas, sitrep shows "también: Pedregal"
     assert "Pedregal" in answer, "Second very_high quebrada should appear in sitrep 'también:' note"
+    # Action should combine EDAN+COEN and evacuation directive (critical alert + EMERGENCIA rain)
+    assert "EDAN" in answer, "Sitrep action must include EDAN protocol for critical alerts"
+    assert "evacuaci" in answer.lower() or "Rímac" in answer, (
+        "Sitrep action must add evacuation directive when EMERGENCIA rain is present"
+    )
 
 
 def test_build_sitrep_answer_empty_rows():
