@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useUIStore } from "@/store/ui";
 import {
   useDistrictDashboard, useDistrictRiskSummary, useAlerts,
-  useFloodExposure, useFusion, useDecisionLog, useSocialSignals,
+  useFloodExposure, useFusion, useDecisionLog, useSocialSignals, useImerg,
 } from "@/lib/queries";
 import { clsx } from "clsx";
 import type { Alert, AlertTrendDay, SocialBreakdown } from "@/lib/api";
@@ -172,6 +172,7 @@ interface ReportData {
   active: Alert[]; critical: Alert[]; high: Alert[];
   floodArea: number; popStr: string;
   highRiskDistricts: string[]; moderateDistricts: string[];
+  maxRain72h?: number; maxRainWs?: string;
   locale: "es" | "en";
 }
 
@@ -196,6 +197,7 @@ function buildMarkdown(d: ReportData): string {
     `| Indicador | Valor |`,`|-----------|-------|`,
     `| Alertas activas | ${d.active.length} (${d.critical.length} críticas, ${d.high.length} altas) |`,
     `| Área inundada SAR | ${d.floodArea.toFixed(2)} km² |`,
+    `| Lluvia 72h (IMERG) | ${d.maxRain72h != null ? `${d.maxRain72h.toFixed(0)} mm${d.maxRainWs ? ` (${d.maxRainWs})` : ""} — ${d.maxRain72h >= 50 ? "⚠ EMERGENCIA ANA" : d.maxRain72h >= 25 ? "ALERTA ANA" : "Normal"}` : "Sin datos"} |`,
     `| Población en riesgo | ${d.popStr} habitantes |`,
     `| Distritos riesgo alto | ${d.highRiskDistricts.join(", ")||"Ninguno"} |`,
     `| Distritos riesgo moderado | ${d.moderateDistricts.join(", ")||"Ninguno"} |`,``,
@@ -405,6 +407,7 @@ function EDANReportButton() {
   const { data: alerts = [] } = useAlerts();
   const { data: exposure } = useFloodExposure();
   const { data: summary } = useDistrictRiskSummary();
+  const { data: imergEdan } = useImerg(72);
 
   const now = new Date();
   const nowStr = now.toLocaleString(locale === "en" ? "en-US" : "es-PE", { timeZone: "America/Lima" });
@@ -419,9 +422,21 @@ function EDANReportButton() {
   const popStr = affectedPop > 1000 ? `~${(affectedPop / 1000).toFixed(1)}k` : String(affectedPop || "—");
   const reportId = buildReportId(now);
 
+  // Max 72h rainfall across watersheds for EDAN report
+  const maxRain72h = imergEdan?.features.reduce((mx, f) => {
+    const v = f.properties.acc_72h_mm ?? 0;
+    return v > mx ? v : mx;
+  }, 0) ?? undefined;
+  const maxRainWs = maxRain72h != null
+    ? imergEdan?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name
+    : undefined;
+
   const reportData: ReportData = {
     reportId, nowStr, level, active, critical, high,
-    floodArea, popStr, highRiskDistricts, moderateDistricts, locale,
+    floodArea, popStr, highRiskDistricts, moderateDistricts,
+    maxRain72h: maxRain72h && maxRain72h > 0 ? maxRain72h : undefined,
+    maxRainWs,
+    locale,
   };
 
   function handleGenerate() {
