@@ -394,6 +394,17 @@ export function DataSourcesPanel() {
             ? "PII redactado (presidio) · retención 7 días"
             : "PII redacted (presidio) · 7-day retention"}
         </p>
+        {/* Redis health */}
+        {scraperHealth?.redis && (
+          <p className={clsx(
+            "text-[10px]",
+            scraperHealth.redis.status === "ok" ? "text-ok-muted" : "text-danger",
+          )}>
+            Redis: {scraperHealth.redis.status === "ok"
+              ? (locale === "es" ? "conectado" : "connected")
+              : (locale === "es" ? "desconectado ⚠" : "offline ⚠")}
+          </p>
+        )}
       </div>
     </aside>
   );
