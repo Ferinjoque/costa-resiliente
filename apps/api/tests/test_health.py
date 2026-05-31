@@ -21,6 +21,8 @@ async def test_health_returns_ok():
     assert data["sinagerd_level"] in ("EMERGENCIA", "ALERTA", "AVISO", "NORMAL")
     assert "active_alerts" in data
     assert isinstance(data["active_alerts"], int)
+    assert "max_rain_72h_mm" in data
+    assert data["max_rain_72h_mm"] is None or isinstance(data["max_rain_72h_mm"], (int, float))
 
 
 @pytest.mark.asyncio
