@@ -1001,7 +1001,7 @@ async def test_sitrep_mode_calls_four_tools():
 
 
 def test_build_sitrep_answer_all_tools():
-    """_build_sitrep_answer synthesises a coherent SITREP from 4 tool results."""
+    """_build_sitrep_answer synthesises a coherent SITREP from 5 tool results."""
     from costa_api.ai.agent import _build_sitrep_answer
     per_tool_rows = [
         ("get_active_alerts", [{"id": 1, "severity": "critical", "alert_type": "rainfall",
