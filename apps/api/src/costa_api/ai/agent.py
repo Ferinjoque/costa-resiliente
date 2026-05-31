@@ -111,6 +111,9 @@ _SITREP_PHRASES = [
     "estado general de", "situacion general", "situación general",
     "panorama completo", "vision general", "visión general",
     "reporte de situación", "reporte de situacion",
+    "balance de la guardia", "despacho de guardia", "balance operacional",
+    "resumen ejecutivo", "punto de situación", "reporte de turno",
+    "cómo vamos", "como vamos", "panorama actual", "estado de situación",
 ]
 
 def _is_sitrep_query(query: str) -> bool:
