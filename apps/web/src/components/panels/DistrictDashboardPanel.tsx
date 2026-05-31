@@ -386,6 +386,7 @@ th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:10px;font-weigh
       <div class="mcard"><div class="mval" style="color:#2563eb">${d.floodArea.toFixed(1)}<span style="font-size:13px;font-weight:400"> km²</span></div><div class="mlbl">${es?"Área inundada":"Flooded area"}</div><div class="msub">Sentinel-1</div></div>
       <div class="mcard"><div class="mval">${d.popStr}</div><div class="mlbl">${es?"Pob. en riesgo":"Pop. at risk"}</div><div class="msub">${es?"habitantes":"inhabitants"}</div></div>
       <div class="mcard"><div class="mval" style="color:${d.highRiskDistricts.length>0?"#dc2626":"#111827"}">${d.highRiskDistricts.length+d.moderateDistricts.length}</div><div class="mlbl">${es?"Distritos en alerta":"Districts on alert"}</div><div class="msub">${d.highRiskDistricts.length} ${es?"alto":"high"} · ${d.moderateDistricts.length} mod.</div></div>
+      ${d.maxRain72h != null && d.maxRain72h >= 25 ? `<div class="mcard"><div class="mval" style="color:${d.maxRain72h>=50?"#dc2626":"#d97706"}">${d.maxRain72h.toFixed(0)}<span style="font-size:13px;font-weight:400"> mm</span></div><div class="mlbl">${es?"Lluvia máx. 72h":"Max 72h rain"}</div><div class="msub" style="color:${d.maxRain72h>=50?"#dc2626":"#d97706"}">${d.maxRain72h>=50?(es?"⚠ EMERGENCIA ANA":"⚠ ANA EMERGENCY"):(es?"ALERTA ANA":"ANA ALERT")}</div></div>` : ""}
     </div>
   </div>
   ${d.active.length>0?`<div class="sec">
