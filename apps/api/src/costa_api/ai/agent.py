@@ -818,7 +818,14 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
         prob_str = f" prob. {float(top_prob):.0%}" if top_prob is not None else ""
         trigger_str = f" · umbral {float(top_trigger):.0f}mm/24h" if top_trigger is not None else ""
         if level_es:
-            sections.append(f"**Huayco:** {top_name} — {level_es}{prob_str}{trigger_str}")
+            # Show additional very_high quebradas if any
+            very_high_rows = [r for r in huayco_rows if r.get("risk_level") == "very_high"]
+            if len(very_high_rows) > 1:
+                other_vh = [r.get("name", "?") for r in very_high_rows[1:3]]
+                vh_note = f" · también: {', '.join(other_vh)}"
+            else:
+                vh_note = ""
+            sections.append(f"**Huayco:** {top_name} — {level_es}{prob_str}{trigger_str}{vh_note}")
             if top_level == "very_high" and not action:
                 action = f"Monitorear evacuación preventiva quebrada {top_name}."
 
