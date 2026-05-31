@@ -35,11 +35,14 @@ def _parse_replay_time(at: Optional[str]) -> datetime:
     if not at:
         return datetime.now(timezone.utc)
     try:
-        dt = datetime.fromisoformat(at)
+        # Detect date-only input (YYYY-MM-DD or YYYY-MM-DDZ) by length before parsing
+        # to avoid treating explicit midnight (T00:00:00) as a bare-date input.
+        is_date_only = len(at.split("T")[0]) == len(at) or at.endswith("Z") and "T" not in at
+        dt = datetime.fromisoformat(at.replace("Z", "+00:00"))
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
-        # Promote bare date to 23:59:59 so the full day is visible
-        if dt.hour == 0 and dt.minute == 0 and dt.second == 0:
+        # Promote bare date (no time component) to 23:59:59 so the full day is visible
+        if is_date_only:
             dt = dt.replace(hour=23, minute=59, second=59)
         return dt
     except ValueError:
