@@ -382,7 +382,7 @@ export function useScraperHealth(): UseQueryResult<ScraperHealth> {
   });
 }
 
-export function useApiHealth(): UseQueryResult<{ status: string; version: string }> {
+export function useApiHealth(): UseQueryResult<import("@/lib/api").ApiHealth> {
   return useQuery({
     queryKey: ["health"],
     queryFn: fetchHealth,
