@@ -41,6 +41,20 @@ class TestDistrictFusion:
         assert "flood" in body
         assert "huayco" in body
         assert "social" in body
+        assert "rainfall" in body  # Session 20: rainfall added to fusion
+
+    @pytest.mark.asyncio
+    async def test_rainfall_subkeys(self):
+        """Rainfall block must have watershed, acc_72h_mm, acc_24h_mm, level."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get(f"/api/v1/fusion/{LURIGANCHO_UBIGEO}")
+        rain = resp.json().get("rainfall", {})
+        assert "watershed" in rain
+        assert "acc_72h_mm" in rain
+        assert "acc_24h_mm" in rain
+        assert "level" in rain
+        if rain["level"] is not None:
+            assert rain["level"] in ("emergencia", "alerta", "aviso", "normal")
 
     @pytest.mark.asyncio
     async def test_district_subkeys(self):
