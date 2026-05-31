@@ -81,6 +81,7 @@ async def _auto_notify(
     title: str,
     alert_type: str,
     district_ubigeo: str | None = None,
+    source_refs: dict | None = None,
 ) -> None:
     """
     Fan out to notification_subscribers for newly generated alerts.
@@ -111,6 +112,8 @@ async def _auto_notify(
             "type": alert_type,
             "source": "costa-resiliente-auto",
         }
+        if source_refs:
+            payload["data"] = source_refs  # Include rainfall mm, watershed, etc. for subscribers
 
         async def _deliver(sub) -> None:
             sub_min_rank = SEVERITY_RANK.get(sub["severity_min"], 2)
@@ -510,7 +513,8 @@ async def generate_rainfall_alerts(db_dsn: str = DB_DSN) -> int:
                 severity, title, desc, source_refs,
             )
             inserted += 1
-            await _auto_notify(pool, new_id, severity, title, "rainfall")
+            refs_dict = json.loads(source_refs)  # source_refs is JSON string at this point
+            await _auto_notify(pool, new_id, severity, title, "rainfall", source_refs=refs_dict)
 
     logger.info("Rainfall alerts generated: %d", inserted)
     return inserted
