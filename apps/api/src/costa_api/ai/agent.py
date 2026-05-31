@@ -566,14 +566,23 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
 
     if "chunk" in first:
         # Protocol/RAG rows — synthesise top excerpts (up to 3 most relevant chunks)
-        top = first.get("title", "protocolo")
-        parts = []
-        for r in rows[:3]:
+        # Deduplicate by title so multiple chunks from same doc don't crowd out others.
+        seen_titles: set[str] = set()
+        parts: list[str] = []
+        title_list: list[str] = []
+        for r in rows[:5]:
+            title = (r.get("title") or "protocolo").strip()
             chunk = (r.get("chunk") or "").strip()
-            if chunk:
-                parts.append(chunk[:300] + ("…" if len(chunk) > 300 else ""))
+            if not chunk:
+                continue
+            if title not in seen_titles:
+                seen_titles.add(title)
+                title_list.append(title)
+            if len(parts) < 3:
+                parts.append(chunk[:250] + ("…" if len(chunk) > 250 else ""))
         combined = " ".join(parts)
-        return f"Protocolo encontrado: {top}. {combined}"
+        titles_str = " / ".join(title_list[:3])
+        return f"Protocolos relevantes: {titles_str}. {combined}"
 
     return f"Se recuperaron {n} registros. Revise los datos adjuntos."
 
