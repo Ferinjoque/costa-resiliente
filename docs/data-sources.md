@@ -53,6 +53,16 @@
 - **Resilience**: every successful gauge reading cached to Redis (`costa:gauge:reading:{code}`, 24h TTL); scraper falls back to last known reading with `from_cache=True` on HTTP failure — station layer never goes blank during an outage
 - **Storage**: `hydro.stations` + `hydro.station_observations`
 - **Implementation**: `apps/workers/src/costa_workers/ingest/hydro.py` + `ana_scraper.py`
+- **SENAMHI alert thresholds (meters):**
+
+| Station | River | ALERTA | EMERGENCIA |
+|---------|-------|--------|------------|
+| ANA-Chosica | Rímac | 2.5 m | 3.2 m |
+| ANA-Chaclacayo | Rímac | 1.5 m | 2.0 m |
+| ANA-Carabayllo | Chillón | 2.5 m | — |
+| ANA-Huachipa | Rímac | 1.8 m | — |
+| ANA-Manchay | Lurín | 1.2 m | — |
+
 - **Status**: ✅ Scraper implemented with Redis stale-reading cache; health published to `costa:scraper:status:{ana|senamhi}`
 
 ### SENAMHI
