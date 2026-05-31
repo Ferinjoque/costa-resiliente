@@ -58,23 +58,39 @@ function Sparkline({
   values,
   color = COSTA_300,
   height = 32,
+  thresholds,
 }: {
   values: number[];
   color?: string;
   height?: number;
+  thresholds?: { value: number; color: string; label?: string }[];
 }) {
   if (values.length < 2) return null;
   const w = 120;
-  const max = Math.max(...values, 0.01);
+  const max = Math.max(...values, ...(thresholds?.map((t) => t.value) ?? []), 0.01);
+  const toY = (v: number) => height - (v / max) * height;
   const pts = values
     .map((v, i) => {
       const x = (i / (values.length - 1)) * w;
-      const y = height - (v / max) * height;
-      return `${x},${y}`;
+      return `${x},${toY(v)}`;
     })
     .join(" ");
   return (
     <svg width={w} height={height} viewBox={`0 0 ${w} ${height}`} aria-hidden="true">
+      {/* Threshold reference lines (ALERTA/EMERGENCIA) */}
+      {thresholds?.map((t) => {
+        const y = toY(t.value);
+        return (
+          <line
+            key={t.value}
+            x1={0} y1={y} x2={w} y2={y}
+            stroke={t.color}
+            strokeWidth={1}
+            strokeDasharray="3 2"
+            opacity={0.6}
+          />
+        );
+      })}
       <polyline
         points={pts}
         fill="none"
@@ -1059,7 +1075,14 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
             </p>
             <p className="text-xs text-accent font-mono tabular-nums">{latestImerg.toFixed(1)} mm {tr("dashboard", "today")}</p>
           </div>
-          <Sparkline values={imergValues} color={COSTA_300} />
+          <Sparkline
+            values={imergValues}
+            color={COSTA_300}
+            thresholds={[
+              { value: 25, color: "oklch(73% 0.13 78)" },   // ALERTA — warn
+              { value: 50, color: "oklch(58% 0.20 28)" },   // EMERGENCIA — danger
+            ]}
+          />
         </div>
       )}
 
