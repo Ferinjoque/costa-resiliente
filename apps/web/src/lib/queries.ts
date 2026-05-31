@@ -330,16 +330,11 @@ export function useFusion(
 ): UseQueryResult<DistrictFusion> {
   return useQuery({
     queryKey: ["fusion", ubigeo],
-    queryFn: async () => {
-      try {
-        return await fetchDistrictFusion(ubigeo!);
-      } catch {
-        return DEMO_FUSIONS[ubigeo!] ?? DEMO_FUSIONS["150118"];
-      }
-    },
+    queryFn: () => fetchDistrictFusion(ubigeo!),
     enabled: !!ubigeo,
     staleTime: 2 * MIN,
     refetchInterval: 2 * MIN,
+    // Keep showing the previous district's data briefly while loading the new one
     placeholderData: (prev) => prev,
     ...opts,
   });
