@@ -479,10 +479,25 @@ def test_build_answer_river_levels_no_rising():
     from costa_api.ai.agent import _build_answer
     rows = [{"name": "Chosica", "level_m": 2.1, "flow_m3s": 150, "trend": "stable", "level_change_1h_m": 0.0}]
     answer = _build_answer([], rows, "río")
-    # 2.1m < 2.5m Chosica threshold → no ⚠ but shows "bajo umbral"
+    # 2.1m < 2.5m * 0.9 = 2.25m → below threshold zone → "bajo umbral"
     assert "2.1" in answer
     assert "bajo umbral" in answer.lower() or "Chosica" in answer
-    assert "2.1" in answer
+
+
+def test_build_answer_river_levels_near_threshold():
+    """Level within 90% of SENAMHI threshold → near-threshold warning shown.
+
+    Regression guard: prior code showed only "bajo umbral" even when a station was
+    2.41m vs 2.5m threshold — the operator had no advance warning of imminent breach.
+    Fix: within 90% (≥ threshold * 0.9) shows "⚠ acercándose al umbral".
+    """
+    from costa_api.ai.agent import _build_answer
+    rows = [{"name": "Chosica", "level_m": 2.41, "flow_m3s": 68.2, "trend": "rising", "level_change_1h_m": 0.13}]
+    answer = _build_answer([], rows, "río")
+    # 2.41m >= 2.5m * 0.9 = 2.25m → near-threshold warning
+    assert "acercándose" in answer or "acercandose" in answer.lower(), (
+        f"Near-threshold Chosica (2.41m vs 2.5m threshold) must show approach warning, got: {answer[:100]}"
+    )
 
 
 def test_build_answer_active_alerts_with_critical():
