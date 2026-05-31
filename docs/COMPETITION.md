@@ -209,7 +209,8 @@ The Phase 2 concept text below describes the state at June 5, 2026. The Phase 3 
 | FusionCallout | flood/huayco/social | **+ rainfall row** with ANA level color coding |
 | DataFreshnessBar | No staleness | **Color coding** by layer age (ok/warn/stale thresholds per layer) |
 | LiveTicker | Generic | **Severity prefix** [EMERG/ALERT/AVISO] + **rainfall item** when ≥25mm + urgent-only social filter |
-| Tests | 568 passed | **633 passed** (+65: sitrep, rainfall, SENAMHI threshold, fusion-rainfall, EDAN pattern, IMERG label regression, copilot HTTP) |
+| Tests | 568 passed | **633 passed** (+65: sitrep, rainfall, SENAMHI threshold, fusion-rainfall, EDAN pattern, IMERG label regression, copilot HTTP, health-level) |
+| Health API | Basic ok/version | **`/health` returns sinagerd_level + active_alerts + max_rain_72h_mm** — one-curl monitoring |
 
 **Rubric alignment note:** The Phase 2 submission referenced "8 whitelisted database tools" and did not describe notifications, auth, HITL, or PDF export. All of these are now fully implemented and tested. Tool count correction for Phase 3 judges: **9 tools + sitrep multi-tool fast path**.
 
