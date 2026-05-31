@@ -62,11 +62,11 @@ If any alert is older than its SLA (5min critical, 10min high), a **danger toast
 
 ### Step 4 — Copilot Full Query (30s)
 
-In the Copilot panel, type: **"¿Qué hospitales están en zona inundada?"**
+In the Copilot panel, type: **"¿Qué subestaciones están en zona inundada?"** (or "hospitales")
 
 **What happens:**
-- Quick mode detects "hospital" → `get_infrastructure_impact` (no LLM)
-- Answer: hospital names + flood confidence + district
+- Multi-quick: "subestaci" + "inundada" → `get_flood_polygons` + `get_infrastructure_impact` (no LLM)
+- Answer: **2 SAR polygons + 16 substations** in flood zones → "Verificar accesibilidad para respuesta de emergencia"
 
 Type: **"Nivel del río en Chosica"**
 
