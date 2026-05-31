@@ -1,14 +1,15 @@
-"""Spanish social signal triage via Gemma 4 (Ollama).
+"""Spanish social signal triage via Ollama (local LLM, no cloud dependency).
 
 Methodology:
   Classify signals into: needs_help | infrastructure_damage | road_blocked |
-  weather_observation | false_alarm | irrelevant
+  huayco_observation | flood_observation | weather_observation | false_alarm | irrelevant
 
-  Primary model: gemma4:e4b (Gemma 4 E4B, Google, 2025).
-  Fallback: qwen3:14b (Alibaba Qwen3, strong Spanish capability).
-  Model override via TRIAGE_MODEL env var.
-  Selection informed by Grandury et al. (ACL 2025) "La Leaderboard",
-  arXiv:2507.00999 — Spanish-language capability benchmarks.
+  Model selection (priority order):
+    1. TRIAGE_MODEL env var (explicit override)
+    2. OLLAMA_PRIMARY_MODEL env var (defaults to qwen2.5:7b-instruct-q4_K_M in .env)
+    3. Hard-coded default: gemma4:e4b
+  In production, OLLAMA_PRIMARY_MODEL=qwen2.5:7b-instruct-q4_K_M is used.
+  Override TRIAGE_MODEL to use a faster model (e.g. gemma2:2b) if latency is critical.
 
 Prompt injection hardening:
   Social content is wrapped in <SEÑAL>...</SEÑAL> XML tags before being sent
