@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **633 passed, 0 errors** (Session 20). Up from 568 (+65: SLA/sitrep/health/quick-pattern/sitrep-answer/river-flow/rainfall-windows/answer-quality/copilot-http/IMERG-label/EDAN/viviendas/fusion-rainfall/fusion-prose tests). Workers: 148 passed, 8 skipped.
+- **API**: **633 passed, 0 errors** (Session 20). Up from 568 (+65). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 175 kB
@@ -265,7 +265,7 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 **Tests (+53):** 621 passed (↑53 from 568). Includes sitrep detection, sitrep answer builder, new quick patterns, infrastructure _build_answer, health Redis key, sitrep integration tests. TypeScript: 0 errors.
 
-**Commits (66+):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `da4a350` calm-state → `cc4a6e9` richer-answers → `311bc87` protocol-dedup → `df42d39` huayco-prob → `17b59e3` tests → `d7b9a05` runbook → `733bb3c` redis-ui → `110ffb2` ANA-rag → `8d9b0bd` severity-filter → `0965d32` edan-prompt → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `9cd9099` fusion-prose → `b6cd160` huayco-trigger → `b7bf186` rainfall-alert-chips → `5c5b8cf` flood-district + more.
+**Commits (71):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `9cd9099` fusion-prose → `b6cd160` huayco-trigger → `b7bf186` rainfall-alert-chips → `5c5b8cf` flood-district → `90d9da1` notif-badge → `7752c5a` demo-guide → `a61ee78` competition-delta → `2c3bbfc` edan-html → `a92ab78` imerg-heartbeat → `a956dbe` ana-heartbeat + more.
 
 ---
 
