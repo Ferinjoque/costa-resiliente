@@ -161,6 +161,9 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 | **Alerts sorted critical-first** | Critical alerts always appear before high within active group — no operator context loss |
 | **Copilot: minimum severity filter** | `get_active_alerts(severity="high")` returns both high+critical (prior exact-match hid criticals) |
 | **Copilot: sequential tool dispatch** | All 3 dispatch paths run tools sequentially — eliminates AsyncSession race, all sections always present |
+| **Copilot: combined action directive** | SITREP action augments with specific evacuation directive when EMERGENCIA rain AND critical huayco present |
+| **Alerts: idempotent actions** | Acknowledging/escalating an alert twice returns 200 (no duplicate fan-out notifications) |
+| **Near-threshold warnings** | Chosica 2.41m → "⚠ acercándose al umbral 2.5m" shown in copilot + dashboard |
 
 ---
 
