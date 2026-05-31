@@ -1078,7 +1078,7 @@ def test_build_sitrep_answer_empty_rows():
 
 
 def test_build_sitrep_answer_no_critical():
-    """Moderate alert level → ALERTA not EMERGENCIA."""
+    """Moderate alert level → ALERTA not EMERGENCIA, but always has action line."""
     from costa_api.ai.agent import _build_sitrep_answer
     per_tool_rows = [
         ("get_active_alerts", [
@@ -1090,6 +1090,10 @@ def test_build_sitrep_answer_no_critical():
     answer = _build_sitrep_answer(per_tool_rows)
     assert "ALERTA" in answer or "AVISO" in answer
     assert "EMERGENCIA" not in answer
+    # Session 21: sitrep always has an action recommendation
+    assert "Acción recomendada:" in answer or "acción" in answer.lower(), (
+        "Sitrep must always include an action recommendation, even when no critical alerts"
+    )
 
 
 # ─── get_active_alerts: minimum-severity filter ──────────────────────────────
