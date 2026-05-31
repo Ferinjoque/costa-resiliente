@@ -904,7 +904,7 @@ def test_detect_multi_quick_albergue_and_lluvia():
 
 
 def test_build_answer_infrastructure_impact():
-    """flood_confidence + type rows → infrastructure breakdown with warning."""
+    """flood_confidence + type rows → infrastructure breakdown with hospital names."""
     from costa_api.ai.agent import _build_answer
     rows = [
         {"name": "Hospital Loayza", "type": "hospital", "district": "Lima", "flood_confidence": 0.92},
@@ -917,6 +917,8 @@ def test_build_answer_infrastructure_impact():
     # Should mention at least one infrastructure type in Spanish
     spanish_types = ["hospital", "colegio", "puente", "albergue", "bombero", "subestación"]
     assert any(t in answer.lower() for t in spanish_types)
+    # Should mention the hospital name
+    assert "Hospital Loayza" in answer
 
 
 # ─── Situation report (sitrep) fast path ─────────────────────────────────────
