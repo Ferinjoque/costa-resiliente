@@ -210,7 +210,7 @@ def _select_tools(query: str) -> list[dict]:
                     selected[t] = _TOOL_SCHEMA_BY_NAME[t]
     # Always include get_active_alerts for situational-awareness context
     selected.setdefault("get_active_alerts", _TOOL_SCHEMA_BY_NAME["get_active_alerts"])
-    if not selected or len(selected) >= len(TOOL_SCHEMAS) - 1:
+    if len(selected) >= len(TOOL_SCHEMAS) - 1:
         return TOOL_SCHEMAS
     result = list(selected.values())
     logger.debug("_select_tools: %d schemas selected for query", len(result))
