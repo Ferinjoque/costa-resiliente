@@ -99,6 +99,16 @@ class TestListAlerts:
         assert len(resp.json()) <= 3
 
     @pytest.mark.asyncio
+    async def test_alerts_include_source_refs_field(self):
+        """GET /alerts must include source_refs field (dict or list) for each alert."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get("/api/v1/alerts")
+        assert resp.status_code == 200
+        for a in resp.json():
+            # source_refs can be None, dict, or list
+            assert "source_refs" in a, f"Alert {a.get('id')} missing source_refs"
+
+    @pytest.mark.asyncio
     async def test_test_residue_excluded(self):
         """Alerts seeded by test fixtures must not appear in operator list."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
