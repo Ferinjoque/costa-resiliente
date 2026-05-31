@@ -433,16 +433,36 @@ _QUEBRADAS = [
     },
 ]
 
-# Huayco susceptibility — one record per quebrada based on current IMERG (Rímac 41.8 mm acc24h)
+# Huayco susceptibility — El Niño scenario values for priority Lima quebradas.
+# Names match geo.quebradas (SINPAD short names without "Quebrada" prefix).
 _HUAYCO_SUSCEPTIBILITY = [
     # (quebrada_name, probability, risk_level, trigger_rain_24h_mm)
-    ("Quebrada Jicamarca",    0.91, "very_high", 41.8),
-    ("Quebrada Canto Grande", 0.68, "high",      41.8),
-    ("Quebrada Huaycoloro",   0.82, "very_high", 41.8),
-    ("Quebrada Santa Eulalia",0.41, "medium",    41.8),
-    ("Quebrada La Chira",     0.28, "low",        7.1),
-    ("Quebrada Manchay Alto", 0.35, "medium",     7.1),
+    ("Pedregal",    0.91, "very_high", 12.0),
+    ("Huaycoloro",  0.89, "very_high", 12.0),
+    ("Quirio",      0.74, "high",      15.0),
+    ("Carapongo",   0.68, "high",      18.0),
+    ("Corrales",    0.62, "high",      20.0),
+    ("Cashahuacra", 0.55, "medium",    25.0),
+    ("Carossio",    0.51, "medium",    28.0),
+    ("Yanacoto",    0.48, "medium",    30.0),
+    ("Cieneguilla", 0.31, "low",       35.0),
+    ("Ñaña",        0.42, "medium",    22.0),
 ]
+
+# Approximate geometries for priority Lima quebradas (MultiLineString, EPSG:4326).
+# These are simplified centerlines near the correct districts for spatial joins.
+_QUEBRADA_GEOMETRIES: dict[str, str] = {
+    "Pedregal":    "MULTILINESTRING((-76.960 -11.930,-76.955 -11.935,-76.950 -11.940))",
+    "Huaycoloro":  "MULTILINESTRING((-76.975 -11.960,-76.970 -11.965,-76.965 -11.970))",
+    "Quirio":      "MULTILINESTRING((-76.945 -11.925,-76.940 -11.930,-76.935 -11.935))",
+    "Carapongo":   "MULTILINESTRING((-76.880 -11.960,-76.875 -11.965,-76.870 -11.970))",
+    "Corrales":    "MULTILINESTRING((-76.940 -11.930,-76.935 -11.935,-76.930 -11.940))",
+    "Cashahuacra": "MULTILINESTRING((-76.935 -11.930,-76.930 -11.935,-76.925 -11.940))",
+    "Carossio":    "MULTILINESTRING((-76.930 -11.928,-76.925 -11.933,-76.920 -11.938))",
+    "Yanacoto":    "MULTILINESTRING((-76.936 -11.926,-76.931 -11.931,-76.926 -11.936))",
+    "Cieneguilla": "MULTILINESTRING((-76.870 -12.175,-76.865 -12.180,-76.860 -12.185))",
+    "Ñaña":        "MULTILINESTRING((-76.938 -11.927,-76.933 -11.932,-76.928 -11.937))",
+}
 
 # ─── Demo critical infrastructure ─────────────────────────────────────────────
 _INFRASTRUCTURE = [
@@ -583,6 +603,24 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         )).scalar_one()
 
         operational_ok = _alerts > 0 and _social > 0 and _imerg > 0 and _stobs > 0
+
+        # Ensure quebradas have geometries (needed for district spatial join in alert generator)
+        if _qbr > 0:
+            _geom_missing = (await conn.execute(text(
+                "SELECT COUNT(*) FROM geo.quebradas WHERE geom IS NULL"
+            ))).scalar_one()
+            if _geom_missing > 0:
+                logger.info("auto_seed: adding geometries to %d quebradas", _geom_missing)
+                for qname, wkt in _QUEBRADA_GEOMETRIES.items():
+                    try:
+                        await conn.execute(text("""
+                            UPDATE geo.quebradas
+                            SET geom = ST_SetSRID(ST_GeomFromText(:wkt), 4326)
+                            WHERE name = :name AND geom IS NULL
+                        """), {"name": qname, "wkt": wkt})
+                    except Exception as exc:
+                        logger.debug("auto_seed: skip geom update for %s: %s", qname, exc)
+                await conn.commit()
 
         # Check if latest huayco data has high/very_high risk — ML pipeline can overwrite
         # demo seed values with lower estimates. Refresh when that happens.
