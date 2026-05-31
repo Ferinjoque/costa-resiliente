@@ -254,7 +254,11 @@ function buildMarkdown(d: ReportData): string {
     `## 3. Impact Assessment`,``,
     `- SAR Sentinel-1 detects **${d.floodArea.toFixed(1)} km²** of flooded area`,
     `- Estimated population in risk zone: **${d.popStr} inhabitants**`,
-    `- Districts with high risk level: **${d.highRiskDistricts.length}**`,``,
+    `- Districts with high risk level: **${d.highRiskDistricts.length}**`,
+    ...(d.maxRain72h != null && d.maxRain72h >= 25 ? [
+      `- 72h accumulated rainfall: **${d.maxRain72h.toFixed(0)} mm${d.maxRainWs ? ` (${d.maxRainWs} watershed)` : ""}** — ${d.maxRain72h >= 50 ? "⚠ exceeds ANA EMERGENCY threshold (>50 mm)" : "exceeds ANA ALERT threshold (>25 mm)"}`,
+    ] : []),
+    ``,
     `## 4. Data Sources`,``,
     `| Source | Detail | Frequency |`,`|--------|--------|-----------|`,
     `| SAR | Sentinel-1 · Microsoft Planetary Computer | ~6 days |`,
