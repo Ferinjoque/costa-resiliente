@@ -249,11 +249,11 @@ async def run(
             confidence=0.0,
         )
 
-    # 1b-sitrep: start-of-shift comprehensive snapshot — 4 tools in parallel (~3s)
+    # 1b-sitrep: start-of-shift comprehensive snapshot — 5 tools in parallel (~3s)
     if _is_sitrep_query(query):
         try:
             sitrep_tools = ["get_active_alerts", "get_rainfall_accumulation",
-                            "get_river_levels", "get_flood_polygons"]
+                            "get_river_levels", "get_flood_polygons", "get_huayco_risk"]
             sitrep_results = await asyncio.gather(
                 *[dispatch(t, {}, db, rag_fn=rag_fn) for t in sitrep_tools],
                 return_exceptions=True,
@@ -759,6 +759,22 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
         dn = largest.get("district_name")
         district_note = f" · mayor en {dn}" if dn else ""
         sections.append(f"**Inundación SAR:** {len(flood_rows)} polígono{'s' if len(flood_rows) != 1 else ''} · {total_km2:.1f} km² activos{district_note}")
+
+    # 5. Huayco risk (top quebrada)
+    huayco_rows = tool_rows.get("get_huayco_risk", [])
+    if huayco_rows:
+        top_h = huayco_rows[0]
+        top_name = top_h.get("name", "?")
+        top_level = top_h.get("risk_level", "")
+        top_prob = top_h.get("probability")
+        top_trigger = top_h.get("trigger_rain_24h_mm")
+        level_es = {"very_high": "MUY ALTO", "high": "ALTO", "medium": "MEDIO"}.get(top_level, "")
+        prob_str = f" prob. {float(top_prob):.0%}" if top_prob is not None else ""
+        trigger_str = f" · umbral {float(top_trigger):.0f}mm/24h" if top_trigger is not None else ""
+        if level_es:
+            sections.append(f"**Huayco:** {top_name} — {level_es}{prob_str}{trigger_str}")
+            if top_level == "very_high" and not action:
+                action = f"Monitorear evacuación preventiva quebrada {top_name}."
 
     if not sections:
         return "No se encontraron datos en ninguna fuente. Sistema posiblemente sin datos recientes."
