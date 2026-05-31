@@ -44,7 +44,9 @@ export function SituationBrief() {
     const v = f.properties.acc_72h_mm ?? 0;
     return v > mx ? v : mx;
   }, 0) ?? 0;
-  const maxRainWs = imerg?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? "";
+  const maxRainWs = maxRain72h > 0
+    ? imerg?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? ""
+    : "";
 
   // Factor in rainfall (consistent with health API + CityOverview logic)
   let level: Level =
