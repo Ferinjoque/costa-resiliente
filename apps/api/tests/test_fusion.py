@@ -57,6 +57,20 @@ class TestDistrictFusion:
             assert rain["level"] in ("emergencia", "alerta", "aviso", "normal")
 
     @pytest.mark.asyncio
+    async def test_huayco_trigger_rain_present(self):
+        """Huayco block must include trigger_rain_24h_mm (quebrada activation threshold)."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get(f"/api/v1/fusion/{LURIGANCHO_UBIGEO}")
+        huayco = resp.json().get("huayco", {})
+        assert "trigger_rain_24h_mm" in huayco, "huayco block must have trigger_rain_24h_mm"
+        # If huayco risk exists, trigger should be a positive number
+        if huayco.get("highest_risk_level") is not None:
+            trigger = huayco["trigger_rain_24h_mm"]
+            if trigger is not None:
+                assert isinstance(trigger, (int, float))
+                assert float(trigger) > 0, "trigger_rain_24h_mm should be positive"
+
+    @pytest.mark.asyncio
     async def test_district_subkeys(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get(f"/api/v1/fusion/{LURIGANCHO_UBIGEO}")
