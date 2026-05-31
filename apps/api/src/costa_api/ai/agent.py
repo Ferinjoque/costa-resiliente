@@ -517,12 +517,23 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             "road_blocked": "vías bloqueadas",
         }
         urgent_parts = []
+        huayco_cnt = 0
+        help_cnt = 0
         for lbl in _URGENT_ORDER:
             cnt = next((r.get("count", 0) for r in rows if r.get("triage_label") == lbl), 0)
             if cnt:
                 urgent_parts.append(f"{cnt} {_LABEL_ES.get(lbl, lbl)}")
+                if lbl == "huayco_observation": huayco_cnt = cnt
+                elif lbl == "needs_help": help_cnt = cnt
         breakdown = f" ({', '.join(urgent_parts)})" if urgent_parts else ""
-        return f"Se registraron {total} señales sociales en el período consultado{breakdown}."
+        # Add ⚠ when critical thresholds for social cluster alerts are reached
+        # (alert generator fires at huayco>=3, needs_help>=5)
+        urgency = ""
+        if huayco_cnt >= 3:
+            urgency = " ⚠ UMBRAL HUAYCO SUPERADO — revisar alertas automáticas."
+        elif help_cnt >= 5:
+            urgency = " ⚠ Múltiples solicitudes de ayuda — activar respuesta de campo."
+        return f"Se registraron {total} señales sociales en el período consultado{breakdown}.{urgency}"
     if "severity" in first:
         total = first.get("_total_active", n)
         # Break down by severity from sample (truthful even if capped at 20)
