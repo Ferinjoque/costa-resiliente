@@ -278,7 +278,7 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 **Tests (+67):** 635 passed (↑67 from 568). Includes rain province filter, source_refs, health sinagerd/rain_level, sitrep detection, near-threshold, fusion-rainfall prose. TypeScript: 0 errors.
 
-**Commits (175+):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `e4fe85a` health-sinagerd → `ae82f36` health-rain → `8b9473e` rag-7docs → `2df7148` province-filter-fix → `8696d72` rainfall-mm-alerts → `99465d4` near-threshold → `822f008` fusion-trigger-rain → `925bb0f` city-threshold-label → `b685c89` hud-watershed → `bde7a06` map-legend-ANA → `9b404fa` escalation-rainfall → `d288333` edan-en-rainfall.
+**Commits (179+):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `e4fe85a` health-sinagerd → `ae82f36` health-rain → `8b9473e` rag-7docs → `2df7148` province-filter-fix → `8696d72` rainfall-mm-alerts → `99465d4` near-threshold → `822f008` fusion-trigger-rain → `925bb0f` city-threshold-label → `b685c89` hud-watershed → `bde7a06` map-legend-ANA → `9b404fa` escalation-rainfall → `d288333` edan-en-rainfall.
 
 ---
 
