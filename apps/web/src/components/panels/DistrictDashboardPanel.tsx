@@ -1054,6 +1054,8 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
             {data.stations.map((st) => {
               const threshold = STATION_THRESHOLDS[st.code] ?? null;
               const overThreshold = threshold != null && st.level_m != null && st.level_m >= threshold;
+              // Near threshold: within 90% of threshold but not over
+              const nearThreshold = !overThreshold && threshold != null && st.level_m != null && st.level_m >= threshold * 0.9;
               return (
                 <div
                   key={st.code}
@@ -1061,6 +1063,8 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
                     "flex items-center justify-between rounded-xl px-3 py-2",
                     overThreshold
                       ? "bg-warn-soft border border-warn/20"
+                      : nearThreshold
+                      ? "bg-surface-hover border border-warn/10"
                       : "bg-surface-sunken",
                   )}
                 >
@@ -1075,6 +1079,11 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
                     {overThreshold && threshold != null && (
                       <p className="text-2xs text-warn-muted mt-0.5">
                         {tr("dashboard", "threshold")} {threshold.toFixed(1)} m {tr("dashboard", "exceeded")}
+                      </p>
+                    )}
+                    {nearThreshold && threshold != null && (
+                      <p className="text-2xs text-ink-subtle mt-0.5">
+                        {locale === "es" ? `Cerca del umbral: ${threshold.toFixed(1)} m` : `Near threshold: ${threshold.toFixed(1)} m`}
                       </p>
                     )}
                   </div>
