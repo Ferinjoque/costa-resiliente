@@ -912,3 +912,43 @@ async def test_sitrep_mode_calls_four_tools():
     tool_names = {tc["tool"] for tc in result.tool_calls}
     assert "get_active_alerts" in tool_names
     assert "get_rainfall_accumulation" in tool_names
+
+
+def test_build_sitrep_answer_all_tools():
+    """_build_sitrep_answer synthesises a coherent SITREP from 4 tool results."""
+    from costa_api.ai.agent import _build_sitrep_answer
+    per_tool_rows = [
+        ("get_active_alerts", [{"id": 1, "severity": "critical", "_total_active": 3}]),
+        ("get_rainfall_accumulation", [{"watershed": "Rímac", "acc_72h_mm": 63.2, "acc_24h_mm": 20.1}]),
+        ("get_river_levels", [{"name": "Chosica", "level_m": 2.8, "flow_m3s": 210, "trend": "rising"}]),
+        ("get_flood_polygons", [{"scene_id": "S1A_001", "area_km2": 1.5, "confidence": 0.87}]),
+    ]
+    answer = _build_sitrep_answer(per_tool_rows)
+    assert "SITREP" in answer
+    assert "EMERGENCIA" in answer      # 1 critical alert → nivel EMERGENCIA
+    assert "63" in answer              # rainfall 63.2mm
+    assert "Chosica" in answer         # rising river
+    assert "1.5" in answer             # flood area
+    assert "Acción" in answer or "acción" in answer   # action recommended
+
+
+def test_build_sitrep_answer_empty_rows():
+    """Empty per_tool_rows returns no-data message."""
+    from costa_api.ai.agent import _build_sitrep_answer
+    answer = _build_sitrep_answer([])
+    assert "No se encontraron" in answer or "sin datos" in answer.lower()
+
+
+def test_build_sitrep_answer_no_critical():
+    """Moderate alert level → ALERTA not EMERGENCIA."""
+    from costa_api.ai.agent import _build_sitrep_answer
+    per_tool_rows = [
+        ("get_active_alerts", [
+            {"id": 1, "severity": "high", "_total_active": 2},
+            {"id": 2, "severity": "medium", "_total_active": 2},
+        ]),
+        ("get_rainfall_accumulation", [{"watershed": "Lurín", "acc_72h_mm": 14.0, "acc_24h_mm": 5.0}]),
+    ]
+    answer = _build_sitrep_answer(per_tool_rows)
+    assert "ALERTA" in answer or "AVISO" in answer
+    assert "EMERGENCIA" not in answer

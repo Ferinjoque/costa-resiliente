@@ -1,8 +1,8 @@
 "use client";
 
-import { AlertTriangle, Waves, Users, ChevronRight } from "lucide-react";
+import { AlertTriangle, Waves, Users, ChevronRight, CloudRain } from "lucide-react";
 import { useUIStore } from "@/store/ui";
-import { useAlerts, useFloodExposure, useDistrictRiskSummary } from "@/lib/queries";
+import { useAlerts, useFloodExposure, useDistrictRiskSummary, useImerg } from "@/lib/queries";
 import { Button, Pill, Divider } from "@/components/ui/primitives";
 
 const LEVEL_CFG = {
@@ -31,6 +31,7 @@ export function SituationBrief() {
   const { data: alerts = [] } = useAlerts();
   const { data: exposure } = useFloodExposure();
   const { data: summary } = useDistrictRiskSummary();
+  const { data: imerg } = useImerg(72);
 
   if (activePanel !== "map" || scenario.districtUbigeo) return null;
 
@@ -55,6 +56,13 @@ export function SituationBrief() {
       const o: Record<string, number> = { muy_alto: 3, alto: 2, moderado: 1, bajo: 0 };
       return o[b.properties.risk_level] - o[a.properties.risk_level];
     })[0];
+
+  // Max 72h rainfall across all watersheds
+  const maxRain72h = imerg?.features.reduce((mx, f) => {
+    const v = f.properties.acc_72h_mm ?? 0;
+    return v > mx ? v : mx;
+  }, 0) ?? 0;
+  const maxRainWs = imerg?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? "";
 
   const bullets: { icon: React.ReactNode; text: string }[] = [];
 
@@ -85,6 +93,19 @@ export function SituationBrief() {
         locale === "es"
           ? `~${affectedPop >= 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : affectedPop} personas en zona de riesgo`
           : `~${affectedPop >= 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : affectedPop} people in risk zones`,
+    });
+  }
+
+  if (maxRain72h >= 25) {
+    const rainLabel = maxRain72h >= 50
+      ? (locale === "es" ? "⚠ EMERGENCIA" : "⚠ EMERGENCY")
+      : (locale === "es" ? "⚠ ALERTA" : "⚠ ALERT");
+    bullets.push({
+      icon: <CloudRain size={10} className="text-accent shrink-0 mt-px" />,
+      text:
+        locale === "es"
+          ? `${maxRain72h.toFixed(0)} mm/72h ${maxRainWs ? `(${maxRainWs})` : ""} · ${rainLabel}`
+          : `${maxRain72h.toFixed(0)} mm/72h ${maxRainWs ? `(${maxRainWs})` : ""} · ${rainLabel}`,
     });
   }
 
@@ -136,6 +157,17 @@ export function SituationBrief() {
           className="flex-1 justify-center py-2.5 rounded-none"
         >
           {locale === "es" ? "Alertas" : "Alerts"}
+          <ChevronRight size={11} className="opacity-50" />
+        </Button>
+        <Divider className="h-5 w-px self-center mx-0" />
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() => setActivePanel("social")}
+          aria-label={locale === "es" ? "Ver señales sociales" : "Open social feed"}
+          className="flex-1 justify-center py-2.5 rounded-none"
+        >
+          {locale === "es" ? "Social" : "Social"}
           <ChevronRight size={11} className="opacity-50" />
         </Button>
         <Divider className="h-5 w-px self-center mx-0" />

@@ -255,8 +255,7 @@ async def run(
                 per_tool_rows.append((tool_name, rows))
                 tc_list.append({"tool": tool_name, "count": len(rows), "quick_mode": True})
             if all_rows:
-                parts = [_build_answer([], rows, query) for _, rows in per_tool_rows if rows]
-                combined = " | ".join(p for p in parts if p and "No se encontraron" not in p)
+                combined = _build_sitrep_answer(per_tool_rows)
                 if combined:
                     clean_answer, triggered = sanitise(combined, all_rows)
                     logger.info("sitrep_mode hit: tools=%s rows=%d op=%s", sitrep_tools, len(all_rows), operator_id)
@@ -545,3 +544,72 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         return f"Protocolo encontrado: {top}. {combined}"
 
     return f"Se recuperaron {n} registros. Revise los datos adjuntos."
+
+
+def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
+    """Synthesise a cohesive SITREP narrative from 4 parallel tool results.
+
+    Format:  ALERTAS · LLUVIA · RÍOS · INUNDACIÓN → ordered bullets → acción.
+    More readable than a pipe-joined string of independent _build_answer() calls.
+    """
+    sections: list[str] = []
+    action: str = ""
+
+    tool_rows = {name: rows for name, rows in per_tool_rows}
+
+    # 1. Active alerts
+    alert_rows = tool_rows.get("get_active_alerts", [])
+    if alert_rows:
+        total = alert_rows[0].get("_total_active", len(alert_rows))
+        crit = sum(1 for r in alert_rows if r.get("severity") == "critical")
+        high = sum(1 for r in alert_rows if r.get("severity") == "high")
+        level = "EMERGENCIA" if crit > 0 else ("ALERTA" if high > 1 or total > 4 else "AVISO")
+        sev_note = []
+        if crit: sev_note.append(f"{crit} crítica{'s' if crit != 1 else ''}")
+        if high: sev_note.append(f"{high} alta{'s' if high != 1 else ''}")
+        sev_str = f" ({', '.join(sev_note)})" if sev_note else ""
+        sections.append(f"**Alertas:** {total} activa{'s' if total != 1 else ''}{sev_str} — nivel SINAGERD {level}")
+        if crit > 0:
+            action = "Activar protocolo EDAN y escalar a COEN para alertas críticas."
+
+    # 2. Rainfall
+    rain_rows = tool_rows.get("get_rainfall_accumulation", [])
+    if rain_rows:
+        mx = max((r.get("acc_72h_mm") or 0) for r in rain_rows)
+        ws = next((r.get("watershed", "") for r in rain_rows if (r.get("acc_72h_mm") or 0) == mx), "cuenca")
+        if mx >= 50.0:
+            sections.append(f"**Lluvia 72h:** {mx:.0f} mm en {ws} ⚠ EMERGENCIA (>50 mm ANA)")
+            if not action:
+                action = "Verificar umbral de evacuación en quebradas de cuenca " + ws + "."
+        elif mx >= 25.0:
+            sections.append(f"**Lluvia 72h:** {mx:.0f} mm en {ws} — ALERTA (>25 mm ANA)")
+        elif mx > 0:
+            sections.append(f"**Lluvia 72h:** {mx:.0f} mm en {ws} — bajo umbral")
+
+    # 3. River levels
+    river_rows = tool_rows.get("get_river_levels", [])
+    if river_rows:
+        rising = [r for r in river_rows if r.get("trend") == "rising"]
+        if rising:
+            names = ", ".join(r.get("name", "?") for r in rising[:3])
+            sections.append(f"**Ríos:** {len(rising)} estación(es) en ascenso — {names}")
+            if not action:
+                action = f"Prioridad inmediata: monitorear evacuación preventiva en {names}."
+        else:
+            top = river_rows[0]
+            _trend_es = {"rising": "↑ ascenso", "falling": "↓ descenso", "stable": "estable"}.get(top.get("trend", ""), "—")
+            sections.append(f"**Ríos:** {top.get('name','?')} {top.get('level_m','—')} m — {_trend_es}")
+
+    # 4. Flood polygons
+    flood_rows = tool_rows.get("get_flood_polygons", [])
+    if flood_rows:
+        total_km2 = sum(r.get("area_km2") or 0 for r in flood_rows)
+        sections.append(f"**Inundación SAR:** {len(flood_rows)} polígono{'s' if len(flood_rows) != 1 else ''} · {total_km2:.1f} km² activos")
+
+    if not sections:
+        return "No se encontraron datos en ninguna fuente. Sistema posiblemente sin datos recientes."
+
+    body = "\n".join(f"• {s}" for s in sections)
+    if action:
+        return f"**SITREP — Lima Metropolitana**\n\n{body}\n\nAcción recomendada: {action}"
+    return f"**SITREP — Lima Metropolitana**\n\n{body}"
