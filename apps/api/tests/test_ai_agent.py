@@ -765,3 +765,88 @@ async def test_get_infrastructure_impact_hours_clamped():
     from costa_api.ai.tools.db_tools import get_infrastructure_impact
     await get_infrastructure_impact(db, hours_back=99999)
     assert captured["params"]["hours"] == 240
+
+
+# ─── New quick patterns added in Session 20 ──────────────────────────────────
+
+def test_detect_quick_situacion_actual():
+    """'situación actual' routes to get_active_alerts."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("¿Cuál es la situación actual en Lima?") == "get_active_alerts"
+
+
+def test_detect_quick_resumen_operacional():
+    """'resumen operacional' routes to get_active_alerts."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("Dame un resumen operacional de la zona") == "get_active_alerts"
+
+
+def test_detect_quick_albergue():
+    """'albergue' routes to get_infrastructure_impact (no population keyword co-occurrence)."""
+    from costa_api.ai.agent import _detect_quick
+    # Avoid "cuántos" which also hits get_population_at_risk
+    assert _detect_quick("¿Hay albergues habilitados en la zona?") == "get_infrastructure_impact"
+
+
+def test_detect_quick_refugio():
+    """'refugio' routes to get_infrastructure_impact."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("¿Hay refugios habilitados en San Juan de Lurigancho?") == "get_infrastructure_impact"
+
+
+def test_detect_quick_que_hacer():
+    """'qué hacer' routes to search_protocols (no flood keyword co-occurrence)."""
+    from costa_api.ai.agent import _detect_quick
+    # Avoid "inundación" which also hits get_flood_polygons
+    assert _detect_quick("¿Qué hacer si se activa una alerta temprana de emergencia?") == "search_protocols"
+
+
+def test_detect_quick_huaycoloro():
+    """Quebrada Huaycoloro keyword routes to get_huayco_risk."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("Reporte de actividad en Quebrada Huaycoloro") == "get_huayco_risk"
+
+
+def test_detect_quick_pronostico():
+    """'pronóst' routes to get_rainfall_accumulation."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("¿Cuál es el pronóstico de lluvia para las próximas 24 horas?") == "get_rainfall_accumulation"
+
+
+def test_detect_quick_novedades():
+    """'novedades' routes to get_active_alerts."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("¿Cuáles son las novedades de la guardia?") == "get_active_alerts"
+
+
+def test_detect_quick_comunidad_ambiguous():
+    """'comunidad' + 'inundaci' → 2 patterns → None (falls to LLM)."""
+    from costa_api.ai.agent import _detect_quick
+    result = _detect_quick("¿La comunidad reporta inundaciones en Ate?")
+    assert result is None
+
+
+def test_detect_multi_quick_albergue_and_lluvia():
+    """'albergue' + 'lluvia' → multi-quick with infrastructure and rainfall (no extra keywords)."""
+    from costa_api.ai.agent import _detect_multi_quick
+    # Avoid "cuántos" (hits population_at_risk); use a query that hits exactly 2 patterns
+    tools = _detect_multi_quick("Los albergues están en riesgo por la lluvia acumulada")
+    assert len(tools) >= 2
+    assert "get_infrastructure_impact" in tools
+    assert "get_rainfall_accumulation" in tools
+
+
+def test_build_answer_infrastructure_impact():
+    """flood_confidence + type rows → infrastructure breakdown with warning."""
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"name": "Hospital Loayza", "type": "hospital", "district": "Lima", "flood_confidence": 0.92},
+        {"name": "Colegio 1234", "type": "school", "district": "Lima", "flood_confidence": 0.75},
+        {"name": "Puente Atocongo", "type": "bridge", "district": "San Juan de Miraflores", "flood_confidence": 0.88},
+    ]
+    answer = _build_answer([], rows, "infraestructura")
+    assert "⚠" in answer
+    assert "3" in answer
+    # Should mention at least one infrastructure type in Spanish
+    spanish_types = ["hospital", "colegio", "puente", "albergue", "bombero", "subestación"]
+    assert any(t in answer.lower() for t in spanish_types)

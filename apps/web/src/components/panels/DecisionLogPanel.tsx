@@ -240,8 +240,21 @@ export function DecisionLogPanel() {
         )}
 
         {isError && (
-          <li className="px-4 py-8 flex flex-col items-center gap-2" role="alert">
-            <span className="text-xs text-danger text-center">{errorText}</span>
+          <li className="px-4 py-8 flex flex-col items-center gap-3" role="alert">
+            <div className="text-center space-y-1">
+              <span className="text-xs text-danger font-medium block">{errorText}</span>
+              {dataUpdatedAt ? (
+                <span className="text-[11px] text-ink-muted block">
+                  {locale === "es"
+                    ? `Último registro: hace ${Math.floor((Date.now() - dataUpdatedAt) / 60_000)}min`
+                    : `Last log entry: ${Math.floor((Date.now() - dataUpdatedAt) / 60_000)}min ago`}
+                </span>
+              ) : !online ? (
+                <span className="text-[11px] text-ink-muted block">
+                  {locale === "es" ? "API no disponible — revisa los servicios" : "API unavailable — check services"}
+                </span>
+              ) : null}
+            </div>
             <button
               onClick={() => refetch()}
               className="text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"

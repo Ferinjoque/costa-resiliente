@@ -100,9 +100,10 @@ export function LeftRail() {
                     id={`driver-nav-${id}`}
                     onClick={() => setActivePanel(id)}
                     aria-label={`${label[locale]} [${shortcut}]`}
+                    title={`${label[locale]} [${shortcut}]`}
                     aria-current={active ? "page" : undefined}
                     className={clsx(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors text-left",
+                      "group/navbtn w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors text-left",
                       active
                         ? "bg-surface-hover text-ink font-medium"
                         : "text-ink-muted hover:bg-surface-hover hover:text-ink",
@@ -127,6 +128,12 @@ export function LeftRail() {
                     />
                     <span className="flex-1 truncate">{label[locale]}</span>
                     {badge > 0 && <Badge count={badge} variant="danger" />}
+                    <span
+                      className="hidden group-hover/navbtn:inline-block text-[9px] font-mono text-ink-muted/60 border border-border-subtle rounded px-1 py-px ml-1 leading-none"
+                      aria-hidden="true"
+                    >
+                      {shortcut}
+                    </span>
                   </button>
                 </li>
               );
@@ -150,7 +157,7 @@ export function LeftRail() {
           />
           <SecBtn
             Icon={Webhook}
-            label={locale === "es" ? "Notificaciones" : "Notifications"}
+            label={`${locale === "es" ? "Notificaciones" : "Notifications"} [N]`}
             active={activePanel === "notifications"}
             onClick={() => setActivePanel("notifications")}
           />

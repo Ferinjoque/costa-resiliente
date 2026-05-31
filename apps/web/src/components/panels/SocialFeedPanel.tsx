@@ -615,10 +615,23 @@ export function SocialFeedPanel() {
           </li>
         )}
         {isError && (
-          <li className="px-4 py-8 flex flex-col items-center gap-2" role="alert">
-            <span className="text-xs text-danger text-center">
-              {locale === "es" ? "No se pudo cargar el feed social." : "Could not load social feed."}
-            </span>
+          <li className="px-4 py-8 flex flex-col items-center gap-3" role="alert">
+            <div className="text-center space-y-1">
+              <span className="text-xs text-danger font-medium block">
+                {locale === "es" ? "No se pudo cargar el feed social." : "Could not load social feed."}
+              </span>
+              {dataUpdatedAt ? (
+                <span className="text-[11px] text-ink-muted block">
+                  {locale === "es"
+                    ? `Últimas señales: hace ${Math.floor((Date.now() - dataUpdatedAt) / 60_000)}min`
+                    : `Last signals: ${Math.floor((Date.now() - dataUpdatedAt) / 60_000)}min ago`}
+                </span>
+              ) : (
+                <span className="text-[11px] text-ink-muted block">
+                  {locale === "es" ? "Revisa la fuente de datos en el panel Info" : "Check data source status in the Info panel"}
+                </span>
+              )}
+            </div>
             <button
               onClick={() => refetch()}
               className="text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"

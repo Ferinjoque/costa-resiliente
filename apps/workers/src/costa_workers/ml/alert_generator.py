@@ -612,8 +612,8 @@ async def generate_alerts_flow() -> dict:
             )
         finally:
             await r.aclose()
-    except Exception:
-        pass  # non-critical; health falls back to MAX(created_at)
+    except Exception as exc:
+        logger.debug("alert_generator: heartbeat write failed (non-critical): %s", exc)
 
     return {
         "flood_alerts": flood,
