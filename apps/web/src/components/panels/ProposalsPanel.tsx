@@ -206,11 +206,20 @@ export function ProposalsPanel() {
         <div className="px-4 py-2.5 bg-warn-soft/40 border-b border-warn/20" role="status">
           <div className="flex items-start gap-2 text-xs text-warn-muted">
             <AlertTriangle size={12} className="shrink-0 mt-0.5" aria-hidden="true" />
-            <p>
-              {locale === "es"
-                ? "Inicia sesión para aprobar propuestas. Cada aprobación se registra en el log de decisiones."
-                : "Log in to approve proposals. Each approval is recorded in the decision log."}
-            </p>
+            <div className="flex-1">
+              <p className="mb-1.5">
+                {locale === "es"
+                  ? "Las aprobaciones requieren autenticación de operador SINAGERD."
+                  : "Approvals require SINAGERD operator authentication."}
+              </p>
+              <button
+                type="button"
+                onClick={() => useAuthStore.getState().setLoginModalOpen(true)}
+                className="text-accent underline underline-offset-2 hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded transition-colors"
+              >
+                {locale === "es" ? "Iniciar sesión →" : "Sign in →"}
+              </button>
+            </div>
           </div>
         </div>
       )}

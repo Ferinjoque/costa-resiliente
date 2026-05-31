@@ -722,10 +722,35 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   const { addToast } = useUIStore();
   const { operator } = useAuthStore();
   const operatorId = operator?.username ?? DEFAULT_OPERATOR_ID;
-  const [checked, setChecked]     = useState<Set<string>>(new Set());
   const [collapsed, setCollapsed] = useState(true);
+  // Persist checked steps in sessionStorage (tab-scoped) so state survives panel open/close.
+  // Key includes urgent alert IDs so each shift's checklist is independent.
+  const [checked, setChecked] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set<string>();
+    const urgentIds = alerts
+      .filter((a) => a.status === "active" && (a.severity === "critical" || a.severity === "high"))
+      .slice(0, 5)
+      .map((a) => a.id)
+      .sort()
+      .join(",");
+    const key = `cr:protocol:${urgentIds}`;
+    try {
+      const stored = sessionStorage.getItem(key);
+      return stored ? new Set<string>(JSON.parse(stored) as string[]) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  });
   const active   = alerts.filter((a) => a.status === "active");
   const urgent   = active.filter((a) => a.severity === "critical" || a.severity === "high");
+
+  // Sync checked state to sessionStorage on change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const urgentIds = urgent.slice(0, 5).map((a) => a.id).sort().join(",");
+    const key = `cr:protocol:${urgentIds}`;
+    try { sessionStorage.setItem(key, JSON.stringify([...checked])); } catch { /* quota */ }
+  }, [checked, urgent]);
 
   if (urgent.length === 0) return null;
 
