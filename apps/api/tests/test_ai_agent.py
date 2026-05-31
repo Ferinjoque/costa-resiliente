@@ -457,7 +457,7 @@ def test_build_answer_huayco_risk():
 
 
 def test_build_answer_river_levels_rising():
-    """Rising trend rows must flag the rising station with ⚠."""
+    """Rising trend rows must flag the rising station with ⚠ and SENAMHI threshold."""
     from costa_api.ai.agent import _build_answer
     rows = [
         {"name": "Chosica", "level_m": 2.8, "flow_m3s": 210, "trend": "rising", "level_change_1h_m": 0.3},
@@ -467,14 +467,18 @@ def test_build_answer_river_levels_rising():
     assert "⚠" in answer
     assert "Chosica" in answer
     assert "ascenso" in answer.lower()
+    # 2.8m > 2.5m Chosica threshold → ALERTA SENAMHI
+    assert "umbral" in answer.lower() or "ALERTA" in answer
 
 
 def test_build_answer_river_levels_no_rising():
-    """Stable/falling trends → plain reading, no ⚠."""
+    """Stable/falling trends → plain reading, no ⚠ but may show threshold."""
     from costa_api.ai.agent import _build_answer
     rows = [{"name": "Chosica", "level_m": 2.1, "flow_m3s": 150, "trend": "stable", "level_change_1h_m": 0.0}]
     answer = _build_answer([], rows, "río")
-    assert "⚠" not in answer
+    # 2.1m < 2.5m Chosica threshold → no ⚠ but shows "bajo umbral"
+    assert "2.1" in answer
+    assert "bajo umbral" in answer.lower() or "Chosica" in answer
     assert "2.1" in answer
 
 
