@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **638 passed, 0 errors** (Session 20). Up from 568 (+70). Workers: 148 passed, 8 skipped.
+- **API**: **639 passed, 0 errors** (Session 20). Up from 568 (+71). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 184 kB (Session 20: +9 kB from rainfall HUD, fusion rainfall, CityOverview, SlaChip improvements)
@@ -278,7 +278,7 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 **Tests (+67):** 635 passed (↑67 from 568). Includes rain province filter, source_refs, health sinagerd/rain_level, sitrep detection, near-threshold, fusion-rainfall prose. TypeScript: 0 errors.
 
-**Commits (151+):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `e4fe85a` health-sinagerd → `ae82f36` health-rain → `8b9473e` rag-7docs → `2df7148` province-filter-fix → `8696d72` rainfall-mm-alerts → `99465d4` near-threshold → `822f008` fusion-trigger-rain → `925bb0f` city-threshold-label → `b685c89` hud-watershed → `bde7a06` map-legend-ANA → `9b404fa` escalation-rainfall → `d288333` edan-en-rainfall.
+**Commits (157+):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `e4fe85a` health-sinagerd → `ae82f36` health-rain → `8b9473e` rag-7docs → `2df7148` province-filter-fix → `8696d72` rainfall-mm-alerts → `99465d4` near-threshold → `822f008` fusion-trigger-rain → `925bb0f` city-threshold-label → `b685c89` hud-watershed → `bde7a06` map-legend-ANA → `9b404fa` escalation-rainfall → `d288333` edan-en-rainfall.
 
 ---
 
