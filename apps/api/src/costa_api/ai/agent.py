@@ -185,8 +185,11 @@ _TOOL_HINT_MAP: list[tuple[list[str], list[str]]] = [
      ["get_infrastructure_impact", "get_flood_polygons"]),
     (["lluvia", "precipitaci", "imerg", "acumul", "pronóst", "pronost", "72h"],
      ["get_rainfall_accumulation", "get_river_levels"]),
-    (["protocolo", "evacu", "indeci", "minsa", "cenepred", "procedimiento", "sinagerd"],
+    (["protocolo", "evacu", "indeci", "minsa", "cenepred", "procedimiento", "sinagerd",
+       "albergue", "refugio", "qué hacer", "edan", "acción"],
      ["search_protocols", "get_active_alerts"]),
+    (["alertas activ", "alerta activ", "situacion", "situación", "novedades", "nivel sinagerd"],
+     ["get_active_alerts", "get_rainfall_accumulation"]),
 ]
 
 
