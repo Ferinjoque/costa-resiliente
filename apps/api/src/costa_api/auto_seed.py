@@ -19,11 +19,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 logger = logging.getLogger(__name__)
 
-NOW = datetime.now(timezone.utc)
-
-
 def _ts(offset_hours: float = 0) -> datetime:
-    return NOW - timedelta(hours=offset_hours)
+    """Return UTC now minus offset_hours. Always uses current time (not module-load time)."""
+    return datetime.now(timezone.utc) - timedelta(hours=offset_hours)
 
 
 # ─── Lima districts (simplified bounding-box approximations for demo) ─────────
@@ -594,7 +592,16 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         )).scalar_one()
 
         _alerts = (await conn.execute(text("SELECT COUNT(*) FROM ops.alerts"))).scalar_one()
-        _social = (await conn.execute(text("SELECT COUNT(*) FROM social.signals"))).scalar_one()
+        # Count only RECENT + LOCATABLE social signals — the map layer filters by both
+        # 48h window AND (geom IS NOT NULL OR district_id IS NOT NULL). Raw social scraper
+        # signals without geom don't count as operational demo signal data.
+        _social = (await conn.execute(text("""
+            SELECT COUNT(*) FROM social.signals
+            WHERE ingested_at >= NOW() - INTERVAL '48 hours'
+              AND triage_label NOT IN ('irrelevant', 'false_alarm')
+              AND triage_label IS NOT NULL
+              AND (geom IS NOT NULL OR district_id IS NOT NULL)
+        """))).scalar_one()
         _imerg  = (await conn.execute(
             text("SELECT COUNT(*) FROM hydro.imerg_accumulations WHERE time > NOW() - INTERVAL '2 hours'")
         )).scalar_one()
@@ -653,6 +660,56 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                 except Exception as exc:
                     logger.debug("auto_seed: skip huayco refresh row %s: %s", name, exc)
             await conn.commit()
+
+        # Always refresh demo social signals so they stay within the 48h map window.
+        # Uses ON CONFLICT DO UPDATE to bump ingested_at even if the signal already exists.
+        # Runs before the early-return check so it fires on every seed call.
+        _need_social_refresh = _social < len(_SOCIAL_CURRENT)
+        if _need_social_refresh:
+            logger.info("auto_seed: refreshing %d demo social signals (only %d visible in 48h)", len(_SOCIAL_CURRENT), _social)
+            for s in _SOCIAL_CURRENT:
+                h = hashlib.sha256(s["content"].encode()).hexdigest()
+                t = _ts(s["offset_h"])
+                try:
+                    _did = (await conn.execute(
+                        text("""
+                            SELECT id FROM geo.districts
+                            WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint(:lon,:lat), 4326))
+                            LIMIT 1
+                        """),
+                        {"lon": s["lon"], "lat": s["lat"]},
+                    )).scalar_one_or_none()
+                except Exception:
+                    _did = None
+                try:
+                    await conn.execute(
+                        text("""
+                            INSERT INTO social.signals
+                                (source, content_hash, content_redacted,
+                                 published_at, ingested_at,
+                                 triage_label, triage_confidence, triage_model, triage_at,
+                                 geom, district_id, expires_at)
+                            VALUES (:src, :h, :content, :t, :t,
+                                    :label, :conf, 'gemma4-demo', :t,
+                                    ST_SetSRID(ST_MakePoint(:lon,:lat), 4326),
+                                    :did, :expires_at)
+                            ON CONFLICT (content_hash) DO UPDATE
+                                SET ingested_at = EXCLUDED.ingested_at,
+                                    published_at = EXCLUDED.published_at,
+                                    expires_at   = EXCLUDED.expires_at
+                        """),
+                        {
+                            "src": s["source"], "h": h, "content": s["content"],
+                            "t": t, "label": s["label"], "conf": s["confidence"],
+                            "lon": s["lon"], "lat": s["lat"],
+                            "did": _did, "expires_at": t + timedelta(days=7),
+                        },
+                    )
+                except Exception as exc:
+                    logger.warning("auto_seed: social signal refresh failed: %s", exc)
+            await conn.commit()
+            # Update local count so operational_ok reflects fresh state
+            _social = len(_SOCIAL_CURRENT)
 
         if flood_count > 0 and _qbr > 0 and _infra > 0 and _hazard > 0 and _elnino >= len(_ELNINO_FLOODS) and operational_ok:
             logger.info(
@@ -874,18 +931,11 @@ async def maybe_seed(engine: AsyncEngine) -> None:
             )
 
         # ── 5. Social signals ─────────────────────────────────────────────────
+        # Use ON CONFLICT DO UPDATE to refresh ingested_at/expires_at so demo
+        # signals stay visible in the 48h window even if seeded days ago.
         for s in _SOCIAL_CURRENT:
             h = hashlib.sha256(s["content"].encode()).hexdigest()
             t = _ts(s["offset_h"])
-
-            existing = (
-                await conn.execute(
-                    text("SELECT id FROM social.signals WHERE content_hash = :h"),
-                    {"h": h},
-                )
-            ).scalar_one_or_none()
-            if existing:
-                continue
 
             try:
                 district_id = (
@@ -914,6 +964,10 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                                 :label, :conf, 'gemma4-demo', :t,
                                 ST_SetSRID(ST_MakePoint(:lon,:lat), 4326),
                                 :district_id, :expires_at)
+                        ON CONFLICT (content_hash) DO UPDATE
+                            SET ingested_at = EXCLUDED.ingested_at,
+                                published_at = EXCLUDED.published_at,
+                                expires_at   = EXCLUDED.expires_at
                     """),
                     {
                         "src": s["source"],
