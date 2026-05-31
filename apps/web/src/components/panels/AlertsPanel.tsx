@@ -401,6 +401,22 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
           {/* Title */}
           <p className="text-sm font-semibold text-ink leading-snug">{alert.title}</p>
 
+          {/* Rainfall chip for rainfall-type alerts */}
+          {alert.type === "rainfall" && alert.source_refs && typeof alert.source_refs === "object" && !Array.isArray(alert.source_refs) && (
+            <div className="flex items-center gap-1.5 mt-1">
+              {(alert.source_refs as Record<string, number>).acc_72h_mm != null && (
+                <span className="text-[10px] font-mono tabular-nums text-warn-muted bg-warn-soft border border-warn/20 rounded px-1.5 py-0.5">
+                  {((alert.source_refs as Record<string, number>).acc_72h_mm as number).toFixed(0)} mm/72h
+                </span>
+              )}
+              {(alert.source_refs as Record<string, number>).acc_24h_mm != null && (
+                <span className="text-[10px] font-mono tabular-nums text-ink-subtle">
+                  24h: {((alert.source_refs as Record<string, number>).acc_24h_mm as number).toFixed(0)} mm
+                </span>
+              )}
+            </div>
+          )}
+
           {alert.description && (
             <p className="text-xs text-ink-muted mt-1 leading-snug line-clamp-2">{alert.description}</p>
           )}
