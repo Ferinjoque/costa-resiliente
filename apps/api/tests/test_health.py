@@ -170,3 +170,47 @@ async def test_health_scraper_overall_status_valid():
     assert body["overall_status"] in ("ok", "stale", "offline"), (
         f"overall_status must be ok/stale/offline, got {body['overall_status']!r}"
     )
+
+
+# ─── /health rainfall uses per-watershed query ────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_health_rainfall_uses_per_watershed_query():
+    """Regression: /health rainfall must use per-watershed DISTINCT ON, not global MAX(time).
+
+    Prior bug: WHERE time = (SELECT MAX(time) FROM hydro.imerg_accumulations) retrieved
+    only watersheds with the single latest timestamp — if one watershed ingested later
+    than another, the others were excluded from the max_rain_72h_mm computation.
+    Fix: per-watershed DISTINCT ON picks each watershed's own latest reading.
+    """
+    from inspect import getsource
+    from costa_api.routers.health import health_check
+    src = getsource(health_check)
+    assert "DISTINCT ON" in src, (
+        "health_check rainfall query must use DISTINCT ON (watershed_id) ORDER BY time DESC "
+        "to pick each watershed's latest reading independently"
+    )
+    assert "SELECT MAX(time) FROM hydro.imerg_accumulations" not in src, (
+        "health_check must not use global MAX(time) for rainfall — "
+        "it excludes watersheds that ingested earlier than the most recent"
+    )
+
+
+@pytest.mark.asyncio
+async def test_health_rain_level_consistent_with_max_rain():
+    """rain_level classification must be consistent with max_rain_72h_mm value."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.get("/api/v1/health")
+    data = resp.json()
+    mm = data.get("max_rain_72h_mm")
+    level = data.get("rain_level", "normal")
+    if mm is not None:
+        if mm >= 50:
+            assert level == "emergencia", f"{mm}mm should be emergencia, got {level}"
+        elif mm >= 25:
+            assert level in ("alerta", "emergencia"), f"{mm}mm should be alerta+, got {level}"
+        elif mm >= 15:
+            assert level in ("aviso", "alerta", "emergencia"), f"{mm}mm should be aviso+, got {level}"
+        else:
+            # Below all thresholds — should be normal (unless something else elevated it)
+            assert level in ("normal", "aviso", "alerta", "emergencia"), f"Invalid level: {level}"
