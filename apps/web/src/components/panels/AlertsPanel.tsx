@@ -163,16 +163,25 @@ function EscalationModal({
 
   const TYPE_ES: Record<string, string> = {
     flood: "Inundación SAR", huayco: "Huayco / Deslizamiento", social_cluster: "Señal social urgente",
+    rainfall: "Lluvia intensa (IMERG)",
   };
   const TYPE_EN: Record<string, string> = {
     flood: "SAR Flood", huayco: "Huayco / Landslide", social_cluster: "Urgent social signal",
+    rainfall: "Heavy rainfall (IMERG)",
   };
   const typeLabel = (locale === "es" ? TYPE_ES : TYPE_EN)[alert.type] ?? alert.type;
 
+  // For rainfall alerts, include the mm values in the escalation note
+  const rainfallContext = alert.type === "rainfall" && alert.source_refs && typeof alert.source_refs === "object" && !Array.isArray(alert.source_refs)
+    ? (locale === "es"
+        ? `\nLluvia 72h: ${((alert.source_refs as Record<string, number>).acc_72h_mm ?? 0).toFixed(0)} mm · 24h: ${((alert.source_refs as Record<string, number>).acc_24h_mm ?? 0).toFixed(0)} mm`
+        : `\n72h rain: ${((alert.source_refs as Record<string, number>).acc_72h_mm ?? 0).toFixed(0)} mm · 24h: ${((alert.source_refs as Record<string, number>).acc_24h_mm ?? 0).toFixed(0)} mm`)
+    : "";
+
   const defaultNote =
     locale === "es"
-      ? `Nivel SINAGERD: ${sinagerdLevel}\nEvento: ${alert.title}\nTipo: ${typeLabel}\nAcción requerida: Activar protocolo de evacuación preventiva y coordinar con INDECI COEN.\n\nNotas adicionales:`
-      : `SINAGERD Level: ${sinagerdLevel}\nEvent: ${alert.title}\nType: ${typeLabel}\nRequired action: Activate preventive evacuation protocol and coordinate with INDECI COEN.\n\nAdditional notes:`;
+      ? `Nivel SINAGERD: ${sinagerdLevel}\nEvento: ${alert.title}\nTipo: ${typeLabel}${rainfallContext}\nAcción requerida: Activar protocolo de evacuación preventiva y coordinar con INDECI COEN.\n\nNotas adicionales:`
+      : `SINAGERD Level: ${sinagerdLevel}\nEvent: ${alert.title}\nType: ${typeLabel}${rainfallContext}\nRequired action: Activate preventive evacuation protocol and coordinate with INDECI COEN.\n\nAdditional notes:`;
 
   const [note, setNote] = useState(defaultNote);
   const dialogRef = useRef<HTMLDivElement>(null);
