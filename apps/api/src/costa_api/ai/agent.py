@@ -627,11 +627,13 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         # Show top 3 districts for context
         top_districts = [f"{r.get('district', '?')} (~{int(r.get('estimated_population_at_risk') or 0):,})" for r in rows[:3]]
         district_list = ", ".join(top_districts)
-        # Include total flood scenes for context
+        # Include total flood scenes and max model confidence for context
         total_scenes = sum(int(r.get("flood_scenes") or 0) for r in rows)
         scene_note = f" · {total_scenes} polígono{'s' if total_scenes != 1 else ''} SAR" if total_scenes > 0 else ""
+        max_conf = max((r.get("max_confidence") or 0.0 for r in rows), default=None)
+        conf_note = f" · confianza del modelo: {float(max_conf):.0%}" if max_conf else ""
         return (
-            f"Estimado {total:,} personas en zonas inundadas ({n} distrito{'s' if n != 1 else ''}{scene_note}): {district_list}."
+            f"Estimado {total:,} personas en zonas inundadas ({n} distrito{'s' if n != 1 else ''}{scene_note}{conf_note}): {district_list}."
         )
 
     if "flood_confidence" in first and "type" in first:
