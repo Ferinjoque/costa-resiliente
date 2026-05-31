@@ -38,9 +38,9 @@ Click **"Consultar"** (C key) → left panel, or tap the Copilot icon.
 Click the first suggestion: **"Dame el resumen completo de la situación"**
 
 **What happens:**
-- Sitrep mode triggers (4 tools in parallel, ~3 seconds, no LLM)
-- Response includes: active alerts count/severity + rainfall mm (63mm EMERGENCIA), river trend, SAR flood area
-- Badge shows **"SITREP · 4 herramientas · sin LLM · ~3s"** (distinct from regular quick mode)
+- Sitrep mode triggers (5 tools in parallel, ~3 seconds, no LLM)
+- Response includes: alerts SINAGERD level + rainfall mm (63mm EMERGENCIA), river trend + SENAMHI threshold, SAR flood area, **huayco quebrada risk + trigger threshold** (5th tool)
+- Badge shows **"SITREP · 5 herramientas · sin LLM · ~3s"** (distinct from regular quick mode)
 
 **Why this matters:** No LLM inference cost. Duty officer gets the full picture in 3 seconds at 3am.
 
