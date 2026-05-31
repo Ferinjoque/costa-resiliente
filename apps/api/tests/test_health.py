@@ -17,6 +17,10 @@ async def test_health_returns_ok():
     data = response.json()
     assert data["status"] == "ok"
     assert "version" in data
+    assert "sinagerd_level" in data, "Health must include SINAGERD operational level"
+    assert data["sinagerd_level"] in ("EMERGENCIA", "ALERTA", "AVISO", "NORMAL")
+    assert "active_alerts" in data
+    assert isinstance(data["active_alerts"], int)
 
 
 @pytest.mark.asyncio
