@@ -584,6 +584,38 @@ async def maybe_seed(engine: AsyncEngine) -> None:
 
         operational_ok = _alerts > 0 and _social > 0 and _imerg > 0 and _stobs > 0
 
+        # Check if latest huayco data has high/very_high risk — ML pipeline can overwrite
+        # demo seed values with lower estimates. Refresh when that happens.
+        _high_huayco = (await conn.execute(text("""
+            SELECT COUNT(*) FROM (
+                SELECT DISTINCT ON (quebrada_id) risk_level
+                FROM ml.huayco_susceptibility
+                ORDER BY quebrada_id, computed_at DESC
+            ) latest WHERE risk_level IN ('high', 'very_high')
+        """))).scalar_one()
+        need_huayco_refresh = _qbr > 0 and _high_huayco == 0
+
+        if need_huayco_refresh:
+            logger.info("auto_seed: refreshing huayco data — ML pipeline overwrote demo scenario with low-risk values")
+            # Re-seed with El Niño scenario values at current timestamp
+            for name, prob, risk, rain24 in _HUAYCO_SUSCEPTIBILITY:
+                qid = (await conn.execute(
+                    text("SELECT id FROM geo.quebradas WHERE name = :name"), {"name": name}
+                )).scalar_one_or_none()
+                if not qid:
+                    continue
+                try:
+                    await conn.execute(text("""
+                        INSERT INTO ml.huayco_susceptibility
+                            (quebrada_id, probability, risk_level,
+                             trigger_rain_24h_mm, model_version)
+                        VALUES (:qid, :prob, :risk, :rain, 'xgboost-v0.1-demo-refresh')
+                        ON CONFLICT (quebrada_id, computed_at) DO NOTHING
+                    """), {"qid": qid, "prob": prob, "risk": risk, "rain": rain24})
+                except Exception as exc:
+                    logger.debug("auto_seed: skip huayco refresh row %s: %s", name, exc)
+            await conn.commit()
+
         if flood_count > 0 and _qbr > 0 and _infra > 0 and _hazard > 0 and _elnino >= len(_ELNINO_FLOODS) and operational_ok:
             logger.info(
                 "auto_seed: all tables populated (flood=%d elnino=%d alerts=%d social=%d) — skipping",
