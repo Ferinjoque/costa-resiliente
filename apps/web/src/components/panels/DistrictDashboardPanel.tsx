@@ -441,7 +441,6 @@ function EDANReportButton() {
   const affectedPop = exposure?.total_affected_population ?? 0;
   const highRiskDistricts = summary?.features.filter((f) => f.properties.risk_level === "alto").map((f) => f.properties.name) ?? [];
   const moderateDistricts = summary?.features.filter((f) => f.properties.risk_level === "moderado").map((f) => f.properties.name) ?? [];
-  const level = critical.length > 0 ? "EMERGENCIA" : high.length > 1 ? "ALERTA" : active.length > 0 ? "AVISO" : "NORMAL";
   const popStr = affectedPop > 1000 ? `~${(affectedPop / 1000).toFixed(1)}k` : String(affectedPop || "—");
   const reportId = buildReportId(now);
 
@@ -453,6 +452,14 @@ function EDANReportButton() {
   const maxRainWs = maxRain72h != null
     ? imergEdan?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name
     : undefined;
+
+  // SINAGERD level factors in rainfall (consistent with health API)
+  let level = critical.length > 0 ? "EMERGENCIA" : high.length > 1 ? "ALERTA" : active.length > 0 ? "AVISO" : "NORMAL";
+  if (maxRain72h != null) {
+    if (maxRain72h >= 50 && level !== "EMERGENCIA") level = "EMERGENCIA";
+    else if (maxRain72h >= 25 && (level === "AVISO" || level === "NORMAL")) level = "ALERTA";
+    else if (maxRain72h >= 15 && level === "NORMAL") level = "AVISO";
+  }
 
   const reportData: ReportData = {
     reportId, nowStr, level, active, critical, high,
