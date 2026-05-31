@@ -831,16 +831,15 @@ def test_detect_quick_resumen_operacional():
 
 
 def test_detect_quick_albergue():
-    """'albergue' routes to get_infrastructure_impact (no population keyword co-occurrence)."""
+    """'albergue' routes to search_protocols (evacuation shelter = INDECI protocol context)."""
     from costa_api.ai.agent import _detect_quick
-    # Avoid "cuántos" which also hits get_population_at_risk
-    assert _detect_quick("¿Hay albergues habilitados en la zona?") == "get_infrastructure_impact"
+    assert _detect_quick("¿Hay albergues habilitados en la zona?") == "search_protocols"
 
 
 def test_detect_quick_refugio():
-    """'refugio' routes to get_infrastructure_impact."""
+    """'refugio' routes to search_protocols (available shelters = INDECI protocols)."""
     from costa_api.ai.agent import _detect_quick
-    assert _detect_quick("¿Hay refugios habilitados en San Juan de Lurigancho?") == "get_infrastructure_impact"
+    assert _detect_quick("¿Hay refugios habilitados en San Juan de Lurigancho?") == "search_protocols"
 
 
 def test_detect_quick_que_hacer():
@@ -894,12 +893,12 @@ def test_detect_quick_comunidad_ambiguous():
 
 
 def test_detect_multi_quick_albergue_and_lluvia():
-    """'albergue' + 'lluvia' → multi-quick with infrastructure and rainfall (no extra keywords)."""
+    """'albergue' + 'lluvia' → search_protocols + rainfall multi-quick."""
     from costa_api.ai.agent import _detect_multi_quick
-    # Avoid "cuántos" (hits population_at_risk); use a query that hits exactly 2 patterns
+    # Avoid "cuántos" (hits population_at_risk)
     tools = _detect_multi_quick("Los albergues están en riesgo por la lluvia acumulada")
     assert len(tools) >= 2
-    assert "get_infrastructure_impact" in tools
+    assert "search_protocols" in tools
     assert "get_rainfall_accumulation" in tools
 
 
