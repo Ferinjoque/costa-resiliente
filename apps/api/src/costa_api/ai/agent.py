@@ -550,9 +550,13 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                 if key in name_lower:
                     level = row.get("level_m")
                     if level is not None:
-                        over = float(level) >= threshold
-                        label = "⚠ sobre umbral ALERTA SENAMHI" if over else "bajo umbral"
-                        return f" · umbral: {threshold:.1f} m ({label})"
+                        lv = float(level)
+                        if lv >= threshold:
+                            return f" · umbral: {threshold:.1f} m (⚠ SOBRE umbral ALERTA SENAMHI)"
+                        elif lv >= threshold * 0.9:
+                            return f" · umbral: {threshold:.1f} m (⚠ acercándose al umbral)"
+                        else:
+                            return f" · umbral: {threshold:.1f} m (bajo umbral)"
             return ""
 
         if rising:
