@@ -383,13 +383,7 @@ export function useDistrictDashboard(
 ): UseQueryResult<DistrictDashboard> {
   return useQuery({
     queryKey: ["district-dashboard", ubigeo],
-    queryFn: async () => {
-      try {
-        return await fetchDistrictDashboard(ubigeo!);
-      } catch {
-        return DEMO_DASHBOARDS[ubigeo!] ?? DEMO_DASHBOARDS["150118"];
-      }
-    },
+    queryFn: () => fetchDistrictDashboard(ubigeo!),
     enabled: !!ubigeo,
     staleTime: 2 * MIN,
     refetchInterval: 2 * MIN,
