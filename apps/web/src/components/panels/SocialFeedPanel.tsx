@@ -461,7 +461,8 @@ export function SocialFeedPanel() {
       : features.filter((f) => f.properties.triage_label === labelFilter);
 
   const newestAt = features[0]?.properties.ingested_at;
-  const urgentCount = features.filter((f) => f.properties.triage_label === "needs_help").length;
+  const _urgentLabels = new Set(["needs_help", "huayco_observation", "flood_observation", "road_blocked"]);
+  const urgentCount = features.filter((f) => _urgentLabels.has(f.properties.triage_label ?? "")).length;
 
   const FILTER_TABS: Array<{ value: Label | "all"; es: string; en: string }> = [
     { value: "all",                   es: "Todos",   en: "All"      },
