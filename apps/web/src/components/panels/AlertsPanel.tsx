@@ -95,13 +95,21 @@ function SlaChip({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   const ageMin = Math.floor(ageMs / 60_000);
   const sla    = SLA_MINUTES[alert.severity] ?? 30;
   const breach = ageMin >= sla;
+  const remaining = sla - ageMin;
+  // Near-breach: within 2 minutes of SLA
+  const nearBreach = !breach && remaining <= 2;
 
-  const label = ageMin < 1
-    ? (locale === "es" ? "<1m" : "<1m")
+  const label = breach
+    ? `${ageMin}m!`
+    : nearBreach
+    ? (locale === "es" ? `${remaining}m restante` : `${remaining}m left`)
+    : ageMin < 1
+    ? "<1m"
     : `${ageMin}m`;
-  const slaLabel = locale === "es"
-    ? `SLA: ${sla}min para reconocer`
-    : `SLA: ${sla}min to acknowledge`;
+
+  const slaLabel = breach
+    ? (locale === "es" ? `SLA vencido: ${ageMin}min sin acción (límite ${sla}min)` : `SLA breached: ${ageMin}min without action (limit ${sla}min)`)
+    : (locale === "es" ? `SLA: ${sla}min para reconocer · ${remaining}min restantes` : `SLA: ${sla}min to acknowledge · ${remaining}min remaining`);
 
   return (
     <span
@@ -109,6 +117,8 @@ function SlaChip({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
         "inline-flex items-center gap-0.5 text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded-md",
         breach
           ? "bg-danger-soft text-danger border border-danger/20"
+          : nearBreach
+          ? "bg-warn-soft text-warn-muted border border-warn/20"
           : "bg-surface-sunken text-ink-subtle border border-border-subtle",
       )}
       title={slaLabel}
@@ -116,7 +126,6 @@ function SlaChip({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
     >
       <Clock size={8} aria-hidden="true" />
       {label}
-      {breach && <span aria-hidden="true">!</span>}
     </span>
   );
 }
