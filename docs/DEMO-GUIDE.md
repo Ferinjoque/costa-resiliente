@@ -11,10 +11,11 @@
 
 ```bash
 curl http://localhost:8000/api/v1/health
-# → {"status":"ok","version":"0.1.0","sinagerd_level":"EMERGENCIA","active_alerts":2}
+# → {"status":"ok","version":"0.1.0","sinagerd_level":"EMERGENCIA","active_alerts":2,
+#    "max_rain_72h_mm":63.2,"rain_level":"emergencia"}
 ```
 
-The health endpoint now reports the SINAGERD operational level and active alert count — useful for automated monitoring.
+The health endpoint reports SINAGERD level + active alerts + ANA rainfall level — single-call external monitoring.
 
 ### Step 1 — System Check (15s)
 
