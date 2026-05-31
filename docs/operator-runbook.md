@@ -120,6 +120,16 @@ Alert created (auto or operator)
 
 ---
 
+## Quick Status Check
+
+```bash
+# Check current SINAGERD level and active alert count (no auth required)
+curl http://localhost:8000/api/v1/health
+# Returns: {"status":"ok","sinagerd_level":"EMERGENCIA","active_alerts":2,...}
+```
+
+---
+
 ## Emergency Procedures
 
 ### Service Down
