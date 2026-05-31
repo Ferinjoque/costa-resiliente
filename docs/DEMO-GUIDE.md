@@ -82,9 +82,11 @@ Click on Lurigancho district on the map.
 **FusionCallout opens:**
 - Population: 213,386 hab.
 - SAR Flood: 1 polygon, 3.0 km²
-- Huayco risk: MUY ALTO (91%) — Quebrada Pedregal
-- **Rainfall: 63 mm (Rímac) · ⚠ EMERGENCIA** (NEW Session 20)
-- Prose (Spanish): "Lurigancho: 1 polígono SAR activo · Riesgo huayco muy alto · Lluvia 72h cuenca Rímac: 63 mm — ⚠ EMERGENCIA"
+- Huayco risk: MUY ALTO (91%) — Quebrada Pedregal (trigger: 12 mm/24h)
+- **Rainfall: 63 mm (Rímac) · ⚠ EMERGENCIA** (>50mm ANA threshold)
+- Social: 0 urgent signals (last 3h)
+- Risk level pill: ALTO (elevation from rainfall EMERGENCIA + SAR flood + very high huayco)
+- Prose (Spanish): "Lurigancho: 1 polígono SAR activo (3.0 km²; ~213,386 personas) · Riesgo huayco muy alto (91%) · Lluvia 72h cuenca Rímac: 63 mm — ⚠ EMERGENCIA."
 
 Click **"Análisis completo"** → DistrictDashboardPanel with charts and EDAN export.
 
