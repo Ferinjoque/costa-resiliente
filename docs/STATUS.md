@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **652 passed, 0 errors** (Session 21). Up from 640 (+12). Workers: 148 passed, 8 skipped.
+- **API**: **654 passed, 0 errors** (Session 21). Up from 640 (+14). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 184 kB (Session 20: +9 kB from rainfall HUD, fusion rainfall, CityOverview, SlaChip improvements)
@@ -254,9 +254,17 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 - `fix(DecisionLogPanel)`: offline CSV export used same filename for demo and real data. Fixed: prefixes `DEMO_` when `isError` to prevent accidental submission of fabricated data as official EDAN record. Also wrapped `JSON.stringify(payload)` in try/catch to prevent export crash on unusual payloads.
 - `fix(i18n)`: alerts error message now reads "Error al cargar alertas — mostrando datos de demostración".
 
-**Tests (+6):** `test_get_active_alerts_severity_high_includes_critical`, `test_get_active_alerts_severity_critical_only`, `test_get_active_alerts_severity_medium_includes_higher`, `test_get_river_levels_prev1h_anchored_to_latest`, `test_flood_exposure_has_time_filter`, `test_total_affected_population_is_integer`. Suite: 646 passed.
+**Tests (+14):** Severity minimum filter (3), river trend anchor, flood exposure 7-day filter, total pop type check, huayco prose null prob, replay time (5 cases), pop-at-risk confidence, district risk summary (2). Suite: 654 passed.
 
-**Commit:** `9873a39` fix(critical): severity filter, river trend, fusion rainfall, flood exposure, demo transparency.
+**Commits (Session 21):**
+- `9873a39` fix(critical): severity filter, river trend, fusion rainfall, flood exposure, demo transparency
+- `45ffdb4` fix(ux): AskPanel typewriter, SLA breach pruning, agent dead code
+- `a512bfb` fix(ops): alerts active-first sort, stream timeout txn, health per-watershed rain
+- `d78dd30` fix(data): pop-at-risk confidence note, replay midnight fix
+- `e69083d` test: replay time (5 cases), pop-at-risk confidence note
+- `0cf10a3` fix(workers): delivery attempts count, huayco rain zero-check, triage similarity floor
+- `71a8019` feat(geo): district risk summary and dashboard include rainfall alerts
+- `3063b0a` test: district risk summary includes watershed rainfall
 
 ---
 
