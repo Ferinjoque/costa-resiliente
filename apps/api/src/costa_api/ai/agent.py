@@ -776,8 +776,13 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             for key, threshold in _STATION_THRESHOLDS.items():
                 if key in top_name_lower:
                     lv = top_r.get("level_m")
-                    if lv is not None and float(lv) >= threshold:
-                        top_threshold_note = f" ⚠ {top_r.get('name')}: {float(lv):.2f}m > umbral {threshold:.1f}m"
+                    if lv is not None:
+                        lv_f = float(lv)
+                        if lv_f >= threshold:
+                            top_threshold_note = f" ⚠ {top_r.get('name')}: {lv_f:.2f}m > umbral {threshold:.1f}m"
+                        elif lv_f >= threshold * 0.9:
+                            # Near-threshold (within 10%): flag as approaching
+                            top_threshold_note = f" ⚠ {top_r.get('name')}: {lv_f:.2f}m acercándose al umbral {threshold:.1f}m"
                     break
             sections.append(f"**Ríos:** {len(rising)} estación(es) en ascenso — {names}{top_threshold_note}")
             if not action:
