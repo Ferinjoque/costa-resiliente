@@ -666,12 +666,17 @@ function CityOverview() {
   const { data: alerts = [] } = useAlerts();
   const { data: exposure } = useFloodExposure();
   const { data: summary } = useDistrictRiskSummary();
+  const { data: imergCity } = useImerg(72);
 
   const activeCount = alerts.filter((a) => a.status === "active").length;
   const floodArea = exposure?.districts.reduce((sum, d) => sum + d.overlap_km2, 0) ?? 0;
   const affectedPop = exposure?.total_affected_population ?? 0;
   const altoCount = summary?.features.filter((f) => f.properties.risk_level === "alto").length ?? 0;
   const moderadoCount = summary?.features.filter((f) => f.properties.risk_level === "moderado").length ?? 0;
+  const maxRain72h = imergCity?.features.reduce((mx, f) => {
+    const v = f.properties.acc_72h_mm ?? 0;
+    return v > mx ? v : mx;
+  }, 0) ?? 0;
 
   return (
     <section aria-label={tr("dashboard", "lima")}>
@@ -711,6 +716,22 @@ function CityOverview() {
             {locale === "es" ? "Pob. en riesgo" : "Pop. at risk"}
           </p>
         </div>
+
+        {/* Max rainfall 72h */}
+        {maxRain72h > 0 && (
+          <div>
+            <p className={clsx(
+              "text-3xl font-bold font-mono tabular-nums leading-none",
+              maxRain72h >= 50 ? "text-danger" : maxRain72h >= 25 ? "text-warn-muted" : "text-ink",
+            )}>
+              {maxRain72h.toFixed(0)}
+              <span className="text-base font-normal text-ink-subtle ml-1">mm</span>
+            </p>
+            <p className="text-xs text-ink-muted mt-1">
+              {locale === "es" ? "Lluvia máx. 72h" : "Max 72h rain"}
+            </p>
+          </div>
+        )}
 
         {/* Risk district breakdown */}
         {(altoCount > 0 || moderadoCount > 0) && (
