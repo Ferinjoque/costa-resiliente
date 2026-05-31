@@ -41,7 +41,7 @@ Click the first suggestion: **"Dame el resumen completo de la situación"**
 - Sitrep mode triggers (5 tools sequential, ~5 seconds, no LLM)
 - Response includes: **7 active alerts** (3 crit, 4 high) + Rímac 63mm EMERGENCIA **· también Chillón: 28mm**, **Chosica 2.41m → acercándose** (2.5m threshold), SAR flood, **Pedregal MUY ALTO 91% · también: Huaycoloro**
 - Badge shows **"SITREP · 5 herramientas · sin LLM"** (distinct from regular quick mode)
-- Action: **"Activar protocolo EDAN y escalar a COEN. Activar evacuación preventiva quebradas cuenca Rímac."** (combined directive from critical alerts + EMERGENCIA rainfall)
+- Action: **"Activar protocolo EDAN y escalar a COEN. Activar evacuación preventiva quebradas cuenca Rímac. Evacuar quebrada(s) Pedregal + Huaycoloro."** (combined: critical alerts + EMERGENCIA rainfall + specific very_high quebradas named)
 
 **Why this matters:** No LLM inference cost. Duty officer gets the full picture + specific action directive in ~5 seconds at 3am.
 
@@ -91,7 +91,7 @@ Click on Lurigancho district on the map.
 - Risk level pill: ALTO (elevation from rainfall EMERGENCIA + SAR flood + very high huayco)
 - Prose (Spanish): "Lurigancho: 1 polígono SAR activo (3.0 km²; ~213,386 personas) · Riesgo huayco muy alto (91%) · Lluvia 72h cuenca Rímac: 63 mm — ⚠ EMERGENCIA."
 
-Click **"Análisis completo"** → DistrictDashboardPanel shows **6 active alerts** (4 huayco + 2 rainfall) thanks to Session 21 watershed-to-district integration.
+Click **"Análisis completo"** → DistrictDashboardPanel shows **7 active alerts** (4 huayco + 3 rainfall) thanks to Session 21 watershed-to-district integration.
 
 ---
 
