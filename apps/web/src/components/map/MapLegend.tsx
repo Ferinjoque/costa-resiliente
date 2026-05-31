@@ -137,8 +137,13 @@ export function MapLegend() {
               />
               <div className="flex justify-between mt-0.5">
                 <span className="text-2xs text-ink-subtle">0 mm</span>
+                <span className="text-2xs text-warn-muted font-medium">25</span>
+                <span className="text-2xs text-danger font-medium">50</span>
                 <span className="text-2xs text-ink-subtle">200+</span>
               </div>
+              <p className="text-2xs text-ink-subtle mt-0.5">
+                {locale === "es" ? "25=ALERTA · 50=EMERGENCIA (ANA/72h)" : "25=ALERT · 50=EMERGENCY (ANA/72h)"}
+              </p>
             </Section>
           )}
 
