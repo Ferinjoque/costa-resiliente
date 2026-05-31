@@ -113,10 +113,13 @@ async def resolve_share_token(
         raise HTTPException(404, "Invalid token format")
 
     await db.execute(text("SET LOCAL statement_timeout = '5000'"))
+    # Single atomic UPDATE: only updates accessed_at when token exists AND is not expired.
+    # Prevents TOCTOU where an expired token's accessed_at was still being updated before
+    # the expiry check, leaking audit evidence about expired tokens.
     row = await db.execute(
         text(
             "UPDATE ops.share_tokens SET accessed_at = NOW() "
-            "WHERE token = :token "
+            "WHERE token = :token AND expires_at > NOW() "
             "RETURNING scenario, created_at, expires_at"
         ),
         {"token": token},
@@ -124,13 +127,15 @@ async def resolve_share_token(
     record = row.mappings().first()
 
     if not record:
+        # Distinguish between not-found and expired for proper HTTP status
+        check = await db.execute(
+            text("SELECT expires_at FROM ops.share_tokens WHERE token = :token"),
+            {"token": token},
+        )
+        existing = check.mappings().first()
+        if existing:
+            raise HTTPException(410, "Share token has expired")
         raise HTTPException(404, "Share token not found")
-
-    exp = record["expires_at"]
-    if exp.tzinfo is None:
-        exp = exp.replace(tzinfo=timezone.utc)
-    if exp < datetime.now(timezone.utc):
-        raise HTTPException(410, "Share token has expired")
 
     await db.commit()
 
