@@ -146,10 +146,12 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 | **SENAMHI thresholds in copilot** | Level 2.8m at Chosica → "⚠ sobre umbral ALERTA SENAMHI (2.5m)" |
 | **Rainfall in FusionCallout** | District-level rainfall context (Rímac watershed) integrated into multi-hazard view |
 | **SLA breach toasts** | Operator never misses an unacknowledged alert even if Alerts panel is closed |
-| **ANA protocol RAG (6 docs)** | "¿cómo lleno el EDAN?" answers from real INDECI/ANA/SENAMHI documents |
+| **ANA protocol RAG (7 docs)** | "¿cómo lleno el EDAN?" + "¿qué hago en EMERGENCIA?" from real INDECI/ANA/SINAGERD documents |
+| **Health API** | `curl /health` → `sinagerd_level:EMERGENCIA, active_alerts:2, rain_level:emergencia` — single-call monitoring |
 | **FEEDS chip (core only)** | No false alarms from expected-offline reddit/telegram/SAR between acquisitions |
+| **Province filter bug fix** | Rainfall alerts (district-less) correctly appear in Lima Metro view |
 | **Local Ollama (zero cloud)** | All ML inference local — no API keys, no data egress, works offline |
-| **633 API tests** | End-to-end coverage of every endpoint, guardrail, and quick-mode path |
+| **635 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, rainfall-mm, province filter |
 | **Append-only decision log** | DB trigger rejects UPDATE/DELETE — full audit trail for SINAGERD post-event review |
 
 ---
@@ -177,8 +179,9 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
   Reddit r/Peru + r/Lima + r/Chosica
   Telegram Senamhi_Peru
 
-6 RAG protocol documents:
+7 RAG protocol documents (51 chunks):
   INDECI Plan Familiar 2024, CENEPRED Movimientos en Masa
   MINSA Protocolo Emergencias, SENAMHI Guía Hidrometeorológica
   MML Plan Huaycos Lima, ANA Umbrales Lluvia Lima
+  SINAGERD Acciones Rápidas COER Lima
 ```
