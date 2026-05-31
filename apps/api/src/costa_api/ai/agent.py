@@ -285,9 +285,9 @@ async def run(
                     )
             elif per_tool_rows:
                 # All tools returned but all have zero rows — system is calm
-                logger.info("sitrep_mode: all 4 tools returned 0 rows — no active emergency")
+                logger.info("sitrep_mode: all 5 tools returned 0 rows — no active emergency")
                 return AgentResult(
-                    answer="**SITREP — Lima Metropolitana**: Sin alertas activas, sin inundaciones SAR detectadas, niveles hidrológicos normales. Sistema en estado NORMAL.",
+                    answer="**SITREP — Lima Metropolitana**: Sin alertas activas, sin inundaciones SAR detectadas, sin riesgo crítico de huayco, niveles hidrológicos normales. Sistema en estado NORMAL.",
                     sources=[],
                     tool_calls=tc_list,
                     confidence=0.85,
