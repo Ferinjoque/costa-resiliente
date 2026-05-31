@@ -1,6 +1,6 @@
 # Operator Runbook — Costa Resiliente
 
-> Updated through Session 20 — covers auth, SLA toasts, notifications, PDF export, HITL proposals, population at risk, auto-resolution, sitrep mode, and enhanced quick-mode copilot.
+> Updated through Session 21 — covers auth, SLA toasts, notifications, PDF export, HITL proposals, population at risk, auto-resolution, sitrep mode, enhanced quick-mode copilot, watershed rainfall in district risk (39 districts → ALTO during EMERGENCIA), quebrada district assignment.
 
 ## Quick Start
 
@@ -125,7 +125,7 @@ Alert created (auto or operator)
 ```bash
 # Check current SINAGERD level and active alert count (no auth required)
 curl http://localhost:8000/api/v1/health
-# Returns: {"status":"ok","sinagerd_level":"EMERGENCIA","active_alerts":2,...}
+# Returns: {"status":"ok","sinagerd_level":"EMERGENCIA","active_alerts":7,...}
 ```
 
 ---
