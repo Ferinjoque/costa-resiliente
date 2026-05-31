@@ -151,9 +151,11 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 | **FEEDS chip (core only)** | No false alarms from expected-offline reddit/telegram/SAR between acquisitions |
 | **Province filter bug fix** | Rainfall alerts (district-less) correctly appear in Lima Metro view |
 | **Local Ollama (zero cloud)** | All ML inference local — no API keys, no data egress, works offline |
-| **640 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, rainfall-mm, province filter, risk elevation |
+| **656 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, rainfall-mm, province filter, risk elevation |
 | **SINAGERD level consistency** | Rainfall now factors into level across health API, OperationalHUD, SituationBrief, CityOverview, EDAN — 5 consistent surfaces |
 | **Append-only decision log** | DB trigger rejects UPDATE/DELETE — full audit trail for SINAGERD post-event review |
+| **Map: 39 districts show ALTO** | District risk map now includes watershed rainfall in coloring — Rímac EMERGENCIA elevates all 20+ intersecting districts (Session 21) |
+| **Copilot: minimum severity filter** | `get_active_alerts(severity="high")` now returns high+critical (prior exact-match silently hid critical alerts) |
 
 ---
 
