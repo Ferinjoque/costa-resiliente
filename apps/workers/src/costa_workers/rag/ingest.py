@@ -69,6 +69,8 @@ PROTOCOL_REGISTRY: dict[str, tuple[str, str, str]] = {
         ("MML_Plan_Huaycos", "Plan Lima ante Huaycos — Municipalidad Metropolitana", "es"),
     "ana_umbrales_lluvia_lima":
         ("ANA_Umbrales_Lluvia", "Umbrales de Lluvia para Alertas Lima — ANA / INDECI", "es"),
+    "sinagerd_acciones_rapidas":
+        ("SINAGERD_Acciones_Rapidas", "Guía de Acciones Rápidas SINAGERD — COER Lima", "es"),
 }
 
 
