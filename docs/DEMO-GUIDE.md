@@ -153,7 +153,7 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 | **FEEDS chip (core only)** | No false alarms from expected-offline reddit/telegram/SAR between acquisitions |
 | **Province filter bug fix** | Rainfall alerts (district-less) correctly appear in Lima Metro view |
 | **Local Ollama (zero cloud)** | All ML inference local — no API keys, no data egress, works offline |
-| **667 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, multi-watershed, near-threshold, idempotency |
+| **670 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, multi-watershed, near-threshold, idempotency, atomic alert guard, sitrep quorum |
 | **SINAGERD level consistency** | Rainfall ≥50mm always elevates to EMERGENCIA across health API, HUD, SituationBrief, CityOverview, EDAN — 5 consistent surfaces |
 | **Append-only decision log** | DB trigger rejects UPDATE/DELETE — full audit trail for SINAGERD post-event review |
 | **Map: 39 districts show ALTO** | District risk map includes watershed rainfall — Rímac EMERGENCIA elevates all intersecting districts |
@@ -162,9 +162,13 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 | **Copilot: minimum severity filter** | `get_active_alerts(severity="high")` returns both high+critical (prior exact-match hid criticals) |
 | **Copilot: sequential tool dispatch** | All 3 dispatch paths run tools sequentially — eliminates AsyncSession race, all sections always present |
 | **Copilot: combined action directive** | SITREP action augments with specific evacuation directive when EMERGENCIA rain AND critical huayco present |
-| **Alerts: idempotent actions** | Acknowledging/escalating an alert twice returns 200 (no duplicate fan-out notifications) |
+| **Alerts: atomic idempotent actions** | Single `UPDATE WHERE status != target` — eliminates race where 2 concurrent escalations both trigger fan-out |
 | **Multi-watershed sitrep** | Rímac 63mm EMERGENCIA + "también Chillón: 28mm ALERTA" shown in single sitrep bullet |
 | **Near-threshold warnings** | Chosica 2.41m → "⚠ acercándose al umbral 2.5m" shown in copilot + dashboard |
+| **Sitrep quorum guard** | Sitrep only asserts NORMAL when ≥3/5 tools succeed — prevents false-calm when DB tools fail |
+| **IMERG data-gap in HUD** | "LLUVIA?" chip appears in HUD when IMERG fetch fails — operator never sees silent 0mm |
+| **INDECI checklist persists** | Protocol checkboxes survive panel open/close (sessionStorage) — operator doesn't lose progress |
+| **Login CTA in Social+Proposals** | Unauthenticated operators see "Iniciar sesión →" button in field report + proposal panels |
 
 ---
 

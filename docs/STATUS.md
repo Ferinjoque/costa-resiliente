@@ -1,7 +1,7 @@
 # Costa Resiliente — Project Status
 
 > **This is the single source of truth for what's built, what's pending, and the current rubric score.**
-> Last updated: 2026-05-31 (Session 21)
+> Last updated: 2026-05-31 (Session 22)
 > Branch: `develop`
 
 For competition context, see [`COMPETITION.md`](COMPETITION.md).
@@ -28,10 +28,10 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **668 passed, 0 errors** (Session 21). Up from 640 (+28). 135 commits. Workers: 148 passed, 8 skipped.
+- **API**: **670 passed, 0 errors** (Session 22). Up from 668 (+2). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
-- **Build**: Next.js production build green; first-load JS `/` = 184 kB (Session 20: +9 kB from rainfall HUD, fusion rainfall, CityOverview, SlaChip improvements)
+- **Build**: Next.js production build green; first-load JS `/` = 185 kB (Session 22: +1 kB from OperationalHUD IMERG chip + INDECI checklist sessionStorage)
 
 Test command (in container):
 ```bash
@@ -233,6 +233,29 @@ POST   /api/v1/auth/operators
 ---
 
 ## Recent session log (rolling, last 5)
+
+### Session 22 — 2026-05-31 — Robustness hardening + operator UX pass
+
+Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
+
+**Backend fixes:**
+- `fix(agent)`: Sitrep NORMAL assertion requires quorum (≥3/5 tools succeed). `dispatch()` wraps DB exceptions as error dicts (`rows:[]`) — loop now skips tools with `res.get('error')` from `per_tool_rows` count. Prevents false "sistema NORMAL" when majority of tools fail during a real emergency.
+- `fix(alerts)`: Atomic idempotency guard — replaced two-step SELECT + UPDATE with single atomic `UPDATE WHERE status != :status`. Two concurrent escalation clicks can no longer both trigger fan-out notifications.
+
+**Frontend fixes:**
+- `fix(OperationalHUD)`: "LLUVIA?" chip when IMERG fetch fails — operator never sees silent 0mm implying no rainfall during a IMERG outage.
+- `fix(SocialFeedPanel)`: "Iniciar sesión →" clickable button in disabled field report state (was plain text only).
+- `fix(ProposalsPanel)`: Same login button pattern — clickable CTA to auth modal.
+- `feat(AlertsPanel)`: INDECI protocol checklist persists via `sessionStorage` (tab-scoped, key = top-5 urgent alert IDs). Survives panel open/close — operator doesn't lose progress tracking.
+- `fix(demoData)`: Chosica threshold corrected from 2.0m/3.5m to 2.5m SENAMHI across 6 occurrences (alert description, fusion prose ES+EN, copilot river/station answers).
+
+**Tests (+2, 670 total):**
+- `test(agent)`: `test_sitrep_less_than_quorum_tools_falls_through_to_llm` — regression guard for sitrep quorum fix.
+- `test(agent)`: `test_full_agent_tool_error_dict_produces_degraded_not_empty` — guard that copilot never returns empty string when all DB tools fail.
+
+**Commits (6):** `369d21e` robustness hardening → `4e8f3c0` demo threshold fix → `839f63d` INDECI checklist + login CTAs → `4e5cde9` copilot error dict test → docs + DEMO-GUIDE.
+
+---
 
 ### Session 21 — 2026-05-31 — Correctness audit + critical bug fixes
 
