@@ -448,7 +448,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                 return content
 
     if not rows:
-        return "No se encontraron datos para el período consultado."
+        return "No se encontraron datos en las fuentes consultadas para el período actual. Verifique el estado de los sensores en el panel Fuentes de datos o amplíe la ventana temporal."
 
     # Generate a minimal Spanish summary from rows without calling the LLM
     n = len(rows)
