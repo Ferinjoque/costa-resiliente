@@ -215,6 +215,7 @@ The Phase 2 concept text below describes the state at June 5, 2026. The Phase 3 
 | Fusion endpoint | flood + huayco + social | **+ rainfall + huayco trigger_rain_24h_mm + risk elevation from EMERGENCIA** |
 | EDAN export | SAR + population + districts | **+ rainfall metric card (ALERTA/EMERGENCIA) in all 3 formats (Markdown ES, Markdown EN, HTML)** |
 | Protocol checklist | Huayco + generic | **+ rainfall-specific protocol (brigades + SIAT-Lima pre-alert)** |
+| SINAGERD level | Alerts only | **Factors in rainfall everywhere**: health API, OperationalHUD, SituationBrief, CityOverview, EDAN report — 5 consistent surfaces |
 
 **Rubric alignment note:** The Phase 2 submission referenced "8 whitelisted database tools" and did not describe notifications, auth, HITL, or PDF export. All of these are now fully implemented and tested. Tool count correction for Phase 3 judges: **9 tools + sitrep multi-tool fast path**.
 
