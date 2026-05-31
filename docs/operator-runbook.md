@@ -1,6 +1,6 @@
 # Operator Runbook — Costa Resiliente
 
-> Updated through Sprint 15 — covers auth, SLA indicators, notifications, PDF export, HITL proposals, population at risk, auto-resolution, and quick-mode copilot.
+> Updated through Session 20 — covers auth, SLA toasts, notifications, PDF export, HITL proposals, population at risk, auto-resolution, sitrep mode, and enhanced quick-mode copilot.
 
 ## Quick Start
 
@@ -38,7 +38,7 @@
 ### Alertas Feed (right panel — keyboard shortcut: A)
 
 - Color-coded by severity: red=critical, orange=high, yellow=medium, green=low
-- **SLA breach chips**: timer turns red when SINAGERD SLA is exceeded
+- **SLA breach chips**: timer turns red when SINAGERD SLA is exceeded; a danger toast also fires so breach is visible even without the Alertas panel open
   - Critical: 5 min · High: 10 min · Medium: 30 min · Low: 60 min
 - Actions per alert card: **Reconocer**, **Escalar**, **Falsa alarma**, **Despachar**
 - All actions logged to Decision Log automatically
@@ -53,15 +53,20 @@
 - **Rechazar**: removes from queue; reason logged
 - HITL (Human-in-the-Loop) — no AI-generated alert reaches the live feed without operator approval
 
-### Consultar Panel / Copilot (keyboard shortcut: Q)
+### Consultar Panel / Copilot (keyboard shortcut: C)
 
-- Type a question in Spanish
-- **Quick mode** (~2s): 5 common query patterns bypass the LLM entirely and return a template answer from cached DB data:
-  - "¿alertas activas?" → alert count + severity breakdown
-  - "nivel del río / Rímac / Chillón" → river level + trend (rising / stable / falling)
-  - "zona inundada / SAR" → flood polygon count + total area
-  - "lluvia / IMERG / mm" → max 72h rainfall per watershed
+- Type a question in Spanish — first suggestion chip: "Dame el resumen completo de la situación"
+- **SITREP mode** (~3s): use "resumen completo", "inicio de guardia", "sitrep", or "situation report" → calls 4 tools in parallel (alertas + lluvia + ríos + SAR) and returns a structured SITREP narrative
+- **Quick mode** (~2s): 9 common query patterns bypass the LLM entirely:
+  - "¿alertas activas?" / "situación actual" → alert count + severity breakdown
+  - "nivel del río / Rímac / Chillón" → river level + flow rate + trend (rising / stable / falling)
+  - "zona inundada / SAR" → flood polygon count + total area + largest district
+  - "lluvia / IMERG / mm" → 1h, 24h, 72h rainfall + EMERGENCIA/ALERTA/AVISO threshold
   - "población en riesgo / afectados" → estimated persons in flooded zones
+  - "huayco / quebrada / Huaycoloro" → susceptibility + probability score
+  - "señales sociales / avistamiento / vecinos" → urgent signal breakdown by label
+  - "albergue / hospital / puente" → critical infrastructure in flood zones
+  - "protocolo / INDECI / qué hacer" → protocol RAG (pgvector)
 - **Full mode** (~15–30s): all other queries go through the 9-tool agentic loop:
   - `get_flood_polygons` — SAR flood extents
   - `get_huayco_risk` — quebrada susceptibility
