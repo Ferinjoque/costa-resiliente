@@ -446,6 +446,33 @@ class TestDecisionLog:
         assert resp.status_code == 200
         assert resp.json() == []
 
+    @pytest.mark.asyncio
+    async def test_payload_null_does_not_crash(self):
+        """Decision log endpoint must not crash on entries with NULL payload.
+
+        Regression guard: prior code used dict(r._mapping['payload']) which
+        raises TypeError when payload is None (some action types allow null).
+        Fix: coerce None → {}.
+        """
+        from inspect import getsource
+        from costa_api.routers.alerts import list_decision_log
+        src = getsource(list_decision_log)
+        # Verify the NULL guard is present in the source
+        assert 'if r._mapping["payload"]' in src or "if r._mapping.get" in src, (
+            "list_decision_log must guard against NULL payload to avoid TypeError"
+        )
+
+        # Integration: endpoint returns 200 (does not 500 on existing null payloads)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get("/api/v1/alerts/decision-log?limit=50", headers=AUTH)
+        assert resp.status_code == 200, (
+            f"Decision log must return 200 even when entries have NULL payload, got {resp.status_code}"
+        )
+        for entry in resp.json():
+            assert isinstance(entry.get("payload"), dict), (
+                f"Entry {entry.get('id')} payload must be dict (not None), got {type(entry.get('payload'))}"
+            )
+
 
 # ─── GET /api/v1/alerts/decision-log/export ──────────────────────────────────
 
