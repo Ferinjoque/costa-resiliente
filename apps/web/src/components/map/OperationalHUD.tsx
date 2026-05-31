@@ -65,6 +65,7 @@ export function OperationalHUD() {
     const v = f.properties.acc_72h_mm ?? 0;
     return v > mx ? v : mx;
   }, 0) ?? 0;
+  const maxRainWs = imergData?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? "";
   const rainLevel: "ok" | "warn" | "danger" = maxRain72h >= 50 ? "danger" : maxRain72h >= 25 ? "warn" : "ok";
 
   // Scraper degradation: count offline sources for an at-a-glance chip.
@@ -137,8 +138,8 @@ export function OperationalHUD() {
               "flex items-center gap-1 px-2.5 py-1.5 border-r border-border-subtle",
             )}
             title={locale === "es"
-              ? `Lluvia 72h: ${maxRain72h.toFixed(0)} mm — ${rainLevel === "danger" ? "EMERGENCIA (>50mm)" : "ALERTA (>25mm)"}`
-              : `72h rain: ${maxRain72h.toFixed(0)} mm — ${rainLevel === "danger" ? "EMERGENCY (>50mm)" : "ALERT (>25mm)"}`}
+              ? `Lluvia 72h: ${maxRain72h.toFixed(0)} mm${maxRainWs ? ` (${maxRainWs})` : ""} — ${rainLevel === "danger" ? "⚠ EMERGENCIA ANA (>50mm)" : "ALERTA ANA (>25mm)"}`
+              : `72h rain: ${maxRain72h.toFixed(0)} mm${maxRainWs ? ` (${maxRainWs})` : ""} — ${rainLevel === "danger" ? "⚠ ANA EMERGENCY (>50mm)" : "ANA ALERT (>25mm)"}`}
           >
             <span className="text-xs font-mono tabular-nums">
               <span className={rainLevel === "danger" ? "text-danger font-bold" : "text-warn-muted font-semibold"}>
