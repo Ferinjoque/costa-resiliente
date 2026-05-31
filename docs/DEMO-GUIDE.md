@@ -151,7 +151,8 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 | **FEEDS chip (core only)** | No false alarms from expected-offline reddit/telegram/SAR between acquisitions |
 | **Province filter bug fix** | Rainfall alerts (district-less) correctly appear in Lima Metro view |
 | **Local Ollama (zero cloud)** | All ML inference local — no API keys, no data egress, works offline |
-| **635 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, rainfall-mm, province filter |
+| **640 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, rainfall-mm, province filter, risk elevation |
+| **SINAGERD level consistency** | Rainfall now factors into level across health API, OperationalHUD, SituationBrief, CityOverview, EDAN — 5 consistent surfaces |
 | **Append-only decision log** | DB trigger rejects UPDATE/DELETE — full audit trail for SINAGERD post-event review |
 
 ---
