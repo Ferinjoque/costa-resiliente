@@ -578,6 +578,30 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
       { district: "Ate", affected_population: 24600, overlap_km2: 1.9 },
     ],
   },
+  "Dame el resumen completo de la situación": {
+    answer: "**SITREP — Lima Metropolitana (15-Mar-2017, 08:00 Lima)**\n\n**ALERTAS (4 activas):** 1 crítica (Huayco Jicamarca, prob. 0.91), 2 altas (Inundación Ate y Carabayllo), 1 media (Rímac elevado). Nivel SINAGERD: **EMERGENCIA**.\n\n**LLUVIA 72h:** Cuenca Rímac 63.4 mm — ⚠ EMERGENCIA (>50 mm ANA). Chillón 48.2 mm — ALERTA.\n\n**RÍOS:** Chosica 2.4 m (umbral 2.0 m, tendencia ↑ ascendente). Carabayllo 3.1 m (umbral 2.5 m, tendencia ↓ descendente).\n\n**INUNDACIÓN SAR:** 9.7 km² totales en 4 distritos. ~84,572 personas en zona de riesgo.\n\nAcción inmediata recomendada: activar evacuación preventiva Quebrada Jicamarca + preposicionar recursos en Carabayllo norte.",
+    intent: "flood_status",
+    confidence: 0.96,
+    query_plan: "sitrep_4tools_parallel",
+    sources: [
+      { tool: "get_active_alerts", count: 4, critical: 1, high: 2 },
+      { tool: "get_rainfall_accumulation", rimac_72h: 63.4, chillen_72h: 48.2 },
+      { tool: "get_river_levels", chosica_m: 2.4, carabayllo_m: 3.1 },
+      { tool: "get_flood_polygons", total_km2: 9.7, districts: 4 },
+    ],
+  },
+  "Situation report please": {
+    answer: "**SITREP — Lima Metropolitan Area (15-Mar-2017, 08:00 Lima)**\n\n**ACTIVE ALERTS (4):** 1 critical (Huayco Quebrada Jicamarca, prob. 0.91), 2 high (Flood Ate + Carabayllo), 1 medium (Rímac elevated). SINAGERD Level: **EMERGENCY**.\n\n**72h RAINFALL:** Rímac 63.4 mm — ⚠ EMERGENCY (>50 mm ANA threshold). Chillón 48.2 mm — ALERT.\n\n**RIVERS:** Chosica 2.4 m (threshold 2.0 m, ↑ rising). Carabayllo 3.1 m (threshold 2.5 m, ↓ falling).\n\n**SAR FLOOD:** 9.7 km² total across 4 districts. ~84,572 people in risk zones.\n\nImmediate action: preventive evacuation Quebrada Jicamarca + pre-position resources Carabayllo norte.",
+    intent: "flood_status",
+    confidence: 0.96,
+    query_plan: "sitrep_4tools_parallel",
+    sources: [
+      { tool: "get_active_alerts", count: 4, critical: 1, high: 2 },
+      { tool: "get_rainfall_accumulation", rimac_72h: 63.4, chillen_72h: 48.2 },
+      { tool: "get_river_levels", chosica_m: 2.4, carabayllo_m: 3.1 },
+      { tool: "get_flood_polygons", total_km2: 9.7, districts: 4 },
+    ],
+  },
 };
 
 // ─── Critical infrastructure (OSM) ───────────────────────────────────────────
