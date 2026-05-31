@@ -45,11 +45,24 @@ export function OperationalHUD() {
   const active = alerts.filter((a) => a.status === "active");
   const critical = active.filter((a) => a.severity === "critical").length;
   const high     = active.filter((a) => a.severity === "high").length;
-  const level: SinagerdLevel =
+
+  // Max 72h rainfall computed first so it can influence SINAGERD level
+  const maxRain72h = imergData?.features.reduce((mx, f) => {
+    const v = f.properties.acc_72h_mm ?? 0;
+    return v > mx ? v : mx;
+  }, 0) ?? 0;
+  const maxRainWs = imergData?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? "";
+  const rainLevel: "ok" | "warn" | "danger" = maxRain72h >= 50 ? "danger" : maxRain72h >= 25 ? "warn" : "ok";
+
+  // Factor in rainfall for SINAGERD level (consistent with health API, CityOverview, SituationBrief)
+  let level: SinagerdLevel =
     critical > 0         ? "EMERGENCIA" :
     high > 1 || active.length > 4 ? "ALERTA" :
     active.length > 0    ? "AVISO" :
                            "NORMAL";
+  if (maxRain72h >= 50 && level !== "EMERGENCIA") level = "EMERGENCIA";
+  else if (maxRain72h >= 25 && (level === "AVISO" || level === "NORMAL")) level = "ALERTA";
+  else if (maxRain72h >= 15 && level === "NORMAL") level = "AVISO";
 
   const cfg = LEVEL_CONFIG[level];
   const floodKm2   = exposure?.districts.reduce((s, d) => s + d.overlap_km2, 0) ?? 0;
@@ -59,14 +72,6 @@ export function OperationalHUD() {
     (f) => _urgentLabels.has(f.properties.triage_label ?? ""),
   ).length ?? 0;
   const online = health?.status === "ok" && !apiDown;
-
-  // Max 72h rainfall for rain metric chip
-  const maxRain72h = imergData?.features.reduce((mx, f) => {
-    const v = f.properties.acc_72h_mm ?? 0;
-    return v > mx ? v : mx;
-  }, 0) ?? 0;
-  const maxRainWs = imergData?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? "";
-  const rainLevel: "ok" | "warn" | "danger" = maxRain72h >= 50 ? "danger" : maxRain72h >= 25 ? "warn" : "ok";
 
   // Scraper degradation: count offline sources for an at-a-glance chip.
   // Exclude best-effort / long-cadence sources (reddit, telegram, flood/SAR)
