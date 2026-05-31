@@ -157,6 +157,11 @@ export function DecisionLogPanel() {
       <PanelHeader>
         <ClipboardList size={15} className="text-accent shrink-0" aria-hidden="true" />
         <PanelTitle>{panelTitle}</PanelTitle>
+        {entries.length > 0 && (
+          <span className="text-xs font-mono tabular-nums text-ink-subtle bg-surface-sunken rounded px-1.5 py-0.5 shrink-0">
+            {entries.length}
+          </span>
+        )}
 
         {/* Refresh */}
         <button
