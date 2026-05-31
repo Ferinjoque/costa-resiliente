@@ -39,7 +39,7 @@ Click the first suggestion: **"Dame el resumen completo de la situación"**
 
 **What happens:**
 - Sitrep mode triggers (5 tools sequential, ~5 seconds, no LLM)
-- Response includes: **7 active alerts** (3 crit huayco + 1 crit rain + 3 high) + rainfall 63mm EMERGENCIA, **Chosica 2.41m → acercándose** (2.5m threshold), SAR flood, **Pedregal MUY ALTO 91% · también: Huaycoloro**
+- Response includes: **7 active alerts** (3 crit, 4 high) + Rímac 63mm EMERGENCIA **· también Chillón: 28mm**, **Chosica 2.41m → acercándose** (2.5m threshold), SAR flood, **Pedregal MUY ALTO 91% · también: Huaycoloro**
 - Badge shows **"SITREP · 5 herramientas · sin LLM"** (distinct from regular quick mode)
 - Action: **"Activar protocolo EDAN y escalar a COEN. Activar evacuación preventiva quebradas cuenca Rímac."** (combined directive from critical alerts + EMERGENCIA rainfall)
 
