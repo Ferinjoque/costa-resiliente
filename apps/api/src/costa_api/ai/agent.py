@@ -454,10 +454,23 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
 
     if "area_km2" in first:
         total = sum(r.get("area_km2") or 0 for r in rows)
-        return f"Se detectaron {n} polígono{'s' if n != 1 else ''} de inundación con área total de {total:.1f} km²."
+        # Largest polygon by area — most operationally significant
+        largest = max(rows, key=lambda r: r.get("area_km2") or 0)
+        largest_area = largest.get("area_km2", 0)
+        largest_district = largest.get("district_name") or largest.get("district")
+        district_note = f" Mayor en {largest_district} ({largest_area:.1f} km²)" if largest_district else ""
+        return f"Se detectaron {n} polígono{'s' if n != 1 else ''} de inundación SAR — total {total:.1f} km².{district_note}"
     if "risk_level" in first:
-        top = rows[0].get("name", "?")
-        return f"Se identificaron {n} quebrada{'s' if n != 1 else ''} con riesgo elevado. La más crítica: {top}."
+        top = rows[0]
+        top_name = top.get("name", "?")
+        top_prob = top.get("probability")
+        top_level = top.get("risk_level", "")
+        level_es = {"very_high": "MUY ALTO", "high": "ALTO", "medium": "MEDIO"}.get(top_level, top_level.upper())
+        prob_str = f" (prob. {float(top_prob):.2f})" if top_prob is not None else ""
+        return (
+            f"Se identificaron {n} quebrada{'s' if n != 1 else ''} con riesgo elevado. "
+            f"La más crítica: {top_name} — {level_es}{prob_str}."
+        )
     if "level_m" in first:
         r = rows[0]
         trend = r.get("trend", "unknown")
