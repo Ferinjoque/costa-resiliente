@@ -24,6 +24,7 @@ class HealthResponse(BaseModel):
     sinagerd_level: str = "NORMAL"  # EMERGENCIA / ALERTA / AVISO / NORMAL
     active_alerts: int = 0
     max_rain_72h_mm: float | None = None  # Max 72h rainfall across Lima watersheds
+    rain_level: str = "normal"  # emergencia (≥50mm) / alerta (≥25mm) / aviso (≥15mm 24h) / normal
 
 
 class SeedStatus(BaseModel):
@@ -67,6 +68,7 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
 
     # Max rainfall for quick external monitoring
     max_rain: float | None = None
+    rain_level = "normal"
     try:
         rain_row = await db.execute(
             text("""
@@ -77,10 +79,21 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
         )
         r = rain_row.scalar()
         max_rain = float(r) if r is not None else None
+        if max_rain is not None:
+            if max_rain >= 50.0:
+                rain_level = "emergencia"
+            elif max_rain >= 25.0:
+                rain_level = "alerta"
+            elif max_rain >= 15.0:
+                rain_level = "aviso"
     except Exception:
         pass
 
-    return HealthResponse(status="ok", version="0.1.0", sinagerd_level=level, active_alerts=total, max_rain_72h_mm=max_rain)
+    return HealthResponse(
+        status="ok", version="0.1.0",
+        sinagerd_level=level, active_alerts=total,
+        max_rain_72h_mm=max_rain, rain_level=rain_level,
+    )
 
 
 @router.get("/health/seed", response_model=SeedStatus)
