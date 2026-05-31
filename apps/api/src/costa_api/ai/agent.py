@@ -547,7 +547,13 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         if high: breakdown.append(f"{high} alta{'s' if high != 1 else ''}")
         suffix = f" ({', '.join(breakdown)} entre las {n} más recientes)" if breakdown else ""
         capped = " (mostrando las 20 más recientes)" if total > n else ""
-        return f"Hay {total} alerta{'s' if total != 1 else ''} activa{'s' if total != 1 else ''} en el sistema{capped}.{suffix}"
+        base = f"Hay {total} alerta{'s' if total != 1 else ''} activa{'s' if total != 1 else ''} en el sistema{capped}.{suffix}"
+        # Mention the top critical alert by title for immediate operator context
+        top_crit = next((r for r in rows if r.get("severity") == "critical"), None)
+        if top_crit and top_crit.get("title"):
+            district_note = f" ({top_crit.get('district_name')})" if top_crit.get("district_name") else ""
+            base += f" ⚠ Más crítica: {top_crit['title']}{district_note}."
+        return base
     if "acc_72h_mm" in first:
         mx = max((r.get("acc_72h_mm") or 0) for r in rows)
         mx_ws = next((r.get("watershed") for r in rows if (r.get("acc_72h_mm") or 0) == mx), "cuenca")
