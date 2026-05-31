@@ -580,7 +580,9 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         if high: breakdown.append(f"{high} alta{'s' if high != 1 else ''}")
         suffix = f" ({', '.join(breakdown)} entre las {n} más recientes)" if breakdown else ""
         capped = " (mostrando las 20 más recientes)" if total > n else ""
-        base = f"Hay {total} alerta{'s' if total != 1 else ''} activa{'s' if total != 1 else ''} en el sistema{capped}.{suffix}"
+        # Compute SINAGERD level
+        sinagerd = "EMERGENCIA" if crit > 0 else ("ALERTA" if high > 1 or total > 4 else "AVISO" if total > 0 else "NORMAL")
+        base = f"Hay {total} alerta{'s' if total != 1 else ''} activa{'s' if total != 1 else ''} — nivel SINAGERD {sinagerd}{capped}.{suffix}"
         # Mention the top critical alert by title for immediate operator context
         top_crit = next((r for r in rows if r.get("severity") == "critical"), None)
         if top_crit and top_crit.get("title"):
