@@ -986,6 +986,7 @@ async def test_sitrep_mode_calls_four_tools():
         )
 
     assert result.quick_mode is True
+    assert result.mode == "sitrep", f"Expected mode='sitrep', got {result.mode!r}"
     assert not result.blocked
     assert not mock_gw.chat.called
     # Should have data from all 4 tools
