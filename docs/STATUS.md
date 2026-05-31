@@ -265,7 +265,7 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 **Tests (+53):** 621 passed (↑53 from 568). Includes sitrep detection, sitrep answer builder, new quick patterns, infrastructure _build_answer, health Redis key, sitrep integration tests. TypeScript: 0 errors.
 
-**Commits (54):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `da4a350` calm-state → `cc4a6e9` richer-answers → `311bc87` protocol-dedup → `df42d39` huayco-prob → `17b59e3` tests → `d7b9a05` runbook → `733bb3c` redis-ui → `110ffb2` ANA-rag → `8d9b0bd` severity-filter → `0965d32` edan-prompt → `256cf6e` sitrep-24h → `90d8749` shelter-legend → `e90e863` imerg-label → `e8dabcb` ai-rec-district → `b1d2275` social-urgency → `716a4d8` copilot-http → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `9cd9099` fusion-prose → `d2bc4f7` tests.
+**Commits (60):** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `da4a350` calm-state → `cc4a6e9` richer-answers → `311bc87` protocol-dedup → `df42d39` huayco-prob → `17b59e3` tests → `d7b9a05` runbook → `733bb3c` redis-ui → `110ffb2` ANA-rag → `8d9b0bd` severity-filter → `0965d32` edan-prompt → `256cf6e` sitrep-24h → `90d8749` shelter-legend → `e90e863` imerg-label → `e8dabcb` ai-rec-district → `b1d2275` social-urgency → `716a4d8` copilot-http → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `9cd9099` fusion-prose → `d2bc4f7` tests → `d6a9346` edan-rainfall + more.
 
 ---
 
