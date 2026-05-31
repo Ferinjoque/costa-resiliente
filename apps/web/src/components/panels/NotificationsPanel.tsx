@@ -221,6 +221,11 @@ export function NotificationsPanel() {
         <PanelTitle>
           {locale === "es" ? "Notificaciones" : "Notifications"}
         </PanelTitle>
+        {subscribers.length > 0 && (
+          <span className="text-xs font-mono tabular-nums text-ink-subtle bg-surface-sunken rounded px-1.5 py-0.5 shrink-0">
+            {subscribers.length}
+          </span>
+        )}
         {failedCount > 0 && <Badge count={failedCount} variant="danger" />}
         <button
           onClick={() => setShowForm((o) => !o)}
