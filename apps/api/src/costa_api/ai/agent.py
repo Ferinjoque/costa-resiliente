@@ -37,7 +37,8 @@ REGLAS:
 - Personas afectadas → usa get_population_at_risk.
 - Tendencia de ríos → usa get_river_levels (campo trend: rising/falling/stable).
 - Protocolos INDECI/SINAGERD/EDAN → usa search_protocols.
-- Albergues o infraestructura crítica → usa get_infrastructure_impact.
+- Albergues COMPROMETIDOS (inundados o en zona de riesgo) → usa get_infrastructure_impact.
+- Albergues DISPONIBLES para evacuación o protocolo INDECI → usa search_protocols.
 - Responde en español, 2-4 oraciones concisas. Menciona nivel SINAGERD (EMERGENCIA/ALERTA/AVISO) cuando aplique.
 - Si algún río tiene trend=rising, destácalo como prioridad inmediata de evacuación.
 - Umbrales ANA Lima: lluvia 72h >= 50mm → EMERGENCIA (escalar a COEN). 72h >= 25mm → ALERTA (activar brigadas). 24h >= 15mm → AVISO.
@@ -96,12 +97,13 @@ _QUICK_PATTERNS: list[tuple[list[str], str]] = [
       "avistamiento", "reportes reciente", "ciudadanos", "comunidad",
       "vías bloqueadas", "vias bloqueadas", "heridos", "muertos", "víctimas"], "get_social_clusters"),
     (["hospital", "escuela", "puente", "infraestructura", "vial",
-      "albergue", "refugio", "centro de evacuaci", "centro evacu",
       "abastecimiento", "servicios básicos"], "get_infrastructure_impact"),
     (["protocolo", "indeci", "sinagerd", "procedimiento", "evacu",
       "plan de evacuación", "plan de respuesta", "minsa", "cenepred",
       "qué hacer", "que hacer", "pasos a seguir", "acción inmediata",
-      "edan", "formulario edan", "ficha edan", "reporte edan"], "search_protocols"),
+      "edan", "formulario edan", "ficha edan", "reporte edan",
+      "albergue", "refugio", "centro de evacuaci", "centro evacu",
+      "dónde evacuar", "donde evacuar", "punto de reunión"], "search_protocols"),
 ]
 
 

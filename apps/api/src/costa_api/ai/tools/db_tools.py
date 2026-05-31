@@ -131,10 +131,10 @@ TOOL_SCHEMAS: list[dict] = [
         "function": {
             "name": "get_infrastructure_impact",
             "description": (
-                "Obtiene infraestructura crítica (hospitales, escuelas, puentes, albergues) "
-                "que se encuentra dentro de zonas inundadas activas. "
-                "Úsalo cuando pregunten qué infraestructura está afectada, en riesgo, o "
-                "qué albergues/refugios están disponibles o comprometidos por inundaciones."
+                "Obtiene infraestructura crítica (hospitales, escuelas, puentes) "
+                "DENTRO de zonas inundadas activas (SAR Sentinel-1). "
+                "Úsalo cuando pregunten qué infraestructura está afectada o comprometida por inundaciones. "
+                "Para albergues DISPONIBLES para evacuación, usa search_protocols."
             ),
             "parameters": {
                 "type": "object",
