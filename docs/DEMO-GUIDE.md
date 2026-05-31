@@ -7,6 +7,15 @@
 
 ## 2-Minute Express Demo
 
+### Step 0 — Verify via API (5s)
+
+```bash
+curl http://localhost:8000/api/v1/health
+# → {"status":"ok","version":"0.1.0","sinagerd_level":"EMERGENCIA","active_alerts":2}
+```
+
+The health endpoint now reports the SINAGERD operational level and active alert count — useful for automated monitoring.
+
 ### Step 1 — System Check (15s)
 
 Open http://localhost:3000.
