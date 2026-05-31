@@ -39,7 +39,7 @@ Click the first suggestion: **"Dame el resumen completo de la situación"**
 
 **What happens:**
 - Sitrep mode triggers (5 tools sequential, ~5 seconds, no LLM)
-- Response includes: **7 active alerts** (3 crit huayco + 1 crit rain + 3 high) + rainfall mm (63mm EMERGENCIA), river trend + SENAMHI threshold, SAR flood area, **huayco quebrada risk** (Pedregal 91%)
+- Response includes: **7 active alerts** (3 crit huayco + 1 crit rain + 3 high) + rainfall 63mm EMERGENCIA, **Chosica 2.41m → acercándose** (2.5m threshold), SAR flood, **Pedregal MUY ALTO 91% · también: Huaycoloro**
 - Badge shows **"SITREP · 5 herramientas · sin LLM"** (distinct from regular quick mode)
 
 **Why this matters:** No LLM inference cost. Duty officer gets the full picture without AI inference. Sequential dispatch ensures all 5 sections are always present and correct.
