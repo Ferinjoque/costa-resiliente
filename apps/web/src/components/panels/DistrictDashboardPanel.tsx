@@ -29,13 +29,27 @@ import {
 } from "@/components/ui/primitives";
 
 // ANA alert thresholds per station code (meters)
-const STATION_THRESHOLDS: Record<string, number> = {
+// Code-based thresholds (legacy — matched against st.code)
+const STATION_CODE_THRESHOLDS: Record<string, number> = {
   "ANA-CHOSICA":        2.0,
   "ANA-CHACLACAYO":     1.5,
   "ANA-PUENTE-ANGELES": 1.7,
   "ANA-CARABAYLLO":     2.5,
   "ANA-HUACHIPA":       1.8,
 };
+// Name-fragment thresholds (matched against st.name.toLowerCase())
+const STATION_NAME_THRESHOLDS: [string, number][] = [
+  ["chosica", 2.5], ["carapongo", 2.0], ["chaclacayo", 1.5],
+  ["carabayllo", 2.5], ["huachipa", 1.8], ["manchay", 1.2], ["obrajillo", 1.8],
+];
+function getStationThreshold(code: string, name: string): number | null {
+  if (code in STATION_CODE_THRESHOLDS) return STATION_CODE_THRESHOLDS[code];
+  const nameLow = name.toLowerCase();
+  const match = STATION_NAME_THRESHOLDS.find(([key]) => nameLow.includes(key));
+  return match ? match[1] : null;
+}
+// Keep for backwards compat in JSX destructuring
+const STATION_THRESHOLDS: Record<string, number> = STATION_CODE_THRESHOLDS;
 
 // ─── Sparkline SVG ────────────────────────────────────────────────────────────
 
@@ -1059,7 +1073,7 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
           <p className="text-xs text-ink-muted mb-1.5">{tr("dashboard", "nearbyStations")}</p>
           <div className="space-y-1">
             {data.stations.map((st) => {
-              const threshold = STATION_THRESHOLDS[st.code] ?? null;
+              const threshold = getStationThreshold(st.code, st.name);
               const overThreshold = threshold != null && st.level_m != null && st.level_m >= threshold;
               // Near threshold: within 90% of threshold but not over
               const nearThreshold = !overThreshold && threshold != null && st.level_m != null && st.level_m >= threshold * 0.9;
