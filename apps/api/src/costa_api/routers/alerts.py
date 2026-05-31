@@ -342,6 +342,9 @@ async def alerts_stream(request: Request) -> StreamingResponse:
         return json.dumps(alerts, default=str)
 
     async def generate():
+        # Flush headers immediately with an SSE comment — defeats proxy buffering
+        # and makes the stream appear "live" to browsers on first connection.
+        yield ": connected\n\n"
         deadline = asyncio.get_running_loop().time() + _STREAM_MAX_LIFETIME_S
         while True:
             if await request.is_disconnected():
