@@ -376,7 +376,7 @@ th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:10px;font-weigh
 </div>
 <div class="banner">
   <span class="badge">SINAGERD ${lcLbl}</span>
-  <span class="banner-desc">${lcDesc}</span>
+  <span class="banner-desc">${lcDesc}${d.maxRain72h != null && d.maxRain72h >= 25 ? ` · ${d.maxRain72h >= 50 ? (es?"⚠ Lluvia EMERGENCIA ANA":"⚠ Rainfall ANA EMERGENCY") : (es?"Lluvia ALERTA ANA":"Rainfall ANA ALERT")} (${d.maxRain72h.toFixed(0)} mm/72h)` : ""}</span>
 </div>
 <div class="body">
   <div class="sec">
