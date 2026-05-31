@@ -244,3 +244,14 @@ class TestRiskProse:
         assert "EMERGENCIA" not in prose
         assert "ALERTA" not in prose
         assert "Lurín" not in prose
+
+    def test_includes_rainfall_alerta_when_25_to_50mm(self):
+        """Rainfall 25-50mm/72h → ALERTA tag in prose."""
+        prose = self._prose(
+            flood_area_km2=0.0, flood_polygon_count=0,
+            rainfall_72h=28.4, rainfall_ws="Chillón", rainfall_level="alerta",
+        )
+        assert "ALERTA" in prose
+        assert "28" in prose
+        assert "Chillón" in prose
+        assert "EMERGENCIA" not in prose
