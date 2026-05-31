@@ -59,8 +59,15 @@ export function OperationalHUD() {
   ).length ?? 0;
   const online = health?.status === "ok" && !apiDown;
 
-  // Scraper degradation: count offline sources for an at-a-glance chip
-  const scraperSources = scraperHealth?.sources ? Object.values(scraperHealth.sources) : [];
+  // Scraper degradation: count offline sources for an at-a-glance chip.
+  // Exclude best-effort / long-cadence sources (reddit, telegram, flood/SAR)
+  // from the degradation calculation — they're expected offline between acquisitions.
+  const _SCRAPER_CORE_KEYS = new Set(["bluesky", "rss", "imerg", "stations", "alerts"]);
+  const scraperSources = scraperHealth?.sources
+    ? Object.entries(scraperHealth.sources)
+        .filter(([k]) => _SCRAPER_CORE_KEYS.has(k))
+        .map(([, v]) => v)
+    : [];
   const offlineSources = scraperSources.filter((s) => s.status === "offline").length;
   const staleSources = scraperSources.filter((s) => s.status === "stale").length;
   const scraperLevel: "ok" | "warn" | "danger" =
