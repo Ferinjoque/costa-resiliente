@@ -578,9 +578,11 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         total = sum(int(r.get("estimated_population_at_risk") or 0) for r in rows)
         top_d = rows[0].get("district", "?")
         top_p = int(rows[0].get("estimated_population_at_risk") or 0)
+        # Show top 3 districts for context
+        top_districts = [f"{r.get('district', '?')} (~{int(r.get('estimated_population_at_risk') or 0):,})" for r in rows[:3]]
+        district_list = ", ".join(top_districts)
         return (
-            f"Estimado {total:,} personas en zonas inundadas ({n} distrito{'s' if n != 1 else ''}). "
-            f"Distrito más afectado: {top_d} (~{top_p:,} personas)."
+            f"Estimado {total:,} personas en zonas inundadas ({n} distrito{'s' if n != 1 else ''}): {district_list}."
         )
 
     if "flood_confidence" in first and "type" in first:
