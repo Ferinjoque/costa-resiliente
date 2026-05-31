@@ -263,10 +263,14 @@ async def get_huayco_risk(db: AsyncSession, min_risk: str = "high") -> list[dict
     sql = text("""
         SELECT q.name, q.priority, hs.probability, hs.risk_level,
                hs.computed_at, hs.trigger_rain_24h_mm
-        FROM ml.huayco_susceptibility hs
+        FROM (
+            SELECT DISTINCT ON (quebrada_id)
+                   quebrada_id, probability, risk_level, computed_at, trigger_rain_24h_mm
+            FROM ml.huayco_susceptibility
+            ORDER BY quebrada_id, computed_at DESC
+        ) hs
         JOIN geo.quebradas q ON q.id = hs.quebrada_id
-        WHERE hs.computed_at = (SELECT MAX(computed_at) FROM ml.huayco_susceptibility)
-          AND hs.risk_level = ANY(:levels)
+        WHERE hs.risk_level = ANY(:levels)
         ORDER BY hs.probability DESC
         LIMIT 10
     """).bindparams(bindparam("levels", type_=ARRAY(String)))
