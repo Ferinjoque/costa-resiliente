@@ -958,13 +958,16 @@ def test_build_answer_infrastructure_impact():
 # ─── Situation report (sitrep) fast path ─────────────────────────────────────
 
 def test_is_sitrep_query_matches():
-    """Known sitrep phrases trigger the 4-tool comprehensive snapshot."""
+    """Known sitrep phrases trigger the 5-tool sequential comprehensive snapshot."""
     from costa_api.ai.agent import _is_sitrep_query
     assert _is_sitrep_query("Dame el resumen completo de la situación")
     assert _is_sitrep_query("Necesito el sitrep de la guardia")
     assert _is_sitrep_query("Inicio de guardia — ¿cómo está todo?")
     assert _is_sitrep_query("Dame un resumen general de la emergencia")
     assert _is_sitrep_query("Situación general de Lima Metropolitana")
+    # Session 21 additions
+    assert _is_sitrep_query("Estado general de Lima")
+    assert _is_sitrep_query("Ponme al día")
 
 
 def test_is_sitrep_query_rejects_specific():
