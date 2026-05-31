@@ -1337,3 +1337,47 @@ async def test_sitrep_less_than_quorum_tools_falls_through_to_llm():
     assert "NORMAL" not in result.answer or "no active" not in result.answer.lower(), (
         "Must not claim sistema NORMAL when majority of sitrep tools failed"
     )
+
+
+# ─── Copilot answer when tool returns error dict ──────────────────────────────
+
+@pytest.mark.asyncio
+async def test_full_agent_tool_error_dict_produces_degraded_not_empty():
+    """When a DB tool returns an error dict (rows: []), final answer must
+    say "no se encontraron" or similar — never an empty string.
+
+    dispatch() catches all DB exceptions and returns {"rows": [], "error": str(exc)}.
+    The LLM sees this as a tool result with no data.  _build_answer must produce
+    a non-empty graceful answer when all tool results are empty.
+    """
+    db = AsyncMock()
+
+    # All tools return error dicts via normal dispatch path
+    async def _fail_tool(db, **kwargs):
+        raise RuntimeError("simulated DB timeout")
+
+    # LLM returns no tool calls (or we bypass LLM with keyword dispatch)
+    direct_response = _make_llm_response("No pude obtener datos de las inundaciones.")
+
+    with (
+        patch("costa_api.ai.agent.gateway") as mock_gw,
+        patch.dict(db_tools._TOOL_MAP, {
+            "get_flood_polygons": _fail_tool,
+            "get_active_alerts": _fail_tool,
+        }),
+        patch("costa_api.ai.tools.db_tools.get_cached", AsyncMock(return_value=None)),
+        patch("costa_api.ai.tools.db_tools.set_cached", AsyncMock()),
+    ):
+        mock_gw.chat = AsyncMock(return_value=direct_response)
+        mock_gw.extract_tool_calls = MagicMock(return_value=[])
+        mock_gw.extract_text = MagicMock(return_value=direct_response["message"]["content"])
+        result = await agent_run(
+            query="Qué zona tiene más inundaciones activas",
+            operator_id="op1",
+            db=db,
+        )
+
+    assert not result.blocked
+    assert result.answer, "Answer must never be empty even when all tools fail"
+    # Should be a graceful message or LLM direct answer, not an empty string
+    assert len(result.answer) > 10, f"Answer too short: {result.answer!r}"
