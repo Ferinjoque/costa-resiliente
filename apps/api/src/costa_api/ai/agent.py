@@ -427,7 +427,9 @@ async def run(
         # Append tool results (assistant message was already appended above)
         messages.extend(tool_result_messages)
 
-    # 3b. LLM fallback: keyword-dispatch when model timed out or called no tools
+    # 3b. LLM fallback: keyword-dispatch when model timed out or called no tools.
+    # If tools were called but all returned empty data, we keep the trace as-is
+    # (legitimate "no data" state — callers see it as no results, not an error).
     if llm_failed or (not all_tool_results and not tool_call_trace):
         kw_result = await _keyword_dispatch(query, db, rag_fn)
         if kw_result["rows"]:
