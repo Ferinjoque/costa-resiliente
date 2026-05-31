@@ -446,6 +446,13 @@ async def run(
     )
 
 
+# SENAMHI alert thresholds (meters) per station name fragment — module-level for shared use
+_STATION_THRESHOLDS: dict[str, float] = {
+    "chosica": 2.5, "carapongo": 2.0, "chaclacayo": 1.5,
+    "carabayllo": 2.5, "huachipa": 1.8, "manchay": 1.2, "obrajillo": 1.8,
+}
+
+
 def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -> str:
     """Extract final answer from last assistant message, or summarise rows directly."""
     for msg in reversed(messages):
@@ -482,11 +489,6 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             f"Se identificaron {n} quebrada{'s' if n != 1 else ''} con riesgo elevado. "
             f"La más crítica: {top_name} — {level_es}{prob_str}{trigger_str}."
         )
-    # SENAMHI alert thresholds (meters) per station name fragment
-    _STATION_THRESHOLDS: dict[str, float] = {
-        "chosica": 2.5, "carapongo": 2.0, "chaclacayo": 1.5,
-        "carabayllo": 2.5, "huachipa": 1.8, "manchay": 1.2, "obrajillo": 1.8,
-    }
     if "level_m" in first:
         r = rows[0]
         trend = r.get("trend", "unknown")
@@ -703,7 +705,17 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
         rising = [r for r in river_rows if r.get("trend") == "rising"]
         if rising:
             names = ", ".join(r.get("name", "?") for r in rising[:3])
-            sections.append(f"**Ríos:** {len(rising)} estación(es) en ascenso — {names}")
+            # Check SENAMHI threshold for top rising station
+            top_r = rising[0]
+            top_name_lower = (top_r.get("name") or "").lower()
+            top_threshold_note = ""
+            for key, threshold in _STATION_THRESHOLDS.items():
+                if key in top_name_lower:
+                    lv = top_r.get("level_m")
+                    if lv is not None and float(lv) >= threshold:
+                        top_threshold_note = f" ⚠ {top_r.get('name')}: {float(lv):.2f}m > umbral {threshold:.1f}m"
+                    break
+            sections.append(f"**Ríos:** {len(rising)} estación(es) en ascenso — {names}{top_threshold_note}")
             if not action:
                 action = f"Prioridad inmediata: monitorear evacuación preventiva en {names}."
         else:
