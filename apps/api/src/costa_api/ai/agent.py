@@ -877,8 +877,15 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             else:
                 vh_note = ""
             sections.append(f"**Huayco:** {top_name} — {level_es}{prob_str}{trigger_str}{vh_note}")
-            if top_level == "very_high" and not action:
-                action = f"Monitorear evacuación preventiva quebrada {top_name}."
+            if top_level == "very_high":
+                # Name critical quebradas in action directive regardless of what else is set
+                critical_qbr_names = [r.get("name", "?") for r in very_high_rows[:2]]
+                qbr_str = " + ".join(critical_qbr_names)
+                if not action:
+                    action = f"Activar evacuación preventiva quebrada(s) {qbr_str}."
+                elif "EDAN" in action or "Activar" in action:
+                    # Append specific quebrada names to existing directive
+                    action = action.rstrip(".") + f". Evacuar quebrada(s) {qbr_str}."
 
     if not sections:
         return "No se encontraron datos en ninguna fuente. Sistema posiblemente sin datos recientes."
