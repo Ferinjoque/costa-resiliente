@@ -991,7 +991,10 @@ def test_build_sitrep_answer_all_tools():
     """_build_sitrep_answer synthesises a coherent SITREP from 4 tool results."""
     from costa_api.ai.agent import _build_sitrep_answer
     per_tool_rows = [
-        ("get_active_alerts", [{"id": 1, "severity": "critical", "_total_active": 3}]),
+        ("get_active_alerts", [{"id": 1, "severity": "critical", "alert_type": "rainfall",
+                                "title": "Lluvia intensa — cuenca Rímac",
+                                "source_refs": {"acc_72h_mm": 63.2},
+                                "_total_active": 3}]),
         ("get_rainfall_accumulation", [{"watershed": "Rímac", "acc_72h_mm": 63.2, "acc_24h_mm": 20.1}]),
         ("get_river_levels", [{"name": "Chosica", "level_m": 2.8, "flow_m3s": 210, "trend": "rising"}]),
         ("get_flood_polygons", [{"scene_id": "S1A_001", "area_km2": 1.5, "confidence": 0.87}]),
@@ -999,10 +1002,11 @@ def test_build_sitrep_answer_all_tools():
     answer = _build_sitrep_answer(per_tool_rows)
     assert "SITREP" in answer
     assert "EMERGENCIA" in answer      # 1 critical alert → nivel EMERGENCIA
-    assert "63" in answer              # rainfall 63.2mm
+    assert "63" in answer              # rainfall 63.2mm (appears in both alerts and rainfall section)
     assert "Chosica" in answer         # rising river
     assert "1.5" in answer             # flood area
     assert "Acción" in answer or "acción" in answer   # action recommended
+    assert "Rímac" in answer           # critical alert title
 
 
 def test_build_sitrep_answer_empty_rows():
