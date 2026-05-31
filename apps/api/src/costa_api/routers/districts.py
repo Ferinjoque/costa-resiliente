@@ -401,14 +401,18 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
     ]
 
     # SINPAD historical event count (table may not exist if load_sinpad.py not run)
+    # Use ubigeo exact-match (indexed) when available; fall back to exact case-insensitive
+    # district name. Prior substring match ('%name%') overcounted — "Lima" matched all
+    # entries containing "lima" (Lima, La Molina, etc.), inflating historical risk counts.
     try:
         sinpad_result = await db.execute(
             text("""
                 SELECT COUNT(*) AS cnt
                 FROM historical.sinpad_events
-                WHERE distrito ILIKE '%' || :name || '%'
+                WHERE ubigeo = :ubigeo
+                   OR (ubigeo IS NULL AND LOWER(TRIM(distrito)) = LOWER(TRIM(:name)))
             """),
-            {"name": district["name"]},
+            {"ubigeo": ubigeo, "name": district["name"]},
         )
         historical_count = int((sinpad_result.scalar() or 0))
     except Exception as exc:

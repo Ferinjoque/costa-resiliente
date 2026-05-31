@@ -143,13 +143,30 @@ async def approve_proposal(
     p = dict(p_row._mapping)
     refs_json = json.dumps(p.get("source_refs") or [], default=str)
 
+    # Resolve district_id before inserting the alert.
+    # Prior bug: subquery in INSERT silently returned NULL for unknown ubigeo,
+    # creating a district-less alert that won't appear in district dashboards.
+    district_id: int | None = None
+    if p.get("district_ubigeo"):
+        did_row = await db.execute(
+            text("SELECT id FROM geo.districts WHERE ubigeo = :u"),
+            {"u": p["district_ubigeo"]},
+        )
+        district_id = did_row.scalar()
+        if district_id is None:
+            logger.warning(
+                "approve_proposal: district_ubigeo '%s' not found in geo.districts — "
+                "alert will have no district assignment",
+                p["district_ubigeo"],
+            )
+
     alert_result = await db.execute(
         text("""
             INSERT INTO ops.alerts
                 (type, severity, status, title, description, district_id, source_refs)
             VALUES (
                 :atype, :sev, 'active', :title, :desc,
-                (SELECT id FROM geo.districts WHERE ubigeo = :ubigeo),
+                :did,
                 CAST(:refs AS jsonb)
             )
             RETURNING id
@@ -159,7 +176,7 @@ async def approve_proposal(
             "sev": p["severity"],
             "title": p["title"],
             "desc": p["summary"],
-            "ubigeo": p["district_ubigeo"],
+            "did": district_id,
             "refs": refs_json,
         },
     )
