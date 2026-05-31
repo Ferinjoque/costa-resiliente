@@ -105,9 +105,10 @@ TOOL_SCHEMAS: list[dict] = [
         "function": {
             "name": "get_social_clusters",
             "description": (
-                "Obtiene resumen de señales sociales (Bluesky, Reddit, RSS) clasificadas por triage. "
-                "Úsalo cuando pregunten sobre reportes ciudadanos, redes sociales, vecinos afectados, "
-                "avistamientos de huayco o desborde, o solicitudes de ayuda."
+                "Obtiene resumen de señales sociales (Bluesky, Reddit, Telegram) clasificadas por IA. "
+                "Prioridad: needs_help (solicitudes ayuda) > huayco_observation > flood_observation > road_blocked. "
+                "Úsalo cuando pregunten sobre reportes ciudadanos, víctimas, vías bloqueadas, "
+                "avistamientos de huayco o inundación, o señales de campo."
             ),
             "parameters": {
                 "type": "object",
