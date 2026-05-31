@@ -103,16 +103,16 @@ export function LiveTicker() {
       rainfallItems.push({
         id: "rain-emerg",
         text: locale === "es"
-          ? `[EMERG·LLUVIA] ${maxRain.toFixed(0)} mm/72h ${maxWs} — supera umbral crítico ANA`
-          : `[EMERG·RAIN] ${maxRain.toFixed(0)} mm/72h ${maxWs} — exceeds ANA critical threshold`,
+          ? `[EMERG·LLUVIA] ${maxRain.toFixed(0)} mm/72h cuenca ${maxWs} — ⚠ EMERGENCIA ANA`
+          : `[EMERG·RAIN] ${maxRain.toFixed(0)} mm/72h ${maxWs} watershed — ⚠ ANA EMERGENCY`,
         color: "text-danger",
       });
     } else if (maxRain >= 25) {
       rainfallItems.push({
         id: "rain-alert",
         text: locale === "es"
-          ? `[ALERT·LLUVIA] ${maxRain.toFixed(0)} mm/72h ${maxWs} — supera umbral ANA`
-          : `[ALERT·RAIN] ${maxRain.toFixed(0)} mm/72h ${maxWs} — exceeds ANA threshold`,
+          ? `[ALERT·LLUVIA] ${maxRain.toFixed(0)} mm/72h cuenca ${maxWs} — ALERTA ANA`
+          : `[ALERT·RAIN] ${maxRain.toFixed(0)} mm/72h ${maxWs} watershed — ANA ALERT`,
         color: "text-warn-muted",
       });
     }
