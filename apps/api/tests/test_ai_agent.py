@@ -483,19 +483,24 @@ def test_build_answer_river_levels_no_rising():
 
 
 def test_build_answer_active_alerts_with_critical():
-    """severity rows → total + critical/high breakdown + top critical alert title."""
+    """severity rows → total + critical/high breakdown + top critical alert title + rainfall mm."""
     from costa_api.ai.agent import _build_answer
     rows = [
-        {"id": 1, "severity": "critical", "title": "Lluvia intensa — cuenca Rímac", "district_name": "Lurigancho", "_total_active": 4},
-        {"id": 2, "severity": "high",     "title": "Inundación Ate", "district_name": "Ate",       "_total_active": 4},
-        {"id": 3, "severity": "high",     "title": "Huayco Carabayllo", "district_name": "Carabayllo", "_total_active": 4},
+        {"id": 1, "severity": "critical", "alert_type": "rainfall",
+         "title": "Lluvia intensa — cuenca Rímac", "district_name": None,
+         "source_refs": {"acc_72h_mm": 63.2, "watershed_id": "1"},
+         "_total_active": 4},
+        {"id": 2, "severity": "high",     "title": "Inundación Ate", "district_name": "Ate",
+         "source_refs": None, "_total_active": 4},
+        {"id": 3, "severity": "high",     "title": "Huayco Carabayllo", "district_name": "Carabayllo",
+         "source_refs": None, "_total_active": 4},
     ]
     answer = _build_answer([], rows, "alertas")
     assert "4" in answer  # total active
     assert "crítica" in answer.lower()
     assert "alta" in answer.lower()
     assert "Rímac" in answer  # top critical alert title should appear
-    assert "Lurigancho" in answer  # district of top critical alert
+    assert "63" in answer    # rainfall mm should appear for rainfall-type alert
 
 
 def test_build_answer_social_signals_breakdown():
