@@ -418,13 +418,16 @@ async def run(
                     args = {}
             parsed_calls.append((name, args))
 
-        results = await asyncio.gather(
-            *[dispatch(name, args, db, rag_fn=rag_fn) for name, args in parsed_calls],
-            return_exceptions=True,
-        )
+        # Run tools sequentially to avoid concurrent-session race on shared AsyncSession.
+        raw_results = []
+        for name, args in parsed_calls:
+            try:
+                raw_results.append(await dispatch(name, args, db, rag_fn=rag_fn))
+            except Exception as exc:
+                raw_results.append(exc)
 
         tool_result_messages: list[dict] = []
-        for (name, args), result in zip(parsed_calls, results):
+        for (name, args), result in zip(parsed_calls, raw_results):
             if isinstance(result, Exception):
                 logger.error("Tool %s raised: %s", name, result)
                 result = {"tool": name, "rows": [], "count": 0, "error": str(result)}
