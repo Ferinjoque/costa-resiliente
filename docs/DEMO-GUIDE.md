@@ -51,7 +51,8 @@ Click the first suggestion: **"Dame el resumen completo de la situación"**
 Click **"Alertas"** (A key).
 
 **What judges see:**
-- Filter by severity: click **"⚠ Crit"** → shows only critical alert (Rímac EMERGENCIA)
+- **7 active alerts** shown (sorted: 3 critical first, then 4 high) — SLA breach badges on unacknowledged critical alerts
+- Filter by severity: click **"⚠ Crit"** → shows 3 critical alerts (2 huayco + 1 rainfall EMERGENCIA)
 - Each alert card shows: type, district, SLA timer, source refs
 - AI Recommendation box: specific action using actual district/watershed name
 - INDECI Protocol checklist: 4 checkboxes, each logged to Decision Log on completion
