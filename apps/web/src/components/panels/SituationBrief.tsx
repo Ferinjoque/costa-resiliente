@@ -39,11 +39,22 @@ export function SituationBrief() {
   const critical = active.filter((a) => a.severity === "critical").length;
   const high = active.filter((a) => a.severity === "high").length;
 
-  const level: Level =
+  // Max 72h rainfall computed first so it can influence the SINAGERD level
+  const maxRain72h = imerg?.features.reduce((mx, f) => {
+    const v = f.properties.acc_72h_mm ?? 0;
+    return v > mx ? v : mx;
+  }, 0) ?? 0;
+  const maxRainWs = imerg?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? "";
+
+  // Factor in rainfall (consistent with health API + CityOverview logic)
+  let level: Level =
     critical > 0 ? "EMERGENCIA"
     : high > 1 || active.length > 4 ? "ALERTA"
     : active.length > 0 ? "AVISO"
     : "NORMAL";
+  if (maxRain72h >= 50 && level !== "EMERGENCIA") level = "EMERGENCIA";
+  else if (maxRain72h >= 25 && (level === "AVISO" || level === "NORMAL")) level = "ALERTA";
+  else if (maxRain72h >= 15 && level === "NORMAL") level = "AVISO";
 
   const cfg = LEVEL_CFG[level];
 
@@ -56,13 +67,6 @@ export function SituationBrief() {
       const o: Record<string, number> = { muy_alto: 3, alto: 2, moderado: 1, bajo: 0 };
       return o[b.properties.risk_level] - o[a.properties.risk_level];
     })[0];
-
-  // Max 72h rainfall across all watersheds
-  const maxRain72h = imerg?.features.reduce((mx, f) => {
-    const v = f.properties.acc_72h_mm ?? 0;
-    return v > mx ? v : mx;
-  }, 0) ?? 0;
-  const maxRainWs = imerg?.features.find((f) => (f.properties.acc_72h_mm ?? 0) === maxRain72h)?.properties.name ?? "";
 
   const bullets: { icon: React.ReactNode; text: string }[] = [];
 
