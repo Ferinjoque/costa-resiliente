@@ -160,6 +160,7 @@ export interface ScraperSourceHealth {
 export interface ScraperHealth {
   retrieved_at: string;
   overall_status: "ok" | "stale" | "offline";
+  redis?: { status: "ok" | "offline" };
   sources: Record<string, ScraperSourceHealth>;
 }
 
