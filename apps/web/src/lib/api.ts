@@ -636,6 +636,7 @@ export interface FusionHuayco {
   highest_risk_level: string | null;
   highest_probability: number | null;
   quebrada_name: string | null;
+  trigger_rain_24h_mm: number | null;
   computed_at: string | null;
 }
 

@@ -129,7 +129,10 @@ export function FusionCallout() {
                     (data.huayco.highest_probability != null
                       ? ` (${t.prob(data.huayco.highest_probability)})`
                       : "") +
-                    (data.huayco.quebrada_name ? ` · ${data.huayco.quebrada_name}` : "")
+                    (data.huayco.quebrada_name ? ` · ${data.huayco.quebrada_name}` : "") +
+                    (data.huayco.trigger_rain_24h_mm != null
+                      ? ` · umbral: ${data.huayco.trigger_rain_24h_mm.toFixed(0)} mm/24h`
+                      : "")
                   : t.noData
               }
               dim={!data.huayco.highest_risk_level}
