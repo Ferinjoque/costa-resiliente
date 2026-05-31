@@ -75,6 +75,7 @@ _QUICK_PATTERNS: list[tuple[list[str], str]] = [
       "resumen de", "resumen operacional", "qué está pasando", "que esta pasando",
       "estado actual", "novedades", "reporte actual"], "get_active_alerts"),
     (["nivel del río", "nivel del rim", "nivel del chill", "nivel del lurin",
+      "nivel del rio", "cota del rio", "lectura hidro",
       "caudal", "río rímac", "río rimac", "rio rimac", "río chillon", "río lurín",
       "rimac", "rímac", "chillon", "chillón", "lurin", "lurín",
       "chosica", "carapongo", "ñaña", "estacion hidrol",
