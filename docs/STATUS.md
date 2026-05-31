@@ -254,32 +254,22 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 - `fix(DecisionLogPanel)`: offline CSV export used same filename for demo and real data. Fixed: prefixes `DEMO_` when `isError` to prevent accidental submission of fabricated data as official EDAN record. Also wrapped `JSON.stringify(payload)` in try/catch to prevent export crash on unusual payloads.
 - `fix(i18n)`: alerts error message now reads "Error al cargar alertas — mostrando datos de demostración".
 
-**Tests (+14):** Severity minimum filter (3), river trend anchor, flood exposure 7-day filter, total pop type check, huayco prose null prob, replay time (5 cases), pop-at-risk confidence, district risk summary (2). Suite: 654 passed.
+**Tests (+25):** 665 total (up from 640). Regression guards for: severity min-filter, river trend, district risk rainfall, health per-watershed, sitrep sequential, near-threshold river warning, subestacion multi-quick, decision-log null payload, auth canonical username, SINPAD exact match, flood exposure 7-day, and more.
 
-**Commits (Session 21, 20 total):**
-- `9873a39` fix(critical): severity filter, river trend, fusion rainfall, flood exposure, demo transparency (+6 tests)
-- `45ffdb4` fix(ux): AskPanel typewriter, SLA breach pruning, agent dead code
-- `a512bfb` fix(ops): alerts active-first sort, stream timeout txn, health per-watershed rain
-- `d78dd30` fix(data): pop-at-risk confidence note, replay midnight fix
-- `e69083d` test: replay time (5 cases), pop-at-risk confidence note (+6)
-- `0cf10a3` fix(workers): delivery attempts count, huayco rain zero-check, triage similarity floor
-- `71a8019` feat(geo): district risk summary and dashboard include rainfall alerts (39 districts→alto)
-- `3063b0a` test: district risk summary includes watershed rainfall (+2)
-- `fd21515` test(health): per-watershed rainfall query regression guard (+2)
-- `df62c86` fix(frontend): toast cap, DEMO badge, notifications delete race, social labels
-- `3b6db4b` refactor(frontend): consolidate URGENT_SOCIAL_LABELS (adds infrastructure_damage)
-- `bfaadb6` docs(demo): update test count, add Session 21 differentiators
-- `895f007` fix(demo): huayco per-quebrada latest + auto-refresh on ML overwrite
-- `3d0f4e3` test: district dashboard rainfall UNION guard (+2)
-- `0f1b4a0` test: alert active-first sort regression guard (+1)
-- `fc64761` feat(demo): quebrada geometries + corrected huayco susceptibility names
+**Session 21 — 100 commits, comprehensive hardening:**
 
-**Demo state improvements (Session 21):**
-- 7 active alerts: 3 critical (2 huayco + 1 rainfall) + 4 high (3 huayco + 1 rainfall)
-- 39 Lima districts show "alto" risk due to watershed rainfall alerts
-- Lurigancho dashboard shows 6 active alerts (4 huayco + 2 rainfall)
-- All 10 priority quebradas have geometries for spatial district join
-- Copilot sitrep shows Pedregal 91% very_high + Rímac 63mm EMERGENCIA
+Backend: severity min-filter, river trend CTE, fusion LATERAL rainfall, flood exposure 7-day, alerts active-first + critical-first sort, SSE stream sort, health per-watershed, SINPAD exact match, proposals district warning, sequential sitrep dispatch (race fixed), agent multi-quick mode field, guardrail marker, search_protocols trace args, share 48h window, fan_out engine.begin, SMS body defensive, JWT canonical username, decision-log null payload, SSE critical sort, rainfall alert LATERAL, huayco dedup quebrada_id 48h, auto_seed quebrada geometries, near-threshold river warnings (90%), sitrep shows both critical quebradas
+
+Frontend: error propagation (useAlerts/useDecisionLog/useFusion/useDistrictDashboard/useDistrictRiskSummary), AskPanel typewriter truncation, SLA breach pruning, social feed partial key match, DEMO badge on confirmed error, toast danger-preserving cap, notifications delete pending state, URGENT_SOCIAL_LABELS shared constant (+infrastructure_damage), AskPanel sitrep badge ~5s
+
+Workers: delivery attempts count, huayco rain zero-check, triage similarity 0.3 floor, rainfall alert per-watershed LATERAL
+
+**Demo state (Session 21):**
+- 7 active alerts: 3 critical (Huaycoloro+Pedregal huayco + Rímac rain) + 4 high
+- 39 Lima districts show "alto" risk from watershed rainfall
+- Lurigancho dashboard: 6 active alerts (4 huayco + 2 rainfall)
+- Quebradas: all 10 have geometries for district spatial join
+- Sitrep: "Pedregal MUY ALTO 91% · también: Huaycoloro · Chosica 2.41m acercándose 2.5m"
 
 ---
 
