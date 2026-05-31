@@ -463,5 +463,5 @@ def _write_imerg_heartbeat() -> None:
             )
         finally:
             r.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        log.debug("imerg: heartbeat write failed (non-critical): %s", exc)
