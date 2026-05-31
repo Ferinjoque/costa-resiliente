@@ -862,6 +862,24 @@ def test_detect_quick_novedades():
     assert _detect_quick("¿Cuáles son las novedades de la guardia?") == "get_active_alerts"
 
 
+def test_detect_quick_edan():
+    """'edan' routes to search_protocols."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("¿Cómo lleno el formulario EDAN?") == "search_protocols"
+
+
+def test_detect_quick_vias_bloqueadas():
+    """'vías bloqueadas' routes to get_social_clusters."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("¿Qué vías bloqueadas hay reportadas?") == "get_social_clusters"
+
+
+def test_detect_quick_viviendas_afectadas():
+    """'viviendas afectadas' routes to get_population_at_risk."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("¿Cuántas viviendas afectadas hay?") == "get_population_at_risk"
+
+
 def test_detect_quick_comunidad_ambiguous():
     """'comunidad' + 'inundaci' → 2 patterns → None (falls to LLM)."""
     from costa_api.ai.agent import _detect_quick
