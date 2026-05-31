@@ -511,7 +511,9 @@ async def quebradas(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
 
 @router.get("/flood/exposure")
 async def flood_exposure(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
-    """Population at risk — spatial join of recent flood polygons × districts."""
+    """Population at risk — spatial join of recent flood polygons × districts.
+    Only includes flood polygons acquired within the last 7 days to avoid
+    accumulating stale/historical flood extents into the population estimate."""
     await db.execute(text("SET LOCAL statement_timeout = '30000'"))
     result = await db.execute(
         text("""
@@ -535,6 +537,7 @@ async def flood_exposure(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
             FROM geo.districts d
             JOIN ml.flood_polygons f
               ON ST_Intersects(ST_MakeValid(f.geom), ST_MakeValid(d.geom))
+             AND f.acquired_at >= NOW() - INTERVAL '7 days'
             GROUP BY d.id, d.name, d.population
             ORDER BY overlap_km2 DESC
         """)

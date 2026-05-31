@@ -316,7 +316,11 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
     );
     setMenuOpen(false);
     try {
-      await actOnAlert(alert.id, action, operatorId, note);
+      const result = await actOnAlert(alert.id, action, operatorId, note);
+      // Apply server's authoritative new_status (may differ from client guess)
+      qc.setQueriesData<Alert[]>({ queryKey: ["alerts"] }, (old) =>
+        old ? old.map((a) => (a.id === alert.id ? { ...a, status: result.new_status } : a)) : old,
+      );
       qc.invalidateQueries({ queryKey: ["alerts"] });
       addToast({
         message: ACTION_TOAST[action]?.[locale] ?? (locale === "es" ? "Acción registrada" : "Action logged"),

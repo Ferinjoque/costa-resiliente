@@ -83,7 +83,7 @@ _QUICK_PATTERNS: list[tuple[list[str], str]] = [
       "zona inund", "km² inund", "km2 inund",
       "desborde", "desbordamiento", "anegad", "anegami",
       "extensión inundada", "area inundada", "zona afectada por agua"], "get_flood_polygons"),
-    (["lluvia", "precipitaci", "imerg", "acumul", "mm",
+    (["lluvia", "precipitaci", "imerg", "acumul", " mm ", "mm/", "/mm", "mm72", "mm24",
       "cuánta lluvia", "cuanta lluvia", "pronóst", "pronost",
       "rain", "precipitación acumul", "lluvia 72h", "lluvia 24h"], "get_rainfall_accumulation"),
     (["poblaci", "personas", "habitantes", "afectad", "riesgo pob",
@@ -613,7 +613,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         elif mx >= 25.0:
             status = f"⚠ ALERTA — supera umbral ALTO ANA (>{25:.0f} mm/72h)"
         elif (acc_24h or 0) >= 15:
-            status = f"⚠ AVISO — lluvia 24h supera umbral ANA ({acc_24h:.0f} mm)"
+            status = f"⚠ AVISO — lluvia 24h supera umbral ANA ({float(acc_24h or 0):.0f} mm)"
         else:
             status = "Por debajo del umbral de alerta SENAMHI (25 mm/72h)"
         # Build detail string — skip windows with 0mm (not operationally useful)

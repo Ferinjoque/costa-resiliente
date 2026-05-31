@@ -249,21 +249,18 @@ export function useAlerts(
   filters?: import("./api").AlertFilters,
   opts?: Partial<UseQueryOptions<Alert[]>>
 ): UseQueryResult<Alert[]> {
+  const status = filters?.status;
+  const demoFallback = status ? DEMO_ALERTS.filter((a) => a.status === status) : DEMO_ALERTS;
   return useQuery({
     queryKey: ["alerts", filters],
     queryFn: async () => {
-      try {
-        const data = await fetchAlerts(filters);
-        const status = filters?.status;
-        return withDemoFallback(data, status ? DEMO_ALERTS.filter((a) => a.status === status) : DEMO_ALERTS);
-      } catch {
-        const status = filters?.status;
-        return status ? DEMO_ALERTS.filter((a) => a.status === status) : DEMO_ALERTS;
-      }
+      const data = await fetchAlerts(filters);
+      return withDemoFallback(data, demoFallback);
     },
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
-    placeholderData: (prev) => prev,
+    // Keep showing previous/demo data when refetch errors — never blank the alert list
+    placeholderData: (prev) => prev ?? demoFallback,
     ...opts,
   });
 }
@@ -275,16 +272,12 @@ export function useDecisionLog(
   return useQuery({
     queryKey: ["decision-log", limit],
     queryFn: async () => {
-      try {
-        const data = await fetchDecisionLog(limit);
-        return withDemoFallback(data, DEMO_DECISION_LOG);
-      } catch {
-        return DEMO_DECISION_LOG;
-      }
+      const data = await fetchDecisionLog(limit);
+      return withDemoFallback(data, DEMO_DECISION_LOG);
     },
     staleTime: 15 * 1000,
     refetchInterval: 30 * 1000,
-    placeholderData: (prev) => prev,
+    placeholderData: (prev) => prev ?? DEMO_DECISION_LOG,
     ...opts,
   });
 }

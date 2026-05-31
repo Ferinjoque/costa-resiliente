@@ -42,11 +42,11 @@ def _risk_prose_es(
     else:
         parts.append("Sin inundaciones SAR activas detectadas")
 
-    if huayco_risk and huayco_prob is not None:
+    if huayco_risk:
         RISK_ES = {"low": "bajo", "medium": "moderado", "high": "alto", "very_high": "muy alto"}
+        prob_str = f" (probabilidad {huayco_prob * 100:.0f}%)" if huayco_prob is not None else ""
         parts.append(
-            f"Riesgo de huayco {RISK_ES.get(huayco_risk, huayco_risk)} "
-            f"(probabilidad {huayco_prob * 100:.0f}%)"
+            f"Riesgo de huayco {RISK_ES.get(huayco_risk, huayco_risk)}{prob_str}"
         )
 
     if rainfall_72h is not None and rainfall_level in ("emergencia", "alerta"):
@@ -86,11 +86,11 @@ def _risk_prose_en(
     else:
         parts.append("No active SAR flood extents detected")
 
-    if huayco_risk and huayco_prob is not None:
+    if huayco_risk:
         RISK_EN = {"low": "low", "medium": "moderate", "high": "high", "very_high": "very high"}
+        prob_str = f" (probability {huayco_prob * 100:.0f}%)" if huayco_prob is not None else ""
         parts.append(
-            f"{RISK_EN.get(huayco_risk, huayco_risk)} mudslide risk "
-            f"(probability {huayco_prob * 100:.0f}%)"
+            f"{RISK_EN.get(huayco_risk, huayco_risk)} mudslide risk{prob_str}"
         )
 
     if rainfall_72h is not None and rainfall_level in ("emergencia", "alerta"):
@@ -223,12 +223,15 @@ async def district_fusion(
                 ia.acc_72h_mm,
                 ia.acc_24h_mm,
                 ia.time AS imerg_time
-            FROM hydro.imerg_accumulations ia
-            JOIN geo.watersheds w ON w.id = ia.watershed_id
-            WHERE ia.time = (
-                SELECT MAX(time) FROM hydro.imerg_accumulations
-            )
-              AND ST_Intersects(ST_MakeValid(w.geom), (
+            FROM geo.watersheds w
+            JOIN LATERAL (
+                SELECT acc_72h_mm, acc_24h_mm, time
+                FROM hydro.imerg_accumulations
+                WHERE watershed_id = w.id
+                ORDER BY time DESC
+                LIMIT 1
+            ) ia ON true
+            WHERE ST_Intersects(ST_MakeValid(w.geom), (
                 SELECT ST_MakeValid(geom) FROM geo.districts WHERE id = :district_id
               ))
             ORDER BY ia.acc_72h_mm DESC NULLS LAST

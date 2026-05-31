@@ -271,6 +271,31 @@ class TestFloodExposure:
             d = districts[0]
             assert "ubigeo" in d or "district_id" in d
 
+    @pytest.mark.asyncio
+    async def test_flood_exposure_has_time_filter(self):
+        """Regression: flood_exposure must filter to recent polygons only (7 days).
+
+        Prior bug: no acquired_at filter — accumulated all historical flood polygons
+        into total_affected_population, vastly overstating current exposure.
+        """
+        from inspect import getsource
+        from costa_api.routers.layers import flood_exposure
+        src = getsource(flood_exposure)
+        assert "7 days" in src, (
+            "flood_exposure must filter flood polygons to last 7 days to avoid "
+            "accumulating historical extents into the population estimate"
+        )
+        assert "acquired_at" in src, "flood_exposure must filter by acquired_at"
+
+    @pytest.mark.asyncio
+    async def test_total_affected_population_is_integer(self):
+        """total_affected_population must be a non-negative integer."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get("/api/v1/layers/flood/exposure")
+        total = resp.json().get("total_affected_population", -1)
+        assert isinstance(total, (int, float))
+        assert total >= 0
+
 
 # ─── /layers/social ──────────────────────────────────────────────────────────
 

@@ -288,12 +288,15 @@ async def get_river_levels(db: AsyncSession, hours_back: int = 24, river: str | 
             ORDER BY so.station_id, so.time DESC
         ),
         prev_1h AS (
+            -- Find the observation closest to 1h before each station's latest reading.
+            -- Anchoring to latest.time avoids "wrong row" when cadence is irregular.
             SELECT DISTINCT ON (so.station_id)
                    so.station_id, so.level_m AS level_m_1h_ago
             FROM hydro.station_observations so
-            WHERE so.time BETWEEN NOW() - make_interval(hours => :hours) - INTERVAL '30 min'
-                              AND NOW() - INTERVAL '45 min'
-            ORDER BY so.station_id, so.time DESC
+            JOIN latest l ON l.station_id = so.station_id
+            WHERE so.time BETWEEN l.time - INTERVAL '90 min'
+                              AND l.time - INTERVAL '30 min'
+            ORDER BY so.station_id, ABS(EXTRACT(EPOCH FROM (so.time - (l.time - INTERVAL '1 hour'))))
         )
         SELECT st.name, st.river, l.time,
                l.level_m, l.flow_m3s, l.rain_mm,
@@ -388,11 +391,16 @@ async def get_active_alerts(db: AsyncSession, severity: str | None = None) -> li
     """Active alerts ordered by severity. Caller-aware: every returned row
     carries `_total` = full unconstrained count so the answer layer can say
     'X activas' (truth) instead of 'len(rows)' (capped at 20)."""
+    _SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
     if severity:
+        # Minimum-severity filter: include all alerts at or above the given level
+        # e.g. severity="high" returns both "critical" and "high" alerts
+        min_rank = _SEVERITY_RANK.get(severity, 3)
+        allowed = [s for s, r in _SEVERITY_RANK.items() if r <= min_rank]
         count_sql = text(
-            "SELECT COUNT(*) FROM ops.alerts WHERE status = 'active' AND severity = :sev"
+            "SELECT COUNT(*) FROM ops.alerts WHERE status = 'active' AND severity = ANY(:sev)"
         )
-        total = (await db.execute(count_sql, {"sev": severity})).scalar() or 0
+        total = (await db.execute(count_sql, {"sev": allowed})).scalar() or 0
         sql = text("""
             SELECT a.id, a.type AS alert_type, a.severity, a.status,
                    a.title, a.description AS summary,
@@ -401,10 +409,15 @@ async def get_active_alerts(db: AsyncSession, severity: str | None = None) -> li
             FROM ops.alerts a
             LEFT JOIN geo.districts d ON d.id = a.district_id
             WHERE a.status = 'active'
-              AND a.severity = :sev
-            ORDER BY a.created_at DESC LIMIT 20
+              AND a.severity = ANY(:sev)
+            ORDER BY
+                CASE a.severity
+                    WHEN 'critical' THEN 0 WHEN 'high' THEN 1
+                    WHEN 'medium' THEN 2 ELSE 3
+                END,
+                a.created_at DESC LIMIT 20
         """)
-        result = await db.execute(sql, {"sev": severity})
+        result = await db.execute(sql, {"sev": allowed})
     else:
         count_sql = text("SELECT COUNT(*) FROM ops.alerts WHERE status = 'active'")
         total = (await db.execute(count_sql)).scalar() or 0

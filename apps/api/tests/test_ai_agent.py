@@ -1047,3 +1047,141 @@ def test_build_sitrep_answer_no_critical():
     answer = _build_sitrep_answer(per_tool_rows)
     assert "ALERTA" in answer or "AVISO" in answer
     assert "EMERGENCIA" not in answer
+
+
+# ─── get_active_alerts: minimum-severity filter ──────────────────────────────
+
+@pytest.mark.asyncio
+async def test_get_active_alerts_severity_high_includes_critical():
+    """severity='high' must include BOTH 'critical' and 'high' (minimum-severity filter).
+
+    Prior bug: used exact-match severity=:sev, so severity='high' silently excluded
+    critical alerts — the most dangerous ones.
+    """
+    db = AsyncMock()
+    captured_params: list[dict] = []
+
+    async def _capture(sql, params=None):
+        if params:
+            captured_params.append(params)
+        return MagicMock(
+            scalar=MagicMock(return_value=1),
+            __iter__=MagicMock(return_value=iter([])),
+        )
+
+    db.execute = _capture
+
+    from costa_api.ai.tools.db_tools import get_active_alerts
+
+    await get_active_alerts(db, severity="high")
+
+    # The ANY(:sev) clause must receive a list containing both 'critical' and 'high'
+    sev_param = None
+    for params in captured_params:
+        if "sev" in params and isinstance(params["sev"], list):
+            sev_param = params["sev"]
+            break
+
+    assert sev_param is not None, "Expected 'sev' parameter with list for minimum-severity filter"
+    assert "critical" in sev_param, "severity='high' must include 'critical' (minimum-severity)"
+    assert "high" in sev_param, "severity='high' must include 'high'"
+    assert "medium" not in sev_param, "severity='high' must not include 'medium'"
+    assert "low" not in sev_param, "severity='high' must not include 'low'"
+
+
+@pytest.mark.asyncio
+async def test_get_active_alerts_severity_critical_only():
+    """severity='critical' must include only 'critical'."""
+    db = AsyncMock()
+    captured_params: list[dict] = []
+
+    async def _capture(sql, params=None):
+        if params:
+            captured_params.append(params)
+        return MagicMock(
+            scalar=MagicMock(return_value=0),
+            __iter__=MagicMock(return_value=iter([])),
+        )
+
+    db.execute = _capture
+
+    from costa_api.ai.tools.db_tools import get_active_alerts
+
+    await get_active_alerts(db, severity="critical")
+
+    sev_param = None
+    for params in captured_params:
+        if "sev" in params and isinstance(params["sev"], list):
+            sev_param = params["sev"]
+            break
+
+    assert sev_param is not None
+    assert sev_param == ["critical"], f"severity='critical' should filter only critical, got: {sev_param}"
+
+
+@pytest.mark.asyncio
+async def test_get_active_alerts_severity_medium_includes_higher():
+    """severity='medium' must include medium, high, and critical."""
+    db = AsyncMock()
+    captured_params: list[dict] = []
+
+    async def _capture(sql, params=None):
+        if params:
+            captured_params.append(params)
+        return MagicMock(
+            scalar=MagicMock(return_value=0),
+            __iter__=MagicMock(return_value=iter([])),
+        )
+
+    db.execute = _capture
+
+    from costa_api.ai.tools.db_tools import get_active_alerts
+
+    await get_active_alerts(db, severity="medium")
+
+    sev_param = None
+    for params in captured_params:
+        if "sev" in params and isinstance(params["sev"], list):
+            sev_param = params["sev"]
+            break
+
+    assert sev_param is not None
+    assert "critical" in sev_param
+    assert "high" in sev_param
+    assert "medium" in sev_param
+    assert "low" not in sev_param
+
+
+# ─── River levels: prev_1h CTE anchors to station's latest time ──────────────
+
+@pytest.mark.asyncio
+async def test_get_river_levels_prev1h_anchored_to_latest():
+    """prev_1h CTE must join to `latest` CTE (not use absolute NOW() window).
+
+    Prior bug: used `NOW() - :hours` as the floor of prev_1h, so for hours_back=168
+    the window was ~168.5h–45m, grabbing an old reading unrelated to the latest.
+    Fix: join prev_1h to latest.time so window is ±90min around latest.time - 1h.
+    """
+    db = AsyncMock()
+    captured_sql: list[str] = []
+
+    async def _capture(sql, params=None):
+        captured_sql.append(str(sql))
+        return MagicMock(__iter__=MagicMock(return_value=iter([])))
+
+    db.execute = _capture
+
+    from costa_api.ai.tools.db_tools import get_river_levels
+
+    await get_river_levels(db, hours_back=24)
+
+    assert captured_sql, "db.execute must be called"
+    sql_text = captured_sql[0]
+    # The fixed query joins prev_1h to latest CTE; the old absolute NOW()-based
+    # window used "BETWEEN NOW() - make_interval(hours => :hours) - INTERVAL '30 min'"
+    assert "JOIN latest" in sql_text, (
+        "prev_1h CTE must JOIN to latest to anchor trend window to each station's latest reading"
+    )
+    assert "BETWEEN NOW() - make_interval(hours => :hours) - INTERVAL '30 min'" not in sql_text, (
+        "prev_1h must not use the old absolute NOW()-based window (anchors to wrong time)"
+    )
