@@ -127,7 +127,8 @@ async def list_alerts(
         conditions.append("a.severity = :severity")
         params["severity"] = severity
     if province:
-        conditions.append("d.province = :province")
+        # Include alerts with no district (e.g. rainfall alerts) when province filter active
+        conditions.append("(d.province = :province OR a.district_id IS NULL)")
         params["province"] = province
     if district:
         conditions.append("d.name ILIKE :district")
