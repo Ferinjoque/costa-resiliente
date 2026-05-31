@@ -214,7 +214,7 @@ POST   /api/v1/auth/operators
 |-----------|------|
 | Gateway (thin Ollama facade) | `ai/gateway.py` |
 | Ollama provider (async httpx, retries, tool_calls) | `ai/providers/ollama.py` |
-| Agent loop (parallel asyncio.gather, keyword fallback, sitrep mode) | `ai/agent.py` |
+| Agent loop (sequential tool dispatch, keyword fallback, sitrep mode) | `ai/agent.py` |
 | Input guardrail (regex + length + Spanish injection patterns) | `ai/guardrails/input_filter.py` |
 | Output guardrail (PII + secret redaction) | `ai/guardrails/output_filter.py` |
 | Redis tool cache (per-tool TTL, silent fallback) | `ai/cache.py` |
@@ -223,8 +223,8 @@ POST   /api/v1/auth/operators
 
 **Quick-mode fast paths (bypass LLM, ~2–3s):**
 1. **Single quick-mode** — 9 pattern groups (alertas, lluvia, río, inundación, huayco, social, infraestructura, albergue, protocolo) → one tool dispatch
-2. **Multi-quick-mode** — 2–3 matching patterns → parallel asyncio.gather, no LLM
-3. **Sitrep mode** — "resumen completo", "inicio de guardia", "sitrep" → 4 tools parallel → `_build_sitrep_answer()` SITREP narrative
+2. **Multi-quick-mode** — 2–3 matching patterns → sequential dispatch, no LLM (~3–5s)
+3. **Sitrep mode** — "resumen completo", "inicio de guardia", "sitrep" → 5 tools sequential → `_build_sitrep_answer()` SITREP narrative (~5s)
 
 **RAG protocol corpus (7 documents, 51 chunks):** INDECI Plan Familiar, CENEPRED Movimientos en Masa, MINSA Protocolo Emergencias, SENAMHI Guía Hidrometeorológica, MML Plan Huaycos Lima, ANA Umbrales Lluvia Lima, SINAGERD Acciones Rápidas COER Lima.
 
