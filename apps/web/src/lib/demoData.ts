@@ -58,7 +58,7 @@ const hoursAgo = (h: number) => new Date(NOW - h * 3_600_000).toISOString();
 
 export const DEMO_IMERG: ImergCollection = {
   type: "FeatureCollection",
-  source: "NASA IMERG Early Run (demo)",
+  source: "NASA IMERG Late Run V07B (demo)",
   retrieved_at: new Date(NOW).toISOString(),
   data_updated_at: hoursAgo(0.5),
   features: [
@@ -298,7 +298,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuánta lluvia acumulada hubo en el Rímac en las últimas 72h?": {
-    answer: "Lluvia acumulada en la cuenca del Rímac (últimas 72 horas, fuente NASA IMERG Early Run):\n\n• **Total cuenca**: 63.4 mm — ⚠ EMERGENCIA, supera umbral CRÍTICO ANA (>50 mm/72h).\n• **Pico**: 28.2 mm en la madrugada del 15 de marzo (03:00–06:00 Lima).\n• **Estación Chosica (ANA)**: nivel del río 2.4 m, caudal 185 m³/s.\n• **Estación Chaclacayo**: nivel 1.8 m, tendencia ascendente.\n\nEstado: EMERGENCIA HIDROLÓGICA activa para cuenca Rímac.",
+    answer: "Lluvia acumulada en la cuenca del Rímac (últimas 72 horas, fuente NASA IMERG Late Run V07B):\n\n• **Total cuenca**: 63.4 mm — ⚠ EMERGENCIA, supera umbral CRÍTICO ANA (>50 mm/72h).\n• **Pico**: 28.2 mm en la madrugada del 15 de marzo (03:00–06:00 Lima).\n• **Estación Chosica (ANA)**: nivel del río 2.4 m, caudal 185 m³/s.\n• **Estación Chaclacayo**: nivel 1.8 m, tendencia ascendente.\n\nEstado: EMERGENCIA HIDROLÓGICA activa para cuenca Rímac.",
     intent: "rainfall_accumulation",
     confidence: 0.94,
     query_plan: "imerg_72h_watershed",
@@ -370,7 +370,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuál es el pronóstico para las próximas 24 horas?": {
-    answer: "Pronóstico hidrometeorológico — Lima Metropolitana (próximas 24 h):\n\n• **Cuenca Rímac**: 18–24 mm adicionales previstos. Nivel Chosica podría alcanzar 2.9–3.1 m hacia las 20:00.\n• **Cuenca Chillón**: 12–16 mm. Carabayllo norte mantiene riesgo ALTO.\n• **Viento**: Brisa marina sin anomalías. Sin riesgo de lluvias costeras intensas.\n• **Temperatura**: Mínima 14 °C en cuencas altas, favorece saturación del suelo nocturna.\n\nVentana crítica: 02:00–08:00 Lima del 16 de marzo.\n\nFuente: SENAMHI pronóstico operacional + IMERG Early Run extrapolación.",
+    answer: "Pronóstico hidrometeorológico — Lima Metropolitana (próximas 24 h):\n\n• **Cuenca Rímac**: 18–24 mm adicionales previstos. Nivel Chosica podría alcanzar 2.9–3.1 m hacia las 20:00.\n• **Cuenca Chillón**: 12–16 mm. Carabayllo norte mantiene riesgo ALTO.\n• **Viento**: Brisa marina sin anomalías. Sin riesgo de lluvias costeras intensas.\n• **Temperatura**: Mínima 14 °C en cuencas altas, favorece saturación del suelo nocturna.\n\nVentana crítica: 02:00–08:00 Lima del 16 de marzo.\n\nFuente: SENAMHI pronóstico operacional + IMERG Late Run V07B extrapolación.",
     intent: "weather_forecast",
     confidence: 0.85,
     query_plan: "forecast_24h_watershed",
@@ -525,7 +525,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "What is the forecast for the next 24 hours?": {
-    answer: "72-hour rainfall forecast — Lima watersheds (SENAMHI WRF model):\n\n• **+6h**: Rímac 8.5 mm — LOW risk\n• **+12h**: Rímac 15.8 mm — MODERATE risk, huayco prob. 28%\n• **+24h**: Rímac 31.2 mm — **ALERTA** (>25 mm/72h ANA), huayco prob. 52%\n• **+48h**: Rímac 48.5 mm — **ALERTA**, prob. 71%\n• **+72h**: Rímac 64.2 mm — **EMERGENCIA** ⚠️ exceeds 50 mm/72h critical threshold, prob. 82%\n\n**PRE-ALERT**: ANA ALERTA threshold (25 mm/72h) crossed at +24h mark; EMERGENCIA (50 mm/72h) projected at +72h.\n\n**Recommendation**: Pre-position USAR teams in Jicamarca and activate shelter protocols in Lurigancho and Carabayllo sectors.\n\nSource: SENAMHI WRF model + NASA IMERG Early Run.",
+    answer: "72-hour rainfall forecast — Lima watersheds (SENAMHI WRF model):\n\n• **+6h**: Rímac 8.5 mm — LOW risk\n• **+12h**: Rímac 15.8 mm — MODERATE risk, huayco prob. 28%\n• **+24h**: Rímac 31.2 mm — **ALERTA** (>25 mm/72h ANA), huayco prob. 52%\n• **+48h**: Rímac 48.5 mm — **ALERTA**, prob. 71%\n• **+72h**: Rímac 64.2 mm — **EMERGENCIA** ⚠️ exceeds 50 mm/72h critical threshold, prob. 82%\n\n**PRE-ALERT**: ANA ALERTA threshold (25 mm/72h) crossed at +24h mark; EMERGENCIA (50 mm/72h) projected at +72h.\n\n**Recommendation**: Pre-position USAR teams in Jicamarca and activate shelter protocols in Lurigancho and Carabayllo sectors.\n\nSource: SENAMHI WRF model + NASA IMERG Late Run V07B.",
     intent: "rainfall_forecast",
     confidence: 0.88,
     query_plan: "rainfall_forecast_72h",

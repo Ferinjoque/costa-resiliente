@@ -50,7 +50,7 @@ const SOURCES: Source[] = [
   },
   {
     id: "imerg",
-    name: "NASA IMERG Early Run v07B",
+    name: "NASA IMERG Late Run V07B",
     provider: "NASA GES DISC",
     coverage: "Global — 0.1° (~11 km), cada 30 min",
     latency: "~4 h tras observación",
