@@ -839,7 +839,7 @@ export default function MapView() {
       "infrastructure_damage", "#f97316",   // orange — infra
       "road_blocked",          "#f59e0b",   // amber — road
       "huayco_observation",    "#dc2626",   // dark red — huayco sighting (high priority)
-      "flood_observation",     "#3b82f6",   // blue — flood sighting
+      "flood_observation",     "#ef4444",   // red — flood sighting (danger, matches SocialFeedPanel priority=1)
       "weather_observation",   "#38bdf8",   // light blue — meteo
       "#94a3b8",                            // default grey
     ];
