@@ -1188,9 +1188,15 @@ def test_build_sitrep_answer_all_tools():
     assert "Acción" in answer or "acción" in answer   # action recommended
     assert "Rímac" in answer           # critical alert title
     assert "Jicamarca" in answer       # huayco quebrada
-    # Session 23: 6th tool — social signals section
+    # Session 23: 6th tool — social signals section with counts
     assert "social" in answer.lower() or "reportes" in answer.lower() or "señal" in answer.lower(), (
         "SITREP must include social signals section (6th tool)"
+    )
+    # Verify social signal counts are shown: 6 total (4 needs_help + 2 huayco_observation)
+    assert "6" in answer, "SITREP social section must show total social signal count"
+    # Verify urgent count shows (both needs_help and huayco_observation are urgent)
+    assert "urgentes" in answer.lower() or "urgente" in answer.lower(), (
+        "SITREP social section must distinguish urgent from total signals"
     )
     # With 2 very_high quebradas, sitrep shows "también: Pedregal"
     assert "Pedregal" in answer, "Second very_high quebrada should appear in sitrep 'también:' note"
