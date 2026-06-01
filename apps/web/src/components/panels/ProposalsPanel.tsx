@@ -80,9 +80,18 @@ function ProposalRow({
 
       {proposal.source_refs && proposal.source_refs.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
-          {proposal.source_refs.slice(0, 4).map((r, i) => (
-            <Pill key={i}>{String(r.source ?? r.tool ?? `ref ${i + 1}`)}</Pill>
-          ))}
+          {[...proposal.source_refs]
+            .sort((a, b) => {
+              // Sort by data confidence: satellite/rainfall first, social last
+              const prio: Record<string, number> = { imerg: 0, sentinel: 1, sar: 1, senamhi: 2, station: 2, social_cluster: 3, user: 4 };
+              const pa = prio[String(a.source ?? a.tool ?? "").toLowerCase()] ?? 3;
+              const pb = prio[String(b.source ?? b.tool ?? "").toLowerCase()] ?? 3;
+              return pa - pb;
+            })
+            .slice(0, 4)
+            .map((r, i) => (
+              <Pill key={i}>{String(r.source ?? r.tool ?? `ref ${i + 1}`)}</Pill>
+            ))}
         </div>
       )}
 
