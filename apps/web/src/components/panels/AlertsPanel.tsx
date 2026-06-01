@@ -983,10 +983,13 @@ export function AlertsPanel() {
 
   if (activePanel !== "alerts") return null;
 
-  const activeAlerts  = alerts.filter((a) => a.status === "active");
-  const historyAlerts = alerts.filter((a) => a.status !== "active");
-  const displayed     = tab === "active" ? activeAlerts : alerts;
-  const activeCount   = activeAlerts.length;
+  // True active count across ALL severities (unfiltered) — used for badge + LeftRail
+  const allActiveAlerts = rawAlerts.filter((a) => a.status === "active");
+  const activeAlerts    = alerts.filter((a) => a.status === "active");
+  const historyAlerts   = alerts.filter((a) => a.status !== "active");
+  const displayed       = tab === "active" ? activeAlerts : alerts;
+  // Badge always shows true active count so operators see the real number even when filtering
+  const activeCount     = allActiveAlerts.length;
 
   const districtOptions = province === "Lima" ? LIMA_METRO_DISTRICTS : [];
 

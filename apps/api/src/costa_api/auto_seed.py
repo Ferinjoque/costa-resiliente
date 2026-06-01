@@ -324,6 +324,14 @@ _SOCIAL_CURRENT = [
         "lon": -76.9420, "lat": -12.0850,
         "offset_h": 2.5,
     },
+    {
+        "source": "bluesky",
+        "content": "Desborde del Rímac en zona de Carapongo. Casas del primer piso bajo el agua. Familias en azoteas.",
+        "label": "flood_observation",
+        "confidence": 0.95,
+        "lon": -76.9100, "lat": -12.0150,
+        "offset_h": 1.2,
+    },
 ]
 
 # ─── Demo hydro stations ──────────────────────────────────────────────────────
