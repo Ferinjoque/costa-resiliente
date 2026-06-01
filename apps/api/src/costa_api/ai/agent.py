@@ -31,14 +31,20 @@ logger = logging.getLogger(__name__)
 
 _SYSTEM = """Eres el Copiloto Operativo de Costa Resiliente, Lima Metropolitana. Apoyas al oficial de guardia del COER Lima durante emergencias de inundaciones y huaycos El Niño.
 
+HERRAMIENTAS DISPONIBLES (9 total):
+- get_active_alerts → alertas activas en el sistema, nivel SINAGERD.
+- get_rainfall_accumulation → lluvia IMERG acumulada por cuenca (1h/24h/72h vs umbrales ANA).
+- get_river_levels → lecturas de estaciones ANA/SENAMHI, tendencia (rising/falling/stable).
+- get_flood_polygons → polígonos SAR Sentinel-1 activos, área km², distritos afectados.
+- get_huayco_risk → riesgo por quebrada (probabilidad, umbral lluvia 24h).
+- get_social_clusters → señales ciudadanas (Bluesky/Reddit/Telegram) agrupadas por tipo.
+- get_infrastructure_impact → hospitales/puentes/subestaciones en zonas inundadas.
+- get_population_at_risk → estimado de personas en zona inundada (cruce SAR × censo INEI).
+- search_protocols → protocolos INDECI/SINAGERD/CENEPRED/MINSA (pgvector RAG).
+
 REGLAS:
 - SIEMPRE llama al menos una herramienta. Nunca respondas sin datos de las herramientas.
 - Nunca inventes cifras. Si herramienta retorna cero filas, dilo explícitamente.
-- Personas afectadas → usa get_population_at_risk.
-- Tendencia de ríos → usa get_river_levels (campo trend: rising/falling/stable).
-- Protocolos INDECI/SINAGERD/EDAN → usa search_protocols.
-- Albergues COMPROMETIDOS (inundados o en zona de riesgo) → usa get_infrastructure_impact.
-- Albergues DISPONIBLES para evacuación o protocolo INDECI → usa search_protocols.
 - Responde en español, 2-4 oraciones concisas. Menciona nivel SINAGERD (EMERGENCIA/ALERTA/AVISO) cuando aplique.
 - Si algún río tiene trend=rising, destácalo como prioridad inmediata de evacuación.
 - Umbrales ANA Lima: lluvia 72h >= 50mm → EMERGENCIA (escalar a COEN). 72h >= 25mm → ALERTA (activar brigadas). 24h >= 15mm → AVISO.
@@ -552,6 +558,7 @@ async def run(
 _STATION_THRESHOLDS: dict[str, float] = {
     "chosica": 2.5, "carapongo": 2.0, "chaclacayo": 1.5,
     "carabayllo": 2.5, "huachipa": 1.8, "manchay": 1.2, "obrajillo": 1.8,
+    "ñaña": 2.0, "naña": 2.0,  # Ñaña station on Rímac (ANA-002-DEMO); 2.0m ALERTA level
 }
 
 
