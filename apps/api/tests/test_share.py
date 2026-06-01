@@ -142,6 +142,41 @@ class TestResolveShareToken:
             resp = await c.get("/api/v1/share/!@#$%^&*()")
         assert resp.status_code == 404
 
+    @pytest.mark.asyncio
+    async def test_410_for_expired_token(self):
+        """Expired tokens return 410 Gone, not 404 Not Found.
+
+        Regression guard for TOCTOU fix: the new atomic UPDATE WHERE expires_at > NOW()
+        returns 0 rows for expired tokens. The fallback SELECT distinguishes between
+        expired (410) and never-existed (404).
+        """
+        import secrets
+        import asyncpg
+        import os
+        import json
+
+        # Insert a token directly into the DB with a past expires_at
+        expired_token = "exp-" + secrets.token_urlsafe(16)
+        db_dsn = os.getenv("DATABASE_URL", "postgresql://costa:costa@localhost:5432/costa_resiliente")
+        try:
+            conn = await asyncpg.connect(db_dsn)
+            await conn.execute(
+                """
+                INSERT INTO ops.share_tokens
+                    (token, scenario, expires_at)
+                VALUES ($1, $2::jsonb, NOW() - INTERVAL '1 minute')
+                """,
+                expired_token,
+                json.dumps(VALID_SCENARIO["scenario"]),
+            )
+            await conn.close()
+        except Exception:
+            pytest.skip("Cannot connect to DB directly for expired token test")
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get(f"/api/v1/share/{expired_token}")
+        assert resp.status_code == 410, f"Expired token should return 410, got {resp.status_code}"
+
 
 class TestScenarioSnapshotConstraints:
     """ScenarioSnapshot field-level Pydantic constraints."""

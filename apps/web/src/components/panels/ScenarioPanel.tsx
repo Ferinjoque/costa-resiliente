@@ -15,7 +15,7 @@ import type { Locale } from "@/store/ui";
 const TIME_WINDOWS = [1, 3, 6, 12, 24, 72, 168] as const;
 
 const LAYERS: { id: string; label: { es: string; en: string }; hint: { es: string; en: string } }[] = [
-  { id: "districts",      label: { es: "Distritos",          en: "Districts"         }, hint: { es: "Límites y nombre de los 43 distritos",      en: "43 district boundaries and names"         } },
+  { id: "districts",      label: { es: "Distritos",          en: "Districts"         }, hint: { es: "Límites y riesgo de distritos Lima Metropolitana + Callao", en: "Lima Metropolitana + Callao district boundaries and risk"  } },
   { id: "imerg",          label: { es: "Lluvia IMERG",       en: "IMERG Rainfall"    }, hint: { es: "Acumulación NASA (color por intensidad)",   en: "NASA accumulation (colour by intensity)"  } },
   { id: "flood",          label: { es: "Inundación SAR",     en: "SAR Flood"         }, hint: { es: "Polígonos Sentinel-1 de áreas inundadas",   en: "Sentinel-1 polygons of flooded areas"     } },
   { id: "huayco",         label: { es: "Huayco",             en: "Huayco"            }, hint: { es: "Puntos por quebrada (tamaño = probabilidad)", en: "Dots per quebrada (size = probability)"  } },
