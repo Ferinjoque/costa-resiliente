@@ -672,8 +672,8 @@ interface Resource {
 const RESOURCES: Resource[] = [
   { id: "bote",  es: "Bote Rescate",  en: "Rescue Boat",   icon: Ship,      forTypes: ["flood"] },
   { id: "usar",  es: "USAR Alfa",     en: "USAR Alpha",    icon: Users,     forTypes: ["flood", "huayco"] },
-  { id: "amb",   es: "Ambulancia",    en: "Ambulance",     icon: Ambulance, forTypes: ["flood", "huayco", "social_cluster"] },
-  { id: "bomb",  es: "Bomberos",      en: "Fire Brigade",  icon: Flame,     forTypes: ["flood", "huayco"] },
+  { id: "amb",   es: "Ambulancia",    en: "Ambulance",     icon: Ambulance, forTypes: ["flood", "huayco", "social_cluster", "rainfall"] },
+  { id: "bomb",  es: "Bomberos",      en: "Fire Brigade",  icon: Flame,     forTypes: ["flood", "huayco", "rainfall"] },
 ];
 
 function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en" }) {
