@@ -590,6 +590,9 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
       const mm72 = refs.acc_72h_mm;
       const mmNote = mm72 != null ? ` (${mm72.toFixed(0)} mm/72h)` : "";
       rec = `${firstCritical!.title}${mmNote}. Umbral EMERGENCIA ANA superado. Activar brigadas en quebradas. Escalar a COEN y pre-alertar municipios distritales.`;
+    } else if (critical.length > 0 && firstCritical?.type === "social_cluster") {
+      const districtNote = topDistrict ? ` en ${topDistrict}` : "";
+      rec = `Señales ciudadanas críticas${districtNote}: ${firstCritical!.title}. Verificar reportes de campo — posibles víctimas. Activar brigadas de respuesta y coordinar con INDECI COEN.`;
     } else if (critical.length > 0) {
       const districtNote = topDistrict ? ` (${topDistrict})` : "";
       rec = `Alerta crítica activa${districtNote}: ${firstCritical!.title}. Activar protocolo DELTA COEN. Preposicionar botes. Confirmar capacidad de albergues.`;
@@ -606,6 +609,9 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
       const mm72 = refs.acc_72h_mm;
       const mmNote = mm72 != null ? ` (${mm72.toFixed(0)} mm/72h)` : "";
       rec = `${firstCritical!.title}${mmNote}. ANA EMERGENCY threshold exceeded. Deploy brigades to quebradas. Escalate to COEN and pre-alert district municipalities.`;
+    } else if (critical.length > 0 && firstCritical?.type === "social_cluster") {
+      const districtNote = topDistrict ? ` in ${topDistrict}` : "";
+      rec = `Critical social signals${districtNote}: ${firstCritical!.title}. Verify field reports — possible casualties. Activate response brigades and coordinate with INDECI COEN.`;
     } else if (critical.length > 0) {
       const districtNote = topDistrict ? ` (${topDistrict})` : "";
       rec = `Critical alert active${districtNote}: ${firstCritical!.title}. Activate COEN DELTA protocol. Pre-position boats. Confirm shelter capacity.`;
