@@ -296,6 +296,25 @@ class TestFloodExposure:
         assert isinstance(total, (int, float))
         assert total >= 0
 
+    @pytest.mark.asyncio
+    async def test_flood_exposure_includes_total_affected_population_field(self):
+        """total_affected_population MUST be present in response (strict field check).
+
+        Regression guard: `.get("total_affected_population", -1)` in previous test
+        would mask a missing field. OperationalHUD relies on this field — silent absence
+        would show 0 population at risk when data is actually unavailable.
+        """
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get("/api/v1/layers/flood/exposure")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "total_affected_population" in body, (
+            "flood/exposure must always include total_affected_population field — "
+            "OperationalHUD depends on it for population-at-risk display"
+        )
+        assert body["total_affected_population"] is not None
+        assert body["total_affected_population"] >= 0
+
 
 # ─── _parse_replay_time ──────────────────────────────────────────────────────
 
