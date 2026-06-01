@@ -508,6 +508,41 @@ def test_build_answer_huayco_risk():
     assert "CRÍTICO" in answer  # very_high count shown
 
 
+def test_build_answer_huayco_model_freshness_displayed():
+    """When computed_at is present, huayco answer must show model age.
+
+    Regression guard (Session 23 commit 8daba0e): 'modelo: hace X min/h/días'
+    appears so operators know if XGBoost output is fresh or stale.
+    """
+    from costa_api.ai.agent import _build_answer
+    from datetime import datetime, timezone, timedelta
+    recent_computed_at = (datetime.now(timezone.utc) - timedelta(minutes=20)).isoformat()
+    rows = [
+        {"name": "Pedregal", "risk_level": "very_high", "probability": 0.91,
+         "trigger_rain_24h_mm": 12.0, "computed_at": recent_computed_at},
+    ]
+    answer = _build_answer([], rows, "huayco")
+    assert "modelo" in answer.lower(), (
+        "Huayco answer with computed_at must include model freshness note"
+    )
+    assert "min" in answer or "h" in answer or "día" in answer, (
+        "Model freshness note must include time unit (min/h/días)"
+    )
+
+
+def test_build_answer_huayco_model_freshness_absent_without_computed_at():
+    """Without computed_at, no model freshness note should appear."""
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"name": "Pedregal", "risk_level": "very_high", "probability": 0.91,
+         "trigger_rain_24h_mm": 12.0},  # no computed_at
+    ]
+    answer = _build_answer([], rows, "huayco")
+    assert "modelo: hace" not in answer.lower(), (
+        "Without computed_at, no freshness note should appear"
+    )
+
+
 def test_build_answer_river_levels_rising():
     """Rising trend rows must flag the rising station with ⚠ and SENAMHI threshold."""
     from costa_api.ai.agent import _build_answer
