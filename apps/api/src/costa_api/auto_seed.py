@@ -787,6 +787,27 @@ async def maybe_seed(engine: AsyncEngine) -> None:
             except Exception as exc:
                 logger.warning("auto_seed: station obs refresh failed: %s", exc)
 
+        # Always refresh demo flood polygon timestamps so they stay within the
+        # DataFreshnessBar's 6h STALE window. SAR data is daily-cadence in production,
+        # but demo polygons seeded at container start would look 24+ hours stale.
+        # Only updates the two demo polygons (not El Niño 2017 fixtures which are historical).
+        try:
+            for flood in _FLOOD_CURRENT:
+                t_flood = _ts(flood["offset_h"])
+                await conn.execute(
+                    text("""
+                        UPDATE ml.flood_polygons
+                        SET acquired_at = :t
+                        WHERE scene_id = :sid
+                          AND model_version = :mv
+                    """),
+                    {"t": t_flood, "sid": flood["scene_id"], "mv": flood["model_version"]},
+                )
+            await conn.commit()
+            logger.info("auto_seed: refreshed %d demo flood polygon timestamps", len(_FLOOD_CURRENT))
+        except Exception as exc:
+            logger.warning("auto_seed: flood polygon timestamp refresh failed: %s", exc)
+
         # Always insert _DEMO_DISTRICTS (ON CONFLICT DO NOTHING) to ensure
         # districts missing from the real geodata load get approximate boundaries.
         # Run BEFORE early-return so SJL (150133) and other missing districts
