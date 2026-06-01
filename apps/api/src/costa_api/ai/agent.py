@@ -185,10 +185,18 @@ def _is_sitrep_query(query: str) -> bool:
 
 
 def _detect_quick(query: str) -> str | None:
-    """Return tool_name if exactly one quick-mode pattern matches, else None."""
+    """Return tool_name if exactly one DISTINCT tool matches, else None.
+
+    Deduplicates by tool name: if two patterns both map to get_active_alerts,
+    that counts as ONE match (not two), enabling quick-mode instead of falling
+    through to the LLM for compound SLA+alert queries.
+    """
     q = query.lower()
-    matches = [tool for keywords, tool in _QUICK_PATTERNS if any(kw in q for kw in keywords)]
-    return matches[0] if len(matches) == 1 else None
+    seen_tools: set[str] = set()
+    for keywords, tool in _QUICK_PATTERNS:
+        if any(kw in q for kw in keywords):
+            seen_tools.add(tool)
+    return next(iter(seen_tools)) if len(seen_tools) == 1 else None
 
 
 def _detect_multi_quick(query: str) -> list[str]:
