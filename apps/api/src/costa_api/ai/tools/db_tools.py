@@ -107,8 +107,9 @@ TOOL_SCHEMAS: list[dict] = [
             "description": (
                 "Obtiene resumen de señales sociales (Bluesky, Reddit, Telegram) clasificadas por IA. "
                 "Prioridad: needs_help (solicitudes ayuda) > huayco_observation > flood_observation > road_blocked. "
+                "Retorna conteo por tipo de señal + top_district (distrito con más señales urgentes por categoría). "
                 "Úsalo cuando pregunten sobre reportes ciudadanos, víctimas, vías bloqueadas, "
-                "avistamientos de huayco o inundación, o señales de campo."
+                "avistamientos de huayco o inundación, señales de campo, o qué distritos reportan más urgencias."
             ),
             "parameters": {
                 "type": "object",
