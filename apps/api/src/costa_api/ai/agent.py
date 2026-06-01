@@ -150,7 +150,8 @@ _SITREP_PHRASES = [
     "balance de la guardia", "despacho de guardia", "balance operacional",
     "resumen ejecutivo", "punto de situación", "reporte de turno",
     "cómo vamos", "como vamos", "panorama actual", "estado de situación",
-    "como esta lima", "estado del sistema", "novedades de la emergencia",
+    "como esta lima", "novedades de la emergencia",
+    # NOTE: "estado del sistema" was removed — too broad, matches subsystem queries
     "me pones al día", "ponme al dia", "actualización del cuartel",
     "estado general", "que esta pasand", "qué está pasand", "que hay de nuevo", "qué hay de nuevo",
     "cómo estamos", "como estamos", "panorama general",

@@ -736,6 +736,40 @@ def test_detect_quick_sla_breach_vencido():
     assert _detect_quick("hay sla vencido ahora") == "get_active_alerts"
 
 
+@pytest.mark.parametrize("age_min,should_show_sla", [
+    (3, False),   # Under 5min SLA → no warning
+    (5, False),   # At SLA boundary (exactly 5min, not > 5min) → no warning
+    (6, True),    # Just over 5min → warning
+    (10, True),   # >10min critical case → warning
+    (65, True),   # >1h (full shift elapsed) → warning
+])
+def test_build_sitrep_sla_breach_age_appears_only_when_overdue(age_min, should_show_sla):
+    """SLA breach indicator (⏱Xmin sin respuesta) appears only when alert age > 5min.
+
+    Regression guard (Session 23): the sitrep's critical alert section shows
+    the SLA breach age when the critical alert has been waiting too long.
+    """
+    from datetime import datetime as _dt, timezone as _tz, timedelta
+    from costa_api.ai.agent import _build_sitrep_answer
+    created = (_dt.now(_tz.utc) - timedelta(minutes=age_min)).isoformat()
+    per_tool_rows = [
+        ("get_active_alerts", [
+            {"id": 1, "severity": "critical", "_total_active": 1,
+             "title": "Lluvia crítica", "source_refs": {"acc_72h_mm": 60.0},
+             "created_at": created, "age_seconds": age_min * 60}
+        ]),
+    ]
+    answer = _build_sitrep_answer(per_tool_rows)
+    if should_show_sla:
+        assert "⏱" in answer or "min sin respuesta" in answer, (
+            f"SLA breach note must appear for age_min={age_min} > 5min"
+        )
+    else:
+        assert "⏱" not in answer and "sin respuesta" not in answer, (
+            f"SLA breach note must NOT appear for age_min={age_min} <= 5min"
+        )
+
+
 def test_detect_quick_river_level():
     """River level query matches only get_river_levels."""
     from costa_api.ai.agent import _detect_quick
