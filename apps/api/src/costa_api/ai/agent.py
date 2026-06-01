@@ -845,8 +845,11 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             by_type.items(), key=lambda x: (_TYPE_PRIO.get(x[0], 9), -x[1])
         )]
         breakdown = ", ".join(parts[:4])
-        # Show names of critical infrastructure (hospitals first)
-        hosp_names = [r.get("name") for r in rows if r.get("type") == "hospital" and r.get("name")][:2]
+        # Show names of critical infrastructure (hospitals first) with district for access routing
+        hosp_names = [
+            f"{r.get('name')} ({r.get('district')})" if r.get("district") else r.get("name", "?")
+            for r in rows if r.get("type") == "hospital" and r.get("name")
+        ][:2]
         name_note = f" Hospitales afectados: {', '.join(hosp_names)}." if hosp_names else ""
         # Shelters in flood zone are critical for evacuation — highlight their count
         shelter_cnt = by_type.get("shelter", 0)
