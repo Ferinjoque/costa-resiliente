@@ -134,6 +134,7 @@ async def _log_decision(
     query: str,
     result: AgentResult,
     session_id: Optional[str],
+    duration_ms: int = 0,
 ) -> None:
     payload = {
         "query": query,
@@ -142,6 +143,8 @@ async def _log_decision(
         "answer_preview": result.answer[:200],
         "blocked": result.blocked,
         "redacted": result.redacted,
+        "duration_ms": duration_ms,
+        "mode": result.mode,
     }
     try:
         await db.execute(text("SET LOCAL statement_timeout = '5000'"))
@@ -203,6 +206,7 @@ async def ask(
 
     await _check_copilot_rate(operator_id)
 
+    _start = datetime.now(timezone.utc)
     try:
         result: AgentResult = await asyncio.wait_for(
             agent_run(
@@ -231,7 +235,8 @@ async def ask(
         await _log_security_event(db, operator_id, "input_blocked", result.block_reason)
 
     # Log decision (always, even for blocked queries so operators can review)
-    await _log_decision(db, operator_id, query.query, result, query.session_id)
+    _duration_ms = int((datetime.now(timezone.utc) - _start).total_seconds() * 1000)
+    await _log_decision(db, operator_id, query.query, result, query.session_id, duration_ms=_duration_ms)
 
     if result.blocked:
         raise HTTPException(
