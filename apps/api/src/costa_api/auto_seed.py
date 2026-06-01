@@ -711,24 +711,12 @@ async def maybe_seed(engine: AsyncEngine) -> None:
             # Update local count so operational_ok reflects fresh state
             _social = len(_SOCIAL_CURRENT)
 
-        if flood_count > 0 and _qbr > 0 and _infra > 0 and _hazard > 0 and _elnino >= len(_ELNINO_FLOODS) and operational_ok:
-            logger.info(
-                "auto_seed: all tables populated (flood=%d elnino=%d alerts=%d social=%d) — skipping",
-                flood_count, _elnino, _alerts, _social,
-            )
-            return
-
-        logger.info(
-            "auto_seed: seeding missing data (flood=%d qbr=%d infra=%d hazard=%d)",
-            flood_count, _qbr, _infra, _hazard,
-        )
-
-        # ── 1. Districts (needed for spatial joins and map overlay) ──────────
-        dist_count = (
-            await conn.execute(text("SELECT COUNT(*) FROM geo.districts"))
-        ).scalar_one()
-        if dist_count == 0:
-            for d in _DEMO_DISTRICTS:
+        # Always insert _DEMO_DISTRICTS (ON CONFLICT DO NOTHING) to ensure
+        # districts missing from the real geodata load get approximate boundaries.
+        # Run BEFORE early-return so SJL (150133) and other missing districts
+        # are always available for spatial joins even if all other data is fresh.
+        for d in _DEMO_DISTRICTS:
+            try:
                 await conn.execute(
                     text("""
                         INSERT INTO geo.districts
@@ -745,7 +733,44 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                         "geom_wkt": d["geom_wkt"],
                     },
                 )
-            logger.info("auto_seed: inserted %d simplified districts", len(_DEMO_DISTRICTS))
+            except Exception as exc:
+                logger.debug("auto_seed: skip demo district %s: %s", d["ubigeo"], exc)
+        await conn.commit()
+
+        if flood_count > 0 and _qbr > 0 and _infra > 0 and _hazard > 0 and _elnino >= len(_ELNINO_FLOODS) and operational_ok:
+            logger.info(
+                "auto_seed: all tables populated (flood=%d elnino=%d alerts=%d social=%d) — skipping",
+                flood_count, _elnino, _alerts, _social,
+            )
+            return
+
+        logger.info(
+            "auto_seed: seeding missing data (flood=%d qbr=%d infra=%d hazard=%d)",
+            flood_count, _qbr, _infra, _hazard,
+        )
+
+        # ── 1. Districts (needed for spatial joins and map overlay) ──────────
+        # Always insert _DEMO_DISTRICTS with ON CONFLICT DO NOTHING so that
+        # districts missing from the real geodata load (e.g. SJL ubigeo 150133)
+        # get approximate polygon boundaries. Safe to run on every boot.
+        for d in _DEMO_DISTRICTS:
+            await conn.execute(
+                text("""
+                    INSERT INTO geo.districts
+                        (ubigeo, name, province, region, area_km2, population, geom)
+                    VALUES (:ubigeo, :name, 'Lima', 'Lima', :area_km2, :pop,
+                            ST_SetSRID(ST_GeomFromText(:geom_wkt), 4326))
+                    ON CONFLICT (ubigeo) DO NOTHING
+                """),
+                {
+                    "ubigeo": d["ubigeo"],
+                    "name": d["name"],
+                    "area_km2": d["area_km2"],
+                    "pop": d["population"],
+                    "geom_wkt": d["geom_wkt"],
+                },
+            )
+        logger.info("auto_seed: ensured %d demo districts exist (ON CONFLICT DO NOTHING)", len(_DEMO_DISTRICTS))
 
         # ── 2b. Fill INEI 2017 populations for Lima Metro districts ──────────
         # This runs unconditionally so a fresh DB always gets population data.
