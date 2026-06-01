@@ -88,6 +88,8 @@ const SITREP_KEYWORDS = [
   "resumen general", "situacion general", "situación general",
   "ponme al dia", "que paso", "que ocurrio", "eventos de la noche",
   "resumen para", "que le digo", "que cuento",
+  "brief", "briefing", "como amanecio", "cómo amaneció",
+  "novedad al momento", "novedad actual", "que novedades hay",
 ];
 
 function isSitrepQuery(q: string): boolean {

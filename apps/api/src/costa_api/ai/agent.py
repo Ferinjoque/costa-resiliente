@@ -146,6 +146,12 @@ _SITREP_PHRASES = [
     "que cuento", "qué cuento", "informar al", "como esta la cosa",
     "que paso", "qué pasó", "que paso durante", "qué pasó durante",
     "que ocurrio", "ocurrencia de guardia", "eventos de la noche",
+    # Additional SINAGERD operational phrases (Session 23)
+    "brief", "briefing", "morning brief", "situacion a las", "situación a las",
+    "como amanecio", "cómo amaneció", "novedad al momento", "novedad actual",
+    "que novedades hay", "qué novedades hay", "hay algo nuevo", "algo que reportar",
+    "estado del coe", "activacion del coe", "activación del coe",
+    "alerta temprana", "resumen ejecutivo emergencia",
 ]
 
 def _is_sitrep_query(query: str) -> bool:
