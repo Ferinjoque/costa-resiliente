@@ -28,10 +28,10 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **670 passed, 0 errors** (Session 22). Up from 668 (+2). Workers: 148 passed, 8 skipped.
+- **API**: **671 passed, 0 errors** (Session 22 final). Up from 668 (+3). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
-- **Build**: Next.js production build green; first-load JS `/` = 185 kB (Session 22: +1 kB from OperationalHUD IMERG chip + INDECI checklist sessionStorage)
+- **Build**: Next.js production build green; first-load JS `/` = 186 kB (Session 22: +2 kB from sitrep loading steps, IMERG threshold sparkline, checklist sessionStorage)
 
 Test command (in container):
 ```bash
