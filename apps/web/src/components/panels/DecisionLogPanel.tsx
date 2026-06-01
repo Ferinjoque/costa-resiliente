@@ -37,12 +37,20 @@ function csvEscape(value: string): string {
 }
 
 function downloadCsv(entries: DecisionLogEntry[], isDemo = false) {
-  const COLS = ["id", "logged_at", "operator_id", "action_type", "alert_id", "session_id", "payload"];
+  // Session 23: include duration_ms and mode columns for performance analysis
+  const COLS = ["id", "logged_at", "operator_id", "action_type", "alert_id", "session_id", "duration_ms", "mode", "payload"];
   const header = COLS.join(",") + "\n";
   const rows = entries
     .map((e) => {
       let payloadStr: string;
-      try { payloadStr = JSON.stringify(e.payload); } catch { payloadStr = "{}"; }
+      let durationMs = "";
+      let mode = "";
+      try {
+        const p = e.payload ?? {};
+        payloadStr = JSON.stringify(p);
+        durationMs = String(p.duration_ms ?? "");
+        mode = String(p.mode ?? "");
+      } catch { payloadStr = "{}"; }
       return [
         e.id,
         e.logged_at,
@@ -50,6 +58,8 @@ function downloadCsv(entries: DecisionLogEntry[], isDemo = false) {
         csvEscape(e.action_type),
         e.alert_id ?? "",
         csvEscape(e.session_id ?? ""),
+        csvEscape(durationMs),
+        csvEscape(mode),
         csvEscape(payloadStr),
       ].join(",");
     })

@@ -606,6 +606,29 @@ def test_build_answer_active_alerts_with_critical():
     assert "63" in answer    # rainfall mm should appear for rainfall-type alert
 
 
+def test_threshold_note_for_row_boundary_conditions():
+    """Direct unit test for the module-level _threshold_note_for_row helper.
+
+    Session 23 extracted this from _build_answer inner function to module level.
+    Tests boundary conditions to ensure both code paths (_build_answer and
+    _build_sitrep_answer) get correct threshold notes.
+    """
+    from costa_api.ai.agent import _threshold_note_for_row
+    # Exactly at threshold (2.5m) → SOBRE umbral
+    assert "SOBRE umbral" in _threshold_note_for_row({"name": "Chosica", "level_m": 2.5})
+    # Near threshold (90% = 2.25m for 2.5m threshold) → acercándose
+    assert "acercándose" in _threshold_note_for_row({"name": "Chosica", "level_m": 2.3})
+    # Below threshold → bajo umbral
+    assert "bajo umbral" in _threshold_note_for_row({"name": "Chosica", "level_m": 1.5})
+    # Unknown station → no note
+    assert _threshold_note_for_row({"name": "SomeUnknownStation", "level_m": 99.0}) == ""
+    # Missing level_m → no note
+    assert _threshold_note_for_row({"name": "Chosica"}) == ""
+    # Percentage shown in near-threshold case
+    note = _threshold_note_for_row({"name": "Chosica", "level_m": 2.375})
+    assert "%" in note, "Near-threshold note must show percentage of threshold"
+
+
 def test_build_answer_social_signals_breakdown():
     """triage_label rows → total + label breakdown including weather_observation."""
     from costa_api.ai.agent import _build_answer
