@@ -43,6 +43,15 @@ async def test_health_returns_ok():
         assert data["rain_level"] == "emergencia", f">=50mm should be emergencia, got {data['rain_level']!r}"
     if mm is not None and mm >= 25 and mm < 50:
         assert data["rain_level"] in ("alerta", "emergencia"), f">= 25mm should be alerta+, got {data['rain_level']!r}"
+    # Session 23: verify new fields exist and are correct types
+    assert "critical_alerts" in data, "Health must include critical_alerts count (Session 23)"
+    assert "high_alerts" in data, "Health must include high_alerts count (Session 23)"
+    assert "sinagerd_primary_trigger" in data, "Health must include sinagerd_primary_trigger (Session 23)"
+    assert isinstance(data["critical_alerts"], int) and data["critical_alerts"] >= 0
+    assert isinstance(data["high_alerts"], int) and data["high_alerts"] >= 0
+    assert data["sinagerd_primary_trigger"] in ("alerts", "rainfall", "combined", "none"), (
+        f"sinagerd_primary_trigger must be one of known values, got {data['sinagerd_primary_trigger']!r}"
+    )
 
 
 @pytest.mark.asyncio
