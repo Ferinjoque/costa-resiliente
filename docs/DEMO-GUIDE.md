@@ -151,12 +151,15 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 
 | Feature | Why it matters |
 |---------|----------------|
-| **SITREP mode (~5s)** | Start-of-shift: 5 tools sequential, all sections guaranteed (no race condition) |
+| **SITREP mode (~6s)** | Start-of-shift: 6 tools sequential (alerts+rain+rivers+SAR+huayco+social signals), all sections guaranteed, UTC timestamp, district context for social |
 | **SENAMHI thresholds in copilot** | Level 2.41m at Chosica rising +0.130m/h → "⚠ acercándose al umbral 2.5m" (near-threshold) |
+| **Rainfall multi-watershed** | "Rímac 63mm EMERGENCIA · También sobre umbral: Chillón 28mm" — operators see full rainfall picture in one query |
+| **SLA breach modal** | When clicking Escalate on a past-SLA alert: red banner "SLA VENCIDO — Xmin sin acción (límite 5min)" — operators know how late they are |
+| **Server-side age_seconds** | SLA chips use server-computed age (no client clock skew) — critical for cross-timezone team coordination |
 | **Rainfall in FusionCallout** | District-level rainfall context (Rímac watershed 63mm) integrated into multi-hazard view |
-| **SLA breach toasts** | Operator never misses an unacknowledged alert even if Alerts panel is closed |
 | **ANA protocol RAG (7 docs)** | "¿cómo lleno el EDAN?" + "¿qué hago en EMERGENCIA?" from real INDECI/ANA/SINAGERD documents |
-| **Health API** | `curl /health` → `sinagerd_level:EMERGENCIA, active_alerts:7, rain_level:emergencia` — single-call monitoring |
+| **Health API enriched** | `curl /health` → `sinagerd_level:EMERGENCIA, active_alerts:7, critical_alerts:3, high_alerts:4, sinagerd_primary_trigger:combined` — full monitoring context |
+| **Social district attribution** | Signals now show which district reported them — "zonas: San Juan de Lurigancho (avistamientos huayco), Lurigancho (solicitudes de ayuda)" in SITREP |
 | **FEEDS chip (core only)** | No false alarms from expected-offline reddit/telegram/SAR between acquisitions |
 | **Province filter bug fix** | Rainfall alerts (district-less) correctly appear in Lima Metro view |
 | **Local Ollama (zero cloud)** | All ML inference local — no API keys, no data egress, works offline |
