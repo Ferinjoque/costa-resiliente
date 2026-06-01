@@ -219,6 +219,15 @@ async def ask(
         )
     except asyncio.TimeoutError:
         logger.error("copilot/ask: agent_run timed out (>90s) for operator=%s", operator_id)
+        # Decrement rate-limit counter on timeout so retry doesn't double-count.
+        # Without this, a timed-out SITREP (rare but possible under load) would consume
+        # 2 of 6 quota slots — making the rate limiter more punishing than intended.
+        try:
+            rl_client = _get_copilot_rl_client()
+            if rl_client:
+                await rl_client.decr(f"costa:copilot:rate:{operator_id}")
+        except Exception:
+            pass
         raise HTTPException(
             status_code=503,
             detail="El asistente no respondió a tiempo. Reintenta en unos segundos.",
