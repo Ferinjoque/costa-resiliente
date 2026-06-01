@@ -703,7 +703,9 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                             ON CONFLICT (content_hash) DO UPDATE
                                 SET ingested_at = EXCLUDED.ingested_at,
                                     published_at = EXCLUDED.published_at,
-                                    expires_at   = EXCLUDED.expires_at
+                                    expires_at   = EXCLUDED.expires_at,
+                                    district_id  = EXCLUDED.district_id,
+                                    geom         = EXCLUDED.geom
                         """),
                         {
                             "src": s["source"], "h": h, "content": s["content"],
@@ -1058,7 +1060,9 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                         ON CONFLICT (content_hash) DO UPDATE
                             SET ingested_at = EXCLUDED.ingested_at,
                                 published_at = EXCLUDED.published_at,
-                                expires_at   = EXCLUDED.expires_at
+                                expires_at   = EXCLUDED.expires_at,
+                                district_id  = EXCLUDED.district_id,
+                                geom         = EXCLUDED.geom
                     """),
                     {
                         "src": s["source"],
