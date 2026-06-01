@@ -330,7 +330,16 @@ export function useFusion(
 ): UseQueryResult<DistrictFusion> {
   return useQuery({
     queryKey: ["fusion", ubigeo],
-    queryFn: () => fetchDistrictFusion(ubigeo!),
+    queryFn: async () => {
+      try {
+        return await fetchDistrictFusion(ubigeo!);
+      } catch (err: unknown) {
+        // 404 = district exists in map but not seeded in DB — show partial data rather than crash
+        const status = (err as { status?: number })?.status;
+        if (status === 404) return null as unknown as DistrictFusion;
+        throw err;
+      }
+    },
     enabled: !!ubigeo,
     staleTime: 2 * MIN,
     refetchInterval: 2 * MIN,
