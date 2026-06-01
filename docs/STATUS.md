@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **678 passed, 0 errors** (Session 23 final). Up from 671 (+7). Workers: 148 passed, 8 skipped.
+- **API**: **681 passed, 0 errors** (Session 23 final). Up from 671 (+10). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 186 kB (Session 22: +2 kB from sitrep loading steps, IMERG threshold sparkline, checklist sessionStorage)
@@ -262,7 +262,24 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 - `test(proposals)`: Invalid ubigeo returns 400 with bad ubigeo in detail; valid ubigeo (150133) accepted (201).
 - `test(notifications)`: IPv6 link-local `fe80::1` and `fe80::dead:beef` both raise ValueError (regression guards).
 
-**Commits (7):** `0256a18` → `fad2376` → `1ff2715` → `8536242` → `3a06752` + STATUS.md.
+**Additional Session 23 improvements:**
+- `feat(sitrep)`: `get_social_clusters` added as 6th SITREP tool — duty officers see citizen signal count (e.g. "9 reportes ciudadanos · 4 urgentes") at start-of-shift without separate query. Frontend updated to show 6/6 steps, quorum raised to 4/6.
+- `fix(alert_generator)`: Severity-aware rainfall alert dedup — HIGH alert no longer blocks CRITICAL escalation within 6h dedup window. Now auto-closes lower-severity alert on escalation.
+- `fix(db_tools)`: `get_infrastructure_impact` sorted by criticality (hospitals → fire stations → shelters → substations → schools → bridges). LIMIT raised from 20 to 50.
+- `fix(agent)`: Infrastructure breakdown in `_build_answer` also sorts by criticality — hospitals named first regardless of count.
+- `feat(agent)`: Expanded quick-mode patterns — carretera central, corte de luz, personas atrapadas, postas médicas, etc.
+- `fix(SharePanel)`: Offline fallback shows explicit warning + "Sin expiración" label — operators know when link is permanent vs server-side token.
+- `fix(db_tools)`: `get_flood_polygons` returns `_total_flood_count` when truncated — `_build_answer` surfaces this to operator.
+- `docs`: DEMO-GUIDE, COMPETITION.md, STATUS.md updated for Session 23.
+
+**Tests (+10, 681 total):**
+- `test(alerts)`: age_seconds field, action_type whitelist validation
+- `test(proposals)`: invalid ubigeo 400, valid ubigeo 201
+- `test(notifications)`: IPv6 link-local fe80::/10 SSRF regression guards (×2)
+- `test(agent)`: sitrep UTC timestamp, stale river warning, flood polygon total count
+- `test(sitrep)`: Updated 5→6 tool mode assertions, social clusters in sitrep answer
+
+**Commits (19):** `0256a18` → `fad2376` → `1ff2715` → `8536242` → `3a06752` → `93a5be5` → `722d4e7` → `5aa89a2` → `97b9eca` → `f1c71e6` → `1e87848` → `e730d06` → `86d2071` → `fce7989` → `56c2fe9` → `506a0ab` → `24fc2fb` + docs.
 
 ---
 
