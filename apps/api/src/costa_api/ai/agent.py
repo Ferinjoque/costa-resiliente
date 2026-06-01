@@ -576,6 +576,27 @@ _STATION_THRESHOLDS: dict[str, float] = {
 }
 
 
+def _threshold_note_for_row(row: dict) -> str:
+    """Return a threshold comparison note for a river station row (module-level helper).
+
+    Used in both _build_answer (quick/full mode) and _build_sitrep_answer (sitrep mode)
+    to avoid duplicate threshold-check logic across both code paths.
+    """
+    name_lower = (row.get("name") or "").lower()
+    for key, threshold in _STATION_THRESHOLDS.items():
+        if key in name_lower:
+            level = row.get("level_m")
+            if level is not None:
+                lv = float(level)
+                if lv >= threshold:
+                    return f" · umbral: {threshold:.1f} m (⚠ SOBRE umbral ALERTA SENAMHI)"
+                elif lv >= threshold * 0.9:
+                    return f" · umbral: {threshold:.1f} m (⚠ acercándose al umbral — {(lv/threshold*100):.0f}%)"
+                else:
+                    return f" · umbral: {threshold:.1f} m (bajo umbral)"
+    return ""
+
+
 def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -> str:
     """Extract final answer from last assistant message, or summarise rows directly."""
     for msg in reversed(messages):
@@ -650,20 +671,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             change_str = ""
         # Highlight rising stations most critical for duty officer
         rising = [row for row in rows if row.get("trend") == "rising"]
-        def _threshold_note(row: dict) -> str:
-            name_lower = (row.get("name") or "").lower()
-            for key, threshold in _STATION_THRESHOLDS.items():
-                if key in name_lower:
-                    level = row.get("level_m")
-                    if level is not None:
-                        lv = float(level)
-                        if lv >= threshold:
-                            return f" · umbral: {threshold:.1f} m (⚠ SOBRE umbral ALERTA SENAMHI)"
-                        elif lv >= threshold * 0.9:
-                            return f" · umbral: {threshold:.1f} m (⚠ acercándose al umbral — {(lv/threshold*100):.0f}%)"
-                        else:
-                            return f" · umbral: {threshold:.1f} m (bajo umbral)"
-            return ""
+        _threshold_note = _threshold_note_for_row  # local alias for readability within this branch
 
         if rising:
             # Show top rising station with full detail

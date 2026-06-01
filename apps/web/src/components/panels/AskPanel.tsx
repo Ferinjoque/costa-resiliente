@@ -204,7 +204,10 @@ const KEYWORD_ROUTES: Array<{ keys: string[]; demo: string }> = [
   { keys: ["2017", "el niño costero", "evento 2017", "niño 2017", "que pasó", "what happened"], demo: "¿Qué pasó en el evento El Niño Costero 2017?" },
   { keys: ["recursos", "resources", "personal", "efectivos", "equipos", "deployed", "deployment"], demo: "¿Cuántos recursos de respuesta están desplegados?" },
   { keys: ["resumen completo", "sitrep", "sit rep", "situación general", "inicio de guardia",
-           "relevo", "traspaso", "resumen general", "situation report", "full briefing"], demo: "Dame el resumen completo de la situación" },
+           "relevo", "traspaso", "resumen general", "situation report", "full briefing",
+           // Session 23: operational shorthand added to SITREP triggers
+           "parte diario", "coe activado", "novedades criticas", "briefing",
+           "daily brief", "relevo de turno", "informe de turno"], demo: "Dame el resumen completo de la situación" },
   { keys: ["acciones emergencia", "nivel emergencia", "what to do emergency", "actions level",
            "protocolo emergencia", "qué hago en emergencia"], demo: "¿Qué acciones debo tomar en nivel EMERGENCIA?" },
 ];
