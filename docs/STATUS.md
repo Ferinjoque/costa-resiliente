@@ -267,7 +267,11 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 - `test(agent)`: `test_full_agent_tool_error_dict_produces_degraded_not_empty` — guard that copilot never returns empty string when all DB tools fail.
 - `test(agent)`: Regression guards updated for quebrada names in sitrep + weather_observation in social breakdown.
 
-**Commits (17):** `369d21e` → `4e8f3c0` → `839f63d` → `4e5cde9` → `06cb4da` → `72dff0e` → `2bc6b3f` → `6de8572` → `2d7c199` → `37c12ca` → `7c8ba11` → `c2c1c1e` → `ff6fb32` → `e55a282` → `bb6d8fd` → + docs.
+**Final Session 22 improvements:**
+- `feat(ui)`: SITREP banner moved ABOVE response text (was below) — "SITREP · Fusión 5 fuentes · sin LLM" prominent badge immediately visible when response loads. Key C5 differentiator for judges.
+- `feat(ui)`: ResponseProtocol (INDECI checklist) moved ABOVE AiRecommendation in AlertsPanel — judges see the live protocol tracking within 5 seconds of opening Alerts panel.
+
+**Commits (19):** `369d21e` → `4e8f3c0` → `839f63d` → `4e5cde9` → `06cb4da` → `72dff0e` → `2bc6b3f` → `6de8572` → `2d7c199` → `37c12ca` → `7c8ba11` → `c2c1c1e` → `ff6fb32` → `e55a282` → `bb6d8fd` → `c0680fd` → + docs.
 
 ---
 
