@@ -1041,7 +1041,7 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
         return "No se encontraron datos en ninguna fuente. Sistema posiblemente sin datos recientes."
 
     from datetime import datetime, timezone as _tz
-    ts = datetime.now(_tz.utc).strftime("%d/%m %H:%M UTC")
+    ts = datetime.now(_tz.utc).strftime("%Y-%m-%d %H:%M UTC")
     body = "\n".join(f"• {s}" for s in sections)
     # Always end with an action — default to monitoring if no specific trigger.
     # Explicit guard: ensure action is always a non-empty string (defensive coding).

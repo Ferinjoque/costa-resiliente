@@ -152,7 +152,7 @@ async def _log_decision(
             text("""
                 INSERT INTO ops.decision_log
                     (operator_id, action_type, payload, session_id)
-                VALUES (:op, 'query', CAST(:payload AS jsonb), :session)
+                VALUES (:op, 'copilot', CAST(:payload AS jsonb), :session)
             """),
             {
                 "op": operator_id,

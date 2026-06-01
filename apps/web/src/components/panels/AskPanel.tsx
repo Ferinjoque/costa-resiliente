@@ -243,9 +243,9 @@ const SUGGESTIONS: { es: string; en: string }[] = [
   { es: "Dame el resumen completo de la situación",        en: "Situation report please" },
   { es: "¿Cuáles son las alertas activas ahora?",         en: "What are the active alerts right now?" },
   { es: "¿Qué distritos debo evacuar primero?",           en: "Which districts should I evacuate first?" },
-  { es: "¿Cuáles son los distritos en mayor riesgo?",     en: "Which districts have the highest risk?" },
+  { es: "¿Cuál es el nivel del río Rímac en Chosica?",   en: "What is the Rímac river level at Chosica?" },
   { es: "¿Cuál es el pronóstico para las próximas 24h?",  en: "What is the 24-hour forecast?" },
-  { es: "¿Cuántas personas están en zona de inundación?", en: "How many people are in active flood zones?" },
+  { es: "Dame el parte diario",                           en: "Daily operational brief" },
 ];
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
