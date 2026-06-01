@@ -144,12 +144,14 @@ export function ProposalsPanel() {
           variant: "success",
         } as Omit<LiveToast, "id" | "at">);
         qc.invalidateQueries({ queryKey: ["alerts"] });
+        qc.invalidateQueries({ queryKey: ["pending-proposals"] }); // refresh proposals list to show clean state
       } else {
         await rejectProposal(id, operatorId);
         addToast({
           message: locale === "es" ? "Propuesta rechazada" : "Proposal rejected",
           variant: "info",
         } as Omit<LiveToast, "id" | "at">);
+        qc.invalidateQueries({ queryKey: ["pending-proposals"] }); // ensure UI reflects server state
       }
     } catch (e: unknown) {
       qc.setQueryData(["pending-proposals"], prev);
