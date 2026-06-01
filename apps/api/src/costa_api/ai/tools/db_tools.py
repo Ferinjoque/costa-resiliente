@@ -233,6 +233,13 @@ TOOL_SCHEMAS: list[dict] = [
 
 async def get_flood_polygons(db: AsyncSession, hours_back: int = 168, district_name: str | None = None) -> list[dict]:
     hours_back = min(max(int(hours_back), 1), 240)
+    # Count total before LIMIT so _build_answer can warn about truncation
+    count_sql = text("""
+        SELECT COUNT(*) FROM ml.flood_polygons
+        WHERE acquired_at >= NOW() - make_interval(hours => :hours)
+          AND NOT ST_IsEmpty(geom)
+    """)
+    total = (await db.execute(count_sql, {"hours": hours_back})).scalar() or 0
     sql = text("""
         SELECT fp.scene_id, fp.acquired_at, fp.confidence,
                fp.area_km2, fp.model_version,
@@ -251,7 +258,11 @@ async def get_flood_polygons(db: AsyncSession, hours_back: int = 168, district_n
         LIMIT 10
     """)
     result = await db.execute(sql, {"hours": hours_back})
-    return [dict(r._mapping) for r in result]
+    rows = [dict(r._mapping) for r in result]
+    if rows and total > len(rows):
+        # Inject total count in first row so _build_answer can warn about truncation
+        rows[0]["_total_flood_count"] = total
+    return rows
 
 
 async def get_huayco_risk(db: AsyncSession, min_risk: str = "high") -> list[dict]:

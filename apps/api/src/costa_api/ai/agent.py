@@ -550,13 +550,16 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
     first = rows[0]
 
     if "area_km2" in first:
-        total = sum(r.get("area_km2") or 0 for r in rows)
+        total_area = sum(r.get("area_km2") or 0 for r in rows)
         # Largest polygon by area — most operationally significant
         largest = max(rows, key=lambda r: r.get("area_km2") or 0)
         largest_area = largest.get("area_km2", 0)
         largest_district = largest.get("district_name") or largest.get("district")
         district_note = f" Mayor en {largest_district} ({largest_area:.1f} km²)" if largest_district else ""
-        return f"Se detectaron {n} polígono{'s' if n != 1 else ''} de inundación SAR — total {total:.1f} km².{district_note}"
+        # Warn when total_count exceeds sample (injected by get_flood_polygons)
+        total_flood_count = first.get("_total_flood_count", n)
+        cap_note = f" (mostrando {n} de {total_flood_count})" if total_flood_count > n else ""
+        return f"Se detectaron {total_flood_count} polígono{'s' if total_flood_count != 1 else ''} de inundación SAR — total {total_area:.1f} km².{district_note}{cap_note}"
     if "risk_level" in first:
         top = rows[0]
         top_name = top.get("name", "?")
