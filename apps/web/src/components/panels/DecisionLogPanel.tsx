@@ -102,6 +102,14 @@ const ACTION_META: Record<
   resource_dispatch:      { es: "Despacho recurso",    en: "Resource dispatch", icon: Truck,         variant: "warn"     },
   protocol_step:          { es: "Paso de protocolo",   en: "Protocol step",     icon: ChevronRight,  variant: "default"  },
   field_report:           { es: "Reporte de campo",    en: "Field report",      icon: FileText,      variant: "accent"   },
+  // HITL proposal actions (Session 23)
+  create_proposal:        { es: "Propuesta creada",    en: "Proposal created",  icon: AlertTriangle, variant: "warn"     },
+  approve_proposal:       { es: "Propuesta aprobada",  en: "Proposal approved", icon: CheckCircle,   variant: "accent"   },
+  reject_proposal:        { es: "Propuesta rechazada", en: "Proposal rejected", icon: XCircle,       variant: "danger"   },
+  // Auth and sharing
+  login:                  { es: "Inicio de sesión",    en: "Login",             icon: CheckSquare,   variant: "default"  },
+  share:                  { es: "Enlace compartido",   en: "Link shared",       icon: FileText,      variant: "default"  },
+  copilot:                { es: "Consulta copiloto",   en: "Copilot query",     icon: MessageSquare, variant: "default"  },
 };
 
 function payloadPreview(entry: DecisionLogEntry): string | null {
