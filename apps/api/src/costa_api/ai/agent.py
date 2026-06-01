@@ -788,7 +788,8 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                 except Exception:
                     pass
             if oldest_age_min is not None and oldest_age_min > 10:
-                base += f" ⏱ Alerta más antigua sin respuesta: {oldest_age_min}min (SLA incumplido)."
+                age_str = f"{oldest_age_min // 60}h" if oldest_age_min >= 60 else f"{oldest_age_min}min"
+                base += f" ⏱ Alerta más antigua sin respuesta: {age_str} (SLA incumplido)."
         except Exception:
             pass
         return base
@@ -937,7 +938,8 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
                 else:
                     age_min = 0
                 if age_min > 5:
-                    sla_note = f" ⏱{age_min}min sin respuesta"
+                    age_str = f"{age_min // 60}h" if age_min >= 60 else f"{age_min}min"
+                    sla_note = f" ⏱{age_str} sin respuesta"
             except Exception:
                 pass
             crit_note = f" · más crítica: {top_crit['title']}{rain_note}{sla_note}"
