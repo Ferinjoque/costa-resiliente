@@ -38,12 +38,13 @@ Click **"Consultar"** (C key) → left panel, or tap the Copilot icon.
 Click the first suggestion: **"Dame el resumen completo de la situación"**
 
 **What happens:**
+- Loading indicator shows: **"SITREP — Herramienta 1/5: Alertas activas…" → 2/5 Lluvia → 3/5 Ríos → 4/5 SAR → 5/5 Huayco** (sequential tool progress visible in real time)
 - Sitrep mode triggers (5 tools sequential, ~5 seconds, no LLM)
 - Response includes: **7 active alerts** (3 crit, 4 high) + Rímac 63mm EMERGENCIA **· también Chillón: 28mm**, **Chosica 2.41m → acercándose** (2.5m threshold), SAR flood, **Pedregal MUY ALTO 91% · también: Huaycoloro**
-- Badge shows **"SITREP · 5 herramientas · sin LLM"** (distinct from regular quick mode)
+- SITREP banner shown **ABOVE** response text: "SITREP · Fusión 5 fuentes · sin LLM"
 - Action: **"Activar protocolo EDAN y escalar a COEN. Activar evacuación preventiva quebradas cuenca Rímac. Evacuar quebrada(s) Pedregal + Huaycoloro."** (combined: critical alerts + EMERGENCIA rainfall + specific very_high quebradas named)
 
-**Why this matters:** No LLM inference cost. Duty officer gets the full picture + specific action directive in ~5 seconds at 3am.
+**Why this matters:** Judges WATCH the 5-tool fusion happening (loading steps). No LLM inference cost. Duty officer gets full picture + specific action directive in ~5 seconds at 3am.
 
 ---
 
