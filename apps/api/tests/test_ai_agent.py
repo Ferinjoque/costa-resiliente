@@ -760,6 +760,22 @@ def test_detect_quick_alerts_query():
     assert _detect_quick("¿Cuáles son las alertas activas ahora?") == "get_active_alerts"
 
 
+def test_detect_quick_same_tool_two_patterns_still_routes():
+    """When two different patterns both match the SAME tool, quick-mode should fire.
+
+    Regression guard (Session 23 dedup fix): before the fix, 'alertas criticas sin
+    accion' would match BOTH the SLA pattern AND the general alerts pattern, both
+    mapping to get_active_alerts. Without dedup, len(matches)==2 → returns None
+    (falls to full LLM, 15-30s). With dedup, seen_tools={get_active_alerts} → quick-mode.
+    """
+    from costa_api.ai.agent import _detect_quick
+    # "alertas" + "sin reconocer" — matches both SLA and general alerts patterns
+    result = _detect_quick("alertas criticas sin reconocer en el sistema")
+    assert result == "get_active_alerts", (
+        f"When 2 patterns match same tool, should still route to quick-mode, got {result!r}"
+    )
+
+
 def test_detect_quick_sla_breach_sin_reconocer():
     """'alertas sin reconocer' must route to get_active_alerts (Session 23 SLA pattern).
 
