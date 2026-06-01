@@ -632,6 +632,21 @@ async def export_pdf_report(
         f"Operador: {operator_id or 'todos'}",
         small,
     ))
+
+    # ── SINAGERD operational status (Session 23) ──────────────────────────
+    try:
+        crit_count = sum(1 for r in alert_rows if (r.get("severity") or "").lower() == "critical")
+        high_count  = sum(1 for r in alert_rows if (r.get("severity") or "").lower() == "high")
+        total_active = len(alert_rows)
+        sinagerd_level = "EMERGENCIA" if crit_count > 0 else ("ALERTA" if high_count > 1 or total_active > 4 else "AVISO" if total_active > 0 else "NORMAL")
+        level_color = RED if sinagerd_level == "EMERGENCIA" else (YELLOW if sinagerd_level == "ALERTA" else BLUE if sinagerd_level == "AVISO" else colors.HexColor("#27AE60"))
+        story.append(Paragraph(
+            f"<font color='#{level_color.hexval()[1:]}'>SINAGERD: <b>{sinagerd_level}</b></font>  ·  "
+            f"Alertas activas: {total_active} ({crit_count} críticas, {high_count} altas)",
+            body,
+        ))
+    except Exception:
+        pass
     story.append(HRFlowable(width="100%", thickness=1, color=RED, spaceAfter=8))
 
     # ── Active alerts summary ─────────────────────────────────────────────
