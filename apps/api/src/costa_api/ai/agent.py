@@ -837,8 +837,12 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
     # 3. River levels
     river_rows = tool_rows.get("get_river_levels", [])
     if river_rows:
+        # Check if ANY row has meaningful trend data; if all are null/unknown, note the gap
+        has_trend_data = any(r.get("trend") in ("rising", "falling", "stable") for r in river_rows)
+        if not has_trend_data:
+            sections.append("**Ríos:** ⚠ Datos de tendencia no disponibles — estaciones sin actualización reciente")
         rising = [r for r in river_rows if r.get("trend") == "rising"]
-        if rising:
+        if has_trend_data and rising:
             names = ", ".join(r.get("name", "?") for r in rising[:3])
             # Check SENAMHI threshold for top rising station
             top_r = rising[0]
@@ -858,7 +862,7 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             sections.append(f"**Ríos:** {len(rising)} estación(es) en ascenso — {names}{top_threshold_note}")
             if not action:
                 action = f"Prioridad inmediata: monitorear evacuación preventiva en {names}."
-        else:
+        elif has_trend_data:
             top = river_rows[0]
             _trend_es = {"rising": "↑ ascenso", "falling": "↓ descenso", "stable": "estable"}.get(top.get("trend", ""), "—")
             # Check near-threshold even for stable stations
