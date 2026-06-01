@@ -49,12 +49,21 @@ async def search_protocols(query: str, top_k: int = 3) -> list[dict]:
         LIMIT :k
     """)
 
+    _MIN_SIMILARITY = 0.50  # filter chunks below 50% cosine similarity to avoid misleading citations
+
     try:
         async with get_ai_db_session() as session:
             await session.execute(text("SET LOCAL statement_timeout = '10000'"))
             result = await session.execute(sql, {"vec": vec_str, "k": top_k})
             rows = [dict(r._mapping) for r in result]
-            return rows
+            # Filter below minimum similarity — prevents low-relevance protocol citations
+            filtered = [r for r in rows if (r.get("similarity") or 0) >= _MIN_SIMILARITY]
+            if len(filtered) < len(rows):
+                logger.debug(
+                    "RAG: filtered %d low-similarity results (threshold=%.2f, kept=%d/%d)",
+                    len(rows) - len(filtered), _MIN_SIMILARITY, len(filtered), len(rows)
+                )
+            return filtered
     except Exception as exc:
         logger.warning("RAG vector search failed: %s", exc)
         return []
