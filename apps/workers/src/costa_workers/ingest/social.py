@@ -69,6 +69,11 @@ DISASTER_KEYWORDS: frozenset[str] = frozenset({
     "chosica", "chaclacayo", "lurigancho", "cieneguilla",
     # Infra
     "carretera", "puente", "colapsado", "cortada", "bloqueada",
+    # Lima-specific flash flood / quebrada breach terms (Session 23)
+    "cauce", "cauces", "torrentada", "torrentadas",
+    "avenida de lodo", "avenida de agua",  # flash flood technical/colloquial
+    "quebradazo",  # slang for quebrada breach
+    "socavón", "socavon",  # sinkhole (common in flood events)
 })
 
 LIMA_DISTRICTS: frozenset[str] = frozenset({
