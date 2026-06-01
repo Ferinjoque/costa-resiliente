@@ -410,6 +410,30 @@ def test_build_answer_rainfall_below_threshold():
     assert "ALERTA" not in answer
 
 
+def test_build_answer_rainfall_multi_watershed_shows_secondary():
+    """When a secondary watershed is also above ALERTA, it must appear in the answer.
+
+    Regression guard (Session 23): previously _build_answer only showed the max
+    watershed (Rímac) and silently omitted Chillón (also ALERTA at 28mm).
+    """
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"watershed": "Rímac",   "acc_72h_mm": 63.2, "acc_24h_mm": 41.8},
+        {"watershed": "Chillón", "acc_72h_mm": 28.4, "acc_24h_mm": 18.5},
+        {"watershed": "Lurín",   "acc_72h_mm": 11.0, "acc_24h_mm":  7.1},
+    ]
+    answer = _build_answer([], rows, "lluvia")
+    # Primary: Rímac is highest, should be EMERGENCIA
+    assert "EMERGENCIA" in answer
+    assert "Rímac" in answer or "Rimac" in answer
+    # Secondary: Chillón above ALERTA threshold — must appear
+    assert "Chillón" in answer or "Chillon" in answer, (
+        "When Chillón exceeds 25mm, it must appear in the multi-watershed rainfall answer"
+    )
+    # Lurín is below threshold — should not appear as elevated
+    assert "Lurín" not in answer or "debajo" in answer.lower() or answer.count("sobre umbral") == 1
+
+
 # ─── _build_answer: all row-type branches ────────────────────────────────────
 
 def test_build_answer_no_rows():
