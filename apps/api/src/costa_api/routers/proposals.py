@@ -90,6 +90,13 @@ async def create_proposal(
     await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     if body.severity not in ("critical", "high", "medium", "low"):
         raise HTTPException(400, "Invalid severity")
+    if body.district_ubigeo:
+        did_check = await db.execute(
+            text("SELECT 1 FROM geo.districts WHERE ubigeo = :u"),
+            {"u": body.district_ubigeo},
+        )
+        if did_check.fetchone() is None:
+            raise HTTPException(400, f"district_ubigeo '{body.district_ubigeo}' not found in geo.districts")
     refs_json = json.dumps(body.source_refs or [], default=str)
     result = await db.execute(
         text("""

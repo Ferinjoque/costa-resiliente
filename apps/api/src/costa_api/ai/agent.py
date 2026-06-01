@@ -303,11 +303,16 @@ async def run(
                 all_rows.extend(rows)
                 per_tool_rows.append((tool_name, rows))
                 tc_list.append({"tool": tool_name, "count": len(rows), "quick_mode": True})
+            # Track which sitrep tools failed for transparency
+            sitrep_failed = [t for t, r in zip(sitrep_tools, sitrep_results)
+                             if isinstance(r, Exception) or (isinstance(r, dict) and r.get("error"))]
             if all_rows:
                 combined = _build_sitrep_answer(per_tool_rows)
                 if combined:
+                    if sitrep_failed:
+                        combined += f"\n\n⚠ Fuente(s) no disponible(s) en este SITREP: {', '.join(sitrep_failed)}. Datos parciales — verifique con fuentes oficiales."
                     clean_answer, triggered = sanitise(combined, all_rows)
-                    logger.info("sitrep_mode hit: tools=%s rows=%d op=%s", sitrep_tools, len(all_rows), operator_id)
+                    logger.info("sitrep_mode hit: tools=%s rows=%d failed=%s op=%s", sitrep_tools, len(all_rows), sitrep_failed, operator_id)
                     return AgentResult(
                         answer=clean_answer,
                         sources=json.loads(json.dumps(all_rows[:20], default=str)),
@@ -390,13 +395,18 @@ async def run(
                 all_rows.extend(rows)
                 per_tool_rows.append((tool_name, rows))
                 tc_list.append({"tool": tool_name, "count": len(rows), "quick_mode": True})
+            # Collect names of tools that failed (exception or error dict)
+            failed_tools = [t for t, r in zip(multi_tools, raw_results)
+                            if isinstance(r, Exception) or (isinstance(r, dict) and r.get("error"))]
             if all_rows:
                 # Generate per-tool summaries and join — avoids _build_answer
                 # using only the first row type when schemas are heterogeneous.
                 parts = [_build_answer([], rows, query) for _, rows in per_tool_rows if rows]
                 answer = " | ".join(p for p in parts if p and "No se encontraron" not in p) or _build_answer([], all_rows, query)
+                if failed_tools:
+                    answer += f"\n\n⚠ Fuente(s) no disponible(s): {', '.join(failed_tools)}. Verifique el panel de fuentes de datos."
                 clean_answer, triggered = sanitise(answer, all_rows)
-                logger.info("multi_quick hit: tools=%s rows=%d op=%s", multi_tools, len(all_rows), operator_id)
+                logger.info("multi_quick hit: tools=%s rows=%d failed=%s op=%s", multi_tools, len(all_rows), failed_tools, operator_id)
                 return AgentResult(
                     answer=clean_answer,
                     sources=json.loads(json.dumps(all_rows[:20], default=str)),
@@ -903,8 +913,10 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
     if not sections:
         return "No se encontraron datos en ninguna fuente. Sistema posiblemente sin datos recientes."
 
+    from datetime import datetime, timezone as _tz
+    ts = datetime.now(_tz.utc).strftime("%d/%m %H:%M UTC")
     body = "\n".join(f"• {s}" for s in sections)
     # Always end with an action — default to monitoring if no specific trigger
     if not action:
         action = "Mantener monitoreo activo. Verificar scrapers y revisar fuentes en panel Datos."
-    return f"**SITREP — Lima Metropolitana**\n\n{body}\n\nAcción recomendada: {action}"
+    return f"**SITREP — Lima Metropolitana** · {ts}\n\n{body}\n\nAcción recomendada: {action}"

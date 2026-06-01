@@ -329,6 +329,7 @@ export interface Alert {
   created_at: string;
   updated_at: string;
   status: string;
+  age_seconds?: number | null;
 }
 
 export interface AlertFilters {
