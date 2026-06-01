@@ -409,7 +409,7 @@ async def get_active_alerts(db: AsyncSession, severity: str | None = None) -> li
             SELECT a.id, a.type AS alert_type, a.severity, a.status,
                    a.title, a.description AS summary,
                    d.ubigeo AS district_ubigeo, d.name AS district_name,
-                   a.created_at
+                   a.created_at, a.source_refs
             FROM ops.alerts a
             LEFT JOIN geo.districts d ON d.id = a.district_id
             WHERE a.status = 'active'
