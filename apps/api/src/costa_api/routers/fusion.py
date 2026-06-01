@@ -48,6 +48,9 @@ def _risk_prose_es(
         parts.append(
             f"Riesgo de huayco {RISK_ES.get(huayco_risk, huayco_risk)}{prob_str}"
         )
+    else:
+        # data_status="not_computed" — explicitly tell operators the model hasn't run for this district
+        parts.append("Susceptibilidad de huayco aún no computada para este distrito")
 
     if rainfall_72h is not None and rainfall_level in ("emergencia", "alerta"):
         ws_note = f" cuenca {rainfall_ws}" if rainfall_ws else ""
@@ -92,6 +95,8 @@ def _risk_prose_en(
         parts.append(
             f"{RISK_EN.get(huayco_risk, huayco_risk)} mudslide risk{prob_str}"
         )
+    else:
+        parts.append("Huayco susceptibility not yet computed for this district")
 
     if rainfall_72h is not None and rainfall_level in ("emergencia", "alerta"):
         ws_note = f" {rainfall_ws} watershed" if rainfall_ws else ""
