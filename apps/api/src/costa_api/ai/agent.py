@@ -163,6 +163,13 @@ _SITREP_PHRASES = [
     "que novedades hay", "qué novedades hay", "hay algo nuevo", "algo que reportar",
     "estado del coe", "activacion del coe", "activación del coe",
     "alerta temprana", "resumen ejecutivo emergencia",
+    # Peruvian COER Lima shorthand (Session 23 expansion)
+    "parte diario", "parte operacional diario",
+    "coe activado", "coe está activado", "coe esta activado",
+    "novedades criticas", "novedades críticas",
+    "qué cambió", "que cambio", "cambios desde el ultimo",
+    "relevo de turno", "cambios en la guardia",
+    "informe de turno", "resumen de turno",
 ]
 
 def _is_sitrep_query(query: str) -> bool:

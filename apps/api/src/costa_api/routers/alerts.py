@@ -330,7 +330,8 @@ async def alerts_stream(request: Request) -> StreamingResponse:
                 result = await conn.execute(
                     text("""
                         SELECT id, type, severity, title, status, created_at, district_id,
-                               source_refs
+                               source_refs,
+                               EXTRACT(EPOCH FROM (NOW() - created_at))::int AS age_seconds
                         FROM ops.alerts
                         WHERE status = 'active'
                         ORDER BY
