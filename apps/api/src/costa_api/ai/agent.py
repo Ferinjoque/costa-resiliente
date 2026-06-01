@@ -75,7 +75,9 @@ _QUICK_PATTERNS: list[tuple[list[str], str]] = [
       "resumen de", "resumen operacional", "qué está pasando", "que esta pasando",
       "estado actual", "novedades", "reporte actual",
       "nivel de emergencia", "estado de emergencia", "qué pasa", "que pasa",
-      "cuantas criticas", "cuántas críticas"], "get_active_alerts"),
+      "cuantas criticas", "cuántas críticas",
+      "numero de emergencia", "cuantas emergencia", "que tan grave",
+      "severidad", "prioridad ahora", "urgente ahora"], "get_active_alerts"),
     (["nivel del río", "nivel del rim", "nivel del chill", "nivel del lurin",
       "nivel del rio", "cota del rio", "lectura hidro",
       "caudal", "río rímac", "río rimac", "rio rimac", "río chillon", "río lurín",
@@ -132,6 +134,8 @@ _SITREP_PHRASES = [
     "resumen de la situaci", "como van las cosas", "estado operacional",
     "reporte del turno", "reporte completo", "tienes para mi guardia", "tienes para la guardia",
     "novedad de la guardia", "novedades de la guardia", "parte operacional",
+    "resumen para", "informe para mi", "que le digo", "qué le digo",
+    "que cuento", "qué cuento", "informar al", "como esta la cosa",
 ]
 
 def _is_sitrep_query(query: str) -> bool:
