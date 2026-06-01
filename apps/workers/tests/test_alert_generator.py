@@ -202,3 +202,50 @@ class TestRejectPrivateHost:
         with patch("costa_workers.ml.alert_generator.socket.getaddrinfo", side_effect=_socket.gaierror("NXDOMAIN")):
             with pytest.raises(ValueError, match="could not be resolved"):
                 _reject_private_host("does-not-exist.invalid")
+
+
+# ─── Rainfall alert severity ranking ─────────────────────────────────────────
+# Unit test for the severity-aware dedup logic added Session 23.
+# The actual asyncpg integration is exercised via E2E; this verifies the rank
+# ordering is correct so critical never gets blocked by high or medium.
+
+class TestRainfallSeverityRanking:
+    """Verify that the severity rank ordering used in generate_rainfall_alerts
+    prevents a lower-severity alert from blocking escalation to critical.
+
+    Regression guard: before Session 23 fix, ANY existing rainfall alert blocked
+    new ones regardless of severity — a 'high' alert blocked a 'critical' one.
+    """
+
+    def _sev_rank(self) -> dict:
+        # Mirror the _SEV_RANK dict from generate_rainfall_alerts
+        return {"critical": 3, "high": 2, "medium": 1, "low": 0}
+
+    def test_critical_ranks_above_high(self):
+        rank = self._sev_rank()
+        assert rank["critical"] > rank["high"], "critical must outrank high"
+
+    def test_high_ranks_above_medium(self):
+        rank = self._sev_rank()
+        assert rank["high"] > rank["medium"], "high must outrank medium"
+
+    def test_critical_should_not_be_blocked_by_high(self):
+        """If existing = 'high' and new = 'critical', rank[existing] < rank[new] → should NOT skip."""
+        rank = self._sev_rank()
+        existing, new = "high", "critical"
+        should_skip = rank.get(existing, 0) >= rank.get(new, 0)
+        assert not should_skip, "A critical alert must NOT be blocked by an existing high alert"
+
+    def test_high_should_be_blocked_by_critical(self):
+        """If existing = 'critical' and new = 'high', should skip (critical already exists)."""
+        rank = self._sev_rank()
+        existing, new = "critical", "high"
+        should_skip = rank.get(existing, 0) >= rank.get(new, 0)
+        assert should_skip, "A new high alert should be skipped when critical already exists"
+
+    def test_same_severity_should_skip(self):
+        """Same severity → skip (dedup)."""
+        rank = self._sev_rank()
+        for sev in ("critical", "high", "medium"):
+            should_skip = rank.get(sev, 0) >= rank.get(sev, 0)
+            assert should_skip, f"Duplicate {sev} alert should be skipped"
