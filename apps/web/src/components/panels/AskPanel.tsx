@@ -573,7 +573,7 @@ export function AskPanel() {
                       {msg.quickMode && msg.mode === "sitrep" && (
                         <div className="flex items-center gap-1.5 mb-2 px-2 py-1 rounded-lg bg-accent-soft border border-accent/20">
                           <span className="text-[10px] font-bold text-accent uppercase tracking-widest">SITREP</span>
-                          <span className="text-[10px] text-accent-muted">{es ? "Fusión 6 fuentes · sin LLM" : "6-source fusion · no LLM"}</span>
+                          <span className="text-[10px] text-accent-muted">{es ? "6 herramientas · sin LLM" : "6 tools · no LLM"}</span>
                         </div>
                       )}
                       {/* Demo banner ABOVE the response to prevent operators acting on simulated data */}
