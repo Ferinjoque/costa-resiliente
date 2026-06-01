@@ -1087,9 +1087,10 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
                 if not action:
                     action = f"Activar evacuación preventiva quebrada(s) {qbr_str}."
                 else:
-                    # Always append critical quebrada names regardless of existing action source
-                    # (rivers/rainfall/alerts all set action, but quebrada names must always appear)
-                    if qbr_str.split(" + ")[0] not in action:  # avoid repeating if already named
+                    # Always append evacuation directive if not already present.
+                    # Check for "Evacuar quebrada" keyword (not just quebrada name) to avoid
+                    # false-positive dedup when quebrada name appears in non-evacuation context.
+                    if "Evacuar quebrada" not in action and "evacuación" not in action.lower():
                         action = action.rstrip(".") + f". Evacuar quebrada(s) {qbr_str}."
 
     # 6. Social clusters (citizen signals)

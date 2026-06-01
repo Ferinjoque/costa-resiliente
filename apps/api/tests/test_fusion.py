@@ -240,6 +240,20 @@ class TestRiskProse:
         prose = self._prose()
         assert "Sin inundaciones" in prose
 
+    def test_not_computed_huayco_prose_when_risk_is_none(self):
+        """When huayco_risk=None, prose must include 'not computed' message.
+
+        Regression guard (Session 23 commit a85606a): when the XGBoost model hasn't
+        been run for a district, the fusion prose must explicitly tell operators the
+        model hasn't computed susceptibility — not just omit the section silently.
+        """
+        prose = self._prose(huayco_risk=None, huayco_prob=None)
+        assert "aún no computada" in prose.lower() or "not yet computed" in prose.lower(), (
+            "Prose must indicate huayco susceptibility hasn't been computed for this district"
+        )
+        # Must NOT say "riesgo de huayco" (that would imply computed data)
+        assert "riesgo de huayco" not in prose.lower()
+
     def test_includes_rainfall_emergencia_when_above_50mm(self):
         """Rainfall >= 50mm/72h → EMERGENCIA tag in prose."""
         prose = self._prose(
