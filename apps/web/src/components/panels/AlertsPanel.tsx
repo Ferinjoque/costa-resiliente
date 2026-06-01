@@ -91,10 +91,17 @@ const SLA_MINUTES: Record<string, number> = {
 
 function SlaChip({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   if (alert.status !== "active") return null;
-  // Prefer server-provided age_seconds to eliminate client clock skew.
-  // Fall back to client-side calculation if not provided.
-  const ageMin = alert.age_seconds != null
-    ? Math.floor(alert.age_seconds / 60)
+  // Local tick to update SLA chip every 15 seconds — reduces stale display between 30s query refetches
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 15_000);
+    return () => clearInterval(t);
+  }, []);
+  // Prefer server-provided age_seconds (server clock, avoids client skew) + local elapsed time
+  // since last refetch. On each tick, add 15s to server age to approximate current age.
+  const baseAgeSec = alert.age_seconds != null ? alert.age_seconds : null;
+  const ageMin = baseAgeSec != null
+    ? Math.floor((baseAgeSec + tick * 15) / 60)  // server age + ticks × 15s
     : Math.floor((Date.now() - new Date(alert.created_at).getTime()) / 60_000);
   const sla    = SLA_MINUTES[alert.severity] ?? 30;
   const breach = ageMin >= sla;
