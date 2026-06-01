@@ -1003,20 +1003,26 @@ def test_is_sitrep_query_rejects_specific():
 
 
 @pytest.mark.asyncio
-async def test_sitrep_mode_calls_five_tools():
-    """Sitrep mode calls 5 tools sequentially and returns quick_mode=True."""
+async def test_sitrep_mode_calls_six_tools():
+    """Sitrep mode calls 6 tools sequentially and returns quick_mode=True.
+
+    Session 23: get_social_clusters added as 6th tool so duty officers see
+    citizen signal counts at start-of-shift without a separate query.
+    """
     db = AsyncMock()
     fake_alerts = [{"id": 1, "severity": "critical", "_total_active": 2}]
     fake_rain = [{"watershed": "Rímac", "acc_72h_mm": 63.2, "acc_24h_mm": 20.1}]
     fake_river = [{"name": "Chosica", "level_m": 2.8, "flow_m3s": 210, "trend": "rising"}]
     fake_flood = [{"scene_id": "S1A_001", "area_km2": 1.5, "confidence": 0.87}]
     fake_huayco = [{"name": "Jicamarca", "risk_level": "very_high", "probability": 0.91, "trigger_rain_24h_mm": 12.0}]
+    fake_social = [{"triage_label": "needs_help", "count": 3}]
 
     async def _fake_alerts(db, **kwargs): return fake_alerts
     async def _fake_rain(db, **kwargs): return fake_rain
     async def _fake_river(db, **kwargs): return fake_river
     async def _fake_flood(db, **kwargs): return fake_flood
     async def _fake_huayco(db, **kwargs): return fake_huayco
+    async def _fake_social(db, **kwargs): return fake_social
 
     with (
         patch("costa_api.ai.agent.gateway") as mock_gw,
@@ -1026,6 +1032,7 @@ async def test_sitrep_mode_calls_five_tools():
             "get_river_levels": _fake_river,
             "get_flood_polygons": _fake_flood,
             "get_huayco_risk": _fake_huayco,
+            "get_social_clusters": _fake_social,
         }),
         patch("costa_api.ai.tools.db_tools.get_cached", AsyncMock(return_value=None)),
         patch("costa_api.ai.tools.db_tools.set_cached", AsyncMock()),
@@ -1041,15 +1048,16 @@ async def test_sitrep_mode_calls_five_tools():
     assert result.mode == "sitrep", f"Expected mode='sitrep', got {result.mode!r}"
     assert not result.blocked
     assert not mock_gw.chat.called
-    # Should have data from all 5 tools
+    # Should have data from all 6 tools
     tool_names = {tc["tool"] for tc in result.tool_calls}
     assert "get_active_alerts" in tool_names
     assert "get_rainfall_accumulation" in tool_names
-    assert "get_huayco_risk" in tool_names  # NEW: 5th tool
+    assert "get_huayco_risk" in tool_names
+    assert "get_social_clusters" in tool_names, "Session 23: 6th sitrep tool must be present"
 
 
 def test_build_sitrep_answer_all_tools():
-    """_build_sitrep_answer synthesises a coherent SITREP from 5 tool results."""
+    """_build_sitrep_answer synthesises a coherent SITREP from 6 tool results."""
     from costa_api.ai.agent import _build_sitrep_answer
     per_tool_rows = [
         ("get_active_alerts", [{"id": 1, "severity": "critical", "alert_type": "rainfall",
@@ -1063,6 +1071,10 @@ def test_build_sitrep_answer_all_tools():
             {"name": "Jicamarca", "risk_level": "very_high", "probability": 0.91, "trigger_rain_24h_mm": 12.0},
             {"name": "Pedregal", "risk_level": "very_high", "probability": 0.88, "trigger_rain_24h_mm": 12.0},
         ]),
+        ("get_social_clusters", [
+            {"triage_label": "needs_help", "count": 4},
+            {"triage_label": "huayco_observation", "count": 2},
+        ]),
     ]
     answer = _build_sitrep_answer(per_tool_rows)
     assert "SITREP" in answer
@@ -1073,7 +1085,11 @@ def test_build_sitrep_answer_all_tools():
     assert "1.5" in answer             # flood area
     assert "Acción" in answer or "acción" in answer   # action recommended
     assert "Rímac" in answer           # critical alert title
-    assert "Jicamarca" in answer       # huayco quebrada (5th tool)
+    assert "Jicamarca" in answer       # huayco quebrada
+    # Session 23: 6th tool — social signals section
+    assert "social" in answer.lower() or "reportes" in answer.lower() or "señal" in answer.lower(), (
+        "SITREP must include social signals section (6th tool)"
+    )
     # With 2 very_high quebradas, sitrep shows "también: Pedregal"
     assert "Pedregal" in answer, "Second very_high quebrada should appear in sitrep 'también:' note"
     # Action should combine EDAN+COEN and evacuation directive (critical alert + EMERGENCIA rain)
