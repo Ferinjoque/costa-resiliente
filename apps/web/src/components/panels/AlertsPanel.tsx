@@ -580,22 +580,33 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   const topDistrict = firstCritical?.district_name ?? (high[0]?.district_name ?? null);
   const isRainfall = firstCritical?.type === "rainfall" || active.some((a) => a.type === "rainfall" && (a.severity === "critical" || a.severity === "high"));
 
+  // SLA urgency: use server-side age_seconds for accurate SLA breach detection
+  const SLA_MIN_MAP: Record<string, number> = { critical: 5, high: 10, medium: 30, low: 60 };
+  const criticalAgeSec = firstCritical?.age_seconds ?? null;
+  const criticalAgeMin = criticalAgeSec != null
+    ? Math.floor(criticalAgeSec / 60)
+    : (firstCritical ? Math.floor((Date.now() - new Date(firstCritical.created_at).getTime()) / 60_000) : 0);
+  const criticalSlaBreach = firstCritical && criticalAgeMin > (SLA_MIN_MAP[firstCritical.severity] ?? 5);
+  const slaPrefix = criticalSlaBreach
+    ? (locale === "es" ? `⚠ Alerta sin respuesta por ${criticalAgeMin}min (SLA vencido). ` : `⚠ Alert unresponded for ${criticalAgeMin}min (SLA breached). `)
+    : "";
+
   let rec: string;
   if (locale === "es") {
     if (critical.length > 0 && isHuayco) {
       const districtNote = topDistrict ? ` en ${topDistrict}` : "";
-      rec = `Evacuación preventiva inmediata${districtNote} — quebrada activa detectada. Umbral EMERGENCIA ANA (50 mm/72h) superado. Desplegar USAR. Notificar INDECI COEN y activar albergues.`;
+      rec = `${slaPrefix}Evacuación preventiva inmediata${districtNote} — quebrada activa detectada. Umbral EMERGENCIA ANA (50 mm/72h) superado. Desplegar USAR. Notificar INDECI COEN y activar albergues.`;
     } else if (critical.length > 0 && isRainfall) {
       const refs = firstCritical!.source_refs && typeof firstCritical!.source_refs === "object" && !Array.isArray(firstCritical!.source_refs) ? firstCritical!.source_refs as Record<string, number> : {};
       const mm72 = refs.acc_72h_mm;
       const mmNote = mm72 != null ? ` (${mm72.toFixed(0)} mm/72h)` : "";
-      rec = `${firstCritical!.title}${mmNote}. Umbral EMERGENCIA ANA superado. Activar brigadas en quebradas. Escalar a COEN y pre-alertar municipios distritales.`;
+      rec = `${slaPrefix}${firstCritical!.title}${mmNote}. Umbral EMERGENCIA ANA superado. Activar brigadas en quebradas. Escalar a COEN y pre-alertar municipios distritales.`;
     } else if (critical.length > 0 && firstCritical?.type === "social_cluster") {
       const districtNote = topDistrict ? ` en ${topDistrict}` : "";
-      rec = `Señales ciudadanas críticas${districtNote}: ${firstCritical!.title}. Verificar reportes de campo — posibles víctimas. Activar brigadas de respuesta y coordinar con INDECI COEN.`;
+      rec = `${slaPrefix}Señales ciudadanas críticas${districtNote}: ${firstCritical!.title}. Verificar reportes de campo — posibles víctimas. Activar brigadas de respuesta y coordinar con INDECI COEN.`;
     } else if (critical.length > 0) {
       const districtNote = topDistrict ? ` (${topDistrict})` : "";
-      rec = `Alerta crítica activa${districtNote}: ${firstCritical!.title}. Activar protocolo DELTA COEN. Preposicionar botes. Confirmar capacidad de albergues.`;
+      rec = `${slaPrefix}Alerta crítica activa${districtNote}: ${firstCritical!.title}. Activar protocolo DELTA COEN. Preposicionar botes. Confirmar capacidad de albergues.`;
     } else {
       const topName = topDistrict ?? "Lima Metro";
       rec = `Riesgo compuesto ALTO — ${high.length} alerta${high.length !== 1 ? "s" : ""} alta${high.length !== 1 ? "s" : ""}, zona prioritaria: ${topName}. Pre-alertar INDECI y monitorear estaciones cada 15 min.`;
