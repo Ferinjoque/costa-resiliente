@@ -614,18 +614,18 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   } else {
     if (critical.length > 0 && isHuayco) {
       const districtNote = topDistrict ? ` in ${topDistrict}` : "";
-      rec = `Immediate preventive evacuation${districtNote} — active quebrada detected. ANA EMERGENCY threshold (50 mm/72h) exceeded. Deploy USAR. Notify INDECI COEN and activate shelters.`;
+      rec = `${slaPrefix}Immediate preventive evacuation${districtNote} — active quebrada detected. ANA EMERGENCY threshold (50 mm/72h) exceeded. Deploy USAR. Notify INDECI COEN and activate shelters.`;
     } else if (critical.length > 0 && isRainfall) {
       const refs = firstCritical!.source_refs && typeof firstCritical!.source_refs === "object" && !Array.isArray(firstCritical!.source_refs) ? firstCritical!.source_refs as Record<string, number> : {};
       const mm72 = refs.acc_72h_mm;
       const mmNote = mm72 != null ? ` (${mm72.toFixed(0)} mm/72h)` : "";
-      rec = `${firstCritical!.title}${mmNote}. ANA EMERGENCY threshold exceeded. Deploy brigades to quebradas. Escalate to COEN and pre-alert district municipalities.`;
+      rec = `${slaPrefix}${firstCritical!.title}${mmNote}. ANA EMERGENCY threshold exceeded. Deploy brigades to quebradas. Escalate to COEN and pre-alert district municipalities.`;
     } else if (critical.length > 0 && firstCritical?.type === "social_cluster") {
       const districtNote = topDistrict ? ` in ${topDistrict}` : "";
-      rec = `Critical social signals${districtNote}: ${firstCritical!.title}. Verify field reports — possible casualties. Activate response brigades and coordinate with INDECI COEN.`;
+      rec = `${slaPrefix}Critical social signals${districtNote}: ${firstCritical!.title}. Verify field reports — possible casualties. Activate response brigades and coordinate with INDECI COEN.`;
     } else if (critical.length > 0) {
       const districtNote = topDistrict ? ` (${topDistrict})` : "";
-      rec = `Critical alert active${districtNote}: ${firstCritical!.title}. Activate COEN DELTA protocol. Pre-position boats. Confirm shelter capacity.`;
+      rec = `${slaPrefix}Critical alert active${districtNote}: ${firstCritical!.title}. Activate COEN DELTA protocol. Pre-position boats. Confirm shelter capacity.`;
     } else {
       const topName = topDistrict ?? "Lima Metro";
       rec = `HIGH composite risk — ${high.length} high alert${high.length !== 1 ? "s" : ""}, priority zone: ${topName}. Pre-alert INDECI and monitor stations every 15 min.`;
