@@ -109,16 +109,17 @@ function SlaChip({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   // Near-breach: within 2 minutes of SLA
   const nearBreach = !breach && remaining <= 2;
 
+  const ageStr = ageMin >= 60 ? `${Math.floor(ageMin / 60)}h` : `${ageMin}m`;
   const label = breach
-    ? `${ageMin}m!`
+    ? `${ageStr}!`
     : nearBreach
     ? (locale === "es" ? `${remaining}m restante` : `${remaining}m left`)
     : ageMin < 1
     ? "<1m"
-    : `${ageMin}m`;
+    : `${ageStr}`;
 
   const slaLabel = breach
-    ? (locale === "es" ? `SLA vencido: ${ageMin}min sin acción (límite ${sla}min)` : `SLA breached: ${ageMin}min without action (limit ${sla}min)`)
+    ? (locale === "es" ? `SLA vencido: ${ageStr} sin acción (límite ${sla}min)` : `SLA breached: ${ageStr} without action (limit ${sla}min)`)
     : (locale === "es" ? `SLA: ${sla}min para reconocer · ${remaining}min restantes` : `SLA: ${sla}min to acknowledge · ${remaining}min remaining`);
 
   return (
