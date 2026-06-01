@@ -373,6 +373,8 @@ async def get_social_clusters(db: AsyncSession, hours_back: int = 24, district_n
 
 async def get_infrastructure_impact(db: AsyncSession, hours_back: int = 240) -> list[dict]:
     hours_back = min(max(int(hours_back), 1), 240)
+    # Sort by criticality: hospitals first (life safety), then other critical infra.
+    # Previously ordered by acquired_at DESC — a minor bridge appeared before hospitals.
     sql = text("""
         SELECT i.type, i.name, d.name AS district,
                fp.acquired_at, fp.confidence AS flood_confidence
@@ -381,7 +383,18 @@ async def get_infrastructure_impact(db: AsyncSession, hours_back: int = 240) -> 
         LEFT JOIN geo.districts d ON d.id = i.district_id
         WHERE fp.acquired_at >= NOW() - make_interval(hours => :hours)
           AND NOT ST_IsEmpty(fp.geom)
-        ORDER BY fp.acquired_at DESC LIMIT 20
+        ORDER BY
+            CASE i.type
+                WHEN 'hospital'      THEN 0
+                WHEN 'fire_station'  THEN 1
+                WHEN 'shelter'       THEN 2
+                WHEN 'substation'    THEN 3
+                WHEN 'school'        THEN 4
+                WHEN 'bridge'        THEN 5
+                ELSE 6
+            END,
+            fp.acquired_at DESC
+        LIMIT 50
     """)
     result = await db.execute(sql, {"hours": hours_back})
     return [dict(r._mapping) for r in result]
