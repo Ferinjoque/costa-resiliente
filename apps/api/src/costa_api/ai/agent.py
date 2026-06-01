@@ -752,7 +752,9 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             if len(parts) < 3:
                 parts.append(chunk[:350] + ("…" if len(chunk) > 350 else ""))
         combined = " ".join(parts)
-        titles_str = " / ".join(title_list[:3])
+        titles_str = " / ".join(title_list[:3]) if title_list else "INDECI/SENAMHI"
+        if not combined:
+            return f"Protocolos relevantes: {titles_str}. [Contenido de protocolo no disponible — consulte fuentes oficiales INDECI/SENAMHI]"
         return f"Protocolos relevantes: {titles_str}. {combined}"
 
     return f"Se recuperaron {n} registros. Revise los datos adjuntos."
