@@ -1438,10 +1438,10 @@ async def test_full_agent_tool_error_dict_produces_degraded_not_empty():
 # ─── Session 23: sitrep timestamp + stale-river warning ──────────────────────
 
 def test_build_sitrep_answer_includes_utc_timestamp():
-    """SITREP header must contain a UTC timestamp (DD/MM HH:MM UTC).
+    """SITREP header must contain a UTC timestamp (YYYY-MM-DD HH:MM UTC).
 
-    Regression guard: Session 23 added the timestamp so operators know when
-    data was retrieved without needing to check the DataFreshnessBar.
+    Regression guard: Session 23 added the timestamp (ISO format for international
+    judges) so operators know when data was retrieved without checking DataFreshnessBar.
     """
     from costa_api.ai.agent import _build_sitrep_answer
     per_tool_rows = [
@@ -1450,6 +1450,11 @@ def test_build_sitrep_answer_includes_utc_timestamp():
     ]
     answer = _build_sitrep_answer(per_tool_rows)
     assert "UTC" in answer, "SITREP must include UTC timestamp in header"
+    # ISO format: 2026-06-01 HH:MM UTC (unambiguous for international readers)
+    import re
+    assert re.search(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC", answer), (
+        "SITREP timestamp must be in ISO format YYYY-MM-DD HH:MM UTC"
+    )
 
 
 def test_build_sitrep_answer_warns_when_all_river_trends_null():
