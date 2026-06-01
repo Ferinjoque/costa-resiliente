@@ -805,7 +805,7 @@ export const DEMO_FUSIONS: Record<string, DistrictFusion> = {
     prose_es: "Lurigancho-Chosica presenta riesgo ALTO. Tres polígonos de inundación SAR activos cubren 4.2 km². Alerta crítica de huayco en quebrada Jicamarca (probabilidad 0.91). ⚠ 4 avistamientos de huayco en campo — clúster activo en quebrada Huaycoloro. Doce señales sociales en las últimas 3 horas, 6 urgentes (huayco_observation, needs_help, road_blocked). Nivel del río Rímac en Chosica: 2.4 m, ⚠ acercándose al umbral SENAMHI (2.5 m).",
     prose_en: "Lurigancho-Chosica is at HIGH risk. Three active SAR flood polygons cover 4.2 km². Critical huayco alert on Quebrada Jicamarca (probability 0.91). ⚠ 4 huayco sightings in the field — active cluster on Quebrada Huaycoloro. Twelve social signals in the last 3 hours, 6 urgent (huayco_observation, needs_help, road_blocked). Rímac river at Chosica: 2.4 m, ⚠ approaching SENAMHI threshold (2.5 m).",
     flood:  { active_polygon_count: 3, overlap_km2: 4.2, latest_scene_at: hoursAgo(3) },
-    huayco: { highest_risk_level: "alto", highest_probability: 0.91, quebrada_name: "Jicamarca", trigger_rain_24h_mm: 12, computed_at: hoursAgo(2) },
+    huayco: { highest_risk_level: "alto", highest_probability: 0.91, quebrada_name: "Jicamarca", trigger_rain_24h_mm: 12, computed_at: hoursAgo(2), data_status: "available" as const },
     social: { total_signals_3h: 8, urgent_signals_3h: 6 },
   },
   "150103": {
@@ -815,7 +815,7 @@ export const DEMO_FUSIONS: Record<string, DistrictFusion> = {
     prose_es: "Ate presenta riesgo ALTO. Inundación activa en sector Huachipa detectada por SAR Sentinel-1 (1.9 km²). Señales sociales reportan daño en infraestructura vial. Estación Puente Los Ángeles: nivel 1.9 m, tendencia ascendente.",
     prose_en: "Ate is at HIGH risk. Active flood in Huachipa sector detected by Sentinel-1 SAR (1.9 km²). Social signals report road infrastructure damage. Puente Los Ángeles station: 1.9 m, rising trend.",
     flood:  { active_polygon_count: 2, overlap_km2: 1.9, latest_scene_at: hoursAgo(3.5) },
-    huayco: { highest_risk_level: "moderado", highest_probability: 0.61, quebrada_name: "Quirio", trigger_rain_24h_mm: 18, computed_at: hoursAgo(4) },
+    huayco: { highest_risk_level: "moderado", highest_probability: 0.61, quebrada_name: "Quirio", trigger_rain_24h_mm: 18, computed_at: hoursAgo(4), data_status: "available" as const },
     social: { total_signals_3h: 3, urgent_signals_3h: 2 },
   },
   "150106": {
@@ -825,7 +825,7 @@ export const DEMO_FUSIONS: Record<string, DistrictFusion> = {
     prose_es: "Carabayllo presenta riesgo ALTO. Desborde del río Chillón sector norte: nivel 3.1 m (umbral de alerta: 2.5 m). Dos polígonos SAR activos (2.8 km²). Probabilidad de huayco en quebrada Pedregal: 0.74.",
     prose_en: "Carabayllo is at HIGH risk. Chillón river overflowing at northern sector: 3.1 m (alert threshold: 2.5 m). Two active SAR polygons (2.8 km²). Huayco probability on Quebrada Pedregal: 0.74.",
     flood:  { active_polygon_count: 2, overlap_km2: 2.8, latest_scene_at: hoursAgo(2) },
-    huayco: { highest_risk_level: "alto", highest_probability: 0.74, quebrada_name: "Pedregal", trigger_rain_24h_mm: 15, computed_at: hoursAgo(3) },
+    huayco: { highest_risk_level: "alto", highest_probability: 0.74, quebrada_name: "Pedregal", trigger_rain_24h_mm: 15, computed_at: hoursAgo(3), data_status: "available" as const },
     social: { total_signals_3h: 4, urgent_signals_3h: 3 },
   },
 };
