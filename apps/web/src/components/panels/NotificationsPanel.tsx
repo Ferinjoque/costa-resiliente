@@ -191,6 +191,14 @@ export function NotificationsPanel() {
 
   async function handleDelete(id: number) {
     if (deletingIds.has(id)) return;
+    const sub = subscribers.find((s) => s.id === id);
+    const label = sub?.label ?? (locale === "es" ? "este suscriptor" : "this subscriber");
+    const confirmed = window.confirm(
+      locale === "es"
+        ? `¿Desactivar "${label}"? Dejará de recibir alertas.`
+        : `Disable "${label}"? It will stop receiving alerts.`
+    );
+    if (!confirmed) return;
     setDeletingIds((s) => new Set([...s, id]));
     try {
       await deleteNotificationSubscriber(id);

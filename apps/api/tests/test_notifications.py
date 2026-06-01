@@ -260,6 +260,25 @@ def test_reject_private_host_allows_public_ip():
     _reject_private_host("1.1.1.1")  # Cloudflare public DNS — must not raise
 
 
+def test_reject_private_host_blocks_ipv6_link_local():
+    """IPv6 link-local addresses (fe80::/10) must be blocked.
+
+    Regression guard: fe80::/10 was absent from _PRIVATE_NETS before Session 23.
+    An attacker could create a webhook targeting fe80::1 to reach link-local services
+    on the container network (e.g. metadata endpoints, COER LAN services).
+    """
+    from costa_api.routers.notifications import _reject_private_host
+    with pytest.raises(ValueError, match="private IP blocked"):
+        _reject_private_host("fe80::1")
+
+
+def test_reject_private_host_blocks_ipv6_link_local_variant():
+    """Another fe80::/10 variant must also be blocked."""
+    from costa_api.routers.notifications import _reject_private_host
+    with pytest.raises(ValueError, match="private IP blocked"):
+        _reject_private_host("fe80::dead:beef")
+
+
 # ─── Notifications rate limiter unit tests ───────────────────────────────────
 
 @pytest.mark.asyncio
