@@ -388,26 +388,32 @@ async def get_social_clusters(db: AsyncSession, hours_back: int = 24, district_n
 async def get_infrastructure_impact(db: AsyncSession, hours_back: int = 240) -> list[dict]:
     hours_back = min(max(int(hours_back), 1), 240)
     # Sort by criticality: hospitals first (life safety), then other critical infra.
-    # Previously ordered by acquired_at DESC — a minor bridge appeared before hospitals.
+    # Subquery deduplicates infrastructure that intersects multiple flood polygons —
+    # without this, a hospital near two overlapping polygons would consume 2 of 50 rows,
+    # potentially pushing fire stations/shelters out of the result set.
     sql = text("""
-        SELECT i.type, i.name, d.name AS district,
-               fp.acquired_at, fp.confidence AS flood_confidence
-        FROM geo.infrastructure i
-        JOIN ml.flood_polygons fp ON ST_Intersects(ST_MakeValid(i.geom), ST_MakeValid(fp.geom))
-        LEFT JOIN geo.districts d ON d.id = i.district_id
-        WHERE fp.acquired_at >= NOW() - make_interval(hours => :hours)
-          AND NOT ST_IsEmpty(fp.geom)
-        ORDER BY
-            CASE i.type
-                WHEN 'hospital'      THEN 0
-                WHEN 'fire_station'  THEN 1
-                WHEN 'shelter'       THEN 2
-                WHEN 'substation'    THEN 3
-                WHEN 'school'        THEN 4
-                WHEN 'bridge'        THEN 5
-                ELSE 6
-            END,
-            fp.acquired_at DESC
+        SELECT type, name, district, acquired_at, flood_confidence
+        FROM (
+            SELECT DISTINCT ON (i.id)
+                   i.type, i.name, d.name AS district,
+                   fp.acquired_at, fp.confidence AS flood_confidence,
+                   CASE i.type
+                       WHEN 'hospital'      THEN 0
+                       WHEN 'fire_station'  THEN 1
+                       WHEN 'shelter'       THEN 2
+                       WHEN 'substation'    THEN 3
+                       WHEN 'school'        THEN 4
+                       WHEN 'bridge'        THEN 5
+                       ELSE 6
+                   END AS type_rank
+            FROM geo.infrastructure i
+            JOIN ml.flood_polygons fp ON ST_Intersects(ST_MakeValid(i.geom), ST_MakeValid(fp.geom))
+            LEFT JOIN geo.districts d ON d.id = i.district_id
+            WHERE fp.acquired_at >= NOW() - make_interval(hours => :hours)
+              AND NOT ST_IsEmpty(fp.geom)
+            ORDER BY i.id, fp.acquired_at DESC  -- DISTINCT ON picks most-recent polygon per infra
+        ) deduped
+        ORDER BY type_rank, acquired_at DESC
         LIMIT 50
     """)
     result = await db.execute(sql, {"hours": hours_back})
