@@ -132,6 +132,9 @@ export const DEMO_HUAYCO: HuaycoCollection = {
   ],
 };
 
+// age_seconds = hours_ago * 3600 — pre-computed so demo SlaChip uses server-side age (no clock skew)
+const secsAgo = (h: number) => Math.round(h * 3600);
+
 export const DEMO_ALERTS: Alert[] = [
   {
     id: 1,
@@ -145,6 +148,7 @@ export const DEMO_ALERTS: Alert[] = [
     lng: -76.845,
     created_at: hoursAgo(1),
     updated_at: hoursAgo(1),
+    age_seconds: secsAgo(1),
   },
   {
     id: 2,
@@ -158,6 +162,7 @@ export const DEMO_ALERTS: Alert[] = [
     lng: -76.860,
     created_at: hoursAgo(2.5),
     updated_at: hoursAgo(2.5),
+    age_seconds: secsAgo(2.5),
   },
   {
     id: 3,
@@ -171,6 +176,7 @@ export const DEMO_ALERTS: Alert[] = [
     lng: -77.048,
     created_at: hoursAgo(3.5),
     updated_at: hoursAgo(3.5),
+    age_seconds: secsAgo(3.5),
   },
   {
     id: 4,
@@ -184,6 +190,7 @@ export const DEMO_ALERTS: Alert[] = [
     lng: -76.790,
     created_at: hoursAgo(4),
     updated_at: hoursAgo(4),
+    age_seconds: secsAgo(4),
   },
   {
     id: 5,
@@ -197,6 +204,7 @@ export const DEMO_ALERTS: Alert[] = [
     lng: -76.950,
     created_at: hoursAgo(0.5),
     updated_at: hoursAgo(0.5),
+    age_seconds: secsAgo(0.5),
   },
   {
     id: 6,
@@ -210,6 +218,7 @@ export const DEMO_ALERTS: Alert[] = [
     lng: -76.915,
     created_at: hoursAgo(3),
     updated_at: hoursAgo(3),
+    age_seconds: secsAgo(3),
   },
   {
     id: 7,
@@ -223,6 +232,7 @@ export const DEMO_ALERTS: Alert[] = [
     lng: -76.862,
     created_at: hoursAgo(8),
     updated_at: hoursAgo(6),
+    age_seconds: secsAgo(8),
   },
 ];
 
