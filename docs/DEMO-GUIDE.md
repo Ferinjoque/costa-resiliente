@@ -92,11 +92,13 @@ Click on Lurigancho district on the map.
 - SAR Flood: 1 polygon, 3.0 km²
 - Huayco risk: MUY ALTO (91%) — Quebrada Pedregal (trigger: 12 mm/24h)
 - **Rainfall: 63 mm (Rímac) · ⚠ EMERGENCIA** (>50mm ANA threshold)
-- Social: 0 urgent signals (last 3h)
+- Social: 1 urgent signal (needs_help — Jicamarca) in last 3h (Session 23: district attribution fix)
 - Risk level pill: ALTO (elevation from rainfall EMERGENCIA + SAR flood + very high huayco)
-- Prose (Spanish): "Lurigancho: 1 polígono SAR activo (3.0 km²; ~213,386 personas) · Riesgo huayco muy alto (91%) · Lluvia 72h cuenca Rímac: 63 mm — ⚠ EMERGENCIA."
+- Prose (Spanish): "Lurigancho: 1 polígono SAR activo (3.0 km²; ~213,386 personas) · Riesgo huayco muy alto (91%) · Lluvia 72h cuenca Rímac: 63 mm — ⚠ EMERGENCIA · 1 señal(es) urgente(s)."
 
-Click **"Análisis completo"** → DistrictDashboardPanel shows **7 active alerts** (4 huayco + 3 rainfall) thanks to Session 21 watershed-to-district integration.
+Click **"Análisis completo"** → DistrictDashboardPanel shows **8 active alerts** (4 huayco + 4 rainfall) with social_24h breakdown: huayco_observation, infrastructure_damage, needs_help, weather_observation.
+
+**Also click San Juan de Lurigancho (150133)** → FusionCallout shows **4 citizen reports, 3 urgent** (needs_help, huayco_observation, infrastructure_damage) — the most populous Lima district (1.03M pop) with active social signal cluster (Session 23).
 
 ---
 
