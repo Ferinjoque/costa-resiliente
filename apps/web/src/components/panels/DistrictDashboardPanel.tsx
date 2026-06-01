@@ -169,7 +169,7 @@ const LABEL_PILL_CLS: Record<string, string> = {
   infrastructure_damage: "bg-warn-soft text-warn-muted",
   road_blocked:          "bg-warn-soft text-warn-muted",
   huayco_observation:    "bg-warn-soft text-warn-muted",
-  flood_observation:     "bg-warn-soft text-warn-muted",
+  flood_observation:     "bg-danger-soft text-danger",  // danger — matches SocialFeedPanel priority=1 (Session 23)
   weather_observation:   "bg-accent-soft text-accent",
 };
 
