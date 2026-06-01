@@ -66,6 +66,10 @@ export function useAlertStream() {
       };
 
       es.onerror = () => {
+        // Guard: ignore if a newer connection has already been established.
+        // Without this, a rapid reconnect could leave alertStreamConnected=false
+        // while the new SSE is actually live (stale error from old connection).
+        if (esRef.current !== es) return;
         if (heartbeatRef.current) clearTimeout(heartbeatRef.current);
         setConnected(false);
         es.close();
