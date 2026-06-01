@@ -210,3 +210,44 @@ async def test_reject_proposal_locks_status():
             headers=AUTH,
         )
         assert again.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_create_proposal_invalid_ubigeo_returns_400():
+    """Providing a district_ubigeo not in geo.districts must return 400.
+
+    Prevents creating district-less alerts silently — operators must use a
+    valid ubigeo or omit the field entirely.
+    """
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/proposals",
+            json={
+                "severity": "medium",
+                "alert_type": "flood",
+                "district_ubigeo": "999999",  # does not exist in geo.districts
+                "title": "Sesión-23: ubigeo inválido test",
+                "summary": "Test ubigeo validation — expected 400",
+            },
+            headers=AUTH,
+        )
+    assert resp.status_code == 400, f"Invalid ubigeo should return 400, got {resp.status_code}: {resp.text}"
+    assert "999999" in resp.json().get("detail", ""), "Error detail should mention the bad ubigeo"
+
+
+@pytest.mark.asyncio
+async def test_create_proposal_valid_ubigeo_accepted():
+    """Known Lima ubigeo (Lurigancho = 150122) must be accepted without error."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post(
+            "/api/v1/proposals",
+            json={
+                "severity": "low",
+                "alert_type": "flood",
+                "district_ubigeo": "150133",  # San Juan de Lurigancho — seeded in geo.districts
+                "title": "Sesión-23: ubigeo válido test",
+                "summary": "Test ubigeo validation — expected 201",
+            },
+            headers=AUTH,
+        )
+    assert resp.status_code == 201, f"Valid ubigeo should return 201, got {resp.status_code}: {resp.text}"

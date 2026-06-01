@@ -91,8 +91,11 @@ const SLA_MINUTES: Record<string, number> = {
 
 function SlaChip({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   if (alert.status !== "active") return null;
-  const ageMs  = Date.now() - new Date(alert.created_at).getTime();
-  const ageMin = Math.floor(ageMs / 60_000);
+  // Prefer server-provided age_seconds to eliminate client clock skew.
+  // Fall back to client-side calculation if not provided.
+  const ageMin = alert.age_seconds != null
+    ? Math.floor(alert.age_seconds / 60)
+    : Math.floor((Date.now() - new Date(alert.created_at).getTime()) / 60_000);
   const sla    = SLA_MINUTES[alert.severity] ?? 30;
   const breach = ageMin >= sla;
   const remaining = sla - ageMin;
@@ -246,6 +249,24 @@ function EscalationModal({
             <span className="text-[10px] opacity-50" aria-hidden="true">·</span>
             <span className="text-xs truncate">{alert.title}</span>
           </div>
+          {(() => {
+            const ageMin = alert.age_seconds != null
+              ? Math.floor(alert.age_seconds / 60)
+              : Math.floor((Date.now() - new Date(alert.created_at).getTime()) / 60_000);
+            const slaMin = SLA_MINUTES[alert.severity] ?? 30;
+            const breached = ageMin >= slaMin;
+            if (!breached) return null;
+            return (
+              <div className="flex items-center gap-2 bg-danger-soft border border-danger/30 rounded-xl px-3 py-2 mb-3" role="alert">
+                <Clock size={12} className="text-danger shrink-0" aria-hidden="true" />
+                <p className="text-xs text-danger font-semibold">
+                  {locale === "es"
+                    ? `SLA VENCIDO — ${ageMin} min sin acción (límite ${slaMin} min). Escalar de inmediato.`
+                    : `SLA BREACHED — ${ageMin}min without action (limit ${slaMin}min). Escalate immediately.`}
+                </p>
+              </div>
+            );
+          })()}
           <label className="block text-xs text-ink-subtle mb-1 font-semibold uppercase tracking-caps">
             {locale === "es" ? "Reporte de escalada (editable)" : "Escalation report (editable)"}
           </label>

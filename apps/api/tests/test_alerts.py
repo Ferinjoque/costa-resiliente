@@ -381,6 +381,47 @@ class TestLogDecision:
             )
         assert resp.status_code == 401
 
+    @pytest.mark.asyncio
+    async def test_log_invalid_action_type_rejected(self):
+        """Unknown action_type must return 422 — protects audit-trail integrity."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.post(
+                "/api/v1/alerts/log",
+                json={
+                    "action_type": "dispach",  # typo — not in whitelist
+                    "payload": {"note": "typo test"},
+                },
+                headers=AUTH,
+            )
+        assert resp.status_code == 422, f"Typo action_type should be rejected, got {resp.status_code}: {resp.text}"
+
+    @pytest.mark.asyncio
+    async def test_log_valid_action_types_accepted(self):
+        """All known action types must be accepted."""
+        valid_types = ["dispatch", "resource_dispatch", "protocol_step", "note", "checklist"]
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            for atype in valid_types:
+                resp = await c.post(
+                    "/api/v1/alerts/log",
+                    json={"action_type": atype, "payload": {"test": True}},
+                    headers=AUTH,
+                )
+                assert resp.status_code == 200, f"action_type={atype!r} should be valid, got {resp.status_code}"
+
+    @pytest.mark.asyncio
+    async def test_alerts_include_age_seconds(self):
+        """GET /alerts must include age_seconds (server-side age) to eliminate client clock skew."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get("/api/v1/alerts")
+        assert resp.status_code == 200
+        alerts = resp.json()
+        if alerts:
+            a = alerts[0]
+            assert "age_seconds" in a, "AlertSummary must include age_seconds"
+            if a["age_seconds"] is not None:
+                assert isinstance(a["age_seconds"], int), "age_seconds must be int"
+                assert a["age_seconds"] >= 0, "age_seconds must be non-negative"
+
 
 # ─── GET /api/v1/alerts/decision-log ─────────────────────────────────────────
 
