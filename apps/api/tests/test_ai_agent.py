@@ -606,6 +606,48 @@ def test_build_answer_active_alerts_with_critical():
     assert "63" in answer    # rainfall mm should appear for rainfall-type alert
 
 
+def test_build_answer_active_alerts_shows_sla_breach_age():
+    """SLA breach note (⏱Xmin sin respuesta) must appear in quick-mode alerts answer.
+
+    Regression guard (Session 23): _build_answer for alerts shows ⏱ when oldest
+    critical alert is past its SLA threshold (5min for critical).
+    """
+    from datetime import datetime as _dt, timezone as _tz, timedelta
+    from costa_api.ai.agent import _build_answer
+    # Alert created 30 minutes ago — well past 5-minute critical SLA
+    old_created_at = (_dt.now(_tz.utc) - timedelta(minutes=30)).isoformat()
+    rows = [
+        {"id": 1, "severity": "critical", "title": "Lluvia crítica",
+         "source_refs": {}, "_total_active": 1,
+         "created_at": old_created_at, "age_seconds": 1800},
+    ]
+    answer = _build_answer([], rows, "alertas activas")
+    assert "⏱" in answer or "sin respuesta" in answer, (
+        "Quick-mode alerts answer must show SLA breach note when critical alert is >5min old"
+    )
+    assert "30" in answer or "29" in answer or "31" in answer, (
+        "SLA breach note must include approximate age in minutes"
+    )
+
+
+def test_build_answer_active_alerts_no_sla_note_when_fresh():
+    """SLA breach note must NOT appear for fresh alerts (< SLA threshold).
+
+    Regression guard: a newly created critical alert should not show the ⏱ warning.
+    """
+    from datetime import datetime as _dt, timezone as _tz
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"id": 1, "severity": "critical", "title": "Lluvia crítica",
+         "source_refs": {}, "_total_active": 1,
+         "created_at": _dt.now(_tz.utc).isoformat(), "age_seconds": 60},
+    ]
+    answer = _build_answer([], rows, "alertas activas")
+    assert "sin respuesta" not in answer, (
+        "Fresh critical alert (1min old) must NOT show SLA breach note"
+    )
+
+
 def test_threshold_note_for_row_boundary_conditions():
     """Direct unit test for the module-level _threshold_note_for_row helper.
 
