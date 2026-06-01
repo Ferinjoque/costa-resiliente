@@ -434,6 +434,31 @@ def test_build_answer_rainfall_multi_watershed_shows_secondary():
     assert "Lurín" not in answer or "debajo" in answer.lower() or answer.count("sobre umbral") == 1
 
 
+def test_build_answer_rainfall_intensity_acceleration_warning():
+    """When 1h accumulation >= 5mm, answer must include an intensity acceleration warning.
+
+    Regression guard (Session 23 commit 6487dd6): '⚠ intensidad en aumento' appears
+    when rainfall is rapid (1h rate) so duty officers can detect flash-flood onset.
+    """
+    from costa_api.ai.agent import _build_answer
+    rows = [{"watershed": "Rímac", "acc_72h_mm": 30.0, "acc_24h_mm": 10.0, "acc_1h_mm": 6.5}]
+    answer = _build_answer([], rows, "lluvia")
+    assert "intensidad" in answer.lower(), (
+        "Rainfall with 1h >= 5mm must show intensity acceleration warning"
+    )
+    assert "6.5" in answer or "aumento" in answer.lower()
+
+
+def test_build_answer_rainfall_no_intensity_warning_below_threshold():
+    """When 1h < 5mm, NO intensity acceleration warning should appear."""
+    from costa_api.ai.agent import _build_answer
+    rows = [{"watershed": "Lurín", "acc_72h_mm": 10.0, "acc_24h_mm": 3.0, "acc_1h_mm": 1.2}]
+    answer = _build_answer([], rows, "lluvia")
+    assert "intensidad en aumento" not in answer, (
+        "Rainfall with 1h < 5mm must NOT show intensity warning"
+    )
+
+
 # ─── _build_answer: all row-type branches ────────────────────────────────────
 
 def test_build_answer_no_rows():
