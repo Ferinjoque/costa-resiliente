@@ -808,7 +808,7 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
     ? [
         { id: "s1", es: "Notificar COEN/INDECI por radio",            en: "Notify COEN/INDECI via radio" },
         { id: "s2", es: "Activar brigadas en quebradas de cuencas afectadas", en: "Deploy brigades to quebradas in affected watersheds" },
-        { id: "s3", es: "Verificar albergues (capacidad / estado)",    en: "Verify shelters (capacity / status)" },
+        { id: "s3", es: "Verificar albergues INDECI habilitados (capacidad / estado)", en: "Verify INDECI-designated shelters (capacity / status)" },
         { id: "s4", es: "Pre-alertar municipios distritales vía SIAT-Lima", en: "Pre-alert district municipalities via SIAT-Lima" },
         { id: "s5", es: "Preparar ficha EDAN para COER",               en: "Prepare EDAN form for COER" },
       ]
