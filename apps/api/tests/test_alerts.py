@@ -211,6 +211,38 @@ class TestAlertAction:
         assert body["new_status"] == "acknowledged"
 
     @pytest.mark.asyncio
+    async def test_action_status_transitions_all_valid_types(self):
+        """Each valid action must result in the correct ops.alerts status transition.
+
+        Regression guard: no test previously verified escalate→escalated,
+        false_positive→false_positive, close→closed transitions.
+        A bug where action=close returned 200 but left status=active would be undetected.
+        """
+        ACTION_STATUS = {
+            "acknowledge":    "acknowledged",
+            "escalate":       "escalated",
+            "false_positive": "false_positive",
+            "close":          "closed",
+        }
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            alerts = (await c.get("/api/v1/alerts?status=active&limit=5")).json()
+            if len(alerts) < 4:
+                pytest.skip("need at least 4 active alerts to test all transitions")
+            for i, (action, expected_status) in enumerate(ACTION_STATUS.items()):
+                alert_id = alerts[i]["id"]
+                resp = await c.post(
+                    f"/api/v1/alerts/{alert_id}/action",
+                    json={"action": action, "note": f"test {action}"},
+                    headers=AUTH,
+                )
+                assert resp.status_code == 200, f"action={action!r} must return 200, got {resp.status_code}"
+                body = resp.json()
+                assert body["new_status"] == expected_status, (
+                    f"action={action!r} must set new_status={expected_status!r}, got {body['new_status']!r}"
+                )
+                assert "age_seconds" in body, f"action={action!r} response must include age_seconds"
+
+    @pytest.mark.asyncio
     async def test_idempotent_action_returns_200(self):
         """Applying the same action twice must return 200 (idempotent no-op).
 
