@@ -52,6 +52,12 @@ async def test_health_returns_ok():
     assert data["sinagerd_primary_trigger"] in ("alerts", "rainfall", "combined", "none"), (
         f"sinagerd_primary_trigger must be one of known values, got {data['sinagerd_primary_trigger']!r}"
     )
+    # Verify combined logic consistency: combined = both alerts AND rainfall qualify independently
+    # When we have critical alerts AND emergencia rainfall (as in demo), trigger must be "combined"
+    if data["critical_alerts"] >= 1 and data["rain_level"] == "emergencia":
+        assert data["sinagerd_primary_trigger"] == "combined", (
+            "When critical_alerts >= 1 AND rain_level == emergencia, sinagerd_primary_trigger must be 'combined'"
+        )
 
 
 @pytest.mark.asyncio
