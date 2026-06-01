@@ -1,6 +1,6 @@
 # Operator Runbook — Costa Resiliente
 
-> Updated through Session 21 — covers auth, SLA toasts, notifications, PDF export, HITL proposals, population at risk, auto-resolution, sitrep mode, enhanced quick-mode copilot, watershed rainfall in district risk (39 districts → ALTO during EMERGENCIA), quebrada district assignment.
+> Updated through Session 23 — covers auth, SLA toasts (server-side age_seconds, SLA breach modal in EscalationModal), notifications (delete confirm), PDF export, HITL proposals (ubigeo validation), population at risk, auto-resolution, 6-tool sitrep mode (alerts + rainfall + rivers + flood + huayco + social clusters), enhanced quick-mode copilot, watershed rainfall in district risk (39 districts → ALTO during EMERGENCIA), quebrada district assignment, social signal district attribution fix.
 
 ## Quick Start
 
@@ -38,12 +38,14 @@
 ### Alertas Feed (right panel — keyboard shortcut: A)
 
 - Color-coded by severity: red=critical, orange=high, yellow=medium, green=low
-- **SLA breach chips**: timer turns red when SINAGERD SLA is exceeded; a danger toast also fires so breach is visible even without the Alertas panel open
+- **SLA breach chips**: timer turns red when SINAGERD SLA is exceeded (server-computed age, no clock skew); a danger toast also fires so breach is visible even without the Alertas panel open
   - Critical: 5 min · High: 10 min · Medium: 30 min · Low: 60 min
+- **SLA breach modal**: when opening Escalate on a past-SLA alert, a red banner shows "SLA VENCIDO — Xmin sin acción (límite 5min)" — operators see exactly how late they are
 - Actions per alert card: **Reconocer**, **Escalar**, **Falsa alarma**, **Despachar**
-- All actions logged to Decision Log automatically
+- All actions logged to Decision Log automatically (action types validated against whitelist)
 - **Auto-resolution**: alerts resolve automatically when hazard passes (flood: 7d, huayco: 48h, social-cluster: 4h, rainfall: 6h)
 - **Auto-notification**: critical and high alerts fan-out to registered subscribers immediately on creation — no operator trigger needed
+- **Rainfall escalation**: if a high rainfall alert exists and rainfall exceeds critical threshold, the high alert is auto-closed and replaced with a critical alert (Session 23)
 
 ### Propuestas Panel (bottom-right drawer — keyboard shortcut: P)
 
@@ -56,7 +58,7 @@
 ### Consultar Panel / Copilot (keyboard shortcut: C)
 
 - Type a question in Spanish — first suggestion chip: "Dame el resumen completo de la situación"
-- **SITREP mode** (~3s): use "resumen completo", "inicio de guardia", "sitrep", or "situation report" → calls 4 tools in parallel (alertas + lluvia + ríos + SAR) and returns a structured SITREP narrative
+- **SITREP mode** (~6s): use "resumen completo", "inicio de guardia", "sitrep", or "situation report" → calls 6 tools sequentially (alertas + lluvia + ríos + SAR + huayco + señales sociales) and returns a structured SITREP narrative with UTC timestamp and district context for social signals (Session 23)
 - **Quick mode** (~2s): 9 common query patterns bypass the LLM entirely:
   - "¿alertas activas?" / "situación actual" → alert count + severity breakdown
   - "nivel del río / Rímac / Chillón" → river level + flow rate + trend (rising / stable / falling)
