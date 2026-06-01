@@ -1,6 +1,6 @@
 # Data Sources — Costa Resiliente
 
-> Status column reflects actual implementation state as of 2026-05-31 (Session 21).
+> Status column reflects actual implementation state as of 2026-06-01 (Session 23).
 
 ---
 
