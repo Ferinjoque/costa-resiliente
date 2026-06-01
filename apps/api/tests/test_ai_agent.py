@@ -1393,3 +1393,57 @@ async def test_full_agent_tool_error_dict_produces_degraded_not_empty():
     assert result.answer, "Answer must never be empty even when all tools fail"
     # Should be a graceful message or LLM direct answer, not an empty string
     assert len(result.answer) > 10, f"Answer too short: {result.answer!r}"
+
+
+# ─── Session 23: sitrep timestamp + stale-river warning ──────────────────────
+
+def test_build_sitrep_answer_includes_utc_timestamp():
+    """SITREP header must contain a UTC timestamp (DD/MM HH:MM UTC).
+
+    Regression guard: Session 23 added the timestamp so operators know when
+    data was retrieved without needing to check the DataFreshnessBar.
+    """
+    from costa_api.ai.agent import _build_sitrep_answer
+    per_tool_rows = [
+        ("get_active_alerts", [{"id": 1, "severity": "critical", "_total_active": 1,
+                                "title": "Huayco", "source_refs": {}}]),
+    ]
+    answer = _build_sitrep_answer(per_tool_rows)
+    assert "UTC" in answer, "SITREP must include UTC timestamp in header"
+
+
+def test_build_sitrep_answer_warns_when_all_river_trends_null():
+    """When river_rows have no trend data, SITREP must warn about stale sensors.
+
+    Regression guard: Session 23 fix — before, null-trend rivers silently showed
+    first station with '—' trend. Operators could misread this as stable.
+    """
+    from costa_api.ai.agent import _build_sitrep_answer
+    per_tool_rows = [
+        ("get_river_levels", [
+            {"name": "Chosica", "level_m": 2.0, "trend": None, "flow_m3s": 60.0},
+            {"name": "Ñaña", "level_m": 1.5, "trend": None, "flow_m3s": 40.0},
+        ]),
+    ]
+    answer = _build_sitrep_answer(per_tool_rows)
+    assert "tendencia" in answer.lower() or "disponible" in answer.lower(), (
+        "SITREP must warn when river trend data is unavailable"
+    )
+
+
+def test_build_answer_flood_polygon_total_count_shown_when_truncated():
+    """When flood polygons are truncated (total > sample size), answer must show total.
+
+    Regression guard: Session 23 — get_flood_polygons now injects _total_flood_count
+    into first row when more results exist than the LIMIT 10 sample.
+    """
+    from costa_api.ai.agent import _build_answer
+    # Simulate 15 total polygons but only 10 returned (truncated)
+    rows = [{"area_km2": float(i), "district_name": "Lima", "_total_flood_count": 15}
+            if i == 10 else {"area_km2": float(i), "district_name": "Lima"}
+            for i in range(10, 0, -1)]
+    # Inject total in first row
+    rows[0]["_total_flood_count"] = 15
+    answer = _build_answer([], rows, "inundaciones")
+    assert "15" in answer, "Answer must show total polygon count when truncated"
+    assert "polígono" in answer or "poligono" in answer.lower()
