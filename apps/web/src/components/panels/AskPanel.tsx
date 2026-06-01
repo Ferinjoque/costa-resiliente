@@ -66,18 +66,20 @@ const THINKING_STEPS: Record<"es" | "en", string[]> = {
 
 const SITREP_STEPS: Record<"es" | "en", string[]> = {
   es: [
-    "SITREP — Herramienta 1/5: Alertas activas…",
-    "SITREP — Herramienta 2/5: Lluvia IMERG…",
-    "SITREP — Herramienta 3/5: Niveles de ríos…",
-    "SITREP — Herramienta 4/5: Inundaciones SAR…",
-    "SITREP — Herramienta 5/5: Riesgo huayco…",
+    "SITREP — Herramienta 1/6: Alertas activas…",
+    "SITREP — Herramienta 2/6: Lluvia IMERG…",
+    "SITREP — Herramienta 3/6: Niveles de ríos…",
+    "SITREP — Herramienta 4/6: Inundaciones SAR…",
+    "SITREP — Herramienta 5/6: Riesgo huayco…",
+    "SITREP — Herramienta 6/6: Señales sociales…",
   ],
   en: [
-    "SITREP — Tool 1/5: Active alerts…",
-    "SITREP — Tool 2/5: IMERG rainfall…",
-    "SITREP — Tool 3/5: River levels…",
-    "SITREP — Tool 4/5: SAR flood extents…",
-    "SITREP — Tool 5/5: Huayco risk…",
+    "SITREP — Tool 1/6: Active alerts…",
+    "SITREP — Tool 2/6: IMERG rainfall…",
+    "SITREP — Tool 3/6: River levels…",
+    "SITREP — Tool 4/6: SAR flood extents…",
+    "SITREP — Tool 5/6: Huayco risk…",
+    "SITREP — Tool 6/6: Social signals…",
   ],
 };
 
@@ -100,12 +102,13 @@ function ThinkingBubble({ locale, query }: { locale: "es" | "en"; query: string 
 
   useEffect(() => {
     if (isSitrep) {
-      // 5 tools at ~1s each — show each step progressing
+      // 6 tools at ~1s each — show each step progressing
       const t1 = setTimeout(() => setStep(1), 900);
       const t2 = setTimeout(() => setStep(2), 1900);
       const t3 = setTimeout(() => setStep(3), 2900);
       const t4 = setTimeout(() => setStep(4), 3900);
-      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
+      const t5 = setTimeout(() => setStep(5), 4900);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
     } else {
       const t1 = setTimeout(() => setStep(1), 1300);
       const t2 = setTimeout(() => setStep(2), 3200);
@@ -154,7 +157,7 @@ function InfoPopover({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
           [es ? "Modelo" : "Model",           "Qwen 2.5 · 7B-Instruct"],
           [es ? "Infraestructura" : "Infra",   es ? "Local · Docker" : "Local · Docker"],
           [es ? "Datos" : "Data",              "PostGIS · IMERG · ANA"],
-          [es ? "SITREP" : "SITREP",           es ? "~5s · 5 herramientas secuencial" : "~5s · 5 tools sequential"],
+          [es ? "SITREP" : "SITREP",           es ? "~6s · 6 herramientas secuencial" : "~6s · 6 tools sequential"],
           [es ? "Modo rápido" : "Quick mode",   es ? "~2s · sin LLM" : "~2s · no LLM"],
           [es ? "Modo completo" : "Full mode",   es ? "15–30s · CPU" : "15–30s · CPU"],
           [es ? "Privacidad" : "Privacy",      es ? "Sin datos externos" : "No third-party data"],
@@ -566,7 +569,7 @@ export function AskPanel() {
                       {msg.quickMode && msg.mode === "sitrep" && (
                         <div className="flex items-center gap-1.5 mb-2 px-2 py-1 rounded-lg bg-accent-soft border border-accent/20">
                           <span className="text-[10px] font-bold text-accent uppercase tracking-widest">SITREP</span>
-                          <span className="text-[10px] text-accent-muted">{es ? "Fusión 5 fuentes · sin LLM" : "5-source fusion · no LLM"}</span>
+                          <span className="text-[10px] text-accent-muted">{es ? "Fusión 6 fuentes · sin LLM" : "6-source fusion · no LLM"}</span>
                         </div>
                       )}
                       {/* Demo banner ABOVE the response to prevent operators acting on simulated data */}
@@ -588,7 +591,7 @@ export function AskPanel() {
                         <div className="text-[10px] text-accent mt-2 opacity-80 border-t border-border pt-1.5 flex items-center gap-1">
                           <span className="font-bold tracking-wide uppercase">SITREP</span>
                           <span className="text-ink-subtle">·</span>
-                          <span>{es ? "5 herramientas · fusión multicapa · sin LLM · ~5s" : "5 tools · multi-layer fusion · no LLM · ~5s"}</span>
+                          <span>{es ? "6 herramientas · fusión multicapa · sin LLM · ~6s" : "6 tools · multi-layer fusion · no LLM · ~6s"}</span>
                         </div>
                       )}
                       {msg.quickMode && msg.mode !== "sitrep" && (

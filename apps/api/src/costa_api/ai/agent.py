@@ -276,14 +276,17 @@ async def run(
             confidence=0.0,
         )
 
-    # 1b-sitrep: start-of-shift comprehensive snapshot — 5 tools sequentially.
+    # 1b-sitrep: start-of-shift comprehensive snapshot — 6 tools sequentially.
     # Tools run sequentially (not gather) to avoid concurrent-session race on
     # the shared AsyncSession — parallel dispatch was causing some tools to
     # return empty results when they should have returned data.
+    # 6th tool (get_social_clusters) added Session 23: duty officers need
+    # citizen signal count at start-of-shift to know if community is calling for help.
     if _is_sitrep_query(query):
         try:
             sitrep_tools = ["get_active_alerts", "get_rainfall_accumulation",
-                            "get_river_levels", "get_flood_polygons", "get_huayco_risk"]
+                            "get_river_levels", "get_flood_polygons", "get_huayco_risk",
+                            "get_social_clusters"]
             sitrep_results = []
             for t in sitrep_tools:
                 try:
@@ -329,12 +332,13 @@ async def run(
                         mode="sitrep",
                     )
             elif per_tool_rows:
-                # Only declare NORMAL when ≥3 of 5 tools succeeded (≥3/5 = quorum).
+                # Only declare NORMAL when ≥4 of 6 tools succeeded (≥4/6 = quorum).
+                # Raised from 3/5 to 4/6 with addition of get_social_clusters as 6th tool.
                 # If fewer tools responded, some may have failed with exceptions —
                 # declaring "no emergency" when alerts/rainfall tools are down would
                 # give operators a false sense of calm during a real crisis.
-                if len(per_tool_rows) >= 3:
-                    logger.info("sitrep_mode: %d/5 tools returned 0 rows — no active emergency", len(per_tool_rows))
+                if len(per_tool_rows) >= 4:
+                    logger.info("sitrep_mode: %d/6 tools returned 0 rows — no active emergency", len(per_tool_rows))
                     return AgentResult(
                         answer="**SITREP — Lima Metropolitana**: Sin alertas activas, sin inundaciones SAR detectadas, sin riesgo crítico de huayco, niveles hidrológicos normales. Sistema en estado NORMAL.",
                         sources=[],
@@ -924,6 +928,23 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
                 elif "EDAN" in action or "Activar" in action:
                     # Append specific quebrada names to existing directive
                     action = action.rstrip(".") + f". Evacuar quebrada(s) {qbr_str}."
+
+    # 6. Social clusters (citizen signals)
+    social_rows = tool_rows.get("get_social_clusters", [])
+    if social_rows:
+        total_social = sum(r.get("count") or 0 for r in social_rows)
+        urgent_labels = {"huayco_observation", "needs_help", "flood_observation"}
+        urgent_total = sum(r.get("count") or 0 for r in social_rows if r.get("triage_label") in urgent_labels)
+        if urgent_total > 0:
+            urgent_note = f" · {urgent_total} urgentes (ayuda/huayco/inundación)"
+        elif total_social > 0:
+            urgent_note = " · sin señales urgentes"
+        else:
+            urgent_note = ""
+        if total_social > 0:
+            sections.append(f"**Señales sociales (3h):** {total_social} reportes ciudadanos{urgent_note}")
+            if urgent_total >= 3 and not action:
+                action = "Verificar señales urgentes de ciudadanos — activar brigadas de campo."
 
     if not sections:
         return "No se encontraron datos en ninguna fuente. Sistema posiblemente sin datos recientes."
