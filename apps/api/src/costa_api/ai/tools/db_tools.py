@@ -358,8 +358,21 @@ async def get_social_clusters(db: AsyncSession, hours_back: int = 24, district_n
         """)
         result = await db.execute(sql, {"hours": hours_back, "dname": f"%{district_name}%"})
     else:
+        # Include top district name per label to help operators see WHERE signals are clustering.
+        # A CTE ranks districts by signal count per label and picks the top one.
         sql = text("""
-            SELECT s.triage_label, COUNT(*) AS count, MAX(s.ingested_at) AS latest
+            SELECT s.triage_label, COUNT(*) AS count, MAX(s.ingested_at) AS latest,
+                   (
+                     SELECT d2.name
+                     FROM social.signals s2
+                     LEFT JOIN geo.districts d2 ON d2.id = s2.district_id
+                     WHERE s2.triage_label = s.triage_label
+                       AND s2.ingested_at >= NOW() - make_interval(hours => :hours)
+                       AND d2.name IS NOT NULL
+                     GROUP BY d2.name
+                     ORDER BY COUNT(*) DESC
+                     LIMIT 1
+                   ) AS top_district
             FROM social.signals s
             WHERE s.ingested_at >= NOW() - make_interval(hours => :hours)
               AND s.triage_label IS NOT NULL

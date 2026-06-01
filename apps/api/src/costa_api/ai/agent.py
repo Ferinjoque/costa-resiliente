@@ -656,6 +656,13 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                 if lbl == "huayco_observation": huayco_cnt = cnt
                 elif lbl == "needs_help": help_cnt = cnt
         breakdown = f" ({', '.join(urgent_parts)})" if urgent_parts else ""
+        # Add district context — show which districts are seeing most urgent signals
+        top_districts = []
+        for lbl in ["huayco_observation", "needs_help", "flood_observation"]:
+            row = next((r for r in rows if r.get("triage_label") == lbl), None)
+            if row and row.get("top_district") and row.get("count", 0) > 0:
+                top_districts.append(f"{row['top_district']} ({_LABEL_ES.get(lbl, lbl)})")
+        district_note = f" — zonas: {', '.join(top_districts[:2])}" if top_districts else ""
         # Add ⚠ when critical thresholds for social cluster alerts are reached
         # (alert generator fires at huayco>=3, needs_help>=5)
         urgency = ""
@@ -663,7 +670,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             urgency = " ⚠ UMBRAL HUAYCO SUPERADO — revisar alertas automáticas."
         elif help_cnt >= 5:
             urgency = " ⚠ Múltiples solicitudes de ayuda — activar respuesta de campo."
-        return f"Se registraron {total} señales sociales en el período consultado{breakdown}.{urgency}"
+        return f"Se registraron {total} señales sociales en el período consultado{breakdown}{district_note}.{urgency}"
     if "severity" in first:
         total = first.get("_total_active", n)
         # Break down by severity from sample (truthful even if capped at 20)
