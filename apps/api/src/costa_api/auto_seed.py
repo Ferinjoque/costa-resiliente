@@ -787,6 +787,40 @@ async def maybe_seed(engine: AsyncEngine) -> None:
             except Exception as exc:
                 logger.warning("auto_seed: station obs refresh failed: %s", exc)
 
+        # Always refresh demo IMERG accumulations so the DataFreshnessBar shows
+        # IMERG as fresh (< 70min threshold). The Prefect IMERG worker normally keeps
+        # these current, but if it hasn't run recently, the demo would show stale.
+        # Fetch watershed IDs directly since ws_ids is only populated in the full seed path.
+        try:
+            ws_rows = (await conn.execute(
+                text("SELECT id FROM geo.watersheds ORDER BY id LIMIT 3")
+            )).scalars().all()
+            if ws_rows and len(ws_rows) >= 3:
+                for ws_idx, offset_h, a1, a3, a6, a12, a24, a72 in _IMERG_CURRENT:
+                    if ws_idx < len(ws_rows):
+                        t_imerg = _ts(offset_h)
+                        await conn.execute(
+                            text("""
+                                INSERT INTO hydro.imerg_accumulations
+                                    (time, watershed_id, acc_1h_mm, acc_3h_mm, acc_6h_mm,
+                                     acc_12h_mm, acc_24h_mm, acc_72h_mm)
+                                VALUES (:t, :ws, :a1, :a3, :a6, :a12, :a24, :a72)
+                                ON CONFLICT (time, watershed_id) DO UPDATE
+                                    SET acc_1h_mm = EXCLUDED.acc_1h_mm,
+                                        acc_24h_mm = EXCLUDED.acc_24h_mm,
+                                        acc_72h_mm = EXCLUDED.acc_72h_mm
+                            """),
+                            {
+                                "t": t_imerg, "ws": ws_rows[ws_idx],
+                                "a1": a1, "a3": a3, "a6": a6,
+                                "a12": a12, "a24": a24, "a72": a72,
+                            },
+                        )
+                await conn.commit()
+                logger.info("auto_seed: refreshed IMERG demo accumulations for %d watersheds", len(ws_rows))
+        except Exception as exc:
+            logger.warning("auto_seed: IMERG refresh failed (Prefect worker will cover): %s", exc)
+
         # Always refresh demo flood polygon timestamps so they stay within the
         # DataFreshnessBar's 6h STALE window. SAR data is daily-cadence in production,
         # but demo polygons seeded at container start would look 24+ hours stale.
