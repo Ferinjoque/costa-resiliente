@@ -55,9 +55,18 @@ class AlertSummary(BaseModel):
     source_refs: Optional[list | dict] = None
     created_at: datetime
     updated_at: datetime
+    age_seconds: Optional[int] = None
 
 
 _VALID_ACTIONS = {"acknowledge", "escalate", "false_positive", "close"}
+
+
+_VALID_ACTION_TYPES = {
+    "dispatch", "resource_dispatch", "protocol_step", "field_report", "note",
+    "checklist", "share", "login", "copilot", "escalate",
+    "acknowledge", "false_positive", "close", "create_proposal",
+    "approve_proposal", "reject_proposal",
+}
 
 
 class LogEntry(BaseModel):
@@ -142,7 +151,8 @@ async def list_alerts(
                    a.district_id, d.name AS district_name, d.province,
                    a.created_at, a.updated_at,
                    ST_Y(a.geom) AS lat, ST_X(a.geom) AS lng,
-                   a.source_refs
+                   a.source_refs,
+                   EXTRACT(EPOCH FROM (NOW() - a.created_at))::int AS age_seconds
             FROM ops.alerts a
             LEFT JOIN geo.districts d ON d.id = a.district_id
             WHERE {where}
@@ -276,6 +286,11 @@ async def log_decision(
     op: CurrentOperator = Depends(require_operator),
 ) -> dict:
     """Append a free-form entry to the decision log (dispatch, protocol step, note)."""
+    if entry.action_type not in _VALID_ACTION_TYPES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"action_type must be one of: {', '.join(sorted(_VALID_ACTION_TYPES))}",
+        )
     await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     await db.execute(
         text("""
