@@ -18,6 +18,7 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
+from datetime import datetime as _dt, timezone as _tz  # module-level; used in multiple _build_* functions
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -622,7 +623,6 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         age_note = ""
         if computed_at:
             try:
-                from datetime import datetime as _dt, timezone as _tz
                 ca_dt = _dt.fromisoformat(str(computed_at).replace("Z", "+00:00"))
                 if ca_dt.tzinfo is None:
                     ca_dt = ca_dt.replace(tzinfo=_tz.utc)
@@ -750,7 +750,6 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             base += f" ⚠ Más crítica: {top_crit['title']}{district_note}{rain_note}."
         # Show oldest unacknowledged critical/high alert for SLA awareness
         try:
-            from datetime import datetime as _dt, timezone as _tz
             _now_utc = _dt.now(_tz.utc)
             oldest_age_min: int | None = None
             _SLA_MIN = {"critical": 5, "high": 10, "medium": 30, "low": 60}
@@ -901,7 +900,25 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             refs = top_crit.get("source_refs") or {}
             mm72 = refs.get("acc_72h_mm") if isinstance(refs, dict) else None
             rain_note = f" ({float(mm72):.0f} mm/72h)" if mm72 is not None else ""
-            crit_note = f" · más crítica: {top_crit['title']}{rain_note}"
+            # Show SLA breach age if critical alert is long overdue (SLA = 5 min)
+            sla_note = ""
+            try:
+                age_sec = top_crit.get("age_seconds")
+                ca_str = top_crit.get("created_at")
+                if isinstance(age_sec, (int, float)) and age_sec > 0:
+                    age_min = int(age_sec) // 60
+                elif ca_str:
+                    ca_dt = _dt.fromisoformat(str(ca_str).replace("Z", "+00:00"))
+                    if ca_dt.tzinfo is None:
+                        ca_dt = ca_dt.replace(tzinfo=_tz.utc)
+                    age_min = int((_dt.now(_tz.utc) - ca_dt).total_seconds() / 60)
+                else:
+                    age_min = 0
+                if age_min > 5:
+                    sla_note = f" ⏱{age_min}min sin respuesta"
+            except Exception:
+                pass
+            crit_note = f" · más crítica: {top_crit['title']}{rain_note}{sla_note}"
         else:
             crit_note = ""
         sections.append(f"**Alertas:** {total} activa{'s' if total != 1 else ''}{sev_str} — nivel SINAGERD {level}{crit_note}")
@@ -1062,8 +1079,7 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
     if not sections:
         return "No se encontraron datos en ninguna fuente. Sistema posiblemente sin datos recientes."
 
-    from datetime import datetime, timezone as _tz
-    ts = datetime.now(_tz.utc).strftime("%Y-%m-%d %H:%M UTC")
+    ts = _dt.now(_tz.utc).strftime("%Y-%m-%d %H:%M UTC")
     body = "\n".join(f"• {s}" for s in sections)
     # Always end with an action — default to monitoring if no specific trigger.
     # Explicit guard: ensure action is always a non-empty string (defensive coding).
