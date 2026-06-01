@@ -1083,6 +1083,17 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
               { value: 50, color: "oklch(58% 0.20 28)" },   // EMERGENCIA — danger
             ]}
           />
+          {/* Threshold legend — helps operators identify dashed reference lines */}
+          <div className="flex gap-3 mt-1 text-[10px] text-ink-subtle">
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-4 h-0.5 rounded" style={{ background: "oklch(73% 0.13 78)" }} aria-hidden="true" />
+              25mm ALERTA
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-4 h-0.5 rounded" style={{ background: "oklch(58% 0.20 28)" }} aria-hidden="true" />
+              50mm EMERGENCIA
+            </span>
+          </div>
         </div>
       )}
 

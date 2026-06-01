@@ -617,9 +617,27 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             vh_note = f" · {len(very_high)} quebrada{'s' if len(very_high) != 1 else ''} en umbral CRÍTICO: {vh_names}"
         else:
             vh_note = ""
+        # Model freshness — tell operators how old the XGBoost output is
+        computed_at = top.get("computed_at")
+        age_note = ""
+        if computed_at:
+            try:
+                from datetime import datetime as _dt, timezone as _tz
+                ca_dt = _dt.fromisoformat(str(computed_at).replace("Z", "+00:00"))
+                if ca_dt.tzinfo is None:
+                    ca_dt = ca_dt.replace(tzinfo=_tz.utc)
+                age_min = int((_dt.now(_tz.utc) - ca_dt).total_seconds() / 60)
+                if age_min < 60:
+                    age_note = f" · modelo: hace {age_min} min"
+                elif age_min < 1440:
+                    age_note = f" · modelo: hace {age_min//60} h"
+                else:
+                    age_note = f" · modelo: hace {age_min//1440} días"
+            except Exception:
+                pass
         return (
             f"Se identificaron {n} quebrada{'s' if n != 1 else ''} con riesgo elevado. "
-            f"La más crítica: {top_name} — {level_es}{prob_str}{trigger_str}{vh_note}."
+            f"La más crítica: {top_name} — {level_es}{prob_str}{trigger_str}{vh_note}{age_note}."
         )
     if "level_m" in first:
         r = rows[0]
