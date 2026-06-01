@@ -654,6 +654,7 @@ export interface FusionHuayco {
   quebrada_name: string | null;
   trigger_rain_24h_mm: number | null;
   computed_at: string | null;
+  data_status: "available" | "not_computed";
 }
 
 export interface FusionSocial {
