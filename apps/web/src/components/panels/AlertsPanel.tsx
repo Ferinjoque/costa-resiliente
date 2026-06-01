@@ -809,10 +809,14 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   const isRainfall = !isHuayco && active.some((a) => a.type === "rainfall" && (a.severity === "critical" || a.severity === "high"));
   const primaryAlert = urgent[0];
 
+  // Extract actual quebrada name from huayco alert title (e.g., "Riesgo de huayco — Huaycoloro")
+  const huaycoAlert = active.find((a) => a.type === "huayco" && (a.severity === "critical" || a.severity === "high"));
+  const huaycoQuebrada = huaycoAlert?.title?.match(/—\s*(.+)$|Quebrada\s+(\w+)/i)?.[1]?.trim() || "Jicamarca";
+
   const steps = isHuayco
     ? [
         { id: "s1", es: "Notificar COEN/INDECI por radio",           en: "Notify COEN/INDECI via radio" },
-        { id: "s2", es: "Evacuar Quebrada Jicamarca — ruta Av. Las Torres", en: "Evacuate Quebrada Jicamarca via Av. Las Torres" },
+        { id: "s2", es: `Evacuar ${huaycoQuebrada} — ruta Av. Las Torres`, en: `Evacuate ${huaycoQuebrada} via Av. Las Torres` },
         { id: "s3", es: "Verificar albergues habilitados y capacidad", en: "Verify enabled shelters and capacity" },
         { id: "s4", es: "Desplegar USAR y botes en zona de descarga",  en: "Deploy USAR and boats to discharge zone" },
         { id: "s5", es: "Preparar ficha EDAN para COER",               en: "Prepare EDAN form for COER" },
