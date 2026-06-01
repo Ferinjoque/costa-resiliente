@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **702 passed, 0 errors** (Session 23 ongoing). Up from 671 (+31). Workers: 148 passed, 8 skipped.
+- **API**: **704 passed, 0 errors** (Session 23 ongoing). Up from 671 (+33). Workers: 148 passed, 8 skipped.
 - **Build:** Next.js production build green; first-load JS `/` = 187 kB (Session 23: stable, +1kB from 186kB Session 22)
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
