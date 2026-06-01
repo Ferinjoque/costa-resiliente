@@ -1074,6 +1074,20 @@ export const DEMO_DECISION_LOG: DecisionLogEntry[] = [
     payload: { source: "telegram", label: "road_blocked", district: "Ate", confidence: 0.87 },
     session_id: "demo",
   },
+  {
+    id: 19,
+    logged_at: hoursAgo(0.15),
+    operator_id: "operador-coer-01",
+    action_type: "field_report",
+    alert_id: 1,
+    payload: {
+      district: "Lurigancho",
+      text: "Equipo INDECI confirma evacuación en curso — 280 personas en albergue Colegio Anexo Los Laureles. Quebrada Huaycoloro sin flujo visible, cauce bajo vigilancia. 63mm lluvia 72h confirmada.",
+      source: "radio",
+      confidence: "operator_assertion",
+    },
+    session_id: "demo",
+  },
 ];
 
 // ─── Resource deployment status (INDECI COEN, demo) ─────────────────────────

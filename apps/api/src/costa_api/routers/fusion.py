@@ -310,6 +310,7 @@ async def district_fusion(
             "quebrada_name": quebrada_name,
             "trigger_rain_24h_mm": huayco_trigger_mm,
             "computed_at": huayco_at,
+            "data_status": "available" if huayco_risk is not None else "not_computed",
         },
         "social": {
             "total_signals_3h": social_total,
