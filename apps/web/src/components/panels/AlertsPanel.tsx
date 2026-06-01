@@ -587,15 +587,21 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   const topDistrict = firstCritical?.district_name ?? (high[0]?.district_name ?? null);
   const isRainfall = firstCritical?.type === "rainfall" || active.some((a) => a.type === "rainfall" && (a.severity === "critical" || a.severity === "high"));
 
-  // SLA urgency: use server-side age_seconds for accurate SLA breach detection
+  // SLA urgency: 15s tick keeps recommendation in sync with SlaChip tick (prevents inconsistent UI)
+  const [recTick, setRecTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setRecTick((n) => n + 1), 15_000);
+    return () => clearInterval(t);
+  }, []);
   const SLA_MIN_MAP: Record<string, number> = { critical: 5, high: 10, medium: 30, low: 60 };
   const criticalAgeSec = firstCritical?.age_seconds ?? null;
   const criticalAgeMin = criticalAgeSec != null
-    ? Math.floor(criticalAgeSec / 60)
+    ? Math.floor((criticalAgeSec + recTick * 15) / 60)  // server age + elapsed ticks
     : (firstCritical ? Math.floor((Date.now() - new Date(firstCritical.created_at).getTime()) / 60_000) : 0);
   const criticalSlaBreach = firstCritical && criticalAgeMin > (SLA_MIN_MAP[firstCritical.severity] ?? 5);
+  const slaAgeStr = criticalAgeMin >= 60 ? `${Math.floor(criticalAgeMin / 60)}h` : `${criticalAgeMin}min`;
   const slaPrefix = criticalSlaBreach
-    ? (locale === "es" ? `⚠ Alerta sin respuesta por ${criticalAgeMin}min (SLA vencido). ` : `⚠ Alert unresponded for ${criticalAgeMin}min (SLA breached). `)
+    ? (locale === "es" ? `⚠ Alerta sin respuesta por ${slaAgeStr} (SLA vencido). ` : `⚠ Alert unresponded for ${slaAgeStr} (SLA breached). `)
     : "";
 
   let rec: string;

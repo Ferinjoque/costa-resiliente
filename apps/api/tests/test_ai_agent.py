@@ -1397,6 +1397,10 @@ def test_build_sitrep_multiple_rising_rivers_all_shown():
     )
     assert "Carapongo" in answer, "Third rising station must appear when all 3 are rising"
     assert "en ascenso" in answer, "Rising trend indicator must be present"
+    # Chosica at 2.41m is near its 2.5m threshold — should show threshold context
+    assert "umbral" in answer.lower() or "2.5" in answer, (
+        "Chosica near-threshold warning must appear (2.41m vs 2.5m SENAMHI threshold)"
+    )
 
 
 def test_build_sitrep_answer_empty_rows():
