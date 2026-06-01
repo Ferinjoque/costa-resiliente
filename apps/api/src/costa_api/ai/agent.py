@@ -72,6 +72,10 @@ class AgentResult:
 # Bypass LLM entirely: keyword match → DB tool → template answer (~2s).
 
 _QUICK_PATTERNS: list[tuple[list[str], str]] = [
+    # SLA breach queries — operators often ask "alertas sin reconocer" at shift change
+    (["sla vencido", "sla breach", "alertas vencidas", "sin reconocer",
+      "no reconocidas", "sin acción", "sin accion", "alertas incumplidas",
+      "alertas atrasadas", "cuantos sla", "cuántos sla"], "get_active_alerts"),
     # "alerta" alone is too broad (catches "mensaje de alerta", "redacta una alerta").
     # Require an operational qualifier word alongside it.
     (["alertas activ", "alerta activ", "cuántas alert", "cuantas alert",
@@ -789,8 +793,11 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         # Show names of critical infrastructure (hospitals first)
         hosp_names = [r.get("name") for r in rows if r.get("type") == "hospital" and r.get("name")][:2]
         name_note = f" Hospitales afectados: {', '.join(hosp_names)}." if hosp_names else ""
+        # Shelters in flood zone are critical for evacuation — highlight their count
+        shelter_cnt = by_type.get("shelter", 0)
+        shelter_note = f" ⚠ {shelter_cnt} albergue(s) INDECI en zona inundada — verificar capacidad." if shelter_cnt > 0 else ""
         return (
-            f"⚠ {n} infraestructura(s) crítica(s) dentro de zonas inundadas: {breakdown}.{name_note} "
+            f"⚠ {n} infraestructura(s) crítica(s) dentro de zonas inundadas: {breakdown}.{name_note}{shelter_note} "
             f"Verificar accesibilidad para respuesta de emergencia."
         )
 
