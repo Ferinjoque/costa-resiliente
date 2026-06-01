@@ -19,6 +19,7 @@ import ipaddress
 import json
 import logging
 import os
+import re
 import socket
 from datetime import datetime
 from typing import Optional
@@ -164,6 +165,15 @@ class SubscriberCreate(BaseModel):
         if not v:
             raise ValueError("target cannot be empty")
         return v
+
+    @model_validator(mode="after")
+    def check_email_format(self) -> "SubscriberCreate":
+        """Validate email format when channel is 'email'."""
+        if self.channel == "email":
+            pattern = r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$"
+            if not re.match(pattern, self.target):
+                raise ValueError("target must be a valid email address for email channel (e.g. ops@indeci.gob.pe)")
+        return self
 
     @model_validator(mode="after")
     def check_webhook_url_safe(self) -> "SubscriberCreate":
