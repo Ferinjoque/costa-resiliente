@@ -1055,7 +1055,10 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
         largest = max(flood_rows, key=lambda r: r.get("area_km2") or 0)
         dn = largest.get("district_name")
         district_note = f" · mayor en {dn}" if dn else ""
-        sections.append(f"**Inundación SAR:** {len(flood_rows)} polígono{'s' if len(flood_rows) != 1 else ''} · {total_km2:.1f} km² activos{district_note}")
+        # Use _total_flood_count if available (injected when tool truncated at LIMIT 10)
+        total_flood = flood_rows[0].get("_total_flood_count", len(flood_rows)) if flood_rows else len(flood_rows)
+        cap_note = f" (mostrando {len(flood_rows)} de {total_flood})" if total_flood > len(flood_rows) else ""
+        sections.append(f"**Inundación SAR:** {total_flood} polígono{'s' if total_flood != 1 else ''} · {total_km2:.1f} km² activos{district_note}{cap_note}")
 
     # 5. Huayco risk (top quebrada)
     huayco_rows = tool_rows.get("get_huayco_risk", [])
