@@ -730,7 +730,17 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         if acc_24h is not None and acc_24h > 0: detail_parts.append(f"24h: {acc_24h:.1f} mm")
         if acc_1h is not None and acc_1h > 0: detail_parts.append(f"1h: {acc_1h:.1f} mm")
         detail = " · ".join(detail_parts)
-        return f"Cuenca {mx_ws} — {detail}. {status}."
+        # Show additional watersheds above ALERTA (25mm) threshold for full picture.
+        # Deduplicate by watershed name — tool may return multiple time slots per watershed.
+        seen_ws_other: set[str] = {mx_ws}
+        other_elevated = []
+        for r in rows:
+            ws = r.get("watershed") or ""
+            if ws and ws not in seen_ws_other and (r.get("acc_72h_mm") or 0) >= 25.0:
+                seen_ws_other.add(ws)
+                other_elevated.append(f"{ws}: {int(r.get('acc_72h_mm') or 0)} mm")
+        other_note = f" · También sobre umbral: {', '.join(other_elevated[:2])}" if other_elevated else ""
+        return f"Cuenca {mx_ws} — {detail}. {status}.{other_note}"
     if "estimated_population_at_risk" in first:
         total = sum(int(r.get("estimated_population_at_risk") or 0) for r in rows)
         # Show top 3 districts for context
