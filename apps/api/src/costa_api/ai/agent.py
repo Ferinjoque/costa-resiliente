@@ -1117,9 +1117,14 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             unique_dists = [d for d in urgent_districts if not (d in seen_dists or seen_dists.add(d))]  # type: ignore[func-returns-value]
             district_note = f" — zona: {', '.join(unique_dists[:2])}" if unique_dists else ""
             sections.append(f"**Señales sociales (3h):** {total_social} reportes ciudadanos{urgent_note}{district_note}")
-            if urgent_total >= 3 and not action:
+            if urgent_total >= 3:
                 district_suffix = f" en {', '.join(unique_dists[:2])}" if unique_dists else ""
-                action = f"Verificar señales urgentes de ciudadanos{district_suffix} — activar brigadas de campo."
+                social_brigade = f"Verificar señales urgentes de ciudadanos{district_suffix} — activar brigadas de campo."
+                if not action:
+                    action = social_brigade
+                elif "brigadas" not in action:
+                    # Augment existing action with brigade directive when not already present
+                    action = action.rstrip(".") + f". {social_brigade}"
 
     if not sections:
         return "No se encontraron datos en ninguna fuente. Sistema posiblemente sin datos recientes."
