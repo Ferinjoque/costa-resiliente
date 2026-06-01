@@ -669,9 +669,11 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         # Always refresh demo social signals so they stay within the 48h map window.
         # Uses ON CONFLICT DO UPDATE to bump ingested_at even if the signal already exists.
         # Runs before the early-return check so it fires on every seed call.
-        _need_social_refresh = _social < len(_SOCIAL_CURRENT)
+        # Previously conditioned on count — but signals can be within the 48h window yet
+        # have stale timestamps (e.g. seeded 20h ago). Always refresh to keep them current.
+        _need_social_refresh = True
         if _need_social_refresh:
-            logger.info("auto_seed: refreshing %d demo social signals (only %d visible in 48h)", len(_SOCIAL_CURRENT), _social)
+            logger.info("auto_seed: refreshing %d demo social signals (%d visible in 48h window)", len(_SOCIAL_CURRENT), _social)
             for s in _SOCIAL_CURRENT:
                 h = hashlib.sha256(s["content"].encode()).hexdigest()
                 t = _ts(s["offset_h"])

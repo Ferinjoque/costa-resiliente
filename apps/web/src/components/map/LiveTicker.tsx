@@ -61,9 +61,10 @@ export function LiveTicker() {
       const tagObj = TYPE_TAG[a.type];
       const typeTag = tagObj ? tagObj[locale] : "ALERTA";
       const sevTag = (SEV_LABEL[a.severity] ?? SEV_LABEL.high)[locale];
+      const titleShort = a.title.length > 50 ? a.title.slice(0, 50).trimEnd() + "…" : a.title;
       return {
         id: `a-${a.id}`,
-        text: `[${sevTag}·${typeTag}] ${a.title} · ${timeShort(a.created_at)}`,
+        text: `[${sevTag}·${typeTag}] ${titleShort} · ${timeShort(a.created_at)}`,
         color: SEV_COLOR[a.severity] ?? "text-ink-muted",
       };
     });
