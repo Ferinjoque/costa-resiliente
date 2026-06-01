@@ -689,7 +689,17 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                 f"⚠ {len(rising)} estación(es) en ascenso — acción inmediata: {names}. "
                 f"{top.get('name','?')}: {top.get('level_m','—')} m{top_change_str}{top_flow_str}{threshold_note}."
             )
-        return f"Última lectura: {r.get('name','?')} — nivel {r.get('level_m','—')} m ({trend_es}{change_str}), caudal {r.get('flow_m3s','—')} m³/s{_threshold_note(r)}."
+        # Add recovery monitoring note when falling near threshold — operators should keep watching
+        recovery_note = ""
+        if trend == "falling":
+            tname = (r.get("name") or "").lower()
+            for key, threshold in _STATION_THRESHOLDS.items():
+                if key in tname:
+                    lv = r.get("level_m")
+                    if lv is not None and float(lv) >= threshold * 0.8:
+                        recovery_note = " · descenso en progreso — monitorear próximas 30min"
+                    break
+        return f"Última lectura: {r.get('name','?')} — nivel {r.get('level_m','—')} m ({trend_es}{change_str}), caudal {r.get('flow_m3s','—')} m³/s{_threshold_note(r)}{recovery_note}."
     if "triage_label" in first:
         total = sum(r.get("count") or 0 for r in rows)
         # Highlight urgent label breakdown (huayco > needs_help > flood > infra > road)
