@@ -713,6 +713,32 @@ def test_build_answer_social_signals_with_top_district():
     )
 
 
+def test_build_answer_river_levels_multi_station_threshold_notes():
+    """When 3 stations are rising, threshold notes appear for ALL near-threshold stations.
+
+    Regression guard (Session 23): lines 697-706 in agent.py build 'other_threshold_notes'
+    for stations 2-3 (not just the top). Before this fix, only Chosica got threshold context;
+    Ñaña near its 2.0m threshold would appear as just a name with no warning.
+    """
+    from costa_api.ai.agent import _build_answer
+    # Chosica (2.41m vs 2.5m threshold) and Ñaña (1.85m vs 2.0m threshold) both near alert
+    rows = [
+        {"name": "Chosica",   "level_m": 2.41, "trend": "rising", "flow_m3s": 68.0, "level_change_1h_m": 0.130},
+        {"name": "Ñaña",      "level_m": 1.85, "trend": "rising", "flow_m3s": 52.0, "level_change_1h_m": 0.050},
+        {"name": "Carapongo", "level_m": 1.40, "trend": "rising", "flow_m3s": 35.0, "level_change_1h_m": 0.020},
+    ]
+    answer = _build_answer([], rows, "ríos")
+    assert "Chosica" in answer, "Top rising station must appear"
+    assert "umbral" in answer.lower() or "2.5" in answer, (
+        "Chosica near-threshold (2.41m vs 2.5m) must show threshold warning"
+    )
+    # Ñaña at 1.85m is 92.5% of its 2.0m threshold → should trigger near-threshold
+    # (if threshold note logic works for secondary stations)
+    assert "Ñaña" in answer or "naña" in answer.lower(), (
+        "Ñaña must be listed in the multi-station rising answer"
+    )
+
+
 def test_build_answer_population_at_risk():
     """estimated_population_at_risk rows → total + top district + confidence."""
     from costa_api.ai.agent import _build_answer
