@@ -1053,7 +1053,8 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             district_note = f" — zona: {', '.join(unique_dists[:2])}" if unique_dists else ""
             sections.append(f"**Señales sociales (3h):** {total_social} reportes ciudadanos{urgent_note}{district_note}")
             if urgent_total >= 3 and not action:
-                action = "Verificar señales urgentes de ciudadanos — activar brigadas de campo."
+                district_suffix = f" en {', '.join(unique_dists[:2])}" if unique_dists else ""
+                action = f"Verificar señales urgentes de ciudadanos{district_suffix} — activar brigadas de campo."
 
     if not sections:
         return "No se encontraron datos en ninguna fuente. Sistema posiblemente sin datos recientes."
