@@ -1127,12 +1127,14 @@ export function AlertsPanel() {
           </div>
         )}
 
+        {/* INDECI protocol checklist — active tab only; shown first for immediate visibility */}
+        {tab === "active" && <ResponseProtocol alerts={alerts} locale={locale} />}
+
         {/* AI recommendation — active tab only */}
         {tab === "active" && <AiRecommendation alerts={alerts} locale={locale} />}
 
-        {/* Dispatch + protocol — active tab only */}
+        {/* Quick dispatch resources — active tab only */}
         {tab === "active" && <QuickDispatch alerts={alerts} locale={locale} />}
-        {tab === "active" && <ResponseProtocol alerts={alerts} locale={locale} />}
 
         {/* History header */}
         {tab === "all" && historyAlerts.length > 0 && activeCount > 0 && (

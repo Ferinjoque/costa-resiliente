@@ -519,6 +519,13 @@ export function AskPanel() {
                     <p>{msg.content}</p>
                   ) : (
                     <div className="text-sm text-ink leading-relaxed">
+                      {/* SITREP mode banner — shown before answer for immediate identification */}
+                      {msg.quickMode && msg.mode === "sitrep" && (
+                        <div className="flex items-center gap-1.5 mb-2 px-2 py-1 rounded-lg bg-accent-soft border border-accent/20">
+                          <span className="text-[10px] font-bold text-accent uppercase tracking-widest">SITREP</span>
+                          <span className="text-[10px] text-accent-muted">{es ? "Fusión 5 fuentes · sin LLM" : "5-source fusion · no LLM"}</span>
+                        </div>
+                      )}
                       {/* Demo banner ABOVE the response to prevent operators acting on simulated data */}
                       {msg.isDemo && (
                         <div className="flex items-center gap-1.5 mb-2 px-2 py-1.5 rounded-lg bg-warn-soft border border-warn/30">
@@ -534,11 +541,16 @@ export function AskPanel() {
                           aria-hidden="true"
                         />
                       )}
-                      {msg.quickMode && (
+                      {msg.quickMode && msg.mode === "sitrep" && (
+                        <div className="text-[10px] text-accent mt-2 opacity-80 border-t border-border pt-1.5 flex items-center gap-1">
+                          <span className="font-bold tracking-wide uppercase">SITREP</span>
+                          <span className="text-ink-subtle">·</span>
+                          <span>{es ? "5 herramientas · fusión multicapa · sin LLM · ~5s" : "5 tools · multi-layer fusion · no LLM · ~5s"}</span>
+                        </div>
+                      )}
+                      {msg.quickMode && msg.mode !== "sitrep" && (
                         <p className="text-[10px] text-accent mt-2 opacity-70 border-t border-border pt-1.5">
-                          {msg.mode === "sitrep"
-                            ? (es ? "SITREP · 5 herramientas · sin LLM · ~5s" : "SITREP · 5 tools · no LLM · ~5s")
-                            : (es ? "Modo rápido · sin LLM · ~2s" : "Quick mode · no LLM · ~2s")}
+                          {es ? "Modo rápido · sin LLM · ~2s" : "Quick mode · no LLM · ~2s"}
                         </p>
                       )}
                       {msg.isRedacted && (
