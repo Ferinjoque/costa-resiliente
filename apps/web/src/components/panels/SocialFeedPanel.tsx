@@ -118,10 +118,10 @@ function formatSignalDate(published_at: string | null | undefined, ingested_at: 
 const LABEL_PRIORITY: Record<string, number> = {
   needs_help:            0,
   huayco_observation:    1,
-  flood_observation:     2,
-  road_blocked:          3,
-  infrastructure_damage: 3,
-  weather_observation:   4,
+  flood_observation:     1,  // Equal urgency to huayco in active flood conditions
+  road_blocked:          2,
+  infrastructure_damage: 2,
+  weather_observation:   3,
 };
 
 function labelPriority(label: string | null): number {
@@ -131,7 +131,8 @@ function labelPriority(label: string | null): number {
 function labelToPillVariant(label: string): "danger" | "warn" | "accent" | "default" {
   if (label === "needs_help") return "danger";
   if (label === "huayco_observation") return "danger";  // huayco = imminent structural risk → same as needs_help
-  if (label === "road_blocked" || label === "flood_observation") return "warn";
+  if (label === "flood_observation") return "danger";  // active flood sighting = same urgency as huayco
+  if (label === "road_blocked") return "warn";
   if (label === "infrastructure_damage") return "accent";
   return "default";
 }
