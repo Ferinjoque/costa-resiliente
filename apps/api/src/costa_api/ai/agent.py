@@ -984,7 +984,9 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
     from datetime import datetime, timezone as _tz
     ts = datetime.now(_tz.utc).strftime("%d/%m %H:%M UTC")
     body = "\n".join(f"• {s}" for s in sections)
-    # Always end with an action — default to monitoring if no specific trigger
-    if not action:
+    # Always end with an action — default to monitoring if no specific trigger.
+    # Explicit guard: ensure action is always a non-empty string (defensive coding).
+    if not action or not isinstance(action, str) or not action.strip():
+        logger.debug("_build_sitrep_answer: no action directive set — using monitoring fallback")
         action = "Mantener monitoreo activo. Verificar scrapers y revisar fuentes en panel Datos."
     return f"**SITREP — Lima Metropolitana** · {ts}\n\n{body}\n\nAcción recomendada: {action}"

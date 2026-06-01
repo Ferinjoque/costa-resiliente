@@ -23,8 +23,11 @@ class HealthResponse(BaseModel):
     version: str
     sinagerd_level: str = "NORMAL"  # EMERGENCIA / ALERTA / AVISO / NORMAL
     active_alerts: int = 0
+    critical_alerts: int = 0  # Count of critical-severity active alerts
+    high_alerts: int = 0      # Count of high-severity active alerts
     max_rain_72h_mm: float | None = None  # Max 72h rainfall across Lima watersheds
     rain_level: str = "normal"  # emergencia (≥50mm) / alerta (≥25mm) / aviso (≥15mm 24h) / normal
+    sinagerd_primary_trigger: str = "none"  # alerts | rainfall | combined | none
 
 
 class SeedStatus(BaseModel):
@@ -101,10 +104,24 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
     except Exception:
         pass
 
+    # Determine primary trigger for downstream monitoring systems
+    alerts_trigger = critical > 0 or high > 1 or total > 4
+    rain_trigger = max_rain is not None and max_rain >= 25.0
+    if alerts_trigger and rain_trigger:
+        primary_trigger = "combined"
+    elif alerts_trigger:
+        primary_trigger = "alerts"
+    elif rain_trigger:
+        primary_trigger = "rainfall"
+    else:
+        primary_trigger = "none"
+
     return HealthResponse(
         status="ok", version="0.1.0",
         sinagerd_level=level, active_alerts=total,
+        critical_alerts=critical, high_alerts=high,
         max_rain_72h_mm=max_rain, rain_level=rain_level,
+        sinagerd_primary_trigger=primary_trigger,
     )
 
 
