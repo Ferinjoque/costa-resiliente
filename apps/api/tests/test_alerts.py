@@ -601,6 +601,13 @@ class TestDecisionLogExport:
         assert "operator_id" in (reader.fieldnames or [])
         assert "action_type" in (reader.fieldnames or [])
         assert "payload_json" in (reader.fieldnames or [])
+        # Session 23: CSV export must include performance analysis columns
+        assert "duration_ms" in (reader.fieldnames or []), (
+            "CSV export must include duration_ms column for post-incident performance analysis (Session 23)"
+        )
+        assert "mode" in (reader.fieldnames or []), (
+            "CSV export must include mode column (sitrep/quick/full) for query path analysis (Session 23)"
+        )
 
     @pytest.mark.asyncio
     async def test_csv_date_range_suffix_in_filename(self):
