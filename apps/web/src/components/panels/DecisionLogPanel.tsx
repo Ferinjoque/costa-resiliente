@@ -130,6 +130,12 @@ function payloadPreview(entry: DecisionLogEntry): string | null {
   if (typeof p.resource_name === "string") return p.resource_name.slice(0, 60);
   if (typeof p.label === "string")         return p.label.slice(0, 60);
   if (p.district && p.source)              return `${p.source} · ${p.district}`;
+  // Session 23: copilot/query entries show mode + latency for performance visibility
+  if (entry.action_type === "copilot" || entry.action_type === "query") {
+    const mode = typeof p.mode === "string" ? `[${p.mode}]` : "";
+    const ms = typeof p.duration_ms === "number" ? ` ${p.duration_ms}ms` : "";
+    if (mode || ms) return `${mode}${ms}`.trim();
+  }
   return null;
 }
 

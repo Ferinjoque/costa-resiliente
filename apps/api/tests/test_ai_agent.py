@@ -1353,6 +1353,44 @@ def test_build_sitrep_answer_no_critical():
     )
 
 
+def test_build_sitrep_social_only_no_alerts():
+    """Sitrep with only social signals (no alerts/flood/huayco) must still generate action.
+
+    Edge case: operator starts shift during a social signal surge with no active alerts.
+    """
+    from costa_api.ai.agent import _build_sitrep_answer
+    per_tool_rows = [
+        ("get_social_clusters", [
+            {"triage_label": "needs_help",   "count": 6, "top_district": "Ate"},
+            {"triage_label": "road_blocked", "count": 3, "top_district": "Lima"},
+        ]),
+    ]
+    answer = _build_sitrep_answer(per_tool_rows)
+    assert "SITREP" in answer
+    assert "social" in answer.lower() or "reporte" in answer.lower(), "Social section must appear"
+    assert "Ate" in answer or "brigadas" in answer.lower(), "District context or brigade action must appear"
+    assert "Acción" in answer or "acción" in answer, "Must have action directive"
+
+
+def test_build_sitrep_rainfall_only_no_rivers():
+    """Sitrep with only rainfall data (no river stations) shows rainfall EMERGENCIA.
+
+    Real scenario: IMERG data received but station scraper offline.
+    """
+    from costa_api.ai.agent import _build_sitrep_answer
+    per_tool_rows = [
+        ("get_rainfall_accumulation", [
+            {"watershed": "Rímac", "acc_72h_mm": 65.0, "acc_24h_mm": 25.0},
+        ]),
+    ]
+    answer = _build_sitrep_answer(per_tool_rows)
+    assert "Rímac" in answer
+    assert "EMERGENCIA" in answer, "65mm/72h must trigger EMERGENCIA"
+    assert "evacuaci" in answer.lower() or "brigadas" in answer.lower(), (
+        "EMERGENCIA rainfall must produce evacuation or brigade action"
+    )
+
+
 # ─── get_active_alerts: minimum-severity filter ──────────────────────────────
 
 @pytest.mark.asyncio
