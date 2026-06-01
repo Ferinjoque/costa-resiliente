@@ -157,7 +157,7 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 | **670 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, multi-watershed, near-threshold, idempotency, atomic alert guard, sitrep quorum |
 | **SINAGERD level consistency** | Rainfall ≥50mm always elevates to EMERGENCIA across health API, HUD, SituationBrief, CityOverview, EDAN — 5 consistent surfaces |
 | **Append-only decision log** | DB trigger rejects UPDATE/DELETE — full audit trail for SINAGERD post-event review |
-| **Map: 39 districts show ALTO** | District risk map includes watershed rainfall — Rímac EMERGENCIA elevates all intersecting districts |
+| **Map: 40 districts show ALTO (incl. SJL)** | District risk map includes watershed rainfall — Rímac EMERGENCIA elevates all intersecting districts incl. SJL (1.04M pop) |
 | **7 active alerts + 3 critical** | El Niño scenario: 2 critical huayco (Huaycoloro/Pedregal) + 1 critical rainfall + 4 high alerts |
 | **Alerts sorted critical-first** | Critical alerts always appear before high within active group — no operator context loss |
 | **Copilot: minimum severity filter** | `get_active_alerts(severity="high")` returns both high+critical (prior exact-match hid criticals) |
