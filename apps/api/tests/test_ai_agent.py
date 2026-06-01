@@ -626,6 +626,28 @@ def test_build_answer_social_signals_breakdown():
     assert "13" in answer
 
 
+def test_build_answer_social_signals_with_top_district():
+    """When top_district is present, answer must include district context.
+
+    Regression guard (Session 23): get_social_clusters now returns top_district
+    per label via correlated subquery. _build_answer must surface this so
+    operators see WHERE urgent signals are clustering (e.g., 'zonas: SJL, Lurigancho').
+    """
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"triage_label": "huayco_observation", "count": 3, "top_district": "San Juan de Lurigancho"},
+        {"triage_label": "needs_help", "count": 4, "top_district": "Lurigancho"},
+        {"triage_label": "weather_observation", "count": 2, "top_district": None},
+    ]
+    answer = _build_answer([], rows, "señales sociales")
+    assert "San Juan de Lurigancho" in answer or "Lurigancho" in answer, (
+        "When top_district is set, district name must appear in social cluster answer"
+    )
+    assert "zona" in answer.lower(), (
+        "District context line must use 'zonas' or 'zona' prefix"
+    )
+
+
 def test_build_answer_population_at_risk():
     """estimated_population_at_risk rows → total + top district + confidence."""
     from costa_api.ai.agent import _build_answer
@@ -1253,6 +1275,29 @@ def test_build_sitrep_answer_multi_watershed():
     assert "Chillón" in answer or "Chilln" in answer or "28" in answer, (
         "Second elevated watershed (Chillón 28mm) should appear in sitrep 'también' note"
     )
+
+
+def test_build_sitrep_multiple_rising_rivers_all_shown():
+    """When 3 stations are rising, all 3 must appear in the SITREP rivers section.
+
+    Regression guard: prior code only showed the first rising station name.
+    Fix (line 863): names = ', '.join(r.get('name') for r in rising[:3])
+    """
+    from costa_api.ai.agent import _build_sitrep_answer
+    per_tool_rows = [
+        ("get_river_levels", [
+            {"name": "Chosica",   "level_m": 2.41, "trend": "rising", "flow_m3s": 68.0},
+            {"name": "Ñaña",      "level_m": 1.85, "trend": "rising", "flow_m3s": 52.0},
+            {"name": "Carapongo", "level_m": 1.55, "trend": "rising", "flow_m3s": 38.0},
+        ]),
+    ]
+    answer = _build_sitrep_answer(per_tool_rows)
+    assert "Chosica" in answer, "First rising station must be in sitrep river section"
+    assert "Ñaña" in answer or "Naña" in answer or "naña" in answer.lower(), (
+        "Second rising station must appear in sitrep when 3 are rising"
+    )
+    assert "Carapongo" in answer, "Third rising station must appear when all 3 are rising"
+    assert "en ascenso" in answer, "Rising trend indicator must be present"
 
 
 def test_build_sitrep_answer_empty_rows():
