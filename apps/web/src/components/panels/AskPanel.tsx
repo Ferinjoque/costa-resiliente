@@ -63,16 +63,55 @@ const THINKING_STEPS: Record<"es" | "en", string[]> = {
   ],
 };
 
-function ThinkingBubble({ locale }: { locale: "es" | "en" }) {
+const SITREP_STEPS: Record<"es" | "en", string[]> = {
+  es: [
+    "SITREP — Herramienta 1/5: Alertas activas…",
+    "SITREP — Herramienta 2/5: Lluvia IMERG…",
+    "SITREP — Herramienta 3/5: Niveles de ríos…",
+    "SITREP — Herramienta 4/5: Inundaciones SAR…",
+    "SITREP — Herramienta 5/5: Riesgo huayco…",
+  ],
+  en: [
+    "SITREP — Tool 1/5: Active alerts…",
+    "SITREP — Tool 2/5: IMERG rainfall…",
+    "SITREP — Tool 3/5: River levels…",
+    "SITREP — Tool 4/5: SAR flood extents…",
+    "SITREP — Tool 5/5: Huayco risk…",
+  ],
+};
+
+const SITREP_KEYWORDS = [
+  "inicio de guardia", "sitrep", "sit rep", "resumen completo",
+  "resumen general", "situacion general", "situación general",
+  "ponme al dia", "que paso", "que ocurrio", "eventos de la noche",
+  "resumen para", "que le digo", "que cuento",
+];
+
+function isSitrepQuery(q: string): boolean {
+  const lower = q.toLowerCase();
+  return SITREP_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+function ThinkingBubble({ locale, query }: { locale: "es" | "en"; query: string }) {
   const [step, setStep] = useState(0);
-  const steps = THINKING_STEPS[locale];
+  const isSitrep = isSitrepQuery(query);
+  const steps = isSitrep ? SITREP_STEPS[locale] : THINKING_STEPS[locale];
 
   useEffect(() => {
-    const t1 = setTimeout(() => setStep(1), 1300);
-    const t2 = setTimeout(() => setStep(2), 3200);
-    const t3 = setTimeout(() => setStep(3), 6500);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, []);
+    if (isSitrep) {
+      // 5 tools at ~1s each — show each step progressing
+      const t1 = setTimeout(() => setStep(1), 900);
+      const t2 = setTimeout(() => setStep(2), 1900);
+      const t3 = setTimeout(() => setStep(3), 2900);
+      const t4 = setTimeout(() => setStep(4), 3900);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
+    } else {
+      const t1 = setTimeout(() => setStep(1), 1300);
+      const t2 = setTimeout(() => setStep(2), 3200);
+      const t3 = setTimeout(() => setStep(3), 6500);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    }
+  }, [isSitrep]);
 
   return (
     <div className="flex gap-2.5 items-start">
@@ -564,7 +603,7 @@ export function AskPanel() {
               </div>
             ))}
 
-            {loading && <ThinkingBubble locale={locale} />}
+            {loading && <ThinkingBubble locale={locale} query={messages.findLast((m) => m.role === "user")?.content ?? ""} />}
 
             <div ref={bottomRef} />
           </div>
