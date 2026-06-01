@@ -1,7 +1,7 @@
 # Costa Resiliente — Project Status
 
 > **This is the single source of truth for what's built, what's pending, and the current rubric score.**
-> Last updated: 2026-05-31 (Session 22)
+> Last updated: 2026-06-01 (Session 23)
 > Branch: `develop`
 
 For competition context, see [`COMPETITION.md`](COMPETITION.md).
@@ -28,7 +28,7 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **671 passed, 0 errors** (Session 22 final). Up from 668 (+3). Workers: 148 passed, 8 skipped.
+- **API**: **678 passed, 0 errors** (Session 23 final). Up from 671 (+7). Workers: 148 passed, 8 skipped.
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 186 kB (Session 22: +2 kB from sitrep loading steps, IMERG threshold sparkline, checklist sessionStorage)
@@ -233,6 +233,38 @@ POST   /api/v1/auth/operators
 ---
 
 ## Recent session log (rolling, last 5)
+
+### Session 23 — 2026-06-01 — Real-responder hardening + demo data freshness
+
+Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
+
+**Backend fixes:**
+- `fix(alerts)`: `age_seconds` added to `AlertSummary` (server-computed) — eliminates SLA chip client clock skew. Both `SlaChip` and the EscalationModal SLA banner use server-provided age.
+- `fix(alerts)`: `action_type` whitelist in `POST /alerts/log` — unknown types return 422. Protects audit trail from typos ("dispach" → rejected). Whitelist covers all frontend-emitted types.
+- `fix(proposals)`: `district_ubigeo` validated on proposal CREATE — returns 400 if ubigeo not in `geo.districts`. Previously created district-less alerts silently.
+- `fix(security)`: IPv6 link-local `fe80::/10` added to `_PRIVATE_NETS` SSRF blocklist in notifications.py. Previously absent — could reach link-local services on container network.
+- `fix(agent)`: Empty RAG protocol chunks now return explicit "contenido no disponible" message instead of "Protocolos relevantes: title. " (empty body).
+- `fix(agent)`: Multi-quick mode + sitrep: when a tool fails (exception or error dict), the answer appends a ⚠ warning listing unavailable sources. Silent data omissions eliminated.
+- `fix(agent)`: Sitrep answer now includes UTC retrieval timestamp `DD/MM HH:MM UTC` in the header.
+- `fix(agent)`: Sitrep river section: when all river stations have null trend (stale sensor data), appends a warning instead of silently rendering stable-looking data.
+- `fix(auto_seed)`: Demo social signals now refresh on EVERY seed call (`_need_social_refresh = True`). Previously only refreshed when count dropped below 9 — signals could be 48h old without triggering refresh.
+- `fix(auto_seed)`: Demo station observations (Chosica, Ñaña, Carapongo) now refresh on every seed call — deletes stale rows >4h old, re-inserts with current timestamps. Chosica 2.41m reading now shows as current, not 22h stale.
+
+**Frontend fixes:**
+- `feat(ui/AlertsPanel)`: SLA breach banner in EscalationModal — shows "SLA VENCIDO — Xmin sin acción (límite Ymin)" in danger color when operator opens the escalation modal for a past-SLA alert.
+- `fix(ui/AlertsPanel)`: `SlaChip` uses `alert.age_seconds` (server) instead of `Date.now() - created_at` (client) — eliminates drift from client clock skew.
+- `feat(ui/AskPanel)`: Quick-mode and multi-quick response footer shows which DB tools were used (e.g. "river levels + flood polygons") for source traceability.
+- `feat(ui/NotificationsPanel)`: `window.confirm()` before deleting a subscriber — prevents accidental webhook deletion during high-stress moments.
+- `fix(ui/LiveTicker)`: Alert titles truncated to 50 chars + ellipsis — prevents long titles from hiding subsequent ticker items.
+
+**Tests (+7, 678 total):**
+- `test(alerts)`: `age_seconds` field presence and type; invalid action_type rejected (422); all valid types accepted (200).
+- `test(proposals)`: Invalid ubigeo returns 400 with bad ubigeo in detail; valid ubigeo (150133) accepted (201).
+- `test(notifications)`: IPv6 link-local `fe80::1` and `fe80::dead:beef` both raise ValueError (regression guards).
+
+**Commits (7):** `0256a18` → `fad2376` → `1ff2715` → `8536242` → `3a06752` + STATUS.md.
+
+---
 
 ### Session 22 — 2026-05-31 — Robustness hardening + operator UX pass
 
