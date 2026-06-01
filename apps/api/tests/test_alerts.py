@@ -234,6 +234,9 @@ class TestAlertAction:
                 "Idempotent alert action must return 200 when alert already in target status"
             )
             assert r2.json()["new_status"] == "acknowledged"
+            # Session 23: both paths (new + idempotent) must include age_seconds
+            assert "age_seconds" in r2.json(), "Idempotent response must include age_seconds for consistent SLA chip updates"
+            assert r2.json()["age_seconds"] >= 0, "age_seconds must be non-negative"
 
     @pytest.mark.asyncio
     async def test_action_unauthenticated_returns_401(self):
