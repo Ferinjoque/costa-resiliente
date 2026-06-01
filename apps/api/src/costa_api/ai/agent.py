@@ -198,11 +198,13 @@ def _detect_multi_quick(query: str) -> list[str]:
     where no quick pattern matches at all.
     """
     q = query.lower()
-    seen: list[str] = []
+    seen: set[str] = set()
+    ordered: list[str] = []  # preserve insertion order for deterministic tool sequence
     for keywords, tool in _QUICK_PATTERNS:
         if any(kw in q for kw in keywords) and tool not in seen:
-            seen.append(tool)
-    return seen if 2 <= len(seen) <= 3 else []
+            seen.add(tool)
+            ordered.append(tool)
+    return ordered if 2 <= len(ordered) <= 3 else []
 
 
 _KEYWORD_MAP: list[tuple[list[str], str]] = [
