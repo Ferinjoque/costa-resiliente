@@ -224,7 +224,7 @@ POST   /api/v1/auth/operators
 **Quick-mode fast paths (bypass LLM, ~2–3s):**
 1. **Single quick-mode** — 9 pattern groups (alertas, lluvia, río, inundación, huayco, social, infraestructura, albergue, protocolo) → one tool dispatch
 2. **Multi-quick-mode** — 2–3 matching patterns → sequential dispatch, no LLM (~3–5s)
-3. **Sitrep mode** — "resumen completo", "inicio de guardia", "sitrep" → 5 tools sequential → `_build_sitrep_answer()` SITREP narrative (~5s)
+3. **Sitrep mode** — "resumen completo", "inicio de guardia", "sitrep" → 6 tools sequential → `_build_sitrep_answer()` SITREP narrative (~6s). Session 23: added `get_social_clusters` as 6th tool — duty officers see citizen signal count at start-of-shift.
 
 **RAG protocol corpus (7 documents, 51 chunks):** INDECI Plan Familiar, CENEPRED Movimientos en Masa, MINSA Protocolo Emergencias, SENAMHI Guía Hidrometeorológica, MML Plan Huaycos Lima, ANA Umbrales Lluvia Lima, SINAGERD Acciones Rápidas COER Lima.
 
