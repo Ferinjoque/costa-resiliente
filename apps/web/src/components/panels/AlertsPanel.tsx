@@ -1202,10 +1202,18 @@ export function AlertsPanel() {
             <li>
               <EmptyState
                 icon={<CheckCircle size={20} />}
-                title={locale === "es" ? "Sin alertas activas." : "No active alerts."}
-                body={locale === "es"
-                  ? "Los sensores satelitales y señales sociales se actualizan en segundo plano."
-                  : "Satellite sensors and social signals refresh in the background."}
+                title={severityFilter
+                  ? (locale === "es"
+                    ? `Sin alertas ${severityFilter === "critical" ? "críticas" : "altas"} activas.`
+                    : `No active ${severityFilter} alerts.`)
+                  : (locale === "es" ? "Sin alertas activas." : "No active alerts.")}
+                body={severityFilter && allActiveAlerts.length > 0
+                  ? (locale === "es"
+                    ? `${allActiveAlerts.length} alerta${allActiveAlerts.length !== 1 ? "s" : ""} activa${allActiveAlerts.length !== 1 ? "s" : ""} en el sistema — ninguna con severidad seleccionada.`
+                    : `${allActiveAlerts.length} active alert${allActiveAlerts.length !== 1 ? "s" : ""} in system — none match the selected severity.`)
+                  : (locale === "es"
+                    ? "Los sensores satelitales y señales sociales se actualizan en segundo plano."
+                    : "Satellite sensors and social signals refresh in the background.")}
               />
             </li>
           )}

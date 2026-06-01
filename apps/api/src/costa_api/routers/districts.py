@@ -116,7 +116,7 @@ async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str,
         text("""
             SELECT
                 (source_refs->>'watershed_id')::integer AS watershed_id,
-                MAX(CASE severity WHEN 'critical' THEN 4 WHEN 'high' THEN 3 ELSE 2 END) AS rain_sev
+                MAX(CASE severity WHEN 'critical' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 ELSE 1 END) AS rain_sev
             FROM ops.alerts
             WHERE type = 'rainfall' AND status = 'active' AND source_refs->>'watershed_id' IS NOT NULL
             GROUP BY 1
