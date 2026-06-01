@@ -343,7 +343,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
     popover: {
       title: es ? "6 — Copiloto operacional (9 herramientas)" : "6 — Operational Copilot (9 tools)",
       description: es ? `
-        <span class="cr-tour-ts">Modo rápido · Sin LLM · ~3 s · SITREP en 1 consulta · 5 herramientas</span>
+        <span class="cr-tour-ts">Modo rápido · Sin LLM · ~6 s · SITREP en 1 consulta · 6 herramientas</span>
         <div class="cr-tour-metrics">
           <div class="cr-tour-metric cr-tour-metric--ok">
             <span class="cr-tour-num">9</span>
@@ -351,12 +351,12 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
             <span class="cr-tour-lbl">PostGIS en español</span>
           </div>
           <div class="cr-tour-metric cr-tour-metric--ok">
-            <span class="cr-tour-num">~3s</span>
+            <span class="cr-tour-num">~6s</span>
             <span class="cr-tour-unit">&nbsp;</span>
-            <span class="cr-tour-lbl">modo rápido</span>
+            <span class="cr-tour-lbl">modo SITREP</span>
           </div>
         </div>
-        <p class="cr-tour-body">Prueba: <em>«Dame el resumen completo de la situación»</em> — llama 4 herramientas en paralelo (alertas + lluvia + ríos + SAR) y produce un SITREP estructurado sin LLM.</p>
+        <p class="cr-tour-body">Prueba: <em>«Dame el resumen completo de la situación»</em> — llama 6 herramientas secuenciales (alertas + lluvia + ríos + SAR + huayco + señales sociales) y produce un SITREP estructurado sin LLM con contexto de distritos.</p>
         <div class="cr-tour-badges">
           <span class="cr-tour-badge">sitrep</span>
           <span class="cr-tour-badge">inundaciones</span>
@@ -364,7 +364,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
           <span class="cr-tour-badge">protocolos</span>
         </div>
       ` : `
-        <span class="cr-tour-ts">Quick-mode · No LLM · ~3 s · full SITREP · 5 tools</span>
+        <span class="cr-tour-ts">Quick-mode · No LLM · ~6 s · full SITREP · 6 tools</span>
         <div class="cr-tour-metrics">
           <div class="cr-tour-metric cr-tour-metric--ok">
             <span class="cr-tour-num">9</span>
@@ -372,12 +372,12 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
             <span class="cr-tour-lbl">PostGIS in Spanish</span>
           </div>
           <div class="cr-tour-metric cr-tour-metric--ok">
-            <span class="cr-tour-num">~3s</span>
+            <span class="cr-tour-num">~6s</span>
             <span class="cr-tour-unit">&nbsp;</span>
-            <span class="cr-tour-lbl">quick-mode</span>
+            <span class="cr-tour-lbl">SITREP mode</span>
           </div>
         </div>
-        <p class="cr-tour-body">Try: <em>"Situation report please"</em> — calls 4 tools in parallel (alerts + rainfall + rivers + SAR) and produces a structured SITREP without the LLM.</p>
+        <p class="cr-tour-body">Try: <em>"Situation report please"</em> — calls 6 tools sequentially (alerts + rainfall + rivers + SAR + huayco + social signals) and produces a structured SITREP with district context, without the LLM.</p>
         <div class="cr-tour-badges">
           <span class="cr-tour-badge">sitrep</span>
           <span class="cr-tour-badge">floods</span>
