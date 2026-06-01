@@ -37,6 +37,7 @@ const strings = {
       flood:          { es: "inundación",     en: "flood" },
       huayco:         { es: "huayco",         en: "huayco" },
       social_cluster: { es: "señal social",   en: "social signal" },
+      rainfall:       { es: "lluvia intensa", en: "heavy rainfall" },
     },
   },
 
