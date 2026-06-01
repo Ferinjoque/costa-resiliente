@@ -111,6 +111,33 @@ async def test_webhook_private_ip_target_rejected():
 
 
 @pytest.mark.asyncio
+async def test_email_channel_invalid_target_rejected():
+    """Email channel must reject invalid email addresses (Session 23 validation)."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post("/api/v1/notifications", json={
+            "channel": "email",
+            "target": "notanemail",
+            "label": "Invalid email test",
+            "severity_min": "high",
+        }, headers=AUTH)
+    assert resp.status_code == 422, f"Invalid email should return 422, got {resp.status_code}: {resp.text}"
+
+
+@pytest.mark.asyncio
+async def test_email_channel_valid_target_accepted():
+    """Valid email address must be accepted for email channel."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+        resp = await c.post("/api/v1/notifications", json={
+            "channel": "email",
+            "target": "ops-coer@indeci.gob.pe",
+            "label": "Valid COER email",
+            "severity_min": "high",
+        }, headers=AUTH)
+    # Email is a stub channel — should succeed (200 or 201)
+    assert resp.status_code in (200, 201), f"Valid email should be accepted, got {resp.status_code}: {resp.text}"
+
+
+@pytest.mark.asyncio
 async def test_webhook_localhost_target_rejected():
     """SSRF guard: localhost webhook target must return 422."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
