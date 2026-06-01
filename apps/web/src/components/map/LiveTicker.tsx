@@ -48,6 +48,18 @@ function timeShort(iso: string): string {
   });
 }
 
+function ageShort(ageSeconds: number | null | undefined, iso: string): string {
+  // Use server-provided age_seconds when available (eliminates clock-skew);
+  // fall back to client-side calculation from created_at.
+  const secs = ageSeconds != null
+    ? ageSeconds
+    : Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+  if (secs < 60) return "<1min";
+  const mins = Math.round(secs / 60);
+  if (mins < 60) return `${mins}min`;
+  return `${Math.round(mins / 60)}h`;
+}
+
 export function LiveTicker() {
   const { locale } = useUIStore();
   const { data: socialData } = useSocialSignals(48);
@@ -62,9 +74,10 @@ export function LiveTicker() {
       const typeTag = tagObj ? tagObj[locale] : "ALERTA";
       const sevTag = (SEV_LABEL[a.severity] ?? SEV_LABEL.high)[locale];
       const titleShort = a.title.length > 50 ? a.title.slice(0, 50).trimEnd() + "…" : a.title;
+      const ageStr = ageShort(a.age_seconds, a.created_at);
       return {
         id: `a-${a.id}`,
-        text: `[${sevTag}·${typeTag}] ${titleShort} · ${timeShort(a.created_at)}`,
+        text: `[${sevTag}·${typeTag}] ${titleShort} · ${ageStr}`,
         color: SEV_COLOR[a.severity] ?? "text-ink-muted",
       };
     });
