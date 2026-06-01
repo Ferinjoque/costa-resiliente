@@ -301,10 +301,31 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     else:
         overall = "stale"
 
+    # Include alert counts + SINAGERD level for integrated monitoring dashboards
+    try:
+        alert_row = (await db.execute(
+            text("""
+                SELECT COUNT(*) AS total,
+                       COUNT(*) FILTER (WHERE severity = 'critical') AS critical_count,
+                       COUNT(*) FILTER (WHERE severity = 'high') AS high_count
+                FROM ops.alerts WHERE status = 'active'
+            """)
+        )).mappings().first()
+        active_total = int(alert_row["total"] or 0) if alert_row else 0
+        active_crit  = int(alert_row["critical_count"] or 0) if alert_row else 0
+        active_high  = int(alert_row["high_count"] or 0) if alert_row else 0
+        sinagerd_quick = "EMERGENCIA" if active_crit > 0 else ("ALERTA" if active_high > 1 else "AVISO" if active_total > 0 else "NORMAL")
+    except Exception:
+        active_total = active_crit = active_high = 0
+        sinagerd_quick = "NORMAL"
+
     return {
         "retrieved_at": now.isoformat(),
         "overall_status": overall,
         "redis": {"status": "ok" if redis_ok else "offline"},
+        "active_alerts": active_total,
+        "critical_alerts": active_crit,
+        "sinagerd_level": sinagerd_quick,
         "sources": sources,
     }
 
