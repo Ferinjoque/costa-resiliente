@@ -405,6 +405,19 @@ export function DataSourcesPanel() {
               : (locale === "es" ? "desconectado ⚠" : "offline ⚠")}
           </p>
         )}
+        {/* SINAGERD level from scraper health (Session 23 enrichment) */}
+        {scraperHealth?.sinagerd_level && (
+          <p className={clsx(
+            "text-[10px] font-semibold",
+            scraperHealth.sinagerd_level === "EMERGENCIA" ? "text-danger"
+            : scraperHealth.sinagerd_level === "ALERTA" ? "text-warn-muted"
+            : "text-ok-muted",
+          )}>
+            SINAGERD: {scraperHealth.sinagerd_level}
+            {scraperHealth.critical_alerts
+              ? ` · ${scraperHealth.critical_alerts} ${locale === "es" ? "crítica(s)" : "critical"}` : ""}
+          </p>
+        )}
       </div>
     </aside>
   );

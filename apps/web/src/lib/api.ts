@@ -162,6 +162,10 @@ export interface ScraperHealth {
   overall_status: "ok" | "stale" | "offline";
   redis?: { status: "ok" | "offline" };
   sources: Record<string, ScraperSourceHealth>;
+  // Session 23: enriched with operational alert context
+  active_alerts?: number;
+  critical_alerts?: number;
+  sinagerd_level?: string;
 }
 
 export async function fetchScraperHealth(): Promise<ScraperHealth> {
