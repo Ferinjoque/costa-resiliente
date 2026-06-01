@@ -40,6 +40,7 @@ Click the first suggestion: **"Dame el resumen completo de la situación"**
 **What happens:**
 - Loading indicator shows: **"SITREP — Herramienta 1/5: Alertas activas…" → 2/5 Lluvia → 3/5 Ríos → 4/5 SAR → 5/5 Huayco** (sequential tool progress visible in real time)
 - Sitrep mode triggers (5 tools sequential, ~5 seconds, no LLM)
+- Response header shows **UTC retrieval timestamp**: "SITREP — Lima Metropolitana · 01/06 HH:MM UTC" — operators know exactly when data was retrieved (Session 23)
 - Response includes: **7 active alerts** (3 crit, 4 high) + Rímac 63mm EMERGENCIA **· también Chillón: 28mm**, **Chosica 2.41m → acercándose** (2.5m threshold), SAR flood, **Pedregal MUY ALTO 91% · también: Huaycoloro**
 - SITREP banner shown **ABOVE** response text: "SITREP · Fusión 5 fuentes · sin LLM"
 - Action: **"Activar protocolo EDAN y escalar a COEN. Activar evacuación preventiva quebradas cuenca Rímac. Evacuar quebrada(s) Pedregal + Huaycoloro."** (combined: critical alerts + EMERGENCIA rainfall + specific very_high quebradas named)
@@ -61,6 +62,8 @@ Click **"Alertas"** (A key).
 
 If any alert is older than its SLA (5min critical, 10min high), a **danger toast fires** even if the panel is closed.
 
+When clicking **Escalate** on a past-SLA alert, the escalation modal shows a **red SLA breach banner**: "SLA VENCIDO — Xmin sin acción (límite 5min). Escalar de inmediato." — operators see exactly how late they are (Session 23).
+
 ---
 
 ### Step 4 — Copilot Full Query (30s)
@@ -76,6 +79,7 @@ Type: **"Nivel del río en Chosica"**
 **What happens:**
 - Quick mode: `get_river_levels`
 - Answer: level in meters, flow m³/s, trend (↑ rising), **SENAMHI threshold comparison** — "⚠ acercándose al umbral 2.5m" (2.41m, within 90% threshold — Session 21 near-threshold warning)
+- Footer shows **tool attribution**: "Modo rápido · sin LLM · ~2s · river levels" — operators see which data source was used (Session 23)
 
 ---
 
