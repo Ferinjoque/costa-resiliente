@@ -642,7 +642,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                         if lv >= threshold:
                             return f" · umbral: {threshold:.1f} m (⚠ SOBRE umbral ALERTA SENAMHI)"
                         elif lv >= threshold * 0.9:
-                            return f" · umbral: {threshold:.1f} m (⚠ acercándose al umbral)"
+                            return f" · umbral: {threshold:.1f} m (⚠ acercándose al umbral — {(lv/threshold*100):.0f}%)"
                         else:
                             return f" · umbral: {threshold:.1f} m (bajo umbral)"
             return ""
@@ -965,7 +965,8 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
                 if key in top_name_lower:
                     lv = top.get("level_m")
                     if lv is not None and float(lv) >= threshold * 0.9:
-                        stable_threshold = f" ⚠ cerca del umbral {threshold:.1f}m"
+                        pct = round(float(lv) / threshold * 100)
+                        stable_threshold = f" ⚠ acercándose al umbral {threshold:.1f}m ({pct}%)"
                     break
             sections.append(f"**Ríos:** {top.get('name','?')} {top.get('level_m','—')} m — {_trend_es}{stable_threshold}")
 
