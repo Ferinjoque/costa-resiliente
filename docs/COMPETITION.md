@@ -212,14 +212,16 @@ The Phase 2 concept text below describes the state at June 5, 2026. The Phase 3 
 | DataFreshnessBar | No staleness | **Color coding** by layer age (ok/warn/stale thresholds per layer) |
 | LiveTicker | Generic | **Severity prefix** [EMERG/ALERT/AVISO] + **rainfall item** when ≥25mm + urgent-only social filter |
 | Tests | 568 passed | **633 passed** (+65: sitrep, rainfall, SENAMHI threshold, fusion-rainfall, EDAN pattern, IMERG label regression, copilot HTTP, health-level) |
-| Health API | Basic ok/version | **`/health` returns sinagerd_level + active_alerts + max_rain_72h_mm** — one-curl monitoring |
+| Health API | Basic ok/version | **`/health` returns sinagerd_level + active_alerts + critical_alerts + high_alerts + max_rain_72h_mm + sinagerd_primary_trigger** — one-curl external monitoring (Session 23: added breakdown fields) |
 | RAG corpus | 5 documents | **7 documents, 51 chunks** — added ANA rainfall thresholds + SINAGERD quick-action guide (AVISO/ALERTA/EMERGENCIA procedures + contacts) |
 | Fusion endpoint | flood + huayco + social | **+ rainfall + huayco trigger_rain_24h_mm + risk elevation from EMERGENCIA** |
 | EDAN export | SAR + population + districts | **+ rainfall metric card (ALERTA/EMERGENCIA) in all 3 formats (Markdown ES, Markdown EN, HTML)** |
 | Protocol checklist | Huayco + generic | **+ rainfall-specific protocol (brigades + SIAT-Lima pre-alert)** |
 | SINAGERD level | Alerts only | **Factors in rainfall everywhere** (health API + OperationalHUD + SituationBrief + CityOverview + EDAN) — 5 surfaces give same level |
 
-**Rubric alignment note:** The Phase 2 submission referenced "8 whitelisted database tools" and did not describe notifications, auth, HITL, or PDF export. All of these are now fully implemented and tested. Tool count correction for Phase 3 judges: **9 tools + sitrep multi-tool fast path**.
+**Session 23 additions (2026-06-01, 36 commits, 681 tests):** 6-tool SITREP (added social clusters); health API adds critical/high breakdown + primary trigger; alert badge shows true count regardless of filter; rainfall answer shows all elevated watersheds; social signal district attribution fixed; flood_observation in demo; action_type whitelist; proposal ubigeo validation; IPv6 SSRF fixed; SLA breach modal in EscalationModal; server-side age_seconds eliminates client clock skew; infrastructure sorted by criticality (hospitals first); severity-aware rainfall alert dedup (HIGH no longer blocks CRITICAL escalation); auto_seed always refreshes demo data freshness.
+
+**Rubric alignment note:** The Phase 2 submission referenced "8 whitelisted database tools" and did not describe notifications, auth, HITL, or PDF export. All of these are now fully implemented and tested. Tool count correction for Phase 3 judges: **9 tools + sitrep 6-tool fast path**.
 
 ---
 
