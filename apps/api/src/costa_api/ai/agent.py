@@ -793,6 +793,9 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         if acc_24h is not None and acc_24h > 0: detail_parts.append(f"24h: {acc_24h:.1f} mm")
         if acc_1h is not None and acc_1h > 0: detail_parts.append(f"1h: {acc_1h:.1f} mm")
         detail = " · ".join(detail_parts)
+        # Rapid acceleration signal: 1h >= 5mm suggests intensifying event
+        if acc_1h is not None and acc_1h >= 5.0:
+            detail += f" ⚠ intensidad en aumento ({acc_1h:.1f}mm/h)"
         # Show additional watersheds above ALERTA (25mm) threshold for full picture.
         # Deduplicate by watershed name — tool may return multiple time slots per watershed.
         seen_ws_other: set[str] = {mx_ws}

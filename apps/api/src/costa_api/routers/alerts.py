@@ -240,7 +240,12 @@ async def act_on_alert(
     )
     if not result.fetchone():
         # 0 rows returned: alert is already in target state — idempotent no-op.
-        return {"alert_id": alert_id, "new_status": new_status}
+        # Still return age_seconds for consistent client-side SLA chip update.
+        age_idem = (await db.execute(
+            text("SELECT EXTRACT(EPOCH FROM (NOW() - created_at))::int FROM ops.alerts WHERE id = :id"),
+            {"id": alert_id},
+        )).scalar() or 0
+        return {"alert_id": alert_id, "new_status": new_status, "age_seconds": int(age_idem)}
 
     payload = {
         "action": action.action,
