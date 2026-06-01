@@ -750,9 +750,9 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         # (alert generator fires at huayco>=3, needs_help>=5)
         urgency = ""
         if huayco_cnt >= 3:
-            urgency = " ⚠ UMBRAL HUAYCO SUPERADO — revisar alertas automáticas."
+            urgency = " ⚠ UMBRAL ALERTA AUTOMÁTICA SUPERADO (huayco ≥3) — revisar alertas automáticas."
         elif help_cnt >= 5:
-            urgency = " ⚠ Múltiples solicitudes de ayuda — activar respuesta de campo."
+            urgency = " ⚠ UMBRAL ALERTA AUTOMÁTICA SUPERADO (ayuda ≥5) — activar respuesta de campo."
         return f"Se registraron {total} señales sociales en el período consultado{breakdown}{district_note}.{urgency}"
     if "severity" in first:
         total = first.get("_total_active", n)
