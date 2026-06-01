@@ -24,6 +24,7 @@ const TYPE_LABEL: Record<string, { es: string; en: string }> = {
   flood:          { es: "Inundación SAR", en: "SAR Flood" },
   huayco:         { es: "Huayco",          en: "Huayco" },
   social_cluster: { es: "Señal social",    en: "Social signal" },
+  rainfall:       { es: "Lluvia intensa",  en: "Heavy Rainfall" },
 };
 
 function ProposalRow({
