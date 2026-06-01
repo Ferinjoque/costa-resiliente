@@ -493,20 +493,48 @@ async def generate_rainfall_alerts(db_dsn: str = DB_DSN) -> int:
             else:
                 continue  # Below all thresholds — no alert needed
 
-            # Skip if recent rainfall alert already exists for this watershed
-            existing = await pool.fetchval(
+            # Skip if recent rainfall alert already exists AT THE SAME OR HIGHER severity.
+            # Bug fix: previously ANY active rainfall alert blocked new alerts, so a
+            # "high" alert (25mm) would block a "critical" alert (50mm) within the 6h
+            # dedup window — operators would miss the escalation.
+            # Now: only deduplicate when existing severity >= new severity.
+            _SEV_RANK = {"critical": 3, "high": 2, "medium": 1, "low": 0}
+            existing_sev = await pool.fetchval(
                 """
-                SELECT id FROM ops.alerts
+                SELECT severity FROM ops.alerts
                 WHERE type = 'rainfall'
                   AND source_refs->>'watershed_id' = $1
                   AND status = 'active'
                   AND created_at >= $2
+                ORDER BY created_at DESC
                 LIMIT 1
                 """,
                 str(row["watershed_id"]), dedup_window,
             )
-            if existing:
+            if existing_sev and _SEV_RANK.get(existing_sev, 0) >= _SEV_RANK.get(severity, 0):
+                # Same or higher severity alert already exists — skip
                 continue
+            # If existing alert is lower severity (e.g. high→critical escalation),
+            # auto-resolve it so the new critical one is the sole active rainfall alert.
+
+            # Auto-resolve a lower-severity alert before creating the escalated one.
+            # Prevents having both "high" and "critical" alerts for the same watershed.
+            if existing_sev and _SEV_RANK.get(existing_sev, 0) < _SEV_RANK.get(severity, 0):
+                await pool.execute(
+                    """
+                    UPDATE ops.alerts
+                    SET status='closed', updated_at=NOW()
+                    WHERE type = 'rainfall'
+                      AND source_refs->>'watershed_id' = $1
+                      AND status = 'active'
+                      AND created_at >= $2
+                    """,
+                    str(row["watershed_id"]), dedup_window,
+                )
+                logger.info(
+                    "rainfall_alert: auto-closed %s alert for watershed %s (escalating to %s)",
+                    existing_sev, row["watershed_id"], severity,
+                )
 
             source_refs = json.dumps({
                 "watershed_id": str(row["watershed_id"]),
