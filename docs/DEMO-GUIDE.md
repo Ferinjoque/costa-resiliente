@@ -25,7 +25,7 @@ Open http://localhost:3000.
 - Top-right HUD: **"EMERGENCIA"** (pulsing red) — from 7 active alerts (3 critical huayco + 1 critical rain)
 - Rainfall chip: **63 mm** (red, Rímac watershed above 50mm EMERGENCIA threshold)
 - Clock: Lima time (PET, UTC-5)
-- Map: Lima Metropolitana — **39 districts colored ALTO** (red), SAR flood polygon, huayco risk dots, rainfall layer
+- Map: Lima Metropolitana — **40 districts colored ALTO** (red, incl. SJL 1.04M pop), SAR flood polygon, huayco risk dots, rainfall layer
 
 The FEEDS chip (core sources only) shows all 5 core sources active: Bluesky ✓ RSS ✓ IMERG ✓ Stations ✓ Alerts ✓
 
