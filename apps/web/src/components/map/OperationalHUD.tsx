@@ -105,7 +105,14 @@ export function OperationalHUD() {
           "pointer-events-auto",
         )}
       >
-        <span className={clsx("w-2 h-2 rounded-full shrink-0", cfg.dot, level !== "NORMAL" && "animate-pulse")} aria-hidden="true" />
+        {/* EMERGENCIA pulses fast (0.8s) to draw operator attention; other non-NORMAL levels pulse at default (2s) */}
+        <span
+          className={clsx("w-2 h-2 rounded-full shrink-0", cfg.dot,
+            level === "EMERGENCIA" ? "[animation:pulse_0.8s_cubic-bezier(0.4,0,0.6,1)_infinite]"
+            : level !== "NORMAL" ? "animate-pulse" : ""
+          )}
+          aria-hidden="true"
+        />
         <span className={clsx("text-xs font-semibold tracking-wide", cfg.text)}>
           {locale === "es" ? cfg.labelEs : cfg.labelEn}
         </span>
