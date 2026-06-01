@@ -953,7 +953,17 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
         else:
             urgent_note = ""
         if total_social > 0:
-            sections.append(f"**Señales sociales (3h):** {total_social} reportes ciudadanos{urgent_note}")
+            # Show top districts for urgent signals when available (from top_district subquery)
+            urgent_districts: list[str] = []
+            for lbl in ["huayco_observation", "needs_help", "flood_observation"]:
+                row = next((r for r in social_rows if r.get("triage_label") == lbl), None)
+                if row and row.get("top_district") and (row.get("count") or 0) > 0:
+                    urgent_districts.append(row["top_district"])
+            # Deduplicate while preserving order
+            seen_dists: set[str] = set()
+            unique_dists = [d for d in urgent_districts if not (d in seen_dists or seen_dists.add(d))]  # type: ignore[func-returns-value]
+            district_note = f" — zona: {', '.join(unique_dists[:2])}" if unique_dists else ""
+            sections.append(f"**Señales sociales (3h):** {total_social} reportes ciudadanos{urgent_note}{district_note}")
             if urgent_total >= 3 and not action:
                 action = "Verificar señales urgentes de ciudadanos — activar brigadas de campo."
 
