@@ -279,7 +279,7 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 - `test(agent)`: sitrep UTC timestamp, stale river warning, flood polygon total count
 - `test(sitrep)`: Updated 5→6 tool mode assertions, social clusters in sitrep answer
 
-**Commits (32, autonomous session):** `0256a18` → ... → `4dcbafc` → `b4ce65f` + docs.
+**Commits (47+, autonomous session):** `0256a18` → ... → `bf331dd` + docs. See git log for complete list.
 
 ---
 
