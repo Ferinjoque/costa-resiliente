@@ -28,8 +28,8 @@ Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for 
 
 ## Tests
 
-- **API**: **697 passed, 0 errors** (Session 23 ongoing). Up from 671 (+26). Workers: 148 passed, 8 skipped.
-- **Build:** Next.js production build green; first-load JS `/` = 187 kB (Session 23: stable)
+- **API**: **697 passed, 0 errors** (Session 23 final). Up from 671 (+26). Workers: 148 passed, 8 skipped.
+- **Build:** Next.js production build green; first-load JS `/` = 187 kB (Session 23: stable, +1kB from 186kB Session 22)
 - **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
 - **TypeScript**: 0 errors (`npx tsc --noEmit`)
 - **Build**: Next.js production build green; first-load JS `/` = 186 kB (Session 22: +2 kB from sitrep loading steps, IMERG threshold sparkline, checklist sessionStorage)
@@ -280,7 +280,18 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 - `test(agent)`: sitrep UTC timestamp, stale river warning, flood polygon total count
 - `test(sitrep)`: Updated 5→6 tool mode assertions, social clusters in sitrep answer
 
-**Commits (47+, autonomous session):** `0256a18` → ... → `bf331dd` + docs. See git log for complete list.
+**Commits (95, autonomous session):** `0256a18` → ... → `020901e`. See `git log --oneline develop ^33f2708` for complete list.
+
+**Session 23 total: 95 commits, 697 tests (+26 from Session 22 baseline of 671)**
+
+Key improvements by category:
+- **SITREP**: 6-tool mode (social clusters), ISO UTC timestamp, SLA age of critical alert, district context for social signals, multi-watershed rainfall "también"
+- **Copilot quality**: huayco model freshness, river threshold %, social district context, hospital district names, falling river recovery note, rainfall acceleration warning (1h>=5mm)
+- **Demo data**: flood_observation signal, DEMO_ALERTS age_seconds, 10 social signals with district attribution, flood polygon timestamp refresh, IMERG refresh on seed
+- **Security**: IPv6 SSRF, email validation notifications, copilot rate-limit timeout rollback, proposal ubigeo validation
+- **API enrichment**: health (critical_alerts, trigger), health/scraper (sinagerd_level), SSE+act_on_alert (age_seconds), CSV/PDF exports (duration_ms, mode, SINAGERD level)
+- **Test coverage**: +26 tests across rainfall intensity, sitrep social-only/rainfall-only, threshold boundaries, action→status matrix, flood exposure field, CSV headers, multiple rising rivers
+- **Frontend polish**: AiRecommendation SLA prefix, flood_observation priority=1 (danger), FEEDS fast pulse 0.8s, greeting highlights "parte diario", KEYWORD_ROUTES expanded
 
 ---
 
