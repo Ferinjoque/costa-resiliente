@@ -190,10 +190,13 @@ export function OperationalHUD() {
               : `Core feeds: ${offlineSources} offline, ${staleSources} stale (Bluesky/RSS/IMERG/stations/alerts). Click for details.`}
             aria-label={locale === "es" ? "Estado de fuentes degradado" : "Data source status degraded"}
           >
+            {/* Fast pulse (0.8s) for danger — matches EMERGENCIA HUD urgency signal */}
             <span
               className={clsx(
                 "w-1.5 h-1.5 rounded-full shrink-0",
-                scraperLevel === "danger" ? "bg-danger animate-pulse" : "bg-warn",
+                scraperLevel === "danger"
+                  ? "bg-danger [animation:pulse_0.8s_cubic-bezier(0.4,0,0.6,1)_infinite]"
+                  : "bg-warn",
               )}
               aria-hidden="true"
             />
