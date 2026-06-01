@@ -274,7 +274,14 @@ async def act_on_alert(
             trigger_event="alert_escalated",
         )
 
-    return {"alert_id": alert_id, "new_status": new_status}
+    # Include server-side age_seconds so frontend SLA chip stays accurate
+    # after escalation — eliminates client clock-skew reintroduced by re-fetch lag.
+    age_row = await db.execute(
+        text("SELECT EXTRACT(EPOCH FROM (NOW() - created_at))::int FROM ops.alerts WHERE id = :id"),
+        {"id": alert_id},
+    )
+    age_seconds_val = age_row.scalar() or 0
+    return {"alert_id": alert_id, "new_status": new_status, "age_seconds": int(age_seconds_val)}
 
 
 # ─── Free-form decision log entry ────────────────────────────────────────────
