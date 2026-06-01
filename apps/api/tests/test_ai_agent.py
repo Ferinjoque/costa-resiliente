@@ -613,6 +613,24 @@ def test_detect_quick_alerts_query():
     assert _detect_quick("¿Cuáles son las alertas activas ahora?") == "get_active_alerts"
 
 
+def test_detect_quick_sla_breach_sin_reconocer():
+    """'alertas sin reconocer' must route to get_active_alerts (Session 23 SLA pattern).
+
+    Regression guard: SLA breach queries route to quick-mode, not full LLM (30s).
+    Operators at 3am need instant SLA status, not a 30-second wait.
+    """
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("alertas sin reconocer en el sistema") == "get_active_alerts", (
+        "SLA breach query 'sin reconocer' must route to get_active_alerts via quick-mode"
+    )
+
+
+def test_detect_quick_sla_breach_vencido():
+    """'sla vencido' must route to get_active_alerts quick-mode."""
+    from costa_api.ai.agent import _detect_quick
+    assert _detect_quick("hay sla vencido ahora") == "get_active_alerts"
+
+
 def test_detect_quick_river_level():
     """River level query matches only get_river_levels."""
     from costa_api.ai.agent import _detect_quick
