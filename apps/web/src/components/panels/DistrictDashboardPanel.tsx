@@ -1384,6 +1384,17 @@ const LOG_ACTION_ES: Record<string, { badge: string; verb: string }> = {
   protocol_step:       { badge: "PROT",    verb: "Paso de protocolo" },
   field_report:        { badge: "CAMPO",   verb: "Reporte de campo" },
   map_pin:             { badge: "PIN",     verb: "Marcador de campo" },
+  // Session 23 — new action types
+  query:               { badge: "IA",      verb: "Consulta copiloto" },
+  copilot:             { badge: "IA",      verb: "Consulta IA" },
+  approve_proposal:    { badge: "APR",     verb: "Propuesta aprobada" },
+  reject_proposal:     { badge: "REJ",     verb: "Propuesta rechazada" },
+  create_proposal:     { badge: "PROP",    verb: "Propuesta creada" },
+  escalate:            { badge: "ESC↑",    verb: "Escalado a COEN" },
+  acknowledge:         { badge: "ACK",     verb: "Reconocida" },
+  false_positive:      { badge: "FP",      verb: "Falso positivo" },
+  close:               { badge: "CIERRE",  verb: "Cerrada" },
+  note:                { badge: "NOTA",    verb: "Nota operacional" },
 };
 const LOG_ACTION_EN: Record<string, { badge: string; verb: string }> = {
   alert_acknowledge:   { badge: "ACK",     verb: "Alert acknowledged" },
@@ -1394,6 +1405,17 @@ const LOG_ACTION_EN: Record<string, { badge: string; verb: string }> = {
   protocol_step:       { badge: "PROT",    verb: "Protocol step" },
   field_report:        { badge: "FIELD",   verb: "Field report" },
   map_pin:             { badge: "PIN",     verb: "Field marker" },
+  // Session 23 — new action types
+  query:               { badge: "AI",      verb: "Copilot query" },
+  copilot:             { badge: "AI",      verb: "AI query" },
+  approve_proposal:    { badge: "APR",     verb: "Proposal approved" },
+  reject_proposal:     { badge: "REJ",     verb: "Proposal rejected" },
+  create_proposal:     { badge: "PROP",    verb: "Proposal created" },
+  escalate:            { badge: "ESC↑",    verb: "Escalated to COEN" },
+  acknowledge:         { badge: "ACK",     verb: "Acknowledged" },
+  false_positive:      { badge: "FP",      verb: "False positive" },
+  close:               { badge: "CLOSE",   verb: "Closed" },
+  note:                { badge: "NOTE",    verb: "Operational note" },
 };
 
 const SOURCE_LABEL_SHORT: Record<string, string> = {
