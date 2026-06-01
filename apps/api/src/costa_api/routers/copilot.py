@@ -219,6 +219,12 @@ async def ask(
             status_code=503,
             detail="El asistente no respondió a tiempo. Reintenta en unos segundos.",
         )
+    except Exception as exc:
+        logger.error("copilot/ask: unexpected error for operator=%s: %s", operator_id, exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Error interno del asistente. Reintenta o usa una consulta diferente.",
+        )
 
     # Log security event if blocked
     if result.blocked:
