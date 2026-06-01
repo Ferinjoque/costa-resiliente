@@ -23,6 +23,7 @@ interface ChatMessage {
   isRedacted?: boolean;
   quickMode?: boolean;
   mode?: "sitrep" | "quick" | "full";
+  toolNames?: string[];
 }
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
@@ -398,8 +399,11 @@ export function AskPanel() {
         isRedacted = !!data.redacted;
         isQuickMode = !!data.quick_mode;
         const responseMode = (data.mode ?? "full") as "sitrep" | "quick" | "full";
+        const toolNames: string[] = isQuickMode && Array.isArray(data.tool_calls)
+          ? [...new Set((data.tool_calls as Array<{tool: string}>).map((tc) => tc.tool.replace(/^get_/, "").replace(/_/g, " ")))]
+          : [];
         const asstId = Math.random().toString(36).slice(2);
-        setMessages((prev) => [...prev, { id: asstId, role: "assistant", content: answerText, displayed: "", isRedacted, quickMode: isQuickMode, mode: responseMode }]);
+        setMessages((prev) => [...prev, { id: asstId, role: "assistant", content: answerText, displayed: "", isRedacted, quickMode: isQuickMode, mode: responseMode, toolNames }]);
         animateMessage(answerText, asstId);
         setLoading(false);
         return;  // early return so we don't run the setMessages below
@@ -588,9 +592,15 @@ export function AskPanel() {
                         </div>
                       )}
                       {msg.quickMode && msg.mode !== "sitrep" && (
-                        <p className="text-[10px] text-accent mt-2 opacity-70 border-t border-border pt-1.5">
-                          {es ? "Modo rápido · sin LLM · ~2s" : "Quick mode · no LLM · ~2s"}
-                        </p>
+                        <div className="text-[10px] text-accent mt-2 opacity-70 border-t border-border pt-1.5 flex items-center gap-1 flex-wrap">
+                          <span>{es ? "Modo rápido · sin LLM · ~2s" : "Quick mode · no LLM · ~2s"}</span>
+                          {msg.toolNames && msg.toolNames.length > 0 && (
+                            <>
+                              <span className="text-ink-subtle">·</span>
+                              <span className="text-ink-subtle">{msg.toolNames.join(" + ")}</span>
+                            </>
+                          )}
+                        </div>
                       )}
                       {msg.isRedacted && (
                         <p className="text-[10px] text-danger mt-2 opacity-80 border-t border-danger/20 pt-1.5">
