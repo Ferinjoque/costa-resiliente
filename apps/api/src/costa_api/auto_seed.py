@@ -718,6 +718,65 @@ async def maybe_seed(engine: AsyncEngine) -> None:
             # Update local count so operational_ok reflects fresh state
             _social = len(_SOCIAL_CURRENT)
 
+        # Always refresh demo station observations so their timestamps stay current.
+        # Demo stations (ANA-001-DEMO etc.) carry actual readings (level_m, flow_m3s)
+        # that the copilot and dashboard rely on. Without refresh they go stale after
+        # the initial seed — 22h-old readings look offline to operators.
+        demo_codes = [s["code"] for s in _STATIONS]
+        if demo_codes:
+            try:
+                # Delete stale demo observations (> 4h old) for demo stations only,
+                # then re-insert fresh ones. A plain DELETE without time filter would
+                # need to scan the entire TimescaleDB hypertable — use the 4h window
+                # to limit I/O while ensuring the refresh keeps latest readings current.
+                await conn.execute(
+                    text("""
+                        DELETE FROM hydro.station_observations so
+                        WHERE so.station_id IN (
+                            SELECT id FROM hydro.stations WHERE code = ANY(:codes)
+                        )
+                          AND so.time < NOW() - INTERVAL '4 hours'
+                    """),
+                    {"codes": demo_codes},
+                )
+                # Re-insert with current timestamps (ON CONFLICT DO NOTHING for rows
+                # within the 4h window that were kept by the DELETE above)
+                demo_station_ids: dict[str, int] = {}
+                for st in _STATIONS:
+                    sid_row = await conn.execute(
+                        text("SELECT id FROM hydro.stations WHERE code = :code"),
+                        {"code": st["code"]},
+                    )
+                    sid_val = sid_row.scalar_one_or_none()
+                    if sid_val:
+                        demo_station_ids[st["code"]] = sid_val
+                for obs in _STATION_OBS:
+                    sid = demo_station_ids.get(obs["code"])
+                    if not sid:
+                        continue
+                    try:
+                        await conn.execute(
+                            text("""
+                                INSERT INTO hydro.station_observations
+                                    (time, station_id, level_m, flow_m3s, rain_mm)
+                                VALUES (:t, :sid, :level, :flow, :rain)
+                                ON CONFLICT DO NOTHING
+                            """),
+                            {
+                                "t": _ts(obs["offset_h"]),
+                                "sid": sid,
+                                "level": obs["level"],
+                                "flow": obs["flow"],
+                                "rain": obs["rain"],
+                            },
+                        )
+                    except Exception as exc:
+                        logger.debug("auto_seed: skip station obs refresh %s: %s", obs["code"], exc)
+                await conn.commit()
+                logger.info("auto_seed: refreshed demo station observations for %d stations", len(demo_codes))
+            except Exception as exc:
+                logger.warning("auto_seed: station obs refresh failed: %s", exc)
+
         # Always insert _DEMO_DISTRICTS (ON CONFLICT DO NOTHING) to ensure
         # districts missing from the real geodata load get approximate boundaries.
         # Run BEFORE early-return so SJL (150133) and other missing districts
