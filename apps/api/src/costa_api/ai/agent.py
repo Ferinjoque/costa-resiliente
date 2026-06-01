@@ -728,6 +728,31 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                 if mm72 is not None:
                     rain_note = f" — {float(mm72):.0f} mm/72h"
             base += f" ⚠ Más crítica: {top_crit['title']}{district_note}{rain_note}."
+        # Show oldest unacknowledged critical/high alert for SLA awareness
+        try:
+            from datetime import datetime as _dt, timezone as _tz
+            _now_utc = _dt.now(_tz.utc)
+            oldest_age_min: int | None = None
+            _SLA_MIN = {"critical": 5, "high": 10, "medium": 30, "low": 60}
+            for r in rows:
+                ca = r.get("created_at")
+                sev = r.get("severity", "low")
+                if not ca:
+                    continue
+                try:
+                    ca_dt = _dt.fromisoformat(str(ca).replace("Z", "+00:00"))
+                    if ca_dt.tzinfo is None:
+                        ca_dt = ca_dt.replace(tzinfo=_tz.utc)
+                    age_min = int((_now_utc - ca_dt).total_seconds() / 60)
+                    sla_min = _SLA_MIN.get(sev, 30)
+                    if age_min > sla_min:  # only show if breached
+                        oldest_age_min = max(oldest_age_min or 0, age_min)
+                except Exception:
+                    pass
+            if oldest_age_min is not None and oldest_age_min > 10:
+                base += f" ⏱ Alerta más antigua sin respuesta: {oldest_age_min}min (SLA incumplido)."
+        except Exception:
+            pass
         return base
     if "acc_72h_mm" in first:
         mx = max((r.get("acc_72h_mm") or 0) for r in rows)
