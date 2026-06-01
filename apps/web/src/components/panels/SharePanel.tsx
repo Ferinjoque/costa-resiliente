@@ -108,7 +108,8 @@ export function SharePanel() {
       setShareUrl(res.url);
       setExpiresAt(res.expires_at ?? null);
     } catch {
-      // Offline fallback — encode state in URL so ShareLoader can hydrate it
+      // Offline fallback — encode state in URL so ShareLoader can hydrate it.
+      // Warn the operator: this link has no server-side expiry (permanent).
       const state = btoa(JSON.stringify({
         districtUbigeo:  scenario.districtUbigeo,
         districtName:    scenario.districtName,
@@ -122,6 +123,9 @@ export function SharePanel() {
         : "";
       setShareUrl(`${base}?state=${state}`);
       setExpiresAt(null);
+      setError(locale === "es"
+        ? "Enlace generado sin servidor — permanente (sin expiración)."
+        : "Link generated offline — permanent (no expiry).");
     } finally {
       setLoading(false);
     }
@@ -150,7 +154,9 @@ export function SharePanel() {
 
   const expiryLabel = expiresAt
     ? t.validUntil(formatExpiry(expiresAt, locale))
-    : t.validDays;
+    : shareUrl
+      ? (locale === "es" ? "Sin expiración (enlace offline)" : "No expiry (offline link)")
+      : t.validDays;
 
   return (
     <div
