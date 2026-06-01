@@ -686,9 +686,16 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             top_flow_str = f" · {top_flow} m³/s" if top_flow is not None else ""
             threshold_note = _threshold_note(top)
             names = ", ".join(row.get("name", "?") for row in rising[:3])
+            # Show threshold notes for ALL rising stations (up to 3), not just the top one
+            other_threshold_notes = []
+            for other_row in rising[1:3]:
+                note = _threshold_note(other_row)
+                if note and "bajo umbral" not in note:  # only show near/over threshold
+                    other_threshold_notes.append(f"{other_row.get('name','?')} {other_row.get('level_m','—')}m{note.split('·')[1].strip() if '·' in note else note}")
+            other_notes_str = f" · también: {'; '.join(other_threshold_notes)}" if other_threshold_notes else ""
             return (
                 f"⚠ {len(rising)} estación(es) en ascenso — acción inmediata: {names}. "
-                f"{top.get('name','?')}: {top.get('level_m','—')} m{top_change_str}{top_flow_str}{threshold_note}."
+                f"{top.get('name','?')}: {top.get('level_m','—')} m{top_change_str}{top_flow_str}{threshold_note}{other_notes_str}."
             )
         # Add recovery monitoring note when falling near threshold — operators should keep watching
         recovery_note = ""
