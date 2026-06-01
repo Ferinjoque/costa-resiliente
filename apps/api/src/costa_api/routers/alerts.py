@@ -486,11 +486,21 @@ async def export_decision_log(
     )
     records = [dict(r._mapping) for r in rows]
 
+    # Flatten performance fields from payload for EDAN analysts (post-incident analysis)
+    for rec in records:
+        try:
+            payload = json.loads(rec.get("payload_json") or "{}")
+            rec["duration_ms"] = payload.get("duration_ms", "")
+            rec["mode"] = payload.get("mode", "")
+        except Exception:
+            rec["duration_ms"] = ""
+            rec["mode"] = ""
+
     output = io.StringIO()
     writer = csv.DictWriter(
         output,
         fieldnames=["id", "logged_at", "operator_id", "action_type",
-                    "alert_id", "session_id", "payload_json"],
+                    "alert_id", "session_id", "duration_ms", "mode", "payload_json"],
         extrasaction="ignore",
     )
     writer.writeheader()
