@@ -28,3 +28,14 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 USER appuser
 
 CMD ["python", "-m", "costa_workers.flows.schedules"]
+
+# ── Development target ───────────────────────────────────────────────────────
+# Dev extras (pytest et al.) live here only, so the production image stays lean.
+# Without this the worker test suite can only run if someone pip-installs pytest
+# into a live container by hand, which does not survive a rebuild.
+FROM base AS development
+USER root
+COPY tests/ tests/
+RUN pip install --no-cache-dir ".[dev]"
+USER appuser
+CMD ["python", "-m", "costa_workers.flows.schedules"]

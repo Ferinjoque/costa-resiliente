@@ -60,7 +60,7 @@ async def test_create_proposal_then_approve_inserts_alert():
     proposal_body = {
         "severity": "high",
         "alert_type": "flood",
-        "district_ubigeo": "150133",
+        "district_ubigeo": "150132",
         "title": "Sesión-6: desborde controlado quebrada Huaycoloro",
         "summary": "Sensor SAR + 3 señales sociales convergen en km 7 del cauce.",
         "source_refs": [{"source": "sentinel1"}, {"source": "social_cluster"}],
@@ -237,14 +237,14 @@ async def test_create_proposal_invalid_ubigeo_returns_400():
 
 @pytest.mark.asyncio
 async def test_create_proposal_valid_ubigeo_accepted():
-    """Known Lima ubigeo (Lurigancho = 150122) must be accepted without error."""
+    """Known Lima ubigeo (San Juan de Lurigancho = 150132) must be accepted without error."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         resp = await c.post(
             "/api/v1/proposals",
             json={
                 "severity": "low",
                 "alert_type": "flood",
-                "district_ubigeo": "150133",  # San Juan de Lurigancho — seeded in geo.districts
+                "district_ubigeo": "150132",  # San Juan de Lurigancho — seeded in geo.districts
                 "title": "Sesión-23: ubigeo válido test",
                 "summary": "Test ubigeo validation — expected 201",
             },

@@ -89,6 +89,16 @@
 - **Open sibling endpoint (new, 2026-08-23)**: `sig.cenepred.gob.pe/arcgis_server/rest/services` responds **anonymously, no token**. Folder `sectores/COEN_FEN_2023_10_5_1X/MapServer` publishes official COEN Fenómeno El Niño response layers — `AlmacenesNacionales` (INDECI relief warehouses, 21 national records with Lima/Callao entries), `Bomberos`, `ComisariasBasicas`, `ComisariasFamilia`, `ipress_afectadas_inoperativas` / `ipress_afectadas_operativas_COESALUD` (MINSA facilities affected during FEN), `maquinaria` (MIDAGRI), `INTERVENCIONES_PVN_FEN_*` (MTC road works). Queryable with `outSR=4326`, GeoJSON supported, `maxRecordCount=1000`. Folder `sigrid` itself only exposes `sigrid_collect` (workshop points — not hazard data).
 - **Status**: ⚠️ SIGRID native hazard polygons blocked (SSO); SINPAD-derived fallback loaded and serving. COEN FEN responder-asset layers available as an optional additive source (not yet ingested).
 
+### CENEPRED / COEN — Fenómeno El Niño 2023 responder assets
+- **Endpoint**: `https://sig.cenepred.gob.pe/arcgis_server/rest/services/sectores/COEN_FEN_2023_10_5_1X/MapServer`
+- **Access**: ArcGIS REST, **anonymous — no token, no SSO**. `outSR=4326`, JSON/GeoJSON, `maxRecordCount=1000`.
+- **Loaded**: layer 1 `AlmacenesNacionales` → `relief_warehouse` (INDECI relief stock), layers 4 + 5 `ComisariasBasicas` / `ComisariasFamilia` → `police_station`. **144 points** inside Lima Metropolitana + Callao.
+- **Deliberately skipped**: layer 3 `Bomberos` — `geo.infrastructure` already carries OSM `fire_station` points for Lima and merging would double-count. Layers `ipress_afectadas_*` are a 2023 event snapshot, not current state, so they are not shown to operators as live data.
+- **Load script**: `scripts/load_coen_fen.py` (idempotent; keyed on `properties.source_id`)
+- **District resolution**: UBIGEO (`id_dist`) → district name (unaccented, case-folded) → `ST_Contains`. The seeded district polygons are simplified — Santiago de Surco measures 12 km² against a real ~34 km² — so point-in-polygon alone drops more than half the real assets. Points that resolve to no seeded district are outside the locked scope and are not loaded.
+- **Per-feature provenance**: `properties.source = 'CENEPRED COEN FEN 2023'`, surfaced in the map popup.
+- **Status**: ✅ Loaded and serving via `/api/v1/layers/infrastructure`
+
 ### IGP Seismic Feed
 - **URL**: `ultimosismo.igp.gob.pe` (verified reachable, HTTP 200, 2026-08-23)
 - **Use**: Multi-hazard context (secondary to flood/huayco scenario)

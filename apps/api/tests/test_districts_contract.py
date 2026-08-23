@@ -271,3 +271,40 @@ async def test_sinpad_uses_exact_match_not_substring(app):
         "SINPAD query must not use substring ILIKE match — it overcounts events "
         "from adjacent/similarly-named districts"
     )
+
+
+# ─── INEI UBIGEO integrity ────────────────────────────────────────────────────
+
+def test_seed_districts_use_official_inei_ubigeos():
+    """Guard against the 2026-08 off-by-one in the Lima UBIGEO map.
+
+    'Pueblo Libre' and 'Magdalena Vieja' are the same district (INEI 150121).
+    Listing both shifted every code from 150125 onward by +1 and put San Juan de
+    Lurigancho — the demo COEL district — on 150133, which is San Juan de
+    Miraflores. Codes are surfaced to operators and written into EDAN-Perú
+    exports, so they have to match INEI exactly.
+
+    Reference: CENEPRED COEN FEN 2023 service, field id_dist.
+    """
+    from costa_api.auto_seed import _DEMO_DISTRICTS
+
+    official = {
+        "Lima": "150101", "Ate": "150103", "Carabayllo": "150106",
+        "Chaclacayo": "150107", "Chorrillos": "150108", "Comas": "150110",
+        "La Molina": "150114", "Lurigancho": "150118", "Puente Piedra": "150125",
+        "San Juan de Lurigancho": "150132", "San Juan de Miraflores": "150133",
+        "San Martín de Porres": "150135", "Santa Anita": "150137",
+        "Santiago de Surco": "150140", "Villa El Salvador": "150142",
+        "Villa María del Triunfo": "150143",
+    }
+    seeded = {d["name"]: d["ubigeo"] for d in _DEMO_DISTRICTS}
+    for name, ubigeo in official.items():
+        assert seeded.get(name) == ubigeo, f"{name}: expected {ubigeo}, seeded {seeded.get(name)}"
+
+
+def test_no_seed_district_shares_a_population_with_another():
+    """A duplicated population figure means one of them was copied, not sourced."""
+    from costa_api.auto_seed import _DEMO_DISTRICTS
+
+    populations = [d["population"] for d in _DEMO_DISTRICTS if d.get("population")]
+    assert len(populations) == len(set(populations))

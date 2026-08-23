@@ -41,29 +41,50 @@ _OVERPASS_HEADERS = {
 
 # ── Lima districts UBIGEO mapping (INEI 2023) ────────────────────────────────
 # Used to match OSM district names to official INEI codes.
+# Official INEI district codes for Lima Province. Cross-checked 2026-08-23
+# against the CENEPRED COEN service
+# (…/sectores/COEN_FEN_2023_10_5_1X/MapServer/4, field id_dist), which is the
+# authoritative government source.
+#
+# NOTE: an earlier version of this map listed "Magdalena Vieja" at 150121 AND
+# "Pueblo Libre" at 150125. They are the same district (Pueblo Libre is the
+# modern name of Magdalena Vieja, INEI 150121), so the duplicate shifted every
+# code from 150125 onward by +1 and invented a non-existent 150144. That put
+# San Juan de Lurigancho — the demo COEL district — on 150133, which is
+# actually San Juan de Miraflores. Fixed by
+# infra/postgres/migration_ubigeo_fix.sql.
 LIMA_METRO_UBIGEOS = {
-    "150101": "Lima",            "150102": "Ancón",          "150103": "Ate",
+    "150101": "Lima",            "150102": "Ancón",           "150103": "Ate",
     "150104": "Barranco",        "150105": "Breña",           "150106": "Carabayllo",
     "150107": "Chaclacayo",      "150108": "Chorrillos",      "150109": "Cieneguilla",
     "150110": "Comas",           "150111": "El Agustino",     "150112": "Independencia",
     "150113": "Jesús María",     "150114": "La Molina",       "150115": "La Victoria",
     "150116": "Lince",           "150117": "Los Olivos",      "150118": "Lurigancho",
-    "150119": "Lurín",           "150120": "Magdalena del Mar","150121": "Magdalena Vieja",
+    "150119": "Lurín",           "150120": "Magdalena del Mar","150121": "Pueblo Libre",
     "150122": "Miraflores",      "150123": "Pachacámac",      "150124": "Pucusana",
-    "150125": "Pueblo Libre",    "150126": "Puente Piedra",   "150127": "Punta Hermosa",
-    "150128": "Punta Negra",     "150129": "Rímac",           "150130": "San Bartolo",
-    "150131": "San Borja",       "150132": "San Isidro",      "150133": "San Juan de Lurigancho",
-    "150134": "San Juan de Miraflores","150135": "San Luis",  "150136": "San Martín de Porres",
-    "150137": "San Miguel",      "150138": "Santa Anita",     "150139": "Santa María del Mar",
-    "150140": "Santa Rosa",      "150141": "Santiago de Surco","150142": "Surquillo",
-    "150143": "Villa El Salvador","150144": "Villa María del Triunfo",
+    "150125": "Puente Piedra",   "150126": "Punta Hermosa",   "150127": "Punta Negra",
+    "150128": "Rímac",           "150129": "San Bartolo",     "150130": "San Borja",
+    "150131": "San Isidro",      "150132": "San Juan de Lurigancho",
+    "150133": "San Juan de Miraflores","150134": "San Luis",  "150135": "San Martín de Porres",
+    "150136": "San Miguel",      "150137": "Santa Anita",     "150138": "Santa María del Mar",
+    "150139": "Santa Rosa",      "150140": "Santiago de Surco","150141": "Surquillo",
+    "150142": "Villa El Salvador","150143": "Villa María del Triunfo",
 }
 
 # INEI 2017 census population by UBIGEO (selected key districts)
 POPULATION_2017 = {
-    "150133": 1038495, "150110": 520450, "150136": 700178, "150101": 271814,
-    "150141": 338509,  "150103": 630086, "150143": 393254, "150144": 398433,
-    "150108": 325547,  "150106": 333045, "150126": 362285, "150118": 213386,
+    "150132": 1038495,  # San Juan de Lurigancho
+    "150110": 520450,   # Comas
+    "150135": 700178,   # San Martín de Porres
+    "150101": 271814,   # Lima
+    "150140": 338509,   # Santiago de Surco
+    "150103": 630086,   # Ate
+    "150142": 393254,   # Villa El Salvador
+    "150143": 398433,   # Villa María del Triunfo
+    "150108": 325547,   # Chorrillos
+    "150106": 333045,   # Carabayllo
+    "150125": 362285,   # Puente Piedra
+    "150118": 213386,   # Lurigancho (Chosica)
 }
 
 

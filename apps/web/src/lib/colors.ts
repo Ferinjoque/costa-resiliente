@@ -62,11 +62,13 @@ export const STATION_COLOR = {
 } as const;
 
 export const INFRA_COLOR = {
-  hospital:     SEVERITY_CRITICAL,
-  shelter:      SEVERITY_LOW,
-  fire_station: SEVERITY_HIGH,
-  bridge:       SAND_500,
-  school:       SEVERITY_MEDIUM,
+  hospital:         SEVERITY_CRITICAL,
+  shelter:          SEVERITY_LOW,
+  fire_station:     SEVERITY_HIGH,
+  relief_warehouse: "#38bdf8",
+  police_station:   "#818cf8",
+  bridge:           SAND_500,
+  school:           SEVERITY_MEDIUM,
 } as const;
 
 // ── IMERG rainfall gradient (rain accumulation) ────────────────────────────
