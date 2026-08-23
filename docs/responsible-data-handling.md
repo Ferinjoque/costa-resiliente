@@ -36,11 +36,17 @@ at manzana centroid (not exact location even internally).
 
 ### 3. Data Retention Limits
 
-Enforced via `pg_cron` jobs registered in `infra/postgres/init.sql`:
+Enforced by the `run-retention` Prefect flow (`apps/workers/src/costa_workers/flows/retention.py`),
+deployed as `retention-daily` at 03:00 UTC. The `timescaledb-ha` image does not ship `pg_cron`, so
+scheduling lives in Prefect rather than in the database; `expires_at` is still set at ingest time by
+the schema, and the flow only deletes rows the schema already marked expired.
 
 | Data type | Retention | Mechanism |
 |-----------|-----------|-----------|
-| Raw social firehose (social.signals) | 7 days | `pg_cron` daily delete |
+| Raw social firehose (social.signals) | 7 days | `retention-daily` flow — `DELETE WHERE expires_at < NOW()` |
+| Resolved alerts (closed / false_positive) | 90 days | `retention-daily` flow |
+| Share tokens | 30 days | `retention-daily` flow — `expires_at` |
+| Security events (guardrail trips) | 180 days | `retention-daily` flow |
 | Derived non-PII features | 12 months | Prefect scheduled cleanup flow |
 | Aggregated statistics | Indefinite | No deletion |
 | Operator decision log | Indefinite | Append-only, no deletion allowed |
