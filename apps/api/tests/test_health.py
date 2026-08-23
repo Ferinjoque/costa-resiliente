@@ -229,3 +229,31 @@ async def test_health_rain_level_consistent_with_max_rain():
         else:
             # Below all thresholds — should be normal (unless something else elevated it)
             assert level in ("normal", "aviso", "alerta", "emergencia"), f"Invalid level: {level}"
+
+
+# ─── Demo restore semantics ───────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_seed_gate_counts_only_active_demo_alerts():
+    """The seed pass must key off ACTIVE demo alerts, not every alert row.
+
+    Regression guard: the gate used to be `SELECT COUNT(*) FROM ops.alerts`, so
+    once the demo alerts had been acknowledged or closed — by a demo run, by this
+    test suite (which acts on real rows), or by auto-resolution — the table still
+    looked populated and the seed returned early. POST /health/seed could then
+    never restore the scenario, which is the only reason it exists.
+    """
+    import inspect
+    from costa_api import auto_seed
+
+    source = inspect.getsource(auto_seed.maybe_seed)
+    assert "status = 'active' AND title = ANY(:titles)" in source
+
+
+@pytest.mark.asyncio
+async def test_demo_alerts_have_unique_titles():
+    """Restore matches demo alerts by title, so titles must identify one alert."""
+    from costa_api.auto_seed import _ALERTS_CURRENT
+
+    titles = [a["title"] for a in _ALERTS_CURRENT]
+    assert len(titles) == len(set(titles))

@@ -14,7 +14,7 @@ import hashlib
 import logging
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import text
+from sqlalchemy import ARRAY, String, bindparam, text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 logger = logging.getLogger(__name__)
@@ -608,7 +608,20 @@ async def maybe_seed(engine: AsyncEngine) -> None:
             text("SELECT COUNT(*) FROM ml.flood_polygons WHERE scene_id LIKE 'elnino2017%'")
         )).scalar_one()
 
-        _alerts = (await conn.execute(text("SELECT COUNT(*) FROM ops.alerts"))).scalar_one()
+        # Count the ACTIVE demo alerts specifically. Counting every row meant that
+        # once the demo alerts had been acted on (acknowledged / closed by a demo
+        # run, by the test suite, or by auto-resolution) the seed pass still saw a
+        # populated table and returned early — so POST /health/seed could never
+        # bring the scenario back, which is the one thing it exists to do.
+        # Real ingested alerts are ignored here on purpose: this is the demo
+        # bootstrap, and it should key off demo rows only.
+        _alerts = (await conn.execute(
+            text("""
+                SELECT COUNT(*) FROM ops.alerts
+                WHERE status = 'active' AND title = ANY(:titles)
+            """).bindparams(bindparam("titles", type_=ARRAY(String))),
+            {"titles": [a["title"] for a in _ALERTS_CURRENT]},
+        )).scalar_one()
         # Count only RECENT + LOCATABLE social signals — the map layer filters by both
         # 48h window AND (geom IS NOT NULL OR district_id IS NOT NULL). Raw social scraper
         # signals without geom don't count as operational demo signal data.
@@ -886,7 +899,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
 
         # ── 1. Districts (needed for spatial joins and map overlay) ──────────
         # Always insert _DEMO_DISTRICTS with ON CONFLICT DO NOTHING so that
-        # districts missing from the real geodata load (e.g. SJL ubigeo 150133)
+        # districts missing from the real geodata load (e.g. SJL ubigeo 150132)
         # get approximate polygon boundaries. Safe to run on every boot.
         for d in _DEMO_DISTRICTS:
             await conn.execute(
@@ -1061,11 +1074,26 @@ async def maybe_seed(engine: AsyncEngine) -> None:
 
             existing = (
                 await conn.execute(
-                    text("SELECT id FROM ops.alerts WHERE title = :title LIMIT 1"),
+                    text("SELECT id, status FROM ops.alerts WHERE title = :title LIMIT 1"),
                     {"title": a["title"]},
                 )
-            ).scalar_one_or_none()
+            ).mappings().first()
             if existing:
+                # Restore the demo alert instead of skipping it. Demoing (or the
+                # test suite, which acts on real rows) leaves these acknowledged,
+                # escalated or closed, and a title match used to mean the seed
+                # pass could never bring the scenario back. Auto-resolution also
+                # closes them on its own schedule. Reset status and timestamps so
+                # POST /health/seed is a genuine "restore the demo" button.
+                if existing["status"] != a["status"]:
+                    await conn.execute(
+                        text("""
+                            UPDATE ops.alerts
+                            SET status = :status, created_at = :ts, updated_at = :ts
+                            WHERE id = :id
+                        """),
+                        {"status": a["status"], "ts": _ts(a["offset_h"]), "id": existing["id"]},
+                    )
                 continue
 
             await conn.execute(
