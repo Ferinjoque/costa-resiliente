@@ -1243,6 +1243,24 @@ def test_build_answer_infrastructure_impact():
     assert "Hospital Loayza" in answer
 
 
+def test_build_answer_coen_fen_types_labelled_and_ranked():
+    """INDECI warehouses and comisarías get Spanish labels and outrank schools."""
+    from costa_api.ai.agent import _build_answer
+    rows = [
+        {"name": "Colegio A", "type": "school", "district": "Ate", "flood_confidence": 0.7},
+        {"name": "Colegio B", "type": "school", "district": "Ate", "flood_confidence": 0.7},
+        {"name": "Colegio C", "type": "school", "district": "Ate", "flood_confidence": 0.7},
+        {"name": "Almacén Callao", "type": "relief_warehouse", "district": "Callao", "flood_confidence": 0.8},
+        {"name": "CPNP Surco", "type": "police_station", "district": "Santiago de Surco", "flood_confidence": 0.8},
+    ]
+    answer = _build_answer([], rows, "infraestructura")
+    assert "almacén" in answer.lower()
+    assert "comisaría" in answer.lower()
+    # Criticality ranking wins over raw count: the single relief warehouse is
+    # listed before the three schools.
+    assert answer.lower().index("almacén") < answer.lower().index("colegio")
+
+
 # ─── Situation report (sitrep) fast path ─────────────────────────────────────
 
 def test_is_sitrep_query_matches():

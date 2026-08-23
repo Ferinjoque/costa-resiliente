@@ -58,6 +58,8 @@ const INFRA_ITEMS: { color: string; label: { es: string; en: string } }[] = [
   { color: INFRA_COLOR.hospital,     label: { es: "Hospital", en: "Hospital" } },
   { color: INFRA_COLOR.shelter,      label: { es: "Albergue", en: "Shelter" } },
   { color: INFRA_COLOR.fire_station, label: { es: "Bomberos", en: "Fire station" } },
+  { color: INFRA_COLOR.relief_warehouse, label: { es: "Almacén INDECI", en: "INDECI relief warehouse" } },
+  { color: INFRA_COLOR.police_station, label: { es: "Comisaría", en: "Police station" } },
   { color: INFRA_COLOR.bridge,       label: { es: "Puente",   en: "Bridge" } },
   { color: INFRA_COLOR.school,       label: { es: "Colegio",  en: "School" } },
 ];

@@ -200,7 +200,7 @@ const KEYWORD_ROUTES: Array<{ keys: string[]; demo: string }> = [
   { keys: ["social", "señales", "signals", "urgentes", "urgent", "bluesky", "telegram", "reddit"], demo: "¿Cuántas señales sociales urgentes hay ahora?" },
   { keys: ["ruta", "route", "bloqueada", "blocked road", "carretera", "vía cerrada", "camino"], demo: "¿Qué rutas de evacuación están bloqueadas?" },
   { keys: ["estación", "station", "hidrolog", "gage", "sensor", "todas las estacion", "all stations"], demo: "¿Qué estaciones hidrológicas están en alerta?" },
-  { keys: ["san juan", "sjl", "lurigancho distrito", "150133"], demo: "¿Cuál es el riesgo en San Juan de Lurigancho?" },
+  { keys: ["san juan", "sjl", "lurigancho distrito", "150132"], demo: "¿Cuál es el riesgo en San Juan de Lurigancho?" },
   { keys: ["2017", "el niño costero", "evento 2017", "niño 2017", "que pasó", "what happened"], demo: "¿Qué pasó en el evento El Niño Costero 2017?" },
   { keys: ["recursos", "resources", "personal", "efectivos", "equipos", "deployed", "deployment"], demo: "¿Cuántos recursos de respuesta están desplegados?" },
   { keys: ["resumen completo", "sitrep", "sit rep", "situación general", "inicio de guardia",

@@ -133,7 +133,8 @@ TOOL_SCHEMAS: list[dict] = [
         "function": {
             "name": "get_infrastructure_impact",
             "description": (
-                "Obtiene infraestructura crítica (hospitales, escuelas, puentes) "
+                "Obtiene infraestructura crítica (hospitales, bomberos, almacenes INDECI, "
+                "comisarías, escuelas, puentes, subestaciones) "
                 "DENTRO de zonas inundadas activas (SAR Sentinel-1). "
                 "Úsalo cuando pregunten qué infraestructura está afectada o comprometida por inundaciones. "
                 "Para albergues DISPONIBLES para evacuación, usa search_protocols."
@@ -398,13 +399,15 @@ async def get_infrastructure_impact(db: AsyncSession, hours_back: int = 240) -> 
                    i.type, i.name, d.name AS district,
                    fp.acquired_at, fp.confidence AS flood_confidence,
                    CASE i.type
-                       WHEN 'hospital'      THEN 0
-                       WHEN 'fire_station'  THEN 1
-                       WHEN 'shelter'       THEN 2
-                       WHEN 'substation'    THEN 3
-                       WHEN 'school'        THEN 4
-                       WHEN 'bridge'        THEN 5
-                       ELSE 6
+                       WHEN 'hospital'         THEN 0
+                       WHEN 'fire_station'     THEN 1
+                       WHEN 'shelter'          THEN 2
+                       WHEN 'relief_warehouse' THEN 3
+                       WHEN 'police_station'   THEN 4
+                       WHEN 'substation'       THEN 5
+                       WHEN 'school'           THEN 6
+                       WHEN 'bridge'           THEN 7
+                       ELSE 8
                    END AS type_rank
             FROM geo.infrastructure i
             JOIN ml.flood_polygons fp ON ST_Intersects(ST_MakeValid(i.geom), ST_MakeValid(fp.geom))

@@ -30,13 +30,17 @@ def _ts(offset_hours: float = 0) -> datetime:
 # spatial joins used by risk-summary, fusion, and social signal attribution.
 _DEMO_DISTRICTS = [
     {
-        "ubigeo": "150133", "name": "San Juan de Lurigancho",
+        "ubigeo": "150132", "name": "San Juan de Lurigancho",
         "population": 1038495, "area_km2": 131.25,
         "geom_wkt": "MULTIPOLYGON(((-77.00 -11.90,-76.80 -11.90,-76.80 -12.06,-77.00 -12.06,-77.00 -11.90)))",
     },
     {
-        "ubigeo": "150134", "name": "San Juan de Miraflores",
-        "population": 362285, "area_km2": 23.98,
+        "ubigeo": "150133", "name": "San Juan de Miraflores",
+        # population intentionally omitted: the previous value (362 285) was a
+        # copy of Puente Piedra's figure, and published INEI 2017 counts for this
+        # district disagree across sources. Population exposure simply skips
+        # districts with no census figure rather than showing an invented one.
+        "population": None, "area_km2": 23.98,
         "geom_wkt": "MULTIPOLYGON(((-77.03 -12.14,-76.97 -12.14,-76.97 -12.21,-77.03 -12.21,-77.03 -12.14)))",
     },
     {
@@ -45,7 +49,7 @@ _DEMO_DISTRICTS = [
         "geom_wkt": "MULTIPOLYGON(((-76.97 -11.97,-76.87 -11.97,-76.87 -12.10,-76.97 -12.10,-76.97 -11.97)))",
     },
     {
-        "ubigeo": "150136", "name": "San Martín de Porres",
+        "ubigeo": "150135", "name": "San Martín de Porres",
         "population": 700178, "area_km2": 36.77,
         "geom_wkt": "MULTIPOLYGON(((-77.13 -11.95,-77.05 -11.95,-77.05 -12.02,-77.13 -12.02,-77.13 -11.95)))",
     },
@@ -60,12 +64,12 @@ _DEMO_DISTRICTS = [
         "geom_wkt": "MULTIPOLYGON(((-76.82 -11.85,-76.55 -11.85,-76.55 -11.99,-76.82 -11.99,-76.82 -11.85)))",
     },
     {
-        "ubigeo": "150144", "name": "Villa María del Triunfo",
+        "ubigeo": "150143", "name": "Villa María del Triunfo",
         "population": 398433, "area_km2": 70.57,
         "geom_wkt": "MULTIPOLYGON(((-76.97 -12.15,-76.90 -12.15,-76.90 -12.23,-76.97 -12.23,-76.97 -12.15)))",
     },
     {
-        "ubigeo": "150143", "name": "Villa El Salvador",
+        "ubigeo": "150142", "name": "Villa El Salvador",
         "population": 393254, "area_km2": 35.46,
         "geom_wkt": "MULTIPOLYGON(((-76.96 -12.15,-76.92 -12.15,-76.92 -12.23,-76.96 -12.23,-76.96 -12.15)))",
     },
@@ -75,7 +79,7 @@ _DEMO_DISTRICTS = [
         "geom_wkt": "MULTIPOLYGON(((-77.10 -11.82,-76.97 -11.82,-76.97 -11.93,-77.10 -11.93,-77.10 -11.82)))",
     },
     {
-        "ubigeo": "150126", "name": "Puente Piedra",
+        "ubigeo": "150125", "name": "Puente Piedra",
         "population": 362285, "area_km2": 71.18,
         "geom_wkt": "MULTIPOLYGON(((-77.12 -11.83,-77.03 -11.83,-77.03 -11.90,-77.12 -11.90,-77.12 -11.83)))",
     },
@@ -100,12 +104,12 @@ _DEMO_DISTRICTS = [
         "geom_wkt": "MULTIPOLYGON(((-76.97 -12.07,-76.93 -12.07,-76.93 -12.12,-76.97 -12.12,-76.97 -12.07)))",
     },
     {
-        "ubigeo": "150141", "name": "Santiago de Surco",
+        "ubigeo": "150140", "name": "Santiago de Surco",
         "population": 338509, "area_km2": 34.84,
         "geom_wkt": "MULTIPOLYGON(((-77.00 -12.10,-76.95 -12.10,-76.95 -12.15,-77.00 -12.15,-77.00 -12.10)))",
     },
     {
-        "ubigeo": "150138", "name": "Santa Anita",
+        "ubigeo": "150137", "name": "Santa Anita",
         "population": 228422, "area_km2": 10.65,
         "geom_wkt": "MULTIPOLYGON(((-76.99 -12.03,-76.96 -12.03,-76.96 -12.07,-76.99 -12.07,-76.99 -12.03)))",
     },

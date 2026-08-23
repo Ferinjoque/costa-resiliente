@@ -861,13 +861,17 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             "hospital": "hospital(es)", "school": "colegio(s)",
             "bridge": "puente(s)", "substation": "subestación(es)",
             "fire_station": "bombero(s)", "shelter": "albergue(s)",
+            "relief_warehouse": "almacén(es) INDECI", "police_station": "comisaría(s)",
         }
         by_type: dict[str, int] = {}
         for r in rows:
             t = r.get("type") or "?"
             by_type[t] = by_type.get(t, 0) + 1
         # Sort by criticality first (hospitals → fire stations → shelters → rest), then by count
-        _TYPE_PRIO = {"hospital": 0, "fire_station": 1, "shelter": 2, "substation": 3, "school": 4, "bridge": 5}
+        _TYPE_PRIO = {
+            "hospital": 0, "fire_station": 1, "shelter": 2, "relief_warehouse": 3,
+            "police_station": 4, "substation": 5, "school": 6, "bridge": 7,
+        }
         parts = [f"{cnt} {TYPE_ES.get(t, t)}" for t, cnt in sorted(
             by_type.items(), key=lambda x: (_TYPE_PRIO.get(x[0], 9), -x[1])
         )]

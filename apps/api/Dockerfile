@@ -21,7 +21,13 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 USER appuser
 
 # ── Development target (hot-reload via docker-compose.override.yml) ──────────
+# Dev extras (pytest et al.) belong here and only here — production stays lean.
+# Without this the test suite can only run if someone pip-installs pytest into a
+# live container by hand, which does not survive a rebuild.
 FROM base AS development
+USER root
+RUN pip install --no-cache-dir -e ".[dev]"
+USER appuser
 CMD ["uvicorn", "costa_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # ── Production target ─────────────────────────────────────────────────────────

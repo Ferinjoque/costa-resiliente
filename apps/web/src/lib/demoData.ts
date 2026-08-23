@@ -33,21 +33,21 @@ function bbox(w: number, n: number, e: number, s: number) {
 export const DEMO_DISTRICTS: DistrictCollection = {
   type: "FeatureCollection",
   features: [
-    { type: "Feature", properties: { ubigeo: "150133", name: "San Juan de Lurigancho", province: "Lima", region: "Lima", area_km2: 131.25, population: 1038495 }, geometry: bbox(-77.00, -11.90, -76.80, -12.06) },
+    { type: "Feature", properties: { ubigeo: "150132", name: "San Juan de Lurigancho", province: "Lima", region: "Lima", area_km2: 131.25, population: 1038495 }, geometry: bbox(-77.00, -11.90, -76.80, -12.06) },
     { type: "Feature", properties: { ubigeo: "150103", name: "Ate", province: "Lima", region: "Lima", area_km2: 77.72, population: 630086 }, geometry: bbox(-76.97, -11.97, -76.87, -12.10) },
-    { type: "Feature", properties: { ubigeo: "150136", name: "San Martín de Porres", province: "Lima", region: "Lima", area_km2: 36.77, population: 700178 }, geometry: bbox(-77.13, -11.95, -77.05, -12.02) },
+    { type: "Feature", properties: { ubigeo: "150135", name: "San Martín de Porres", province: "Lima", region: "Lima", area_km2: 36.77, population: 700178 }, geometry: bbox(-77.13, -11.95, -77.05, -12.02) },
     { type: "Feature", properties: { ubigeo: "150110", name: "Comas", province: "Lima", region: "Lima", area_km2: 48.75, population: 520450 }, geometry: bbox(-77.10, -11.89, -76.99, -11.97) },
     { type: "Feature", properties: { ubigeo: "150118", name: "Lurigancho", province: "Lima", region: "Lima", area_km2: 236.47, population: 213386 }, geometry: bbox(-76.82, -11.85, -76.55, -11.99) },
     { type: "Feature", properties: { ubigeo: "150106", name: "Carabayllo", province: "Lima", region: "Lima", area_km2: 346.88, population: 333045 }, geometry: bbox(-77.10, -11.82, -76.97, -11.93) },
-    { type: "Feature", properties: { ubigeo: "150126", name: "Puente Piedra", province: "Lima", region: "Lima", area_km2: 71.18, population: 362285 }, geometry: bbox(-77.12, -11.83, -77.03, -11.90) },
+    { type: "Feature", properties: { ubigeo: "150125", name: "Puente Piedra", province: "Lima", region: "Lima", area_km2: 71.18, population: 362285 }, geometry: bbox(-77.12, -11.83, -77.03, -11.90) },
     { type: "Feature", properties: { ubigeo: "150108", name: "Chorrillos", province: "Lima", region: "Lima", area_km2: 38.94, population: 325547 }, geometry: bbox(-77.03, -12.13, -76.97, -12.22) },
     { type: "Feature", properties: { ubigeo: "150101", name: "Lima", province: "Lima", region: "Lima", area_km2: 21.98, population: 271814 }, geometry: bbox(-77.07, -12.02, -77.01, -12.07) },
     { type: "Feature", properties: { ubigeo: "150107", name: "Chaclacayo", province: "Lima", region: "Lima", area_km2: 37.63, population: 43694 }, geometry: bbox(-76.79, -11.96, -76.73, -12.01) },
     { type: "Feature", properties: { ubigeo: "150114", name: "La Molina", province: "Lima", region: "Lima", area_km2: 65.75, population: 171646 }, geometry: bbox(-76.97, -12.07, -76.93, -12.12) },
-    { type: "Feature", properties: { ubigeo: "150141", name: "Santiago de Surco", province: "Lima", region: "Lima", area_km2: 34.84, population: 338509 }, geometry: bbox(-77.00, -12.10, -76.95, -12.15) },
-    { type: "Feature", properties: { ubigeo: "150138", name: "Santa Anita", province: "Lima", region: "Lima", area_km2: 10.65, population: 228422 }, geometry: bbox(-76.99, -12.03, -76.96, -12.07) },
-    { type: "Feature", properties: { ubigeo: "150144", name: "Villa María del Triunfo", province: "Lima", region: "Lima", area_km2: 70.57, population: 398433 }, geometry: bbox(-76.97, -12.15, -76.90, -12.23) },
-    { type: "Feature", properties: { ubigeo: "150143", name: "Villa El Salvador", province: "Lima", region: "Lima", area_km2: 35.46, population: 393254 }, geometry: bbox(-76.96, -12.15, -76.92, -12.23) },
+    { type: "Feature", properties: { ubigeo: "150140", name: "Santiago de Surco", province: "Lima", region: "Lima", area_km2: 34.84, population: 338509 }, geometry: bbox(-77.00, -12.10, -76.95, -12.15) },
+    { type: "Feature", properties: { ubigeo: "150137", name: "Santa Anita", province: "Lima", region: "Lima", area_km2: 10.65, population: 228422 }, geometry: bbox(-76.99, -12.03, -76.96, -12.07) },
+    { type: "Feature", properties: { ubigeo: "150143", name: "Villa María del Triunfo", province: "Lima", region: "Lima", area_km2: 70.57, population: 398433 }, geometry: bbox(-76.97, -12.15, -76.90, -12.23) },
+    { type: "Feature", properties: { ubigeo: "150142", name: "Villa El Salvador", province: "Lima", region: "Lima", area_km2: 35.46, population: 393254 }, geometry: bbox(-76.96, -12.15, -76.92, -12.23) },
   ],
 };
 
@@ -457,7 +457,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuál es el riesgo en San Juan de Lurigancho?": {
-    answer: "Evaluación de riesgo — San Juan de Lurigancho (ubigeo 150133):\n\n• **Nivel de riesgo**: MODERADO.\n• **Inundación SAR**: 0.8 km² en sector Zárate–Las Flores.\n• **Huayco**: Sin quebradas en zona crítica. Histórico SINPAD: 12 eventos 2003–2020.\n• **Señales sociales**: 5 en 3 h, 2 urgentes (needs_help sector Canto Rey).\n• **Población en riesgo**: ~11,772 hab. en zona SAR.\n• **Infraestructura**: 2 colegios en zona inundada, 0 hospitales afectados.\n\nAcción recomendada: vigilancia y preposicionamiento de recursos. Sin evacuación masiva por ahora.\n\nFuente: Costa Resiliente fusión multicapa.",
+    answer: "Evaluación de riesgo — San Juan de Lurigancho (ubigeo 150132):\n\n• **Nivel de riesgo**: MODERADO.\n• **Inundación SAR**: 0.8 km² en sector Zárate–Las Flores.\n• **Huayco**: Sin quebradas en zona crítica. Histórico SINPAD: 12 eventos 2003–2020.\n• **Señales sociales**: 5 en 3 h, 2 urgentes (needs_help sector Canto Rey).\n• **Población en riesgo**: ~11,772 hab. en zona SAR.\n• **Infraestructura**: 2 colegios en zona inundada, 0 hospitales afectados.\n\nAcción recomendada: vigilancia y preposicionamiento de recursos. Sin evacuación masiva por ahora.\n\nFuente: Costa Resiliente fusión multicapa.",
     intent: "flood_status",
     confidence: 0.87,
     query_plan: "district_risk_composite",
@@ -713,8 +713,8 @@ const RISK_OVERRIDES: Record<string, { risk_level: "bajo" | "moderado" | "alto";
   "150118": { risk_level: "alto",     active_alerts: 3, social_3h: 8, urgent_social_3h: 6 }, // Lurigancho
   "150103": { risk_level: "alto",     active_alerts: 2, social_3h: 3, urgent_social_3h: 2 }, // Ate
   "150106": { risk_level: "alto",     active_alerts: 2, social_3h: 4, urgent_social_3h: 3 }, // Carabayllo
-  "150133": { risk_level: "moderado", active_alerts: 1, social_3h: 5, urgent_social_3h: 2 }, // San Juan de Lurigancho
-  "150126": { risk_level: "moderado", active_alerts: 0, social_3h: 1, urgent_social_3h: 0 }, // Puente Piedra
+  "150132": { risk_level: "moderado", active_alerts: 1, social_3h: 5, urgent_social_3h: 2 }, // San Juan de Lurigancho
+  "150125": { risk_level: "moderado", active_alerts: 0, social_3h: 1, urgent_social_3h: 0 }, // Puente Piedra
   "150107": { risk_level: "moderado", active_alerts: 0, social_3h: 2, urgent_social_3h: 1 }, // Chaclacayo
   "150110": { risk_level: "moderado", active_alerts: 0, social_3h: 1, urgent_social_3h: 0 }, // Comas
 };

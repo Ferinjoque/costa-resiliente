@@ -288,10 +288,13 @@ export default function MapView() {
               hospital: "[H] Hospital",       school:       "[E] Colegio",
               bridge:   "[B] Puente",         substation:   "[P] Subestación",
               fire_station: "[F] Bomberos",   shelter:      "[A] Albergue",
+              relief_warehouse: "[N] Almacén INDECI",
+              police_station:   "[C] Comisaría",
             };
             html = popupHtml(String(p.name ?? "Infraestructura crítica"), [
               ["Tipo", p.type ? (TYPES[String(p.type)] ?? String(p.type)) : null],
               ["Distrito", p.district_name ? String(p.district_name) : null],
+              ["Fuente", p.source ? String(p.source) : null],
             ]);
           }
 
@@ -819,7 +822,8 @@ export default function MapView() {
             "match", ["get", "type"],
             "hospital", "#f43f5e", "school", "#f59e0b",
             "bridge", "#a78bfa", "substation", "#fbbf24",
-            "fire_station", "#fb923c", "shelter", "#34d399", "#64748b",
+            "fire_station", "#fb923c", "shelter", "#34d399",
+            "relief_warehouse", "#38bdf8", "police_station", "#818cf8", "#64748b",
           ],
           "circle-opacity": 0.9,
           "circle-stroke-color": "#0f172a",
