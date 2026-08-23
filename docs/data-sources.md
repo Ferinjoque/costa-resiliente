@@ -85,12 +85,14 @@
 - **URL**: `sigrid.cenepred.gob.pe` / `sig.cenepred.gob.pe/arcgis_server/`
 - **Access**: ArcGIS REST — requires token. Portal uses SSO (browser OAuth); `generateToken` endpoint returns 401 for direct API auth. Tokens are IP-bound and short-lived (60 min).
 - **Current approach**: `geo.hazard_zones` is populated from SINPAD historical event density (18-year record as proxy for hazard classification). See `scripts/load_sigrid.py` for future ArcGIS REST loader.
-- **Status**: ⚠️ SIGRID native polygons blocked (SSO auth); SINPAD-derived fallback loaded and serving
+- **Re-verified 2026-08-23**: `sigrid.cenepred.gob.pe/geoserver/ows` GetCapabilities now returns **404** (WFS endpoint retired); `sigridv3/mapa` returns 302 to SSO. Hazard polygons remain unavailable.
+- **Open sibling endpoint (new, 2026-08-23)**: `sig.cenepred.gob.pe/arcgis_server/rest/services` responds **anonymously, no token**. Folder `sectores/COEN_FEN_2023_10_5_1X/MapServer` publishes official COEN Fenómeno El Niño response layers — `AlmacenesNacionales` (INDECI relief warehouses, 21 national records with Lima/Callao entries), `Bomberos`, `ComisariasBasicas`, `ComisariasFamilia`, `ipress_afectadas_inoperativas` / `ipress_afectadas_operativas_COESALUD` (MINSA facilities affected during FEN), `maquinaria` (MIDAGRI), `INTERVENCIONES_PVN_FEN_*` (MTC road works). Queryable with `outSR=4326`, GeoJSON supported, `maxRecordCount=1000`. Folder `sigrid` itself only exposes `sigrid_collect` (workshop points — not hazard data).
+- **Status**: ⚠️ SIGRID native hazard polygons blocked (SSO); SINPAD-derived fallback loaded and serving. COEN FEN responder-asset layers available as an optional additive source (not yet ingested).
 
 ### IGP Seismic Feed
-- **URL**: `ultimosismo.igp.gob.pe`
+- **URL**: `ultimosismo.igp.gob.pe` (verified reachable, HTTP 200, 2026-08-23)
 - **Use**: Multi-hazard context (secondary to flood/huayco scenario)
-- **Status**: ❌ Not implemented (low priority for current scenario focus)
+- **Status**: ❌ Dropped — seismic is explicitly out of scope per [`COMPETITION.md`](COMPETITION.md); revisit only post-competition
 
 ---
 

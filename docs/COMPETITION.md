@@ -42,7 +42,7 @@ How many distinct data sources? Any novel sources that competitors won't have?
 
 How well are the streams fused? Are responsible-data-handling controls real (code) or aspirational?
 
-**Our position:** Single PostgreSQL 16 instance combining PostGIS + TimescaleDB + pgstac + pgvector — one query can join SAR extents, rainfall accumulations, station observations, and social clusters without cross-service calls. Auto-alert generator fuses flood + huayco + social into single ranked stream. Agentic copilot reasons across all 8 DB tools + protocol RAG (INDECI, MINSA, CENEPRED). Responsible handling enforced in code: presidio PII redaction, XML signal sandboxing, gemma2:2b output guardrail, append-only decision log (DB trigger), pg_cron 7-day purge.
+**Our position:** Single PostgreSQL 16 instance combining PostGIS + TimescaleDB + pgstac + pgvector — one query can join SAR extents, rainfall accumulations, station observations, and social clusters without cross-service calls. Auto-alert generator fuses flood + huayco + social into single ranked stream. Agentic copilot reasons across all 8 DB tools + protocol RAG (INDECI, MINSA, CENEPRED). Responsible handling enforced in code: presidio PII redaction, XML signal sandboxing, gemma2:2b output guardrail, append-only decision log (DB trigger), Prefect `retention-daily` 7-day purge.
 
 ### C4 — Usability & Operational Readiness
 
@@ -150,7 +150,7 @@ Privacy, retention, and decision-log integrity rest on three frameworks (cited i
 Implementation is code-level, not aspirational:
 1. `presidio-analyzer` PII redaction on every signal before storage
 2. Location coarsening to manzana centroid (~100m) for non-responder views
-3. `pg_cron` 7-day purge on raw social signals
+3. `retention-daily` Prefect flow — 7-day purge on raw social signals (`pg_cron` is unavailable in the timescaledb-ha image)
 4. Append-only decision log via DB trigger (rejects UPDATE / DELETE)
 5. Spanish-only consent strings on optional citizen reporting
 6. LLM anti-fabrication guarantee — numerical claims trace to DB rows; LLM never executes raw SQL
