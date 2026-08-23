@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime as _dt, timezone as _tz  # module-level; used in multiple _build_* functions
@@ -606,12 +607,34 @@ def _threshold_note_for_row(row: dict) -> str:
     return ""
 
 
+def _looks_like_model_scaffolding(content: str) -> bool:
+    """True when assistant content is leaked tool-call JSON rather than prose.
+
+    An operator must never be shown raw model scaffolding. qwen2.5 sometimes
+    emits a tool call as text instead of using the structured tool_calls field;
+    the provider now recovers those, but if anything slips through we summarise
+    the DB rows ourselves rather than printing JSON on an emergency dashboard.
+    """
+    stripped = content.strip()
+    if not stripped:
+        return True
+    if stripped.startswith("{") or stripped.startswith("["):
+        return True
+    return bool(re.search(r'\{\s*"(?:name|tool|arguments|function)"\s*:', stripped))
+
+
 def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -> str:
     """Extract final answer from last assistant message, or summarise rows directly."""
     for msg in reversed(messages):
         if msg.get("role") == "assistant":
             content = msg.get("content", "").strip()
             if content and not msg.get("tool_calls"):
+                if _looks_like_model_scaffolding(content):
+                    logger.warning(
+                        "Discarding assistant content that looks like tool-call scaffolding: %.120s",
+                        content,
+                    )
+                    break
                 return content
 
     if not rows:

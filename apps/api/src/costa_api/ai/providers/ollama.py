@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import json
 import logging
 from typing import Any
@@ -90,9 +91,44 @@ def extract_text(response: dict) -> str:
     return response["message"]["content"].strip()
 
 
+_TEXT_TOOL_CALL_RE = re.compile(
+    r'\{\s*"(?:name|tool)"\s*:\s*"(?P<name>[a-z_]+)"'
+    r'(?:\s*,\s*"(?:arguments|args|parameters)"\s*:\s*(?P<args>\{.*?\}))?\s*\}',
+    re.DOTALL,
+)
+
+
 def extract_tool_calls(response: dict) -> list[dict]:
-    """Return list of {name, arguments} dicts from tool_calls, or empty."""
-    return response.get("message", {}).get("tool_calls", []) or []
+    """Return list of {"function": {"name", "arguments"}} dicts, or empty.
+
+    Ollama normally returns tool calls in the structured `tool_calls` field, but
+    qwen2.5 intermittently emits them as JSON *inside* the message content
+    instead. When that happened the agent loop saw "no tool calls", stopped, and
+    handed the raw content to the operator — producing answers like
+    `Ronaldo\\n{"name": "get_active_alerts", ...}`. So fall back to scraping
+    tool-call JSON out of the content.
+    """
+    structured = response.get("message", {}).get("tool_calls", []) or []
+    if structured:
+        return structured
+
+    content = (response.get("message", {}) or {}).get("content") or ""
+    if "{" not in content:
+        return []
+
+    recovered: list[dict] = []
+    for match in _TEXT_TOOL_CALL_RE.finditer(content):
+        args: dict = {}
+        raw_args = match.group("args")
+        if raw_args:
+            try:
+                args = json.loads(raw_args)
+            except json.JSONDecodeError:
+                args = {}
+        recovered.append({"function": {"name": match.group("name"), "arguments": args}})
+    if recovered:
+        logger.info("Recovered %d tool call(s) from message content", len(recovered))
+    return recovered
 
 
 def parse_json_content(response: dict) -> dict:
