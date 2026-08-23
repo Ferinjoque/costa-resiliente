@@ -1,34 +1,38 @@
 #!/usr/bin/env bash
 # deploy.sh — Bootstrap Costa Resiliente on a fresh Ubuntu 22/24 LTS VPS.
 #
-# VPS sizing:
-#   Minimum (qwen3:8b model):    Hetzner CX32  4 vCPU / 8 GB RAM  / 80 GB SSD  — €11/mo
-#   Recommended (gemma4:e4b):    Hetzner CX42  8 vCPU / 16 GB RAM / 240 GB SSD — €17/mo
-#   DigitalOcean equivalent:     4 vCPU / 8 GB  → $48/mo  |  8 vCPU / 16 GB → $96/mo
+# VPS sizing (models are the locked stack: qwen2.5:7b-instruct-q4_K_M 4.7 GB +
+# gemma2:2b 1.6 GB + nomic-embed-text 274 MB ≈ 6.6 GB of model weights):
+#   Minimum:      Hetzner CX32  4 vCPU / 8 GB RAM  / 80 GB SSD  — €11/mo
+#   Comfortable:  Hetzner CX42  8 vCPU / 16 GB RAM / 240 GB SSD — €17/mo
+#   DigitalOcean equivalent:    4 vCPU / 8 GB  → $48/mo  |  8 vCPU / 16 GB → $96/mo
 #
 # Usage:
 #   # 1. SSH into fresh VPS
 #   # 2. Copy your .env.production to the server
 #   # 3. Run:
-#   bash <(curl -fsSL https://raw.githubusercontent.com/YOUR_ORG/costa-resiliente/develop/scripts/deploy.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/Ferinjoque/costa-resiliente/develop/scripts/deploy.sh)
 #
 # Or clone first and run locally on the server:
-#   git clone -b develop https://github.com/YOUR_ORG/costa-resiliente.git
+#   git clone -b develop https://github.com/Ferinjoque/costa-resiliente.git
 #   cd costa-resiliente
 #   bash scripts/deploy.sh
 
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-https://github.com/YOUR_ORG/costa-resiliente.git}"
+REPO_URL="${REPO_URL:-https://github.com/Ferinjoque/costa-resiliente.git}"
 BRANCH="${BRANCH:-develop}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/costa-resiliente}"
-OLLAMA_MODEL="${OLLAMA_MODEL:-gemma4:e4b}"   # set to qwen3:8b on 8GB RAM servers
+# Locked model stack — must match .env / .env.production.example. See docs/COMPETITION.md.
+LLM_PRIMARY_MODEL="${LLM_PRIMARY_MODEL:-qwen2.5:7b-instruct-q4_K_M}"   # copilot + triage
+LLM_FAST_MODEL="${LLM_FAST_MODEL:-gemma2:2b}"                          # guardrails
+LLM_EMBED_MODEL="${LLM_EMBED_MODEL:-nomic-embed-text}"                 # pgvector RAG
 
 echo "==> Costa Resiliente — production deploy"
 echo "    Repo:   ${REPO_URL}"
 echo "    Branch: ${BRANCH}"
 echo "    Dir:    ${INSTALL_DIR}"
-echo "    Model:  ${OLLAMA_MODEL}"
+echo "    Models: ${LLM_PRIMARY_MODEL} + ${LLM_FAST_MODEL} + ${LLM_EMBED_MODEL}"
 echo ""
 
 # ── 1. System packages ────────────────────────────────────────────────────────
@@ -95,7 +99,7 @@ if [ ! -f .env ]; then
         echo "      - Set MINIO_SECRET_KEY (strong random value)"
         echo "      - Set PUBLIC_DOMAIN (e.g. costa.yourdomain.com)"
         echo "      - Set EARTHDATA_USERNAME / EARTHDATA_PASSWORD"
-        echo "      - Set OLLAMA_PRIMARY_MODEL=${OLLAMA_MODEL}"
+        echo "      - Keep LLM_PRIMARY_MODEL=${LLM_PRIMARY_MODEL} (locked stack)"
         echo ""
         read -rp "Press Enter after editing .env to continue, or Ctrl-C to abort..."
     else
@@ -137,19 +141,25 @@ for i in $(seq 1 36); do
 done
 docker compose ps
 
-# ── 8. Pull Ollama model ──────────────────────────────────────────────────────
-echo "==> Pulling Ollama model: ${OLLAMA_MODEL}"
-echo "    (This can take 10-30 min depending on model size and bandwidth)"
-docker exec costa-ollama ollama pull "${OLLAMA_MODEL}" || \
-    echo "WARNING: Ollama pull failed. Run manually: docker exec costa-ollama ollama pull ${OLLAMA_MODEL}"
+# ── 8. Pull Ollama models ─────────────────────────────────────────────────────
+echo "==> Pulling Ollama models (~6.6 GB total, 10-30 min depending on bandwidth)"
+for model in "${LLM_PRIMARY_MODEL}" "${LLM_FAST_MODEL}" "${LLM_EMBED_MODEL}"; do
+    echo "    → ${model}"
+    docker exec costa-ollama ollama pull "${model}" || \
+        echo "WARNING: pull failed. Run manually: docker exec costa-ollama ollama pull ${model}"
+done
 
 # ── 9. One-time data bootstrap ────────────────────────────────────────────────
 echo ""
-echo "==> One-time data bootstrap (run manually if first deploy):"
-echo "    docker exec costa-prefect-worker python scripts/load_lima_geodata.py"
-echo "    docker exec costa-prefect-worker python scripts/load_sigrid.py"
-echo "    docker exec costa-prefect-worker prefect deployment run sentinel1-ingest/sentinel1-daily"
-echo "    docker exec costa-prefect-worker prefect deployment run imerg-ingest/imerg-hourly"
+echo "==> One-time data bootstrap (first deploy only, in order):"
+echo "    docker exec costa-prefect-worker python scripts/load_lima_geodata.py   # districts, quebradas, watersheds, OSM infra"
+echo "    docker exec costa-prefect-worker python scripts/load_sinpad.py         # INDECI 2003-2020 → geo.hazard_zones"
+echo "    docker exec costa-prefect-worker python scripts/seed_elnino_2017.py    # 2017 replay fixtures"
+echo "    docker exec costa-prefect-worker python -m costa_workers.rag.ingest    # protocol RAG index (pgvector)"
+echo "    curl -X POST https://\${PUBLIC_DOMAIN}/api/v1/health/seed -H \"Authorization: Bearer \$TOKEN\"  # demo data refresh"
+echo ""
+echo "    Note: scripts/load_sigrid.py is optional — CENEPRED SIGRID is SSO-gated,"
+echo "    hazard zones are served from the SINPAD-derived fallback above."
 echo ""
 
 # ── 10. Done ──────────────────────────────────────────────────────────────────
