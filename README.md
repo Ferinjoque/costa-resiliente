@@ -49,6 +49,14 @@ docker exec costa-ollama ollama pull nomic-embed-text              # pgvector RA
 docker exec costa-prefect-worker python -m costa_workers.rag.ingest  # index protocol corpus
 ```
 
+### Tests
+
+```bash
+docker exec costa-api python -m pytest --asyncio-mode=auto -q   # 719 API tests
+docker exec costa-prefect-worker python -m pytest -q            # 182 worker tests
+cd apps/web && npm test && npx tsc --noEmit                     # 21 frontend tests + types
+```
+
 Web at <http://localhost:3000> · API at <http://localhost:8000> · API docs at <http://localhost:8000/docs>.
 
 Demo SINAGERD operator accounts (password `demo1234`):

@@ -10,6 +10,7 @@ Seeds:
   3. El Niño 2017 historical fixtures (for replay tutorial)
 """
 
+import json
 import hashlib
 import logging
 from datetime import datetime, timedelta, timezone
@@ -255,6 +256,68 @@ _ALERTS_CURRENT = [
 ]
 
 # ─── Demo social signals ──────────────────────────────────────────────────────
+# Opening entries for the operator audit trail. Without these a fresh install
+# shows an empty Bitácora and the EDAN-Perú CSV/PDF exports contain only headers.
+# ops.decision_log is append-only by DB trigger, so these are inserted once, when
+# the table is empty; every later entry comes from real operator actions.
+_DECISION_LOG_CURRENT = [
+    {
+        "alert_title": "Riesgo crítico de huayco — Quebrada Jicamarca",
+        "operator_id": "coer_lima",
+        "action_type": "alert_acknowledge",
+        "offset_h": 2.0,
+        "payload": {
+            "action": "acknowledge",
+            "new_status": "acknowledged",
+            "note": "Recibido en COER. Se contacta COEL Lurigancho para verificación en campo.",
+        },
+    },
+    {
+        "alert_title": "Riesgo crítico de huayco — Quebrada Jicamarca",
+        "operator_id": "coer_lima",
+        "action_type": "alert_escalate",
+        "offset_h": 1.6,
+        "payload": {
+            "action": "escalate",
+            "new_status": "escalated",
+            "note": "Probabilidad 0.91 y lluvia sobre umbral. Se escala a COEN y se solicita evacuación preventiva.",
+        },
+    },
+    {
+        "alert_title": "Nivel del río Rímac elevado — Estación Chosica",
+        "operator_id": "coer_lima",
+        "action_type": "alert_acknowledge",
+        "offset_h": 1.2,
+        "payload": {
+            "action": "acknowledge",
+            "new_status": "acknowledged",
+            "note": "Chosica 2.41 m, acercándose al umbral SENAMHI de 2.5 m. Monitoreo cada 15 min.",
+        },
+    },
+    {
+        "alert_title": "Cluster social — reportes de bloqueo vial en La Molina",
+        "operator_id": "coel_sjl",
+        "action_type": "alert_dispatch",
+        "offset_h": 0.8,
+        "payload": {
+            "action": "dispatch",
+            "resources": ["brigada_vial"],
+            "note": "Se despacha brigada para verificar bloqueo reportado por ciudadanos.",
+        },
+    },
+    {
+        "alert_title": "Inundación contenida — Sector Ñaña",
+        "operator_id": "coen_lima",
+        "action_type": "alert_false_positive",
+        "offset_h": 0.4,
+        "payload": {
+            "action": "false_positive",
+            "new_status": "false_positive",
+            "note": "Verificado en campo: espejo de agua permanente, no es desborde. Se descarta.",
+        },
+    },
+]
+
 _SOCIAL_CURRENT = [
     {
         "source": "bluesky",
@@ -639,7 +702,27 @@ async def maybe_seed(engine: AsyncEngine) -> None:
             text("SELECT COUNT(*) FROM hydro.station_observations WHERE time > NOW() - INTERVAL '2 hours'")
         )).scalar_one()
 
-        operational_ok = _alerts > 0 and _social > 0 and _imerg > 0 and _stobs > 0
+        # Has the opening decision-log shift been written? Checked here because it
+        # gates the early return below — otherwise a database that still has its
+        # demo alerts never reaches the decision-log seeding step, and the Bitácora
+        # panel and EDAN-Perú exports stay empty forever.
+        _dlog_seeded = (await conn.execute(
+            text("""
+                SELECT COUNT(*) FROM ops.decision_log
+                WHERE payload->>'note' = ANY(:notes)
+            """).bindparams(bindparam("notes", type_=ARRAY(String))),
+            {"notes": [e["payload"]["note"] for e in _DECISION_LOG_CURRENT]},
+        )).scalar_one() > 0
+
+        # Require the FULL demo alert set, not just one: a partially consumed
+        # scenario (some alerts acknowledged or closed) still needs restoring.
+        operational_ok = (
+            _alerts >= len(_ALERTS_CURRENT)
+            and _social > 0
+            and _imerg > 0
+            and _stobs > 0
+            and _dlog_seeded
+        )
 
         # Ensure quebradas have geometries (needed for district spatial join in alert generator)
         if _qbr > 0:
@@ -1117,6 +1200,46 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                     "ts": _ts(a["offset_h"]),
                 },
             )
+
+        # ── 4b. Decision log ──────────────────────────────────────────────────
+        # A fresh install opened the Bitácora panel on an empty table, and the
+        # EDAN-Perú CSV/PDF exports produced a header row and nothing else — the
+        # audit trail is a headline capability, so it needs a starting shift.
+        # ops.decision_log is append-only by DB trigger (no UPDATE, no DELETE), so
+        # these can only ever be inserted — never reset. Keyed on the seeded notes
+        # rather than on an empty table, so a log that already holds real operator
+        # actions still gets the opening shift exactly once.
+        _seed_notes = [e["payload"]["note"] for e in _DECISION_LOG_CURRENT]
+        _log_rows = (await conn.execute(
+            text("""
+                SELECT COUNT(*) FROM ops.decision_log
+                WHERE payload->>'note' = ANY(:notes)
+            """).bindparams(bindparam("notes", type_=ARRAY(String))),
+            {"notes": _seed_notes},
+        )).scalar_one()
+        if _log_rows == 0:
+            for entry in _DECISION_LOG_CURRENT:
+                alert_id = (await conn.execute(
+                    text("SELECT id FROM ops.alerts WHERE title = :title LIMIT 1"),
+                    {"title": entry["alert_title"]},
+                )).scalar_one_or_none()
+                if alert_id is None:
+                    continue
+                await conn.execute(
+                    text("""
+                        INSERT INTO ops.decision_log
+                            (logged_at, operator_id, action_type, alert_id, payload)
+                        VALUES (:ts, :operator_id, :action_type, :alert_id, CAST(:payload AS jsonb))
+                    """),
+                    {
+                        "ts": _ts(entry["offset_h"]),
+                        "operator_id": entry["operator_id"],
+                        "action_type": entry["action_type"],
+                        "alert_id": alert_id,
+                        "payload": json.dumps(entry["payload"], ensure_ascii=False),
+                    },
+                )
+            logger.info("auto_seed: seeded %d decision log entries", len(_DECISION_LOG_CURRENT))
 
         # ── 5. Social signals ─────────────────────────────────────────────────
         # Use ON CONFLICT DO UPDATE to refresh ingested_at/expires_at so demo

@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@deck.gl/core": "^9.0.26",
@@ -48,7 +50,8 @@
     "eslint-config-next": "14.2.3",
     "postcss": "^8.5.26",
     "prettier": "^3.3.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^4.1.11"
   },
   "overrides": {
     "postcss": "$postcss",
