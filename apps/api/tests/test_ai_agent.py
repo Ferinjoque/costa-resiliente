@@ -1822,3 +1822,57 @@ def test_build_answer_flood_polygon_total_count_shown_when_truncated():
     answer = _build_answer([], rows, "inundaciones")
     assert "15" in answer, "Answer must show total polygon count when truncated"
     assert "polígono" in answer or "poligono" in answer.lower()
+
+
+# ─── Leaked tool-call scaffolding ─────────────────────────────────────────────
+
+def test_extract_tool_calls_recovers_call_emitted_as_text():
+    """qwen2.5 sometimes writes the tool call into content instead of tool_calls.
+
+    Regression guard: when that happened the agent loop saw 'no tool calls',
+    stopped, and handed the raw content to the operator — producing answers like
+    `Ronaldo\n{"name": "get_active_alerts", "arguments": {"severity": "high"}}`.
+    """
+    from costa_api.ai.providers.ollama import extract_tool_calls
+
+    response = {"message": {"content": 'Ronaldo\n{"name": "get_active_alerts", "arguments": {"severity": "high"}}'}}
+    calls = extract_tool_calls(response)
+    assert len(calls) == 1
+    assert calls[0]["function"]["name"] == "get_active_alerts"
+    assert calls[0]["function"]["arguments"] == {"severity": "high"}
+
+
+def test_extract_tool_calls_prefers_structured_field():
+    from costa_api.ai.providers.ollama import extract_tool_calls
+
+    structured = [{"function": {"name": "get_river_levels", "arguments": {}}}]
+    response = {"message": {"content": '{"name": "get_active_alerts"}', "tool_calls": structured}}
+    assert extract_tool_calls(response) == structured
+
+
+def test_extract_tool_calls_ignores_plain_prose():
+    from costa_api.ai.providers.ollama import extract_tool_calls
+
+    assert extract_tool_calls({"message": {"content": "El río Rímac está en 2.41 m."}}) == []
+
+
+def test_build_answer_never_returns_tool_call_json():
+    """An operator must never be shown raw model scaffolding on a live dashboard."""
+    from costa_api.ai.agent import _build_answer
+
+    messages = [
+        {"role": "assistant", "content": 'Ronaldo\n{"name": "get_active_alerts", "arguments": {"severity": "high"}}'},
+    ]
+    rows = [{"name": "Chosica", "river": "Rímac", "level_m": 2.41, "trend": "rising"}]
+    answer = _build_answer(messages, rows, "resume el turno")
+    assert "get_active_alerts" not in answer
+    assert "Ronaldo" not in answer
+    assert "Chosica" in answer
+
+
+def test_build_answer_discards_bare_json_object():
+    from costa_api.ai.agent import _build_answer
+
+    messages = [{"role": "assistant", "content": '{"severity": "high"}'}]
+    answer = _build_answer(messages, [], "estado")
+    assert not answer.strip().startswith("{")
