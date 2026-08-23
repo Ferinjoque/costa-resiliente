@@ -150,7 +150,7 @@ POST   /api/v1/auth/operators
 | `hydro` | `stations` | seeded | ANA + SENAMHI (live scraper, periodic) |
 | `hydro` | `station_observations` | live | TimescaleDB hypertable |
 | `hydro` | `imerg_accumulations` | live | 1h–72h windows per watershed |
-| `social` | `signals` | live | PII-redacted, 7-day TTL via pg_cron |
+| `social` | `signals` | live | PII-redacted, 7-day TTL via `retention-daily` Prefect flow |
 | `ml` | `flood_polygons` | live | U-Net SAR output |
 | `ml` | `huayco_susceptibility` | live | XGBoost output |
 | `historical` | `sinpad_events` | 2,063 | INDECI 2003–2020 |
@@ -1086,18 +1086,26 @@ For full detail of all sessions, see [`../SESSION_LOG.md`](../SESSION_LOG.md).
 
 ## What's pending
 
-### Sole rubric blocker: VPS deployment
+### Submission deliverables (Phase 3 deadline: 9 October 2026)
+
+Re-read of `ieee-competition-rules/response-quest-challenge-rules.txt` (§ Phase 3, 2026-08-23):
+the rules require **a working demonstration plus a 2–5 minute video of a real person using the
+product**. They do **not** require a publicly hosted URL, and they do not require open source.
+Hosting is therefore optional; the participant guidance explicitly says to "consider hosting costs
+and operating costs", which favours the reproducible local Compose stack.
 
 | Item | Status | Action |
 |------|--------|--------|
-| VPS with public IP | ❌ Not provisioned | Hetzner CX32 €11/mo or DigitalOcean $20/mo |
-| TLS / HTTPS | ❌ | Caddy auto-HTTPS — `infra/caddy/Caddyfile` ready |
-| `docker-compose.prod.yml` | ✅ | Ready |
-| `scripts/deploy.sh` | ✅ | Zero-downtime deploy ready |
-| Ollama model pull on VPS | ❌ | `docker exec costa-ollama ollama pull qwen2.5:7b-instruct-q4_K_M` (4.7 GB) |
-| SINPAD data load on VPS | ❌ | `python scripts/load_sinpad.py` post first `compose up` |
-| 2017 El Niño fixtures on VPS | ❌ | `python scripts/seed_elnino_2017.py` |
-| DNS record | ❌ | Point domain to VPS IP |
+| Public open-source repo | ✅ | <https://github.com/Ferinjoque/costa-resiliente> (Apache 2.0, published 2026-08-23) |
+| Reproducible clone-and-run path | ✅ | README quick start: compose up + 3 ollama pulls + RAG index; demo data self-seeds |
+| **2–5 min demo video** | ❌ **Required by rules** | Record against the local stack — 2017 replay → alert → copilot SITREP → decision log export |
+| Public URL with HTTPS | ⚪ Optional | Not required by the rules. `docker-compose.prod.yml` + Caddy + `scripts/deploy.sh` ready if a VPS is funded (Hetzner CX32 €11/mo). |
+| DNS record | ⚪ Optional | Only if the VPS path is taken |
+
+### Verified state (2026-08-23)
+
+Stack rebooted after 83 idle days — all 9 containers healthy, `707 API tests passed`,
+`tsc --noEmit` clean, `/api/v1/health` returns `EMERGENCIA · 7 alerts · 63.2 mm/72h`.
 
 ### Low-priority polish
 
@@ -1108,7 +1116,9 @@ For full detail of all sessions, see [`../SESSION_LOG.md`](../SESSION_LOG.md).
 | Rainfall threshold alerts (IMERG) | C1 coverage | ✅ Done Session 7 — 50/25/15 mm thresholds, auto-resolve after 6h |
 | Auto-notification on critical alerts | C1 latency | ✅ Done Session 7 — fan-out fires on alert insert, not just operator escalate |
 | `EscalationModal` programmatic focus trap | A11y polish | ✅ Done Session 6 — auto-focus textarea, Escape, Tab cycle, focus restore |
-| `r.avaflow` debris-flow simulation snapshot | C5 +0.2 | Deferred post-submission (3+ days GRASS container work) |
+| `r.avaflow` debris-flow simulation snapshot | C5 +0.2 | ❌ Dropped 2026-08-23 — C5 already scores 5.0; 3+ days of GRASS container work buys nothing against the rubric ceiling, and the XGBoost huayco model already covers the modeling sub-problem |
+| IGP seismic feed | Multi-hazard context | ❌ Dropped 2026-08-23 — seismic is explicitly out of scope in COMPETITION.md. Endpoint `ultimosismo.igp.gob.pe` verified reachable (HTTP 200) if ever revisited |
+| SIGRID native hazard polygons | C2 | ⚠️ Still blocked (re-verified 2026-08-23) — `sigrid.cenepred.gob.pe/geoserver/ows` now 404s, portal 302s to SSO. SINPAD-derived `geo.hazard_zones` remains the served fallback. **New finding:** `sig.cenepred.gob.pe/arcgis_server/rest/services` answers anonymously; `sectores/COEN_FEN_2023_10_5_1X` exposes official COEN El Niño response layers (INDECI national warehouses, Bomberos, comisarías, MINSA affected/inoperative IPRESS, MTC road interventions) queryable without a token in WGS84. Hazard polygons are still absent, but this is a viable optional responder-asset source. |
 | Bootstrap `pgstac` schema for Sentinel-1 ingest + flood-seg flows | C1 (new scenes) | ✅ Done Session 7 — `pypgstac migrate` applied; both flows unblocked |
 
 ---

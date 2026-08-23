@@ -147,7 +147,7 @@ docker compose restart api
 ```bash
 docker exec costa-postgres psql -U costa -c \
   "SELECT pg_size_pretty(pg_database_size('costa_resiliente'));"
-# Clear old social signals manually if pg_cron failed:
+# Clear old social signals manually if the retention-daily flow failed:
 docker exec costa-postgres psql -U costa -c \
   "DELETE FROM social.signals WHERE expires_at < NOW();"
 ```

@@ -26,11 +26,27 @@ A browser-accessible operational dashboard for Peru's SINAGERD emergency manager
 
 ## Quick start
 
+The whole platform is one `docker compose up` — **no cloud account, no API key, and no hosted
+deployment are required to run it.** Every model runs locally on Ollama; the demo scenario seeds
+itself so the dashboard is populated on first boot.
+
+**Requirements:** Docker Desktop or Docker Engine with Compose v2 · 8 GB RAM free (16 GB
+comfortable) · ~25 GB disk · Linux, macOS, or Windows.
+
 ```bash
-git clone <repo-url> && cd costa-resiliente
-cp .env.example .env                          # fill in EarthData, Telegram, etc.
-docker compose up -d                          # 9 services
-docker compose ps                             # verify health
+git clone https://github.com/Ferinjoque/costa-resiliente.git && cd costa-resiliente
+cp .env.example .env             # works as-is; live-data credentials are optional (see below)
+docker compose up -d             # 9 services
+docker compose ps                # wait until all report healthy (first build: 5-10 min)
+```
+
+Pull the three local models once (~6.6 GB total — the copilot stays offline without them):
+
+```bash
+docker exec costa-ollama ollama pull qwen2.5:7b-instruct-q4_K_M   # copilot + Spanish triage
+docker exec costa-ollama ollama pull gemma2:2b                     # guardrails
+docker exec costa-ollama ollama pull nomic-embed-text              # pgvector RAG embeddings
+docker exec costa-prefect-worker python -m costa_workers.rag.ingest  # index protocol corpus
 ```
 
 Web at <http://localhost:3000> · API at <http://localhost:8000> · API docs at <http://localhost:8000/docs>.
@@ -39,6 +55,24 @@ Demo SINAGERD operator accounts (password `demo1234`):
 - `coen_lima` — COEN, national
 - `coer_lima` — COER, Lima region
 - `coel_sjl` — COEL, San Juan de Lurigancho (150132)
+
+### Live data (optional)
+
+The 2017 El Niño Costero replay and the demo alert scenario run entirely from seeded fixtures.
+To ingest live feeds instead, set `EARTHDATA_USERNAME` / `EARTHDATA_PASSWORD` (free NASA
+EarthData account, for IMERG rainfall) and optionally `PC_SDK_SUBSCRIPTION_KEY` (Sentinel-1 rate
+limits) in `.env`. Bluesky, RSS, Reddit, ANA, and SENAMHI ingestion need no credentials.
+
+### Deployment
+
+A single-VPS production path is included (`docker-compose.prod.yml`, Caddy auto-HTTPS,
+`scripts/deploy.sh`) and targets ~€11-17/mo on a Hetzner CX32/CX42 — the cost ceiling matters
+because the intended operators are public emergency-management agencies. It is optional: the
+platform is designed to run on an agency's own hardware, air-gapped from any cloud LLM API.
+
+```bash
+bash scripts/deploy.sh           # on a fresh Ubuntu 22/24 LTS VPS, with .env in place
+```
 
 ## Architecture at a glance
 
@@ -50,7 +84,7 @@ Demo SINAGERD operator accounts (password `demo1234`):
               HTTP REST · SSE · JWT auth
 ┌─────────────────────▼──────────────────────────────────────┐
 │   FastAPI — ~32 endpoints + SSE alert stream               │
-│   Agentic copilot · 8 DB tools · pgvector RAG · guardrails │
+│   Agentic copilot · 9 DB tools · pgvector RAG · guardrails │
 └──────┬──────────────────────┬──────────────────────────────┘
        │                      │
 ┌──────▼──────┐    ┌──────────▼────────────────────────────┐
@@ -84,7 +118,7 @@ Demo SINAGERD operator accounts (password `demo1234`):
 Code-level, not aspirational:
 - PII redaction via `presidio-analyzer` before any signal stored
 - Location coarsened to manzana centroid (~100 m) for non-responder views
-- 7-day pg_cron purge on raw social signals
+- 7-day retention purge on raw social signals (Prefect `retention-daily` flow, 03:00 UTC)
 - Append-only operator decision log enforced by DB trigger
 - LLM anti-fabrication guarantee — all claims trace to DB rows
 - Compliant with Peru Ley 29733 + DS 016-2024-JUS, OCHA, IASC
