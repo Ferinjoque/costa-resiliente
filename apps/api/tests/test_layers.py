@@ -179,6 +179,27 @@ class TestInfrastructure:
             resp = await c.get("/api/v1/layers/infrastructure?at_risk_only=true")
         assert resp.status_code == 200
 
+    @pytest.mark.asyncio
+    async def test_coen_fen_types_are_servable(self):
+        """INDECI relief warehouses + PNP comisarías (CENEPRED COEN FEN 2023)."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get(
+                "/api/v1/layers/infrastructure"
+                "?type=relief_warehouse&type=police_station"
+            )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert _is_feature_collection(body)
+        for feature in body["features"]:
+            assert feature["properties"]["type"] in {"relief_warehouse", "police_station"}
+
+    @pytest.mark.asyncio
+    async def test_source_credits_both_providers(self):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
+            resp = await c.get("/api/v1/layers/infrastructure")
+        source = resp.json()["source"]
+        assert "OpenStreetMap" in source and "CENEPRED" in source
+
 
 # ─── /layers/stations ────────────────────────────────────────────────────────
 

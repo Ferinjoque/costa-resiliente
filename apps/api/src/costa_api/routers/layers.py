@@ -354,7 +354,10 @@ async def infrastructure(
     rows = result.mappings().all()
     return {
         "type": "FeatureCollection",
-        "source": "OpenStreetMap (Overpass API)",
+        # OSM covers hospitals/schools/bridges/substations/fire stations; INDECI
+        # relief warehouses and PNP comisarías come from the CENEPRED COEN FEN
+        # 2023 service (per-feature provenance is in properties.source).
+        "source": "OpenStreetMap (Overpass API) + CENEPRED COEN FEN 2023",
         "source_url": "https://overpass-api.de",
         "retrieved_at": _now_iso(),
         "features": [

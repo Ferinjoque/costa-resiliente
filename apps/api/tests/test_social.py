@@ -64,7 +64,7 @@ def test_field_report_stores_signal_and_decision_log(client):
             "operator_id": "coer_lima",
             "text": "Camion atrapado en quebrada Huaycoloro km 12",
             "label": "road_blocked",
-            "district_ubigeo": "150133",
+            "district_ubigeo": "150132",
             "session_id": "test-session",
         },
     )
@@ -97,7 +97,7 @@ def test_field_report_rejects_invalid_label(client):
             "operator_id": "coer_lima",
             "text": "Vía bloqueada",
             "label": "bogus_label",
-            "district_ubigeo": "150133",
+            "district_ubigeo": "150132",
         },
     )
     assert resp.status_code == 400
@@ -154,7 +154,7 @@ def test_field_report_accepts_huayco_observation(client):
             "operator_id": "coer_lima",
             "text": "Flujo de lodo en quebrada Huaycoloro avanzando hacia puente Huachipa",
             "label": "huayco_observation",
-            "district_ubigeo": "150133",
+            "district_ubigeo": "150132",
         },
     )
     assert resp.status_code == 201
