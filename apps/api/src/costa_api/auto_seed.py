@@ -705,7 +705,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                                  triage_label, triage_confidence, triage_model, triage_at,
                                  geom, district_id, expires_at)
                             VALUES (:src, :h, :content, :t, :t,
-                                    :label, :conf, 'gemma4-demo', :t,
+                                    :label, :conf, 'qwen2.5:7b-instruct-q4_K_M (demo seed)', :t,
                                     ST_SetSRID(ST_MakePoint(:lon,:lat), 4326),
                                     :did, :expires_at)
                             ON CONFLICT (content_hash) DO UPDATE
@@ -1117,7 +1117,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                              triage_label, triage_confidence, triage_model, triage_at,
                              geom, district_id, expires_at)
                         VALUES (:src, :h, :content, :t, :t,
-                                :label, :conf, 'gemma4-demo', :t,
+                                :label, :conf, 'qwen2.5:7b-instruct-q4_K_M (demo seed)', :t,
                                 ST_SetSRID(ST_MakePoint(:lon,:lat), 4326),
                                 :district_id, :expires_at)
                         ON CONFLICT (content_hash) DO UPDATE

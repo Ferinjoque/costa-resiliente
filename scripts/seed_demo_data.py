@@ -391,7 +391,7 @@ async def seed_social_signals(conn: asyncpg.Connection) -> int:
                   (source, content_hash, content_redacted, published_at, ingested_at,
                    triage_label, triage_confidence, triage_model, triage_at,
                    geom, district_id, expires_at)
-                VALUES ($1, $2, $3, $4, $4, $5, $6, 'gemma4-demo', $4,
+                VALUES ($1, $2, $3, $4, $4, $5, $6, 'qwen2.5:7b-instruct-q4_K_M (demo seed)', $4,
                         ST_SetSRID(ST_MakePoint($7, $8), 4326),
                         $9, $4 + INTERVAL '7 days')
                 """,
