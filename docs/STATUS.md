@@ -1222,3 +1222,37 @@ copilot tools, `deploy.sh` placeholders and wrong model names, `gemma4-demo` pro
 
 **Verified:** 712 API tests, 182 worker tests (8 skipped), `tsc` clean, production build 188 kB,
 9 containers healthy.
+
+### Session 24 addendum — repo hygiene, remaining advisories, demo restore
+
+**History rewrite.** The 10 `Co-Authored-By: Claude` trailers were stripped from commit messages
+with `git filter-repo` and force-pushed. All 794 commits, authors and dates are preserved and the
+tree is byte-identical to the pre-rewrite backup (local tag `backup-pre-rewrite-2026-08-23`).
+GitHub's contributor list was already Fernando-only — the trailers were text, never attribution.
+
+**Branches / PRs.** All five Dependabot PRs assessed, actioned and closed; every dependabot branch
+deleted. `develop` is now the only branch on the remote.
+
+**Dependabot alerts: 136 → 33 (0 critical).** What was fixed and what was consciously left:
+
+| Advisory | Decision |
+|---|---|
+| next 14.2.3 → 14.2.35 | ✅ fixed the **critical** middleware authorization bypass |
+| postcss → ^8.5.26 (direct + override) | ✅ fixed |
+| serialize-javascript → ^7.1.0 (override, via next-pwa → workbox) | ✅ fixed |
+| next-intl 3.14 → 4.13.7 | ✅ fixed; single provider usage, verified rendering |
+| aiohttp 3.14.3, pillow 12.3.0, idna 3.19, pydantic-settings 2.15.0, pyasn1, h2, starlette | ✅ fixed in both locks and both images |
+| cryptography 50 in workers | ❌ blocked — atproto, prefect and presidio-anonymizer cap it at 46.0.7. The API image runs 50.0.0. |
+| remaining `next` advisories | ❌ need Next 16 (two majors). DoS / cache-poisoning classes relevant to public internet exposure; not worth an App Router migration before 9 October. |
+| torch 2.13 | ❌ LOW severity, local inference on trusted rasters, would require re-validating flood segmentation |
+| image-size, ecdsa | ❌ no non-major fix published |
+
+**Demo restore fixed (was broken).** `POST /health/seed` could not bring the scenario back: the
+seed gate counted every row in `ops.alerts`, and the per-alert loop skipped existing titles
+regardless of status. Once the demo alerts had been acknowledged or closed — by a demo run, by the
+test suite, or by auto-resolution — the demo was unrecoverable. Both gates fixed, with two
+regression tests. **Before recording the demo video, run `POST /api/v1/health/seed` — the suite
+consumes demo alerts.**
+
+**Verified after all of the above:** 714 API tests, 182 worker tests (8 skipped), tsc clean,
+build 188 kB, 9 containers healthy, `/health` back to `EMERGENCIA · 7 active alerts`.
