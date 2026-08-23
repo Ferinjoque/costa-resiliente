@@ -1178,3 +1178,47 @@ docker compose build api && docker compose up -d api
 | [`IMPECCABLE_AUDIT.md`](IMPECCABLE_AUDIT.md) | Sprint 12 design audit (historical) |
 | [`phase2-submission.md`](phase2-submission.md) | IEEE Phase 2 submitted text (historical) |
 | [`../SESSION_LOG.md`](../SESSION_LOG.md) | Detailed session-by-session work log |
+
+---
+
+## Session 24 — 2026-08-23 — Repo publication, data correctness, dependency hygiene
+
+First session after an 83-day gap. Stack came back healthy with no code changes needed.
+
+**Published:** <https://github.com/Ferinjoque/costa-resiliente> — public, Apache 2.0 (full licence
+text + NOTICE; the previous `LICENSE` was a 17-line stub GitHub could not detect).
+
+**Rules re-read.** Phase 3 requires a working demonstration plus a 2–5 minute video of a real
+person using the product. It does **not** require a hosted public URL or open source. VPS
+deployment is therefore optional, and the participant guidance ("consider hosting costs") favours
+the reproducible local Compose stack. The demo video is the only hard deliverable left.
+
+**New data source — CENEPRED COEN FEN 2023.** SIGRID's portal is still SSO-gated and its WFS
+endpoint now 404s, but `sig.cenepred.gob.pe/arcgis_server` answers anonymously. `load_coen_fen.py`
+loads 144 official responder assets (3 INDECI relief warehouses + 141 PNP comisarías) into
+`geo.infrastructure`, ranked into the copilot's infrastructure tool and drawn on the map.
+
+**UBIGEO off-by-one fixed (operator-facing).** The Lima code map listed Pueblo Libre and Magdalena
+Vieja as two districts — they are one (INEI 150121) — shifting every code from 150125 onward and
+inventing 150144. San Juan de Lurigancho, the demo COEL district, was on 150133 (really San Juan
+de Miraflores). Fixed in the loader, seeds, demo data and tests, with
+`infra/postgres/migration_ubigeo_fix.sql` for existing databases and 2 regression tests. Found by
+cross-checking against CENEPRED's `id_dist` field.
+
+**San Juan de Miraflores population nulled.** It was a copy of Puente Piedra's figure and published
+INEI 2017 counts disagree across sources; exposure math skips districts with no census figure.
+
+**Test infrastructure.** Both Dockerfiles gained a `development` stage installing `.[dev]`. Until
+now pytest existed only in hand-patched long-lived containers — a rebuild silently removed the
+ability to run the suite at all.
+
+**Dependencies.** Next.js 14.2.3 → 14.2.35 (critical middleware authorization bypass) plus web
+transitives; both `uv.lock`s refreshed (aiohttp 3.14.3, pillow 12.3.0, cryptography 48.0.1/50.0.0,
+pyasn1, starlette, h2). `cryptography` stays at 46.0.7 in workers — atproto, prefect and presidio
+cap it.
+
+**Claim corrections.** `pg_cron` 7-day purge (it is the Prefect `retention-daily` flow), 8 → 9
+copilot tools, `deploy.sh` placeholders and wrong model names, `gemma4-demo` provenance label.
+
+**Verified:** 712 API tests, 182 worker tests (8 skipped), `tsc` clean, production build 188 kB,
+9 containers healthy.
