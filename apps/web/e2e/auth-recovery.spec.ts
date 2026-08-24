@@ -16,9 +16,7 @@ test("acknowledge while signed out prompts a login instead of throwing", async (
   page.on("pageerror", (e) => pageErrors.push(String(e)));
 
   await page.goto("/");
-  await page.locator("#cr-username").waitFor({ state: "visible", timeout: 15_000 });
-  // Dismiss the auto-raised prompt: we want the one the action itself raises.
-  await page.getByRole("dialog").getByRole("button", { name: /^(Cerrar|Close)$/ }).click();
+  await page.locator("canvas.maplibregl-canvas").waitFor({ state: "visible", timeout: 30_000 });
   await expect(page.locator("#cr-username")).toBeHidden();
 
   await page.locator("#driver-nav-alerts").click();
@@ -32,8 +30,7 @@ test("acknowledge while signed out prompts a login instead of throwing", async (
 test("a copilot question survives the login it triggers", async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto("/");
-  await page.locator("#cr-username").waitFor({ state: "visible", timeout: 15_000 });
-  await page.getByRole("dialog").getByRole("button", { name: /^(Cerrar|Close)$/ }).click();
+  await page.locator("canvas.maplibregl-canvas").waitFor({ state: "visible", timeout: 30_000 });
 
   await page.locator("#driver-nav-ask").click();
   const box = page.getByPlaceholder(/Escribe tu consulta|Ask about the current situation/i);

@@ -8,6 +8,7 @@
  *  - alerts: operator-facing, low latency → 30 s
  */
 
+import { useAuthStore } from "@/store/auth";
 import {
   useQuery,
   type UseQueryOptions,
@@ -265,12 +266,26 @@ export function useAlerts(
   });
 }
 
+/**
+ * Is there a session to authenticate with?
+ *
+ * The endpoints below all require one. Polling them while signed out produced a
+ * steady stream of 401s in the console and, worse, silent failures when the
+ * operator clicked an export. Subscribing to the auth store means these queries
+ * start themselves the moment a session exists.
+ */
+function useHasSession(): boolean {
+  return useAuthStore((s) => s.token !== null);
+}
+
 export function useDecisionLog(
   limit = 100,
   opts?: Partial<UseQueryOptions<DecisionLogEntry[]>>
 ): UseQueryResult<DecisionLogEntry[]> {
+  const hasSession = useHasSession();
   return useQuery({
     queryKey: ["decision-log", limit],
+    enabled: hasSession,
     queryFn: async () => {
       const data = await fetchDecisionLog(limit);
       return withDemoFallback(data, DEMO_DECISION_LOG);
@@ -423,8 +438,10 @@ export function useStations(
 export function useNotificationSubscribers(
   opts?: Partial<UseQueryOptions<NotificationSubscriber[]>>
 ): UseQueryResult<NotificationSubscriber[]> {
+  const hasSession = useHasSession();
   return useQuery({
     queryKey: ["notification-subscribers"],
+    enabled: hasSession,
     queryFn: () => fetchNotificationSubscribers(),
     staleTime: 30 * 1000,
     refetchInterval: 60 * 1000,
@@ -435,8 +452,10 @@ export function useNotificationSubscribers(
 export function useNotificationDeliveries(
   opts?: Partial<UseQueryOptions<NotificationDelivery[]>>
 ): UseQueryResult<NotificationDelivery[]> {
+  const hasSession = useHasSession();
   return useQuery({
     queryKey: ["notification-deliveries"],
+    enabled: hasSession,
     queryFn: () => fetchNotificationDeliveries(),
     staleTime: 15 * 1000,
     refetchInterval: 30 * 1000,
@@ -447,8 +466,10 @@ export function useNotificationDeliveries(
 export function usePendingProposals(
   opts?: Partial<UseQueryOptions<AlertProposal[]>>
 ): UseQueryResult<AlertProposal[]> {
+  const hasSession = useHasSession();
   return useQuery({
     queryKey: ["pending-proposals"],
+    enabled: hasSession,
     queryFn: () => fetchPendingProposals(),
     staleTime: 15 * 1000,
     refetchInterval: 30 * 1000,

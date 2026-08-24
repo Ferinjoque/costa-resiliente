@@ -257,9 +257,16 @@ export function OperatorChip() {
   if (!operator) {
     return (
       <div className="px-3 py-2 border-t border-border-subtle mt-auto">
+        {/* Says why some of the rail is locked, so the padlocks are not a
+            mystery to an operator meeting the console for the first time. */}
+        <p className="px-3 pb-1.5 text-2xs leading-snug text-ink-subtle">
+          {locale === "es"
+            ? "Modo consulta. Registro, Propuestas y Notificaciones necesitan sesión, igual que reconocer o escalar una alerta."
+            : "Read-only mode. The decision log, proposals and notifications need a session, as does acknowledging or escalating an alert."}
+        </p>
         <button
           onClick={() => setLoginModalOpen(true)}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-ink-muted hover:bg-surface-hover hover:text-ink transition-colors"
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-ink-muted hover:bg-surface-hover hover:text-ink transition-colors border border-border"
         >
           <Shield size={15} strokeWidth={1.75} aria-hidden="true" />
           <span className="flex-1 text-left">
