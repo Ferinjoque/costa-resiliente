@@ -29,15 +29,15 @@ test("no authenticated requests fire without a session", async ({ page }) => {
   expect(unauthorised, `401s while signed out: ${unauthorised.join(", ")}`).toEqual([]);
 });
 
-test("session-only panels are locked and explain themselves", async ({ page }) => {
+test("session-only panels route to the login instead of opening empty", async ({ page }) => {
   await page.goto("/");
   await page.locator("canvas.maplibregl-canvas").waitFor({ state: "visible", timeout: 30_000 });
 
-  // The rail says what needs a session rather than leaving padlocks unexplained.
-  await expect(page.locator("aside").first())
-    .toContainText(/Modo consulta|Read-only mode/i);
+  // Locked, and its tooltip says so.
+  const log = page.locator("#driver-nav-log");
+  await expect(log).toHaveAttribute("title", /inicia sesión|sign in/i);
 
-  // Clicking a locked panel asks for the session instead of opening an empty one.
-  await page.locator("#driver-nav-log").click();
+  // Clicking asks for a session rather than opening a panel with nothing in it.
+  await log.click();
   await expect(page.locator("#cr-username")).toBeVisible({ timeout: 15_000 });
 });

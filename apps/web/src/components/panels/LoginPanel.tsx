@@ -256,17 +256,10 @@ export function OperatorChip() {
 
   if (!operator) {
     return (
-      <div className="px-3 py-2 border-t border-border-subtle mt-auto">
-        {/* Says why some of the rail is locked, so the padlocks are not a
-            mystery to an operator meeting the console for the first time. */}
-        <p className="px-3 pb-1.5 text-2xs leading-snug text-ink-subtle">
-          {locale === "es"
-            ? "Modo consulta. Registro, Propuestas y Notificaciones necesitan sesión, igual que reconocer o escalar una alerta."
-            : "Read-only mode. The decision log, proposals and notifications need a session, as does acknowledging or escalating an alert."}
-        </p>
+      <div className="px-2 py-2 border-t border-border-subtle mt-auto">
         <button
           onClick={() => setLoginModalOpen(true)}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-ink-muted hover:bg-surface-hover hover:text-ink transition-colors border border-border"
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-ink-muted hover:bg-surface-hover hover:text-ink transition-colors"
         >
           <Shield size={15} strokeWidth={1.75} aria-hidden="true" />
           <span className="flex-1 text-left">
@@ -287,7 +280,7 @@ export function OperatorChip() {
   // through a browser dialog, which keeps the console self-contained.
   if (confirmingLogout) {
     return (
-      <div className="px-3 py-2 border-t border-border-subtle mt-auto">
+      <div className="px-2 py-2 border-t border-border-subtle mt-auto">
         <div className="px-3 py-2.5 rounded-xl bg-surface-hover border border-border">
           <p className="text-2xs text-ink-muted leading-snug mb-2">
             {es
@@ -317,7 +310,7 @@ export function OperatorChip() {
   }
 
   return (
-    <div className="px-3 py-2 border-t border-border-subtle mt-auto">
+    <div className="px-2 py-2 border-t border-border-subtle mt-auto">
       <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-surface-hover">
         <div className="w-7 h-7 rounded-full bg-accent/12 flex items-center justify-center shrink-0">
           <span className="text-2xs font-bold text-accent leading-none">{roleInfo.badge}</span>
