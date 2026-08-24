@@ -170,6 +170,13 @@ export default function MapView() {
     map.current = m;
     mapInstanceRef.current = m;
 
+    // Test seam. The browser suite has to read real camera state (bearing,
+    // centre, pitch) to prove the 3D idle rotation resumes from where the
+    // operator left it. Kept out of production bundles.
+    if (process.env.NODE_ENV !== "production") {
+      (window as unknown as { __crMap?: maplibregl.Map }).__crMap = m;
+    }
+
     // Navigation: moved to bottom-right (below MapRadar, clear of the HUD top-right pills).
     // Attribution: bottom-left alongside scale so it clears the MapRadar widget.
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
@@ -440,26 +447,37 @@ export default function MapView() {
         _rotStartTimer.current = null;
         if (!_is3DOn.current) return;
 
-        let bearing = m.getBearing();
         let lastInteraction = 0;
         let lastFrame = 0;
         const PAUSE_MS = 4000;
         const FRAME_MS = 33;
         const onInteract = () => { lastInteraction = Date.now(); };
+        // A user-driven camera change always carries an originalEvent; the
+        // bearing this loop writes does not. Listening to movestart catches
+        // drag, rotate, pitch, keyboard and inertia in one place.
+        const onMoveStart = (e: { originalEvent?: unknown }) => {
+          if (e && e.originalEvent) lastInteraction = Date.now();
+        };
         m.on("mousedown", onInteract);
         m.on("touchstart", onInteract);
         m.on("wheel", onInteract);
+        m.on("movestart", onMoveStart);
         _rotCleanup.current = () => {
           m.off("mousedown", onInteract);
           m.off("touchstart", onInteract);
           m.off("wheel", onInteract);
+          m.off("movestart", onMoveStart);
         };
         const rotate = (ts: number) => {
           if (!_is3DOn.current) return;
           if (ts - lastFrame >= FRAME_MS) {
             if (Date.now() - lastInteraction > PAUSE_MS) {
-              bearing = (bearing + 0.08) % 360;
-              m.setBearing(bearing);
+              // Read the live bearing every frame. Caching it in a local meant
+              // that any camera move the operator made during the pause was
+              // discarded on the next tick: the map snapped back to the bearing
+              // held from before the interaction, which reads as the camera
+              // teleporting away from wherever it was left.
+              m.setBearing((m.getBearing() + 0.08) % 360);
             }
             lastFrame = ts;
           }
