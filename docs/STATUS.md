@@ -1292,3 +1292,26 @@ wiring · live ingestion (Bluesky 147, RSS 88, IMERG 2 568, stations 2 357 rows,
 
 **The remaining deliverable is still the 2–5 minute demo video.** Run `POST /api/v1/health/seed`
 first — the API test suite acts on real alert rows and consumes the demo scenario.
+
+### Session 24 — browser tests, and what they found
+
+Frontend coverage is now three layers: 21 vitest unit tests, **14 Playwright browser tests**
+(desktop 1440×900 + Pixel 5), and the type checker. The browser suite drives the real stack rather
+than a mock, so it exercises the same path a judge will.
+
+Two defects surfaced only because a browser actually clicked through the app:
+
+1. **A stale 401 could undo a successful login.** The dashboard fires several authenticated
+   queries on mount, so an unauthenticated visitor has 401s in flight while they type their
+   password. Those late responses hit the global 401 handler and logged the operator out
+   *immediately after signing in* — intermittently, the console bounced you back to the modal.
+   Requests now carry a session generation and only sign out when the 401 belongs to the current
+   session.
+2. **Free-form copilot questions took 45 s.** CPU inference spent the entire per-call timeout
+   before the keyword fallback produced the same answer. The agent loop now has a 25 s wall-clock
+   budget covering the first call: 45.2 s → 25.3 s, identical output.
+
+Test commands are in the README. The browser suite needs the stack up, a seeded scenario, and
+`npx playwright install chromium` once.
+
+**Totals: 719 API · 182 worker · 21 unit · 14 browser.**
