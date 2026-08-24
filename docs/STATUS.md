@@ -151,7 +151,7 @@ POST   /api/v1/auth/operators
 | `hydro` | `station_observations` | live | TimescaleDB hypertable |
 | `hydro` | `imerg_accumulations` | live | 1h–72h windows per watershed |
 | `social` | `signals` | live | PII-redacted, 7-day TTL via `retention-daily` Prefect flow |
-| `ml` | `flood_polygons` | live | U-Net SAR output |
+| `ml` | `flood_polygons` | live | U-Net SAR schema; current rows are labelled synthetic (`flood-seg-v0.1-demo`, `elnino2017-fixture-v1`) |
 | `ml` | `huayco_susceptibility` | live | XGBoost output |
 | `historical` | `sinpad_events` | 2,063 | INDECI 2003–2020 |
 | `ops` | `alerts` | live | Auto-generated + operator-managed |
@@ -205,7 +205,7 @@ POST   /api/v1/auth/operators
 
 | Pipeline | Method | Output |
 |----------|--------|--------|
-| SAR flood segmentation | U-Net from Sen1Floods11 weights (Bonafilia et al. 2020) | `ml.flood_polygons` with confidence + area |
+| SAR flood segmentation | U-Net over S1 VV/VH, Sen1Floods11 architecture (Bonafilia et al. 2020) — ⚠️ inference path implemented, no publishable pretrained checkpoint exists (see data-sources.md); map shows labelled synthetic polygons | `ml.flood_polygons` with confidence + area |
 | Huayco susceptibility | XGBoost (Castro-Cabrera et al. 2024 features) | `ml.huayco_susceptibility` with risk_level |
 | Spanish signal triage | qwen2.5:7b XML-sandboxed prompts | `social.signals.triage_label` + confidence |
 

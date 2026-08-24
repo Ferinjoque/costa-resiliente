@@ -115,7 +115,7 @@ bash scripts/deploy.sh           # on a fresh Ubuntu 22/24 LTS VPS, with .env in
 
 - **Backend:** FastAPI · PostgreSQL 16 (PostGIS + TimescaleDB + pgstac + pgvector) · Redis · MinIO · Prefect 3 · Ollama (qwen2.5:7b + gemma2:2b + nomic-embed-text)
 - **Frontend:** Next.js 14 App Router · TypeScript · Tailwind · MapLibre GL · Zustand · TanStack Query · PWA
-- **ML:** U-Net (Sen1Floods11 weights), XGBoost (Castro-Cabrera 2024), Spanish LLM triage
+- **ML:** U-Net over Sentinel-1 VV/VH (Sen1Floods11 architecture), XGBoost (Castro-Cabrera 2024), Spanish LLM triage on qwen2.5:7b. See [`docs/data-sources.md`](docs/data-sources.md#ml-derived-layers) for exactly which model outputs are live and which are labelled demonstration data.
 
 ## Data sources
 
