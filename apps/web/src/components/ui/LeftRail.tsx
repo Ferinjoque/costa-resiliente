@@ -128,12 +128,6 @@ export function LeftRail() {
                     />
                     <span className="flex-1 truncate">{label[locale]}</span>
                     {badge > 0 && <Badge count={badge} variant="danger" />}
-                    <span
-                      className="hidden group-hover/navbtn:inline-block text-[9px] font-mono text-ink-muted/60 border border-border-subtle rounded px-1 py-px ml-1 leading-none"
-                      aria-hidden="true"
-                    >
-                      {shortcut}
-                    </span>
                   </button>
                 </li>
               );

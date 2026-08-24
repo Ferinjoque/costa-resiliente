@@ -109,3 +109,47 @@ test("no console errors during the core flow", async ({ page }) => {
   );
   expect(real, `console errors: ${real.join(" | ")}`).toEqual([]);
 });
+
+test("signing out does not bring the login prompt back", async ({ page }) => {
+  // Background queries poll continuously and every one of them answers 401 once
+  // the operator signs out. The prompt used to reappear seconds later, on a
+  // loop, which is what a duty officer would experience as the console nagging
+  // them.
+  test.setTimeout(60_000);
+
+  await page.getByRole("button", { name: /Cerrar sesión|Sign out/i }).first().click();
+  await page.getByRole("button", { name: /^(Salir|Sign out)$/ }).click();
+
+  await expect(page.getByRole("button", { name: /^(Iniciar sesión|Log in)$/ }).first())
+    .toBeVisible();
+
+  // Long enough for several refetch cycles to answer 401.
+  await page.waitForTimeout(20_000);
+  await expect(page.locator("#cr-username")).toBeHidden();
+});
+
+test("the login modal can be dismissed with its close button", async ({ page }) => {
+  await page.getByRole("button", { name: /Cerrar sesión|Sign out/i }).first().click();
+  await page.getByRole("button", { name: /^(Salir|Sign out)$/ }).click();
+  await page.getByRole("button", { name: /^(Iniciar sesión|Log in)$/ }).first().click();
+  await expect(page.locator("#cr-username")).toBeVisible();
+
+  await page.getByRole("dialog").getByRole("button", { name: /^(Cerrar|Close)$/ }).click();
+  await expect(page.locator("#cr-username")).toBeHidden();
+});
+
+test("hovering a rail item does not shift the alert badge", async ({ page }) => {
+  const badge = page.locator("#driver-nav-alerts span").filter({ hasText: /^\d+$/ }).first();
+  await expect(badge).toBeVisible();
+  const before = await badge.boundingBox();
+
+  await page.locator("#driver-nav-map").hover();
+  await page.waitForTimeout(300);
+  await page.locator("#driver-nav-alerts").hover();
+  await page.waitForTimeout(300);
+
+  const after = await badge.boundingBox();
+  expect(before, "badge should have a box before hover").not.toBeNull();
+  expect(after, "badge should have a box after hover").not.toBeNull();
+  expect(Math.abs((after!.x) - (before!.x)), "badge moved horizontally on hover").toBeLessThanOrEqual(1);
+});

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Shield, Eye, EyeOff, LogIn, LogOut } from "lucide-react";
+import { Shield, Eye, EyeOff, LogIn, LogOut, X } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { clsx } from "clsx";
@@ -140,16 +140,25 @@ export function LoginPanel() {
               title rather than the panel edge, and both lines stay optically
               centred against the mark. */}
           <div className="px-6 pt-6 pb-5 border-b border-border">
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-full bg-danger flex items-center justify-center shrink-0">
                 <span className="text-surface text-[11px] font-bold tracking-wide leading-none">CR</span>
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1 pt-0.5">
                 <p className="text-[15px] font-semibold text-ink leading-tight">Costa Resiliente</p>
                 <p className="text-xs text-ink-subtle leading-tight mt-1">
                   {locale === "es" ? "Acceso para operadores SINAGERD" : "SINAGERD operator access"}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={close}
+                className="-mt-1 -mr-2 p-1.5 rounded-lg text-ink-subtle hover:text-ink hover:bg-surface-hover transition-colors shrink-0"
+                title={locale === "es" ? "Cerrar" : "Close"}
+                aria-label={locale === "es" ? "Cerrar" : "Close"}
+              >
+                <X size={15} strokeWidth={1.75} aria-hidden="true" />
+              </button>
             </div>
           </div>
 
