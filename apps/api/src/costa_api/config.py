@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     llm_timeout_chat: float = 45.0   # 45s per call; CPU-only Qwen2.5-7B needs ~20-25s with 2-3 tools
     llm_timeout_embed: float = 10.0
     llm_max_tool_iters: int = 4
+    # Wall-clock budget for the whole agentic loop. CPU inference can spend the
+    # full per-call timeout on every iteration; past this point the agent answers
+    # from the rows it already has instead of making the operator wait.
+    llm_agent_budget_s: float = 25.0
     llm_daily_token_budget: int = 500_000
 
     # Legacy compat

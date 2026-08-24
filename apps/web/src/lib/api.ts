@@ -15,6 +15,25 @@ export function register401Handler(cb: () => void) {
   _on401 = cb;
 }
 
+/**
+ * Session generation. Requests issued before a login can land after it — the
+ * dashboard fires several authenticated queries the moment it mounts, and an
+ * unauthenticated visitor gets 401s back while they are still typing their
+ * password. Without this guard those late 401s ran the global handler and
+ * logged the operator out immediately after a successful sign-in.
+ *
+ * Every request captures the generation it was issued under; a 401 only signs
+ * the operator out if that generation is still current.
+ */
+let _authGeneration = 0;
+export function bumpAuthGeneration() {
+  _authGeneration += 1;
+}
+
+function handle401(generation: number) {
+  if (generation === _authGeneration) _on401?.();
+}
+
 /** Thrown by get()/post() when the server returns 429 Too Many Requests. */
 export class RateLimitError extends Error {
   retryAfter: number;
@@ -40,13 +59,14 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 async function get<T>(path: string, init?: RequestInit): Promise<T> {
+  const generation = _authGeneration;
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     signal: AbortSignal.timeout(4_000),
     headers: { Accept: "application/json", ...getAuthHeaders(), ...init?.headers },
   });
   if (res.status === 401) {
-    _on401?.();
+    handle401(generation);
     throw new AuthError(path);
   }
   if (res.status === 429) {
@@ -60,12 +80,13 @@ async function get<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function del(path: string): Promise<void> {
+  const generation = _authGeneration;
   const res = await fetch(`${BASE}${path}`, {
     method: "DELETE",
     signal: AbortSignal.timeout(30_000),
     headers: { Accept: "application/json", ...getAuthHeaders() },
   });
-  if (res.status === 401) { _on401?.(); throw new AuthError(path); }
+  if (res.status === 401) { handle401(generation); throw new AuthError(path); }
   if (res.status === 429) {
     const retryAfter = parseInt(res.headers.get("Retry-After") ?? "60", 10);
     throw new RateLimitError(retryAfter);
@@ -79,13 +100,14 @@ async function post<T>(
   timeoutMs = 30_000,
   extraHeaders?: Record<string, string>,
 ): Promise<T> {
+  const generation = _authGeneration;
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
     signal: AbortSignal.timeout(timeoutMs),
     headers: { "Content-Type": "application/json", Accept: "application/json", ...getAuthHeaders(), ...extraHeaders },
     body: JSON.stringify(body),
   });
-  if (res.status === 401) { _on401?.(); throw new AuthError(path); }
+  if (res.status === 401) { handle401(generation); throw new AuthError(path); }
   if (res.status === 429) {
     const retryAfter = parseInt(res.headers.get("Retry-After") ?? "60", 10);
     throw new RateLimitError(retryAfter);
@@ -416,12 +438,13 @@ export async function downloadAuthenticatedFile(
   filename: string,
   mimeHint?: string,
 ): Promise<boolean> {
+  const generation = _authGeneration;
   const headers: Record<string, string> = { ...getAuthHeaders() };
   if (mimeHint) headers["Accept"] = mimeHint;
   try {
     const res = await fetch(`${BASE}${path}`, { headers, signal: AbortSignal.timeout(60_000) });
     if (!res.ok) {
-      if (res.status === 401) _on401?.();
+      if (res.status === 401) handle401(generation);
       console.error(`downloadAuthenticatedFile: ${path} → ${res.status}`);
       return false;
     }

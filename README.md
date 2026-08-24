@@ -54,8 +54,12 @@ docker exec costa-prefect-worker python -m costa_workers.rag.ingest  # index pro
 ```bash
 docker exec costa-api python -m pytest --asyncio-mode=auto -q   # 719 API tests
 docker exec costa-prefect-worker python -m pytest -q            # 182 worker tests
-cd apps/web && npm test && npx tsc --noEmit                     # 21 frontend tests + types
+cd apps/web && npm test && npx tsc --noEmit                     # 21 unit tests + types
+cd apps/web && npx playwright test                              # 14 browser tests (desktop + mobile)
 ```
+
+The browser suite drives the real stack (it does not start its own server), so bring the stack up
+and seed the scenario first. Install the browser once with `npx playwright install chromium`.
 
 Web at <http://localhost:3000> · API at <http://localhost:8000> · API docs at <http://localhost:8000/docs>.
 
