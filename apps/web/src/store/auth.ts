@@ -15,6 +15,13 @@ interface AuthState {
   token: string | null;
   operator: Operator | null;
   loginModalOpen: boolean;
+  /**
+   * Stops the 401 handler from reopening the login modal. Background queries
+   * poll continuously, so every one of them answers 401 once the operator signs
+   * out or dismisses the prompt. Without this the modal reappears seconds later,
+   * over and over.
+   */
+  suppressLoginPrompt: boolean;
   setLoginModalOpen: (v: boolean) => void;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
@@ -28,7 +35,16 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   operator: null,
   loginModalOpen: false,
-  setLoginModalOpen: (v) => set({ loginModalOpen: v }),
+  suppressLoginPrompt: false,
+  // Opening the modal is always deliberate, so it clears the suppression.
+  // Closing it means the operator does not want to be asked again, unless they
+  // are signed in: dismissing the panel then says nothing about whether they
+  // want a prompt when the session eventually expires.
+  setLoginModalOpen: (v) =>
+    set((state) => ({
+      loginModalOpen: v,
+      suppressLoginPrompt: v ? false : state.token === null,
+    })),
 
   hydrate: () => {
     if (typeof window === "undefined") return;
@@ -46,7 +62,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (typeof window === "undefined") return;
       localStorage.removeItem(LS_TOKEN);
       localStorage.removeItem(LS_OPERATOR);
-      set({ token: null, operator: null, loginModalOpen: true });
+      set((state) => ({
+        token: null,
+        operator: null,
+        loginModalOpen: state.loginModalOpen || !state.suppressLoginPrompt,
+      }));
     });
   },
 
@@ -66,7 +86,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Start a new session generation so 401s from requests issued before this
     // login cannot sign the operator straight back out.
     bumpAuthGeneration();
-    set({ token: resp.access_token, operator });
+    set({ token: resp.access_token, operator, suppressLoginPrompt: false });
   },
 
   logout: () => {
@@ -75,7 +95,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.removeItem(LS_TOKEN);
       localStorage.removeItem(LS_OPERATOR);
     }
-    set({ token: null, operator: null });
+    // An explicit sign-out is not an expired session: do not prompt again until
+    // the operator asks for the login modal.
+    set({ token: null, operator: null, loginModalOpen: false, suppressLoginPrompt: true });
   },
 }));
 
