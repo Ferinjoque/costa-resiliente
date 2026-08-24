@@ -169,7 +169,7 @@ export function LeftRail() {
           />
           <SecBtn
             Icon={operator ? Webhook : Lock}
-            label={`${locale === "es" ? "Notificaciones" : "Notifications"}${operator ? " [N]" : ""}`}
+            label={locale === "es" ? "Notificaciones" : "Notifications"}
             active={activePanel === "notifications"}
             onClick={() => (operator ? setActivePanel("notifications") : promptLogin())}
           />
