@@ -13,8 +13,10 @@ import {
   Globe2,
   Webhook,
   Sparkles,
+  Lock,
 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
+import { useAuthStore } from "@/store/auth";
 import { useAlerts, useSocialSignals, usePendingProposals } from "@/lib/queries";
 import { URGENT_SOCIAL_LABELS } from "@/lib/constants";
 import { clsx } from "clsx";
@@ -33,6 +35,8 @@ interface NavItem {
   label: { es: string; en: string };
   shortcut: string;
   Icon: typeof MapIcon;
+  /** Panels whose data comes from endpoints that require a session. */
+  needsSession?: boolean;
 }
 
 const NAV: NavItem[] = [
@@ -41,12 +45,13 @@ const NAV: NavItem[] = [
   { id: "social",    label: { es: "Social",    en: "Social" }, shortcut: "S", Icon: Radio        },
   { id: "dashboard", label: { es: "Resumen",   en: "Summary"}, shortcut: "D", Icon: BarChart3    },
   { id: "ask",       label: { es: "Consultar", en: "Ask"    }, shortcut: "C", Icon: MessageSquare},
-  { id: "log",       label: { es: "Registro",  en: "Log"    }, shortcut: "L", Icon: ClipboardList},
-  { id: "proposals", label: { es: "Propuestas", en: "Proposals"}, shortcut: "P", Icon: Sparkles    },
+  { id: "log",       label: { es: "Registro",  en: "Log"    }, shortcut: "L", Icon: ClipboardList, needsSession: true },
+  { id: "proposals", label: { es: "Propuestas", en: "Proposals"}, shortcut: "P", Icon: Sparkles,     needsSession: true },
 ];
 
 export function LeftRail() {
   const { activePanel, setActivePanel, locale, setLocale, setTutorialOpen } = useUIStore();
+  const { operator, promptLogin } = useAuthStore();
   const { data: alerts = [] } = useAlerts();
   const { data: socialData } = useSocialSignals(48);
   const { data: pendingProposals = [] } = usePendingProposals();
@@ -88,9 +93,13 @@ export function LeftRail() {
         {/* Primary nav */}
         <nav className="flex-1 px-2 py-3 overflow-y-auto" aria-label="Primary navigation">
           <ul className="space-y-0.5" role="list">
-            {NAV.map(({ id, label, shortcut, Icon }) => {
+            {NAV.map(({ id, label, shortcut, Icon, needsSession }) => {
               const active = activePanel === id;
-              const badge =
+              // Locked rather than hidden: an operator should be able to see
+              // that the console has a decision log and a proposals queue before
+              // they sign in, and clicking one is how they ask for a session.
+              const locked = !!needsSession && !operator;
+              const badge = locked ? 0 :
                 id === "alerts" ? alertBadge :
                 id === "social" ? socialBadge :
                 id === "proposals" ? proposalsBadge : 0;
@@ -98,13 +107,21 @@ export function LeftRail() {
                 <li key={id}>
                   <button
                     id={`driver-nav-${id}`}
-                    onClick={() => setActivePanel(id)}
-                    aria-label={`${label[locale]} [${shortcut}]`}
-                    title={`${label[locale]} [${shortcut}]`}
+                    onClick={() => (locked ? promptLogin() : setActivePanel(id))}
+                    aria-label={locked
+                      ? `${label[locale]}. ${locale === "es" ? "Requiere sesión" : "Requires a session"}`
+                      : `${label[locale]} [${shortcut}]`}
+                    title={locked
+                      ? (locale === "es"
+                          ? `${label[locale]}: inicia sesión para acceder`
+                          : `${label[locale]}: sign in to access`)
+                      : `${label[locale]} [${shortcut}]`}
                     aria-current={active ? "page" : undefined}
                     className={clsx(
                       "group/navbtn w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors text-left",
-                      active
+                      locked
+                        ? "text-ink-subtle hover:bg-surface-hover"
+                        : active
                         ? "bg-surface-hover text-ink font-medium"
                         : "text-ink-muted hover:bg-surface-hover hover:text-ink",
                     )}
@@ -127,6 +144,7 @@ export function LeftRail() {
                       aria-hidden="true"
                     />
                     <span className="flex-1 truncate">{label[locale]}</span>
+                    {locked && <Lock size={11} strokeWidth={1.75} className="shrink-0 opacity-60" aria-hidden="true" />}
                     {badge > 0 && <Badge count={badge} variant="danger" />}
                   </button>
                 </li>
@@ -150,10 +168,10 @@ export function LeftRail() {
             onClick={() => setActivePanel("sources")}
           />
           <SecBtn
-            Icon={Webhook}
-            label={`${locale === "es" ? "Notificaciones" : "Notifications"} [N]`}
+            Icon={operator ? Webhook : Lock}
+            label={`${locale === "es" ? "Notificaciones" : "Notifications"}${operator ? " [N]" : ""}`}
             active={activePanel === "notifications"}
-            onClick={() => setActivePanel("notifications")}
+            onClick={() => (operator ? setActivePanel("notifications") : promptLogin())}
           />
           <SecBtn
             Icon={HelpCircle}
