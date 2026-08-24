@@ -1,8 +1,8 @@
 """Async SQLAlchemy engines + session factories for costa_api.
 
 Two engines:
-  engine          — full read/write, POSTGRES_USER (costa)
-  ai_engine       — SELECT-only, POSTGRES_AI_USER (costa_ai_ro)
+  engine: full read/write, POSTGRES_USER (costa)
+  ai_engine: SELECT-only, POSTGRES_AI_USER (costa_ai_ro)
                     Used exclusively by the AI tool layer. No writes possible.
 """
 
@@ -26,7 +26,7 @@ AsyncSessionFactory = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """FastAPI dependency — yields a full R/W async DB session."""
+    """FastAPI dependency: yields a full R/W async DB session."""
     async with AsyncSessionFactory() as session:
         yield session
 
@@ -44,7 +44,7 @@ AiSessionFactory = async_sessionmaker(ai_engine, expire_on_commit=False)
 
 
 async def get_ai_db() -> AsyncGenerator[AsyncSession, None]:
-    """FastAPI dependency — yields a READ-ONLY session for AI tools."""
+    """FastAPI dependency: yields a READ-ONLY session for AI tools."""
     async with AiSessionFactory() as session:
         yield session
 

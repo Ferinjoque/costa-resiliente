@@ -1,4 +1,4 @@
-"""Social signal ingestion — Bluesky, RSS, Reddit, Telegram.
+"""Social signal ingestion: Bluesky, RSS, Reddit, Telegram.
 
 Active sources:
   Bluesky:  Jetstream v2 WebSocket (wss://jetstream2.us-east.bsky.network/subscribe)
@@ -97,7 +97,7 @@ REQUEST_TIMEOUT = 20.0
 RATE_LIMIT_S = 1.5
 BLUESKY_WINDOW_S = 30
 
-# Public Telegram channels — read-only civil-defense monitoring
+# Public Telegram channels: read-only civil-defense monitoring
 TELEGRAM_CHANNELS: list[str] = [
     "Senamhi_Peru",  # SENAMHI official: weather/hydro alerts for Peru
 ]
@@ -183,7 +183,7 @@ async def ingest_bluesky_firehose(window_seconds: int = BLUESKY_WINDOW_S) -> lis
     """
     Connect to Bluesky Jetstream v2 WebSocket and collect posts for window_seconds.
     Filters app.bsky.feed.post records for Lima/Peru disaster keywords.
-    No credentials required — Jetstream is public.
+    No credentials required: Jetstream is public.
     """
     try:
         import websockets
@@ -371,7 +371,7 @@ async def ingest_telegram(
     """
     Read recent messages from INDECI Peru and COER Lima Telegram channels.
     Requires TELEGRAM_API_ID and TELEGRAM_API_HASH env vars.
-    Read-only access only — no messages are ever sent.
+    Read-only access only: no messages are ever sent.
     """
     api_id = os.getenv("TELEGRAM_API_ID")
     api_hash = os.getenv("TELEGRAM_API_HASH")

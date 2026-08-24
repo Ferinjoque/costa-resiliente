@@ -1,4 +1,4 @@
-# generate_pmtiles.ps1 — Generate Lima Metropolitana PMTiles basemap via Planetiler
+# generate_pmtiles.ps1: Generate Lima Metropolitana PMTiles basemap via Planetiler
 #
 # Prerequisites: Docker Desktop, curl (built into Windows 10+)
 #
@@ -31,7 +31,7 @@ if (-not (Test-Path $OsmExtract)) {
     Write-Host "[pmtiles] Downloading OSM Peru extract (~60 MB)..."
     curl.exe -L --progress-bar $OsmUrl -o $OsmExtract
 } else {
-    Write-Host "[pmtiles] OSM extract already at $OsmExtract — skipping download"
+    Write-Host "[pmtiles] OSM extract already at $OsmExtract: skipping download"
 }
 
 # ─── Step 2: Run Planetiler ───────────────────────────────────────────────────

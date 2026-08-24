@@ -33,7 +33,7 @@ const T = {
     validUntil:  (d: string) => `Válido hasta ${d}`,
     validDays:   "Válido por 30 días",
     error:       "No se pudo generar el enlace. Intenta de nuevo.",
-    readOnly:    "Solo lectura — los receptores no pueden modificar alertas ni el registro.",
+    readOnly:    "Solo lectura: los receptores no pueden modificar alertas ni el registro.",
     none:        "Ninguno",
   },
   en: {
@@ -55,7 +55,7 @@ const T = {
     validUntil:  (d: string) => `Valid until ${d}`,
     validDays:   "Valid for 30 days",
     error:       "Failed to generate link. Please try again.",
-    readOnly:    "Read-only — recipients cannot modify alerts or the decision log.",
+    readOnly:    "Read-only: recipients cannot modify alerts or the decision log.",
     none:        "None",
   },
 };
@@ -108,7 +108,7 @@ export function SharePanel() {
       setShareUrl(res.url);
       setExpiresAt(res.expires_at ?? null);
     } catch {
-      // Offline fallback — encode state in URL so ShareLoader can hydrate it.
+      // Offline fallback: encode state in URL so ShareLoader can hydrate it.
       // Warn the operator: this link has no server-side expiry (permanent).
       const state = btoa(JSON.stringify({
         districtUbigeo:  scenario.districtUbigeo,
@@ -124,8 +124,8 @@ export function SharePanel() {
       setShareUrl(`${base}?state=${state}`);
       setExpiresAt(null);
       setError(locale === "es"
-        ? "Enlace generado sin servidor — permanente (sin expiración)."
-        : "Link generated offline — permanent (no expiry).");
+        ? "Enlace generado sin servidor: permanente (sin expiración)."
+        : "Link generated offline: permanent (no expiry).");
     } finally {
       setLoading(false);
     }
@@ -193,7 +193,7 @@ export function SharePanel() {
         {/* Description */}
         <p className="text-sm text-ink-muted leading-relaxed">{t.desc}</p>
 
-        {/* Generate / Regenerate button — primary action at top */}
+        {/* Generate / Regenerate button: primary action at top */}
         <Button
           variant="primary"
           size="md"

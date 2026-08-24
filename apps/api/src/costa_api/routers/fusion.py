@@ -1,4 +1,4 @@
-"""Multi-hazard fusion endpoint — joins flood × huayco × social × population per district."""
+"""Multi-hazard fusion endpoint: joins flood × huayco × social × population per district."""
 
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ def _risk_prose_es(
     if rainfall_72h is not None and rainfall_level in ("emergencia", "alerta"):
         ws_note = f" cuenca {rainfall_ws}" if rainfall_ws else ""
         level_tag = "⚠ EMERGENCIA" if rainfall_level == "emergencia" else "ALERTA"
-        parts.append(f"Lluvia 72h{ws_note}: {rainfall_72h:.0f} mm — {level_tag}")
+        parts.append(f"Lluvia 72h{ws_note}: {rainfall_72h:.0f} mm, {level_tag}")
 
     if social_total > 0:
         parts.append(
@@ -94,12 +94,12 @@ def _risk_prose_en(
         parts.append(
             f"{RISK_EN.get(huayco_risk, huayco_risk)} mudslide risk{prob_str}"
         )
-    # When huayco_risk is None, omit — FusionCallout shows data_status="not_computed" separately.
+    # When huayco_risk is None, omit. FusionCallout shows data_status="not_computed" separately.
 
     if rainfall_72h is not None and rainfall_level in ("emergencia", "alerta"):
         ws_note = f" {rainfall_ws} watershed" if rainfall_ws else ""
         level_tag = "⚠ EMERGENCY" if rainfall_level == "emergencia" else "ALERT"
-        parts.append(f"72h{ws_note} rainfall: {rainfall_72h:.0f} mm — ANA {level_tag}")
+        parts.append(f"72h{ws_note} rainfall: {rainfall_72h:.0f} mm. ANA {level_tag}")
 
     if social_total > 0:
         parts.append(

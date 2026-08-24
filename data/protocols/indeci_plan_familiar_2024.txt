@@ -1,5 +1,5 @@
-PLAN FAMILIAR DE EMERGENCIA — INDECI 2024
-Instituto Nacional de Defensa Civil — República del Perú
+PLAN FAMILIAR DE EMERGENCIA: INDECI 2024
+Instituto Nacional de Defensa Civil: República del Perú
 
 INTRODUCCIÓN
 
@@ -8,7 +8,7 @@ El Plan Familiar de Emergencia es una herramienta fundamental para preparar a la
 PASO 1: RECONOCE LOS PELIGROS DE TU ZONA
 
 Identifica los peligros naturales que pueden afectar tu vivienda:
-- Inundaciones: ocurren cuando los ríos Rímac, Chillón o Lurín se desbordan, especialmente durante El Niño Costero (diciembre–marzo).
+- Inundaciones: ocurren cuando los ríos Rímac, Chillón o Lurín se desbordan, especialmente durante El Niño Costero (diciembre: marzo).
 - Huaycos: flujos de lodo y rocas por quebradas activas. Las más peligrosas en Lima son: Quebrada Pedregal (Carabayllo), Quebrada Quirio (Chosica), Quebrada Carossio (Chosica), Quebrada Huaycoloro (Lurigancho-Chosica).
 - Sismos: Lima está en zona sísmica activa. Aplica "Triángulo de Vida" o "Agáchate, Cúbrete y Sujétate".
 - Tsunami: solo en distritos costeros (Callao, Miraflores, San Isidro, Barranco, Chorrillos).
@@ -44,7 +44,7 @@ PASO 5: PRACTICA CON TU FAMILIA
 
 Realiza simulacros al menos dos veces al año:
 - Simulacro de evacuación por sismo: 28 de octubre (Día del Simulacro Nacional).
-- Simulacro de inundación: coordina con tu municipio durante octubre–noviembre.
+- Simulacro de inundación: coordina con tu municipio durante octubre, noviembre.
 - Enseña a los niños cómo llamar al 119 (INDECI) y al 105 (Policía Nacional).
 
 NIVELES DE ALERTA SINAGERD
@@ -65,7 +65,7 @@ NÚMEROS DE EMERGENCIA
 
 DURANTE UNA INUNDACIÓN
 
-1. No cruces zonas inundadas a pie ni en vehículo — 15 cm de agua puede derribar a un adulto.
+1. No cruces zonas inundadas a pie ni en vehículo, 15 cm de agua puede derribar a un adulto.
 2. Corta la energía eléctrica desde el tablero (nunca toques cables mojados).
 3. Sube tus pertenencias y alimentos a los pisos superiores.
 4. Escucha la radio para instrucciones del INDECI y tu municipio.

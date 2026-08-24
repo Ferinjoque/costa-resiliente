@@ -1,4 +1,4 @@
-"""Map layer data endpoints — IMERG, SAR flood, huayco, infrastructure, stations."""
+"""Map layer data endpoints: IMERG, SAR flood, huayco, infrastructure, stations."""
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -58,7 +58,7 @@ async def imerg_latest(
 ) -> dict[str, Any]:
     """
     Latest IMERG rainfall accumulations per watershed.
-    Returns a GeoJSON FeatureCollection — one Feature per watershed,
+    Returns a GeoJSON FeatureCollection: one Feature per watershed,
     with accumulation values attached as properties.
     Supports replay mode via ?at=YYYY-MM-DD.
     """
@@ -69,7 +69,7 @@ async def imerg_latest(
         where_clause = "AND ia.watershed_id = :watershed_id"
         params["watershed_id"] = watershed_id
 
-    # Actual data freshness — time of the most recent IMERG record in DB
+    # Actual data freshness: time of the most recent IMERG record in DB
     await db.execute(text("SET LOCAL statement_timeout = '15000'"))
     freshness_row = await db.execute(
         text("SELECT MAX(time) FROM hydro.imerg_accumulations")
@@ -283,10 +283,10 @@ async def hazard_zones(
     loaded_sources = source_row.scalar() or []
     if loaded_sources and loaded_sources != [None]:
         if any("sinpad" in (s or "") for s in loaded_sources):
-            src_name = "INDECI SINPAD 2003–2020 (densidad histórica de eventos)"
+            src_name = "INDECI SINPAD 2003-2020 (densidad histórica de eventos)"
             src_url = "https://sinpad2.indeci.gob.pe"
         else:
-            src_name = "CENEPRED SIGRID — Cartografía de Peligros"
+            src_name = "CENEPRED SIGRID: Cartografía de Peligros"
             src_url = "https://sigrid.cenepred.gob.pe"
     else:
         src_name = "CENEPRED SIGRID"
@@ -517,7 +517,7 @@ async def quebradas(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
 
 @router.get("/flood/exposure")
 async def flood_exposure(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
-    """Population at risk — spatial join of recent flood polygons × districts.
+    """Population at risk: spatial join of recent flood polygons × districts.
     Only includes flood polygons acquired within the last 7 days to avoid
     accumulating stale/historical flood extents into the population estimate."""
     await db.execute(text("SET LOCAL statement_timeout = '30000'"))
@@ -574,7 +574,7 @@ async def social_signals(
     label: str | None = Query(None, description="Filter by triage_label"),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    """Social signal pins — GeoJSON FeatureCollection for map layer."""
+    """Social signal pins: GeoJSON FeatureCollection for map layer."""
     if label is not None and label not in _SIGNAL_LABELS:
         raise HTTPException(400, f"Invalid label. Must be one of: {sorted(_SIGNAL_LABELS)}")
     params: dict = {"hours": hours}
@@ -650,7 +650,7 @@ async def shelters(
 ) -> dict[str, Any]:
     """INDECI-designated Lima Metropolitana evacuation shelters (static layer).
 
-    Returns GeoJSON FeatureCollection — one point per shelter with capacity,
+    Returns GeoJSON FeatureCollection: one point per shelter with capacity,
     type, and district info. Used by operators to identify the nearest safe
     evacuation destination after population-at-risk alerts.
     """
@@ -672,7 +672,7 @@ async def shelters(
     rows = result.mappings().all()
     return {
         "type": "FeatureCollection",
-        "source": "INDECI — Albergues y Refugios Lima Metropolitana (estático)",
+        "source": "INDECI: Albergues y Refugios Lima Metropolitana (estático)",
         "source_url": "https://www.indeci.gob.pe",
         "retrieved_at": _now_iso(),
         "count": len(rows),

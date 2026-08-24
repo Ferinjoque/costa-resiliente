@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * TutorialOverlay — cinematic El Niño 2017 event simulation.
+ * TutorialOverlay: cinematic El Niño 2017 event simulation.
  *
  * Each step flies the camera to a meaningful vantage point over Lima,
  * activates the relevant layers, and shows data-driven metrics from the
@@ -41,9 +41,9 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
   const step0: DriveStep = {
     element: "#driver-scenario-panel",
     popover: {
-      title: es ? "El Niño Costero 2017 — Simulación operativa" : "El Niño Costero 2017 — Operational Simulation",
+      title: es ? "El Niño Costero 2017, Simulación operativa" : "El Niño Costero 2017, Operational Simulation",
       description: es ? `
-        <span class="cr-tour-ts">Enero–Abril 2017 · SINPAD / COER Lima</span>
+        <span class="cr-tour-ts">Enero: Abril 2017 · SINPAD / COER Lima</span>
         <div class="cr-tour-metrics">
           <div class="cr-tour-metric cr-tour-metric--crit">
             <span class="cr-tour-num">2&thinsp;063</span>
@@ -69,7 +69,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
           <span class="cr-tour-badge">COER Lima</span>
         </div>
       ` : `
-        <span class="cr-tour-ts">January–April 2017 · SINPAD / COER Lima</span>
+        <span class="cr-tour-ts">January: April 2017 · SINPAD / COER Lima</span>
         <div class="cr-tour-metrics">
           <div class="cr-tour-metric cr-tour-metric--crit">
             <span class="cr-tour-num">2,063</span>
@@ -102,7 +102,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
   const step1: DriveStep = {
     element: "#driver-layer-imerg",
     popover: {
-      title: es ? "1 — Lluvia acumulada (IMERG 72 h)" : "1 — Accumulated Rainfall (IMERG 72 h)",
+      title: es ? "1, Lluvia acumulada (IMERG 72 h)" : "1, Accumulated Rainfall (IMERG 72 h)",
       description: es ? `
         <span class="cr-tour-ts">15 Mar 2017 · NASA IMERG Late v07</span>
         <div class="cr-tour-metrics">
@@ -149,7 +149,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
   const step2: DriveStep = {
     element: "#driver-layer-flood",
     popover: {
-      title: es ? "2 — Inundaciones detectadas por SAR" : "2 — SAR-Detected Floods",
+      title: es ? "2, Inundaciones detectadas por SAR" : "2, SAR-Detected Floods",
       description: es ? `
         <span class="cr-tour-ts">22 Mar 2017 · Sentinel-1A · Sen1Floods11 U-Net</span>
         <div class="cr-tour-metrics">
@@ -198,9 +198,9 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
   const step3: DriveStep = {
     element: "#driver-layer-hazard",
     popover: {
-      title: es ? "3 — Zonas de peligro histórico (SINPAD)" : "3 — Historical Hazard Zones (SINPAD)",
+      title: es ? "3, Zonas de peligro histórico (SINPAD)" : "3, Historical Hazard Zones (SINPAD)",
       description: es ? `
-        <span class="cr-tour-ts">2003–2020 · INDECI SINPAD · 2 063 eventos</span>
+        <span class="cr-tour-ts">2003-2020 · INDECI SINPAD · 2 063 eventos</span>
         <div class="cr-tour-metrics">
           <div class="cr-tour-metric cr-tour-metric--crit">
             <span class="cr-tour-num">muy_alto</span>
@@ -219,7 +219,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
           <span class="cr-tour-badge">CENEPRED</span>
         </div>
       ` : `
-        <span class="cr-tour-ts">2003–2020 · INDECI SINPAD · 2,063 events</span>
+        <span class="cr-tour-ts">2003-2020 · INDECI SINPAD · 2,063 events</span>
         <div class="cr-tour-metrics">
           <div class="cr-tour-metric cr-tour-metric--crit">
             <span class="cr-tour-num">very_high</span>
@@ -245,7 +245,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
   const step4: DriveStep = {
     element: "#driver-nav-alerts",
     popover: {
-      title: es ? "4 — Alertas operacionales SINAGERD" : "4 — SINAGERD Operational Alerts",
+      title: es ? "4, Alertas operacionales SINAGERD" : "4, SINAGERD Operational Alerts",
       description: es ? `
         <span class="cr-tour-ts">22 Mar 2017 18:41 PET · Motor de fusión CR</span>
         <div class="cr-tour-metrics">
@@ -292,7 +292,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
   const step5: DriveStep = {
     element: "#driver-nav-proposals",
     popover: {
-      title: es ? "5 — Propuestas HITL (cuatro ojos)" : "5 — HITL Proposals (4-eyes rule)",
+      title: es ? "5, Propuestas HITL (cuatro ojos)" : "5, HITL Proposals (4-eyes rule)",
       description: es ? `
         <span class="cr-tour-ts">Motor de propuestas · Modelo local Ollama</span>
         <div class="cr-tour-metrics">
@@ -341,7 +341,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
   const step6: DriveStep = {
     element: "#driver-nav-ask",
     popover: {
-      title: es ? "6 — Copiloto operacional (9 herramientas)" : "6 — Operational Copilot (9 tools)",
+      title: es ? "6, Copiloto operacional (9 herramientas)" : "6, Operational Copilot (9 tools)",
       description: es ? `
         <span class="cr-tour-ts">Modo rápido · Sin LLM · ~6 s · SITREP en 1 consulta · 6 herramientas</span>
         <div class="cr-tour-metrics">
@@ -356,7 +356,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
             <span class="cr-tour-lbl">modo SITREP</span>
           </div>
         </div>
-        <p class="cr-tour-body">Prueba: <em>«Dame el resumen completo de la situación»</em> — llama 6 herramientas secuenciales (alertas + lluvia + ríos + SAR + huayco + señales sociales) y produce un SITREP estructurado sin LLM con contexto de distritos.</p>
+        <p class="cr-tour-body">Prueba: <em>«Dame el resumen completo de la situación»</em>, llama 6 herramientas secuenciales (alertas + lluvia + ríos + SAR + huayco + señales sociales) y produce un SITREP estructurado sin LLM con contexto de distritos.</p>
         <div class="cr-tour-badges">
           <span class="cr-tour-badge">sitrep</span>
           <span class="cr-tour-badge">inundaciones</span>
@@ -377,7 +377,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
             <span class="cr-tour-lbl">SITREP mode</span>
           </div>
         </div>
-        <p class="cr-tour-body">Try: <em>"Situation report please"</em> — calls 6 tools sequentially (alerts + rainfall + rivers + SAR + huayco + social signals) and produces a structured SITREP with district context, without the LLM.</p>
+        <p class="cr-tour-body">Try: <em>"Situation report please"</em>, calls 6 tools sequentially (alerts + rainfall + rivers + SAR + huayco + social signals) and produces a structured SITREP with district context, without the LLM.</p>
         <div class="cr-tour-badges">
           <span class="cr-tour-badge">sitrep</span>
           <span class="cr-tour-badge">floods</span>
@@ -392,7 +392,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
   const step7: DriveStep = {
     element: "#driver-layer-social",
     popover: {
-      title: es ? "7 — Señales sociales geolocalizadas" : "7 — Geolocated Social Signals",
+      title: es ? "7, Señales sociales geolocalizadas" : "7, Geolocated Social Signals",
       description: es ? `
         <span class="cr-tour-ts">Bluesky · Reddit · Telegram · Gemma 3 triaje</span>
         <div class="cr-tour-metrics">
@@ -407,7 +407,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
             <span class="cr-tour-lbl">PII anonimizado</span>
           </div>
         </div>
-        <p class="cr-tour-body">Vecinos reportando en tiempo real. Gemma 3 clasifica urgencia. Microsoft Presidio anonimiza PII. Los pines en el mapa muestran clusters de solicitudes de ayuda — entrada directa al operador de guardia.</p>
+        <p class="cr-tour-body">Vecinos reportando en tiempo real. Gemma 3 clasifica urgencia. Microsoft Presidio anonimiza PII. Los pines en el mapa muestran clusters de solicitudes de ayuda, entrada directa al operador de guardia.</p>
         <div class="cr-tour-badges">
           <span class="cr-tour-badge cr-tour-badge--crit">needs_help</span>
           <span class="cr-tour-badge cr-tour-badge--warn">infraestructura</span>
@@ -427,7 +427,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
             <span class="cr-tour-lbl">PII anonymized</span>
           </div>
         </div>
-        <p class="cr-tour-body">Residents reporting in real time. Gemma 3 classifies urgency. Microsoft Presidio anonymizes PII. Map pins show help-request clusters — direct input to the duty operator.</p>
+        <p class="cr-tour-body">Residents reporting in real time. Gemma 3 classifies urgency. Microsoft Presidio anonymizes PII. Map pins show help-request clusters, direct input to the duty operator.</p>
         <div class="cr-tour-badges">
           <span class="cr-tour-badge cr-tour-badge--crit">needs_help</span>
           <span class="cr-tour-badge cr-tour-badge--warn">infrastructure</span>

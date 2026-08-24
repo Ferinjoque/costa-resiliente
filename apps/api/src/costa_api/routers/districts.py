@@ -105,7 +105,7 @@ async def list_districts(
 @router.get("/risk-summary")
 async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """
-    Lightweight risk summary for all districts — used to color-fill the map.
+    Lightweight risk summary for all districts: used to color-fill the map.
     Returns GeoJSON FeatureCollection with risk_level + key metrics per district.
     Includes rainfall alerts via watershed intersection (pre-computed CTE, 3 watersheds).
     """
@@ -274,7 +274,7 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
 
     await db.execute(text("SET LOCAL statement_timeout = '10000'"))
 
-    # Active alerts — district-specific + rainfall alerts for intersecting watersheds
+    # Active alerts: district-specific + rainfall alerts for intersecting watersheds
     # Rainfall alerts have district_id = NULL (watershed-level), so we include them
     # separately when the watershed intersects this district.
     alerts_result = await db.execute(
@@ -308,7 +308,7 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
 
     # Alerts 7-day trend (count per day by severity).
     # Includes district-specific alerts AND watershed rainfall alerts that spatially
-    # intersect the district (rainfall alerts have district_id=NULL — UNION captures them).
+    # intersect the district (rainfall alerts have district_id=NULL: UNION captures them).
     trend_result = await db.execute(
         text("""
             SELECT
@@ -423,7 +423,7 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
 
     # SINPAD historical event count (table may not exist if load_sinpad.py not run)
     # Use ubigeo exact-match (indexed) when available; fall back to exact case-insensitive
-    # district name. Prior substring match ('%name%') overcounted — "Lima" matched all
+    # district name. Prior substring match ('%name%') overcounted: "Lima" matched all
     # entries containing "lima" (Lima, La Molina, etc.), inflating historical risk counts.
     try:
         sinpad_result = await db.execute(

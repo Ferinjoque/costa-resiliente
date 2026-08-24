@@ -72,7 +72,7 @@ export function LeftRail() {
         {/* Brand mark */}
         <div className="px-5 pt-5 pb-4 border-b border-border-subtle">
           <div className="flex items-center gap-2.5">
-            {/* Logo mark — simple circle with initial */}
+            {/* Logo mark: simple circle with initial */}
             <div className="w-7 h-7 rounded-full bg-danger flex items-center justify-center shrink-0">
               <span className="text-surface text-xs font-bold leading-none">CR</span>
             </div>

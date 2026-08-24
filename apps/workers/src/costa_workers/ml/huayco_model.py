@@ -4,16 +4,16 @@ Methodology: Castro-Cabrera et al. (2024), "A Comparative Study of Susceptibilit
 and Hazard for Mass Movements ... Northern Lima Commonwealth, Peru",
 Geosciences 14(6):168. DOI:10.3390/geosciences14060168
 
-Features (9 total — Castro-Cabrera Table 2 + IMERG rainfall):
-  slope_deg             — terrain slope in degrees (DEM-derived)
-  aspect_deg            — slope aspect in degrees (0–360, 0=North)
-  lithology_class       — integer code 0–5 (INGEMMET 100k map)
-  distance_to_stream_m  — Euclidean distance to nearest stream (m)
-  ndvi                  — Normalized Difference Vegetation Index (Sentinel-2)
-  soil_moisture         — SMAP L3 volumetric (m³/m³)
-  rain_24h_mm           — IMERG 24h accumulation (mm)
-  rain_72h_mm           — IMERG 72h accumulation (mm)
-  rain_7d_mm            — IMERG 7d accumulation (mm)
+Features (9 total. Castro-Cabrera Table 2 + IMERG rainfall):
+  slope_deg: terrain slope in degrees (DEM-derived)
+  aspect_deg: slope aspect in degrees (0-360, 0=North)
+  lithology_class: integer code 0-5 (INGEMMET 100k map)
+  distance_to_stream_m: Euclidean distance to nearest stream (m)
+  ndvi: Normalized Difference Vegetation Index (Sentinel-2)
+  soil_moisture: SMAP L3 volumetric (m³/m³)
+  rain_24h_mm: IMERG 24h accumulation (mm)
+  rain_72h_mm: IMERG 72h accumulation (mm)
+  rain_7d_mm: IMERG 7d accumulation (mm)
 
 Risk levels (matching Castro-Cabrera susceptibility classes):
   < 0.2  → very_low
@@ -147,7 +147,7 @@ def _slope_heuristic(X: np.ndarray) -> np.ndarray:
     """
     Slope+rainfall heuristic used when model weights are absent.
     slope_deg (col 0), rain_24h_mm (col 6): jointly drive susceptibility.
-    Not calibrated — development/smoke-testing only.
+    Not calibrated: development/smoke-testing only.
     """
     slope_norm = np.clip(X[:, 0] / 45.0, 0, 1)
     rain_norm  = np.clip(X[:, 6] / 50.0, 0, 1)
@@ -176,7 +176,7 @@ class HuaycoModel:
 
         if not self.weights_path.exists():
             logger.warning(
-                "Huayco weights not found at %s — using slope heuristic fallback",
+                "Huayco weights not found at %s: using slope heuristic fallback",
                 self.weights_path,
             )
             return
@@ -239,7 +239,7 @@ class HuaycoModel:
             return np.array([], dtype=np.float32)
 
         X = features_to_matrix(features)
-        # Clamp to physically valid ranges — guards against DEM / sensor noise in DB.
+        # Clamp to physically valid ranges: guards against DEM / sensor noise in DB.
         # Order must match FEATURE_NAMES: slope, aspect, lithology, dist_stream,
         # ndvi, soil_moisture, rain_24h, rain_72h, rain_7d
         _MINS = np.array([ 0.0,   0.0, 0,    0.0, -1.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32)
@@ -273,9 +273,9 @@ async def run_huayco_susceptibility(db_dsn: str, model: HuaycoModel) -> list[dic
     and upsert results into ml.huayco_susceptibility.
 
     Feature sources:
-      slope/aspect/lithology/distance — geo.quebradas static columns
-      ndvi/soil_moisture              — geo.quebradas (updated by Sentinel-2 worker)
-      rain_*                          — hydro.imerg_accumulations LATERAL join
+      slope/aspect/lithology/distance: geo.quebradas static columns
+      ndvi/soil_moisture: geo.quebradas (updated by Sentinel-2 worker)
+      rain_*: hydro.imerg_accumulations LATERAL join
     """
     import asyncpg
     import json

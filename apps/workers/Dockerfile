@@ -16,7 +16,7 @@ ENV GDAL_CONFIG=/usr/bin/gdal-config
 
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# Install spaCy Spanish model (separate layer — rarely changes)
+# Install spaCy Spanish model (separate layer: rarely changes)
 RUN pip install --no-cache-dir spacy && \
     python -m spacy download es_core_news_sm
 

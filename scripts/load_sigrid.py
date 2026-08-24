@@ -1,5 +1,5 @@
 """
-load_sigrid.py — Load CENEPRED SIGRID hazard zone polygons into geo.hazard_zones.
+load_sigrid.py: Load CENEPRED SIGRID hazard zone polygons into geo.hazard_zones.
 
 CENEPRED SIGRID is Peru's national disaster risk information system.
 This script fetches flood and landslide/huayco hazard polygons for the Lima
@@ -9,7 +9,7 @@ Data source: https://sigrid.cenepred.gob.pe / https://sig.cenepred.gob.pe
 License: Datos Abiertos del Estado Peruano (open government data)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-MODE 1 — ArcGIS REST (recommended, requires session token):
+MODE 1. ArcGIS REST (recommended, requires session token):
 
   Step 1: Log into https://sigrid.cenepred.gob.pe/sigridv3/mapa
   Step 2: Open DevTools → Network → copy any "token=..." value from
@@ -24,12 +24,12 @@ MODE 1 — ArcGIS REST (recommended, requires session token):
     --arcgis-service Cartografia_Peligros   (default)
     --arcgis-service Informacion_CENEPRED
 
-MODE 2 — Local shapefile (if you downloaded from SIGRID's export):
+MODE 2. Local shapefile (if you downloaded from SIGRID's export):
 
   python scripts/load_sigrid.py --shapefile path/to/hazard.shp \\
       --hazard-type flood --level muy_alto
 
-MODE 3 — WFS / IDEPeru auto (usually unreachable — government infra is down):
+MODE 3, WFS / IDEPeru auto (usually unreachable, government infra is down):
 
   python scripts/load_sigrid.py   (tries WFS then IDEPeru direct URLs)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -72,7 +72,7 @@ SIGRID_LAYERS = [
 ]
 
 # Alternative direct download URLs (IDEPeru / CENEPRED open data)
-# These are stable GeoJSON/Shapefile exports — use if WFS is unreachable.
+# These are stable GeoJSON/Shapefile exports: use if WFS is unreachable.
 CENEPRED_DIRECT_URLS = [
     # Flood hazard Lima (IDEPeru portal)
     "https://www.geoidep.gob.pe/api/v2/collections/peligro_inundacion_muyalto/items?bbox=-77.2,-12.5,-76.7,-11.7&f=geojson&limit=5000",
@@ -87,7 +87,7 @@ ARCGIS_BASE = "https://sig.cenepred.gob.pe/arcgis_server/rest/services/sigrid"
 HAZARD_KEYWORDS = ["peligro", "inundacion", "inundación", "deslizamiento",
                    "huayco", "movimiento", "riesgo", "aluvion", "aluvión"]
 
-# Lima bounding box in WGS84 — passed as esriGeometryEnvelope with inSR=4326
+# Lima bounding box in WGS84: passed as esriGeometryEnvelope with inSR=4326
 LIMA_ENVELOPE = {
     "xmin": -77.2, "ymin": -12.5,
     "xmax": -76.7, "ymax": -11.7,
@@ -420,7 +420,7 @@ def main():
 
     # ── Mode 0: ArcGIS REST with session token ────────────────────────────────
     if args.arcgis_token:
-        log.info("Mode: ArcGIS REST — service=%s", args.arcgis_service)
+        log.info("Mode: ArcGIS REST, service=%s", args.arcgis_service)
         results = fetch_arcgis_service(args.arcgis_service, args.arcgis_token)
         if not results:
             log.error("No hazard layers found or all were empty. Try --arcgis-service Informacion_CENEPRED")
@@ -471,7 +471,7 @@ def main():
                         break
 
         if gdf is None:
-            log.warning("Skipping %s/%s — no data source available", hazard_type, level)
+            log.warning("Skipping %s/%s: no data source available", hazard_type, level)
             continue
 
         if not args.dry_run:

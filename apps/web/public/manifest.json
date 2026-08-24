@@ -1,5 +1,5 @@
 {
-  "name": "Costa Resiliente — Lima Metropolitana",
+  "name": "Costa Resiliente: Lima Metropolitana",
   "short_name": "Costa Resiliente",
   "description": "Plataforma de conciencia situacional en tiempo real para inundaciones y huaycos en Lima Metropolitana",
   "start_url": "/",
@@ -56,14 +56,14 @@
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Vista de escritorio — mapa de riesgo y alertas"
+      "label": "Vista de escritorio: mapa de riesgo y alertas"
     },
     {
       "src": "/screenshot-narrow.png",
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Vista móvil — feed de alertas"
+      "label": "Vista móvil: feed de alertas"
     }
   ]
 }

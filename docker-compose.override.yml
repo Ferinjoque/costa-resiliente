@@ -22,7 +22,7 @@ services:
       PYTHONPATH: /app/src
 
   # Long-running serve() runner: registers all deployments AND executes them inline.
-  # serve() polls Prefect server and runs flows in-process — no work pool needed.
+  # serve() polls Prefect server and runs flows in-process, no work pool needed.
   prefect-deploy:
     build:
       context: apps/workers

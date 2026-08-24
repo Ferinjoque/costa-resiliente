@@ -18,7 +18,7 @@ AUTH = {"X-Testing-Operator": "1:test-op:coer"}
 
 @pytest.mark.asyncio
 async def test_list_proposals_unauthenticated_returns_401():
-    """Proposals list is operator-only — no auth header → 401."""
+    """Proposals list is operator-only: no auth header → 401."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         resp = await c.get("/api/v1/proposals")
     assert resp.status_code == 401
@@ -26,7 +26,7 @@ async def test_list_proposals_unauthenticated_returns_401():
 
 @pytest.mark.asyncio
 async def test_create_proposal_unauthenticated_returns_401():
-    """Create is operator-only — no auth header → 401 (prevents queue spam)."""
+    """Create is operator-only: no auth header → 401 (prevents queue spam)."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         resp = await c.post(
             "/api/v1/proposals",
@@ -71,7 +71,7 @@ async def test_create_proposal_then_approve_inserts_alert():
         assert created.status_code == 201
         pid = created.json()["id"]
 
-        # Approve (operator-gated — requires auth)
+        # Approve (operator-gated: requires auth)
         approve = await c.post(
             f"/api/v1/proposals/{pid}/approve",
             json={"operator_id": "coen_lima", "notes": "Session 6 audit"},
@@ -120,7 +120,7 @@ async def test_approve_unknown_proposal_404():
 
 @pytest.mark.asyncio
 async def test_double_approve_second_returns_404():
-    """Approve the same proposal twice — second approval must return 404
+    """Approve the same proposal twice: second approval must return 404
     (atomic UPDATE WHERE status='pending' only matches once)."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         created = await c.post(
@@ -130,7 +130,7 @@ async def test_double_approve_second_returns_404():
                 "alert_type": "flood",
                 "district_ubigeo": "150101",
                 "title": "Double-approve race test",
-                "summary": "Automated test — double approve",
+                "summary": "Automated test: double approve",
             },
             headers=AUTH,
         )
@@ -216,7 +216,7 @@ async def test_reject_proposal_locks_status():
 async def test_create_proposal_invalid_ubigeo_returns_400():
     """Providing a district_ubigeo not in geo.districts must return 400.
 
-    Prevents creating district-less alerts silently — operators must use a
+    Prevents creating district-less alerts silently, operators must use a
     valid ubigeo or omit the field entirely.
     """
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
@@ -227,7 +227,7 @@ async def test_create_proposal_invalid_ubigeo_returns_400():
                 "alert_type": "flood",
                 "district_ubigeo": "999999",  # does not exist in geo.districts
                 "title": "Sesión-23: ubigeo inválido test",
-                "summary": "Test ubigeo validation — expected 400",
+                "summary": "Test ubigeo validation: expected 400",
             },
             headers=AUTH,
         )
@@ -244,9 +244,9 @@ async def test_create_proposal_valid_ubigeo_accepted():
             json={
                 "severity": "low",
                 "alert_type": "flood",
-                "district_ubigeo": "150132",  # San Juan de Lurigancho — seeded in geo.districts
+                "district_ubigeo": "150132",  # San Juan de Lurigancho, seeded in geo.districts
                 "title": "Sesión-23: ubigeo válido test",
-                "summary": "Test ubigeo validation — expected 201",
+                "summary": "Test ubigeo validation: expected 201",
             },
             headers=AUTH,
         )

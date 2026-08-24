@@ -5,7 +5,7 @@
  *   - src/app/globals.css (:root --color-* properties)
  *
  * Anything outside that file or this module that defines a raw hex for a
- * brand / severity color is a regression — replace with these constants.
+ * brand / severity color is a regression: replace with these constants.
  */
 
 // ── SINAGERD-aligned severity (OKLCH) ──────────────────────────────────────

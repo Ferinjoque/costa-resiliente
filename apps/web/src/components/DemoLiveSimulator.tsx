@@ -30,12 +30,12 @@ const SIGNAL_POOL: IncomingSignal[] = [
   { coords: [-76.793, -11.954], source: "reddit",   label: "weather_observation",    confidence: 0.71, district_id: null, district_name: "Chaclacayo", text: "r/Lima: La estación de Chaclacayo marcó 38mm en 6h. Alguien más con datos del ANA?" },
   { coords: [-76.910, -12.045], source: "bluesky",  label: "road_blocked",           confidence: 0.88, district_id: 2,    district_name: "Ate", text: "Entrada a Huachipa completamente bloqueada, agua sobre la calzada. Tomo foto: [imagen]" },
   { coords: [-76.948, -12.038], source: "telegram", label: "needs_help",             confidence: 0.93, district_id: 2,    district_name: "Ate", text: "Hospital Huachipa rodeado de agua, ambulancias no pueden entrar ni salir. Urgente coordinación. [PII eliminado]" },
-  { coords: [-77.035, -11.878], source: "bluesky",  label: "road_blocked",           confidence: 0.80, district_id: 6,    district_name: "Carabayllo", text: "Canta–Lima cortada en km 4. Hay un deslizamiento. Vehículos parados en ambos lados." },
+  { coords: [-77.035, -11.878], source: "bluesky",  label: "road_blocked",           confidence: 0.80, district_id: 6,    district_name: "Carabayllo", text: "Canta: Lima cortada en km 4. Hay un deslizamiento. Vehículos parados en ambos lados." },
   { coords: [-76.870, -11.965], source: "bluesky",  label: "needs_help",             confidence: 0.86, district_id: 1,    district_name: "Lurigancho", text: "Quebrada Jicamarca activa, escucho rugido, piedras bajando. Vecinos corriendo. Alguien llame a defensa civil!" },
-  // huayco_observation — field sightings of active mud/debris flows
-  { coords: [-76.855, -11.970], source: "telegram", label: "huayco_observation",      confidence: 0.93, district_id: 1,    district_name: "Lurigancho", text: "Huayco confirmado en Quebrada Huaycoloro — frente de lodo cruzando el cauce. Evacuación en curso. [PII eliminado]" },
+  // huayco_observation: field sightings of active mud/debris flows
+  { coords: [-76.855, -11.970], source: "telegram", label: "huayco_observation",      confidence: 0.93, district_id: 1,    district_name: "Lurigancho", text: "Huayco confirmado en Quebrada Huaycoloro: frente de lodo cruzando el cauce. Evacuación en curso. [PII eliminado]" },
   { coords: [-76.862, -11.978], source: "bluesky",  label: "huayco_observation",      confidence: 0.89, district_id: 1,    district_name: "Lurigancho", text: "Vi el huayco bajar por la quebrada Santa Eulalia hace 5 min. Velocidad alta, arrastrando piedras grandes. Cuidado." },
-  // flood_observation — confirmed inundation field reports
+  // flood_observation: confirmed inundation field reports
   { coords: [-76.910, -12.050], source: "bluesky",  label: "flood_observation",       confidence: 0.88, district_id: 2,    district_name: "Ate", text: "Desborde confirmado del Rímac a la altura de El Agustino. Agua sobre la Av. Circunvalación, aprox 40cm. Eviten la zona." },
   { coords: [-77.040, -11.882], source: "telegram", label: "flood_observation",       confidence: 0.84, district_id: 6,    district_name: "Carabayllo", text: "Canal de regadío Carabayllo desbordado. Agua ingresando a viviendas en AA.HH. Los Jardines. Familias evacuando. [PII eliminado]" },
 ];

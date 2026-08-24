@@ -1,4 +1,4 @@
-"""Contract tests for store_flood_polygons — no DB required.
+"""Contract tests for store_flood_polygons: no DB required.
 
 Validates the geom-None guard (skip polygons without geometry), correct
 INSERT SQL shape, and the ON CONFLICT (scene_id) DO NOTHING path.
@@ -49,7 +49,7 @@ def _make_pool(execute_calls: list):
 
 
 class TestStoreFloodPolygons:
-    """store_flood_polygons() contract — geometry guard and INSERT shape."""
+    """store_flood_polygons() contract: geometry guard and INSERT shape."""
 
     @pytest.mark.asyncio
     async def test_skips_polygon_with_none_geometry(self):
@@ -107,7 +107,7 @@ class TestStoreFloodPolygons:
 
     @pytest.mark.asyncio
     async def test_insert_sql_contains_on_conflict_scene_id(self):
-        """INSERT SQL must use ON CONFLICT (scene_id) DO NOTHING — not the old partial-index form."""
+        """INSERT SQL must use ON CONFLICT (scene_id) DO NOTHING: not the old partial-index form."""
         from costa_workers.ingest.flood_pipeline import store_flood_polygons
 
         calls: list = []
@@ -143,7 +143,7 @@ class TestStoreFloodPolygons:
             )
 
         args = calls[0]["args"]
-        # $6 (index 5) is geom_json — now a MultiPolygon aggregating all detected polygons
+        # $6 (index 5) is geom_json: now a MultiPolygon aggregating all detected polygons
         geom_arg = args[5]
         assert isinstance(geom_arg, str)
         parsed = json.loads(geom_arg)
@@ -191,7 +191,7 @@ class TestStoreFloodPolygons:
 
     @pytest.mark.asyncio
     async def test_dry_scene_sentinel_uses_multipolygon_empty(self):
-        """Sentinel SQL must use ST_GeomFromText('MULTIPOLYGON EMPTY', 4326) — valid PostGIS empty geometry."""
+        """Sentinel SQL must use ST_GeomFromText('MULTIPOLYGON EMPTY', 4326), valid PostGIS empty geometry."""
         from costa_workers.ingest.flood_pipeline import store_flood_polygons
 
         calls: list = []
@@ -208,7 +208,7 @@ class TestStoreFloodPolygons:
         assert "MULTIPOLYGON EMPTY" in sql
         assert "ON CONFLICT" in sql
         assert "DO NOTHING" in sql
-        # scene_id is $1 — verify it was passed as first positional arg
+        # scene_id is $1: verify it was passed as first positional arg
         assert calls[0]["args"][0] == FAKE_SCENE_ID
 
     @pytest.mark.asyncio

@@ -1,6 +1,6 @@
 """Operator-sourced social signals.
 
-POST /api/v1/social/field-report — duty officer in the field reports a hazard
+POST /api/v1/social/field-report: duty officer in the field reports a hazard
 sighting that doesn't yet exist in any RSS / Bluesky / Reddit feed. We treat
 it as a first-class `social.signals` row with source='campo' so it shows up
 in the live signal layer and counts toward dashboards / fusion, AND we
@@ -81,7 +81,7 @@ _ALLOWED_LABELS = {
     "needs_help",
     "road_blocked",
     "infrastructure_damage",
-    "huayco_observation",   # debris flow / quebrada surge sighting — primary Lima hazard type
+    "huayco_observation",   # debris flow / quebrada surge sighting, primary Lima hazard type
     "flood_observation",    # standing water / inundation sighting
     "weather_observation",
     "false_alarm",
@@ -90,7 +90,7 @@ _ALLOWED_LABELS = {
 
 
 class FieldReport(BaseModel):
-    # operator_id accepted for backwards-compatibility but IGNORED — JWT identity
+    # operator_id accepted for backwards-compatibility but IGNORED. JWT identity
     # (op.username) is always used so reports cannot be forged under another name.
     operator_id: Optional[str] = Field(None, max_length=64)
     text: str = Field(..., min_length=1, max_length=2000)
@@ -164,7 +164,7 @@ async def submit_field_report(
     inserted = insert_result.first()
     if not inserted:
         # Duplicate submission (same operator + same text already stored).
-        # Return the existing record so the caller is idempotent — operator
+        # Return the existing record so the caller is idempotent, operator
         # retrying after a transient error doesn't see a confusing 409.
         existing = (
             await db.execute(

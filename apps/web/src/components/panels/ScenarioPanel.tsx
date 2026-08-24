@@ -19,11 +19,11 @@ const LAYERS: { id: string; label: { es: string; en: string }; hint: { es: strin
   { id: "imerg",          label: { es: "Lluvia IMERG",       en: "IMERG Rainfall"    }, hint: { es: "Acumulación NASA (color por intensidad)",   en: "NASA accumulation (colour by intensity)"  } },
   { id: "flood",          label: { es: "Inundación SAR",     en: "SAR Flood"         }, hint: { es: "Polígonos Sentinel-1 de áreas inundadas",   en: "Sentinel-1 polygons of flooded areas"     } },
   { id: "huayco",         label: { es: "Huayco",             en: "Huayco"            }, hint: { es: "Puntos por quebrada (tamaño = probabilidad)", en: "Dots per quebrada (size = probability)"  } },
-  { id: "hazard",         label: { es: "Peligro histórico",  en: "Historical hazard" }, hint: { es: "Zonas SINPAD 2003–2020 por densidad",       en: "SINPAD 2003–2020 zones by density"        } },
+  { id: "hazard",         label: { es: "Peligro histórico",  en: "Historical hazard" }, hint: { es: "Zonas SINPAD 2003-2020 por densidad",       en: "SINPAD 2003-2020 zones by density"        } },
   { id: "infrastructure", label: { es: "Infraestructura",    en: "Infrastructure"    }, hint: { es: "Hospitales, colegios, puentes (OSM)",       en: "Hospitals, schools, bridges (OSM)"        } },
   { id: "social",         label: { es: "Señales sociales",   en: "Social signals"    }, hint: { es: "Pines Bluesky/Reddit triados por IA",      en: "AI-triaged Bluesky/Reddit pins"           } },
   { id: "stations",       label: { es: "Estaciones ANA",     en: "ANA Stations"      }, hint: { es: "Nivel e caudal de ríos en tiempo real",    en: "Real-time river level and flow"           } },
-  { id: "shelters",       label: { es: "Albergues INDECI",   en: "INDECI Shelters"   }, hint: { es: "Albergues de evacuación designados por INDECI — Lima Metropolitana", en: "INDECI-designated evacuation shelters — Lima Metropolitana" } },
+  { id: "shelters",       label: { es: "Albergues INDECI",   en: "INDECI Shelters"   }, hint: { es: "Albergues de evacuación designados por INDECI. Lima Metropolitana", en: "INDECI-designated evacuation shelters: Lima Metropolitana" } },
 ];
 
 const L = (locale: Locale, es: string, en: string) => locale === "es" ? es : en;
@@ -104,7 +104,7 @@ export function ScenarioPanel() {
                     {L(locale, "Lima Metropolitana (43 dist.)", "Lima Metropolitan (43 dist.)")}
                   </option>
                   <option value="">
-                    {L(locale, "Lima Región — todas (159 dist.)", "Lima Region — all (159 dist.)")}
+                    {L(locale, "Lima Región (todas (159 dist.)", "Lima Region)all (159 dist.)")}
                   </option>
                   {provinces?.provinces
                     .filter((p) => p.province !== "Lima" && p.province !== "Lima Región")
@@ -191,11 +191,11 @@ export function ScenarioPanel() {
 }
 
 const REPLAY_STEPS: { date: string; label: { es: string; en: string } }[] = [
-  { date: "2017-03-15", label: { es: "15 mar — Rímac", en: "Mar 15 — Rímac" } },
-  { date: "2017-03-18", label: { es: "18 mar — Chillón", en: "Mar 18 — Chillón" } },
-  { date: "2017-03-22", label: { es: "22 mar — Ate", en: "Mar 22 — Ate" } },
-  { date: "2017-03-27", label: { es: "27 mar — V.J.M.", en: "Mar 27 — V.J.M." } },
-  { date: "2017-04-02", label: { es: "2 abr — Chaclacayo", en: "Apr 2 — Chaclacayo" } },
+  { date: "2017-03-15", label: { es: "15 mar (Rímac", en: "Mar 15)Rímac" } },
+  { date: "2017-03-18", label: { es: "18 mar (Chillón", en: "Mar 18)Chillón" } },
+  { date: "2017-03-22", label: { es: "22 mar (Ate", en: "Mar 22)Ate" } },
+  { date: "2017-03-27", label: { es: "27 mar (V.J.M.", en: "Mar 27)V.J.M." } },
+  { date: "2017-04-02", label: { es: "2 abr (Chaclacayo", en: "Apr 2)Chaclacayo" } },
 ];
 
 function ReplayDateScrubber({ locale }: { locale: Locale }) {
@@ -206,7 +206,7 @@ function ReplayDateScrubber({ locale }: { locale: Locale }) {
   return (
     <div>
       <SectionLabel className="mb-2">
-        {L(locale, "Fecha de replay — El Niño 2017", "Replay date — El Niño 2017")}
+        {L(locale, "Fecha de replay (El Niño 2017", "Replay date)El Niño 2017")}
       </SectionLabel>
       <input
         type="range"

@@ -4,7 +4,7 @@ Keyed by (tool_name, sorted_args_json).  TTLs are per-tool: static data
 (infrastructure) stays cached longer; live data (alerts, river levels)
 expires quickly.
 
-Falls back silently — a Redis outage never breaks the copilot.
+Falls back silently: a Redis outage never breaks the copilot.
 """
 
 from __future__ import annotations
@@ -22,15 +22,15 @@ logger = logging.getLogger(__name__)
 
 # Per-tool TTL in seconds. Zero = skip cache for that tool.
 _TTL: dict[str, int] = {
-    "get_flood_polygons": 300,        # 5 min — SAR acquired daily
-    "get_huayco_risk": 600,           # 10 min — XGBoost runs hourly
-    "get_river_levels": 60,           # 1 min — scraper runs every 15 min
-    "get_social_clusters": 120,       # 2 min — social ingestion every 15 min
-    "get_infrastructure_impact": 1800, # 30 min — spatial join, static infra
-    "get_rainfall_accumulation": 300,  # 5 min — IMERG every 30 min
-    "get_active_alerts": 30,           # 30 s — alerts change frequently
-    "search_protocols": 3600,          # 1 hour — protocol docs are static
-    "get_population_at_risk": 300,     # 5 min — depends on flood polygons
+    "get_flood_polygons": 300,        # 5 min. SAR acquired daily
+    "get_huayco_risk": 600,           # 10 min. XGBoost runs hourly
+    "get_river_levels": 60,           # 1 min, scraper runs every 15 min
+    "get_social_clusters": 120,       # 2 min, social ingestion every 15 min
+    "get_infrastructure_impact": 1800, # 30 min, spatial join, static infra
+    "get_rainfall_accumulation": 300,  # 5 min. IMERG every 30 min
+    "get_active_alerts": 30,           # 30 s, alerts change frequently
+    "search_protocols": 3600,          # 1 hour, protocol docs are static
+    "get_population_at_risk": 300,     # 5 min, depends on flood polygons
 }
 
 _PREFIX = "costa:ai:tool"

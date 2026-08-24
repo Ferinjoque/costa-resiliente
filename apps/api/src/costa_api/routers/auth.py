@@ -1,13 +1,13 @@
-"""Operator authentication — JWT issuance + role extraction.
+"""Operator authentication: JWT issuance + role extraction.
 
-POST /auth/token   — issue a short-lived JWT (24h) from username+password.
-GET  /auth/me      — return current operator details from token.
-GET  /auth/operators — list all operators (no password fields).
+POST /auth/token: issue a short-lived JWT (24h) from username+password.
+GET  /auth/me: return current operator details from token.
+GET  /auth/operators: list all operators (no password fields).
 
 SINAGERD roles:
-  coen  — COEN: sees all 43 Lima districts.
-  coer  — COER Lima: sees all 43 Lima districts.
-  coel  — COEL: sees only their district_ubigeo.
+  coen. COEN: sees all 43 Lima districts.
+  coer. COER Lima: sees all 43 Lima districts.
+  coel. COEL: sees only their district_ubigeo.
 
 Testing: pass X-Testing-Operator header (only active when TESTING=1 env).
 """
@@ -49,7 +49,7 @@ def _verify_password(pw: str, hashed: str) -> bool:
 _SECRET = settings.jwt_secret
 _ALGO = "HS256"
 _TTL_HOURS = 24
-# Pre-computed bcrypt hash used as a dummy when user not found — ensures
+# Pre-computed bcrypt hash used as a dummy when user not found, ensures
 # _verify_password always runs so response time does not leak username existence.
 _DUMMY_BCRYPT_HASH: str = _bcrypt_lib.hashpw(b"__dummy__", _bcrypt_lib.gensalt(12)).decode()
 
@@ -220,21 +220,21 @@ async def require_operator(
 DEMO_OPERATORS = [
     {
         "username": "coer_lima",
-        "full_name": "COER Lima — Operador demo",
+        "full_name": "COER Lima: Operador demo",
         "role": "coer",
         "district_ubigeo": None,
         "password": "demo1234",
     },
     {
         "username": "coen_lima",
-        "full_name": "COEN — Coordinador demo",
+        "full_name": "COEN: Coordinador demo",
         "role": "coen",
         "district_ubigeo": None,
         "password": "demo1234",
     },
     {
         "username": "coel_sjl",
-        "full_name": "COEL San Juan de Lurigancho — demo",
+        "full_name": "COEL San Juan de Lurigancho: demo",
         "role": "coel",
         "district_ubigeo": "150132",
         "password": "demo1234",

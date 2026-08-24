@@ -6,7 +6,7 @@ import { DEMO_DISTRICTS } from "./demoData";
  * it has to carry the same official codes as the live database. The Lima UBIGEO
  * map was wrong until 2026-08-23: "Pueblo Libre" and "Magdalena Vieja" were
  * listed as two districts (they are one, INEI 150121), shifting every code from
- * 150125 onward and putting San Juan de Lurigancho on 150133 — which is really
+ * 150125 onward and putting San Juan de Lurigancho on 150133, which is really
  * San Juan de Miraflores.
  *
  * Authoritative source: CENEPRED COEN FEN 2023 service, field id_dist.

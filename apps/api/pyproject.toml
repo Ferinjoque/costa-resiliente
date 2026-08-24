@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "costa-api"
 version = "0.1.0"
-description = "Costa Resiliente — FastAPI backend"
+description = "Costa Resiliente: FastAPI backend"
 requires-python = ">=3.12"
 dependencies = [
     # Web framework
@@ -47,9 +47,9 @@ dependencies = [
     "orjson>=3.10",
 
     # AI / LLM (httpx already included above)
-    # No heavy ML deps needed — embeddings via Ollama API, structured output via pydantic
+    # No heavy ML deps needed: embeddings via Ollama API, structured output via pydantic
 
-    # SMS (Twilio — optional; only active when TWILIO_ACCOUNT_SID is set in .env)
+    # SMS (Twilio: optional; only active when TWILIO_ACCOUNT_SID is set in .env)
     "twilio>=9.0",
 ]
 

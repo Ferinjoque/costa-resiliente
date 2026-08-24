@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 // ─── Felt-style design system ────────────────────────────────────────────────
-// Dark map canvas. Light warm-cream chrome. Solid surfaces — no glass, no blur.
+// Dark map canvas. Light warm-cream chrome. Solid surfaces, no glass, no blur.
 // The map carries the visual weight; panels are clean cards with shadows.
 //
 // Inspired by: felt.com, Mapbox Studio, Linear.app, Perplexity dark.
@@ -44,7 +44,7 @@ const config: Config = {
           subtle:  "oklch(93% 0.006 80)",     // very light separator
         },
 
-        // ── Accent (brand / interactive — coastal teal) ───────────────────
+        // ── Accent (brand / interactive: coastal teal) ───────────────────
         // Used for buttons, active states, links. Not for danger/severity.
         accent: {
           DEFAULT: "oklch(47% 0.12 210)",    // mid teal
@@ -55,7 +55,7 @@ const config: Config = {
         },
 
         // ── Danger / severity ─────────────────────────────────────────────
-        // Cinnabar — earthy, not pure red-500. Used ONLY for emergency signal.
+        // Cinnabar: earthy, not pure red-500. Used ONLY for emergency signal.
         danger: {
           DEFAULT: "oklch(58% 0.20 28)",      // cinnabar
           soft:    "oklch(96% 0.04 28)",      // danger surface tint
@@ -63,21 +63,21 @@ const config: Config = {
           deep:    "oklch(42% 0.18 28)",      // hover/active on danger
         },
 
-        // ── Warning (amber — watch / AVISO level) ────────────────────────
+        // ── Warning (amber: watch / AVISO level) ────────────────────────
         warn: {
           DEFAULT: "oklch(73% 0.13 78)",
           soft:    "oklch(96% 0.04 78)",
           muted:   "oklch(62% 0.12 78)",
         },
 
-        // ── Positive (sage — ok / NORMAL) ────────────────────────────────
+        // ── Positive (sage: ok / NORMAL) ────────────────────────────────
         ok: {
           DEFAULT: "oklch(62% 0.10 152)",
           soft:    "oklch(95% 0.04 152)",
           muted:   "oklch(55% 0.09 152)",
         },
 
-        // ── Data accent (tide — chart fills, not chrome) ──────────────────
+        // ── Data accent (tide: chart fills, not chrome) ──────────────────
         tide: {
           100: "oklch(87% 0.05 210)",
           300: "oklch(68% 0.08 210)",
@@ -124,7 +124,7 @@ const config: Config = {
       },
 
       boxShadow: {
-        // Felt-style shadows — multi-layer, soft, not harsh
+        // Felt-style shadows: multi-layer, soft, not harsh
         panel: "0 1px 2px oklch(14% 0.008 240 / 0.06), 0 4px 12px oklch(14% 0.008 240 / 0.08), 0 12px 32px oklch(14% 0.008 240 / 0.06)",
         card:  "0 1px 2px oklch(14% 0.008 240 / 0.05), 0 2px 8px oklch(14% 0.008 240 / 0.06)",
         sm:    "0 1px 3px oklch(14% 0.008 240 / 0.1)",

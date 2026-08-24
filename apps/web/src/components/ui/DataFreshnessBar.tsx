@@ -18,7 +18,7 @@ const LEVEL_COLORS: Record<string, { label: string; time: string; dot: string }>
   stale: { label: "oklch(65% 0.18 25 / 0.8)", time: "oklch(65% 0.18 25 / 0.9)", dot: "bg-danger/60" },
 };
 
-// Compact freshness strip on the map canvas — dark surface, minimal.
+// Compact freshness strip on the map canvas: dark surface, minimal.
 export function DataFreshnessBar() {
   const { data: imerg }  = useImerg();
   const { data: flood }  = useFlood();

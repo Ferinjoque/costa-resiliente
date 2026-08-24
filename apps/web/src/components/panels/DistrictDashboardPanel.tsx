@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/primitives";
 
 // ANA alert thresholds per station code (meters)
-// Code-based thresholds (legacy — matched against st.code)
+// Code-based thresholds (legacy: matched against st.code)
 const STATION_CODE_THRESHOLDS: Record<string, number> = {
   "ANA-CHOSICA":        2.0,
   "ANA-CHACLACAYO":     1.5,
@@ -169,7 +169,7 @@ const LABEL_PILL_CLS: Record<string, string> = {
   infrastructure_damage: "bg-warn-soft text-warn-muted",
   road_blocked:          "bg-warn-soft text-warn-muted",
   huayco_observation:    "bg-warn-soft text-warn-muted",
-  flood_observation:     "bg-danger-soft text-danger",  // danger — matches SocialFeedPanel priority=1 (Session 23)
+  flood_observation:     "bg-danger-soft text-danger",  // danger, matches SocialFeedPanel priority=1 (Session 23)
   weather_observation:   "bg-accent-soft text-accent",
 };
 
@@ -216,10 +216,10 @@ function buildMarkdown(d: ReportData): string {
     ? { flood:"Inundación SAR", huayco:"Huayco", social_cluster:"Señal social", weather:"Meteorológica" }
     : { flood:"SAR Flood", huayco:"Mudslide", social_cluster:"Social signal", weather:"Weather" };
   const rows = d.active.slice(0,12).map((a,i) =>
-    `${i+1}. **[${SEV[a.severity]??a.severity}]** ${TYPE[a.type]??a.type} — ${a.title}`
+    `${i+1}. **[${SEV[a.severity]??a.severity}]** ${TYPE[a.type]??a.type}: ${a.title}`
   );
   return (es ? [
-    `# Reporte de Situación — EDAN-Perú`,``,
+    `# Reporte de Situación: EDAN-Perú`,``,
     `**ID:** ${d.reportId}  `,
     `**Fecha/Hora:** ${d.nowStr} (Lima, Perú)  `,
     `**Nivel SINAGERD:** ${d.level}  `,
@@ -228,7 +228,7 @@ function buildMarkdown(d: ReportData): string {
     `| Indicador | Valor |`,`|-----------|-------|`,
     `| Alertas activas | ${d.active.length} (${d.critical.length} críticas, ${d.high.length} altas) |`,
     `| Área inundada SAR | ${d.floodArea.toFixed(2)} km² |`,
-    `| Lluvia 72h (IMERG) | ${d.maxRain72h != null ? `${d.maxRain72h.toFixed(0)} mm${d.maxRainWs ? ` (${d.maxRainWs})` : ""} — ${d.maxRain72h >= 50 ? "⚠ EMERGENCIA ANA" : d.maxRain72h >= 25 ? "ALERTA ANA" : "Normal"}` : "Sin datos"} |`,
+    `| Lluvia 72h (IMERG) | ${d.maxRain72h != null ? `${d.maxRain72h.toFixed(0)} mm${d.maxRainWs ? ` (${d.maxRainWs})` : ""}, ${d.maxRain72h >= 50 ? "⚠ EMERGENCIA ANA" : d.maxRain72h >= 25 ? "ALERTA ANA" : "Normal"}` : "Sin datos"} |`,
     `| Población en riesgo | ${d.popStr} habitantes |`,
     `| Distritos riesgo alto | ${d.highRiskDistricts.join(", ")||"Ninguno"} |`,
     `| Distritos riesgo moderado | ${d.moderateDistricts.join(", ")||"Ninguno"} |`,``,
@@ -240,7 +240,7 @@ function buildMarkdown(d: ReportData): string {
     `- Población estimada en zona de riesgo: **${d.popStr} habitantes**`,
     `- Distritos con nivel de riesgo alto: **${d.highRiskDistricts.length}**`,
     ...(d.maxRain72h != null && d.maxRain72h >= 25 ? [
-      `- Lluvia acumulada 72h: **${d.maxRain72h.toFixed(0)} mm${d.maxRainWs ? ` (cuenca ${d.maxRainWs})` : ""}** — ${d.maxRain72h >= 50 ? "⚠ supera umbral EMERGENCIA ANA (>50 mm)" : "supera umbral ALERTA ANA (>25 mm)"}`,
+      `- Lluvia acumulada 72h: **${d.maxRain72h.toFixed(0)} mm${d.maxRainWs ? ` (cuenca ${d.maxRainWs})` : ""}**: ${d.maxRain72h >= 50 ? "⚠ supera umbral EMERGENCIA ANA (>50 mm)" : "supera umbral ALERTA ANA (>25 mm)"}`,
     ] : []),
     ``,
     `## 4. Fuentes de Datos`,``,
@@ -253,7 +253,7 @@ function buildMarkdown(d: ReportData): string {
     `*Para uso oficial · Formulario EDAN-Perú · SINAGERD*  `,
     `*Sistema: Costa Resiliente · ${d.nowStr}*`,
   ] : [
-    `# Situation Report — EDAN-Peru`,``,
+    `# Situation Report: EDAN-Peru`,``,
     `**ID:** ${d.reportId}  `,
     `**Date/Time:** ${d.nowStr} (Lima, Peru)  `,
     `**SINAGERD Level:** ${d.level}  `,
@@ -273,7 +273,7 @@ function buildMarkdown(d: ReportData): string {
     `- Estimated population in risk zone: **${d.popStr} inhabitants**`,
     `- Districts with high risk level: **${d.highRiskDistricts.length}**`,
     ...(d.maxRain72h != null && d.maxRain72h >= 25 ? [
-      `- 72h accumulated rainfall: **${d.maxRain72h.toFixed(0)} mm${d.maxRainWs ? ` (${d.maxRainWs} watershed)` : ""}** — ${d.maxRain72h >= 50 ? "⚠ exceeds ANA EMERGENCY threshold (>50 mm)" : "exceeds ANA ALERT threshold (>25 mm)"}`,
+      `- 72h accumulated rainfall: **${d.maxRain72h.toFixed(0)} mm${d.maxRainWs ? ` (${d.maxRainWs} watershed)` : ""}**: ${d.maxRain72h >= 50 ? "⚠ exceeds ANA EMERGENCY threshold (>50 mm)" : "exceeds ANA ALERT threshold (>25 mm)"}`,
     ] : []),
     ``,
     `## 4. Data Sources`,``,
@@ -344,7 +344,7 @@ function buildReportHTML(d: ReportData): string {
 
   return `<!DOCTYPE html><html lang="${d.locale}">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${es?"Reporte EDAN-Perú":"EDAN-Peru Report"} — ${d.reportId}</title>
+<title>${es?"Reporte EDAN-Perú":"EDAN-Peru Report"}: ${d.reportId}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f8fafc;color:#111827}
@@ -383,7 +383,7 @@ th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:10px;font-weigh
   <span class="hint">${es?"Ctrl+P → Guardar como PDF":"Ctrl+P → Save as PDF"}</span>
 </div>
 <div class="hdr">
-  <div><h1>${es?"Reporte de Situación — EDAN-Perú":"Situation Report — EDAN-Peru"}</h1>
+  <div><h1>${es?"Reporte de Situación, EDAN-Perú":"Situation Report, EDAN-Peru"}</h1>
   <p>SINAGERD · ${es?"Sistema Nacional de Gestión del Riesgo de Desastres":"National Disaster Risk Management System"}</p></div>
   <div class="hdr-r">
     <div style="font-family:'Courier New',monospace;font-size:12px;font-weight:700">${d.reportId}</div>
@@ -419,7 +419,7 @@ th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:10px;font-weigh
     <div class="sec-ttl">${es?"4. Evaluación de Impacto Hidrometeorológico":"4. Hydrometeorological Impact Assessment"}</div>
     <div class="impact-grid">
       <div class="icard" style="background:#eff6ff;border:1px solid #bfdbfe"><div class="icard-ttl" style="color:#1d4ed8">SAR Sentinel-1</div><p style="color:#1e3a5f">${es?`Imágenes de radar de apertura sintética detectan <strong>${d.floodArea.toFixed(2)} km²</strong> de superficie inundada en la región de Lima. Cadencia de revisita ~6 días.`:`Synthetic aperture radar imagery detects <strong>${d.floodArea.toFixed(2)} km²</strong> of flooded surface in the Lima region. Revisit cadence ~6 days.`}</p></div>
-      <div class="icard" style="background:#f0fdf4;border:1px solid #bbf7d0"><div class="icard-ttl" style="color:#15803d">NASA IMERG Late Run V07B</div><p style="color:#14532d">${es?`Precipitación acumulada basada en estimaciones satelitales IMERG Late Run V07B (GPM). Granularidad de 30 min. ${d.maxRain72h != null ? `<strong>${d.maxRain72h.toFixed(0)} mm/72h${d.maxRainWs ? ` (${d.maxRainWs})` : ''}</strong> — ${d.maxRain72h >= 50 ? '⚠ UMBRAL EMERGENCIA ANA superado' : d.maxRain72h >= 25 ? 'Umbral ALERTA ANA superado' : 'Bajo umbral de alerta'}.` : 'Sin datos recientes.'}` : `Accumulated precipitation from NASA IMERG Late Run V07B (GPM). 30-min granularity. ${d.maxRain72h != null ? `<strong>${d.maxRain72h.toFixed(0)} mm/72h${d.maxRainWs ? ` (${d.maxRainWs})` : ''}</strong> — ${d.maxRain72h >= 50 ? '⚠ ANA EMERGENCY threshold exceeded' : d.maxRain72h >= 25 ? 'ANA ALERT threshold exceeded' : 'Below alert threshold'}.` : 'No recent data.'}`}</p></div>
+      <div class="icard" style="background:#f0fdf4;border:1px solid #bbf7d0"><div class="icard-ttl" style="color:#15803d">NASA IMERG Late Run V07B</div><p style="color:#14532d">${es?`Precipitación acumulada basada en estimaciones satelitales IMERG Late Run V07B (GPM). Granularidad de 30 min. ${d.maxRain72h != null ? `<strong>${d.maxRain72h.toFixed(0)} mm/72h${d.maxRainWs ? ` (${d.maxRainWs})` : ''}</strong>, ${d.maxRain72h >= 50 ? '⚠ UMBRAL EMERGENCIA ANA superado' : d.maxRain72h >= 25 ? 'Umbral ALERTA ANA superado' : 'Bajo umbral de alerta'}.` : 'Sin datos recientes.'}` : `Accumulated precipitation from NASA IMERG Late Run V07B (GPM). 30-min granularity. ${d.maxRain72h != null ? `<strong>${d.maxRain72h.toFixed(0)} mm/72h${d.maxRainWs ? ` (${d.maxRainWs})` : ''}</strong>, ${d.maxRain72h >= 50 ? '⚠ ANA EMERGENCY threshold exceeded' : d.maxRain72h >= 25 ? 'ANA ALERT threshold exceeded' : 'Below alert threshold'}.` : 'No recent data.'}`}</p></div>
     </div>
   </div>
   <div class="sec">
@@ -428,7 +428,7 @@ th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:10px;font-weigh
   </div>
 </div>
 <div class="ftr">
-  <div><strong style="color:#374151">${es?"Para uso oficial — EDAN-Perú / SINAGERD":"For official use — EDAN-Peru / SINAGERD"}</strong><div style="margin-top:2px">Costa Resiliente · Lima, Perú</div></div>
+  <div><strong style="color:#374151">${es?"Para uso oficial, EDAN-Perú / SINAGERD":"For official use, EDAN-Peru / SINAGERD"}</strong><div style="margin-top:2px">Costa Resiliente · Lima, Perú</div></div>
   <div style="text-align:right"><strong style="font-family:'Courier New',monospace">${d.reportId}</strong><div style="margin-top:2px">${d.nowStr}</div></div>
 </div>
 </div></body></html>`;
@@ -458,7 +458,7 @@ function EDANReportButton() {
   const affectedPop = exposure?.total_affected_population ?? 0;
   const highRiskDistricts = summary?.features.filter((f) => f.properties.risk_level === "alto").map((f) => f.properties.name) ?? [];
   const moderateDistricts = summary?.features.filter((f) => f.properties.risk_level === "moderado").map((f) => f.properties.name) ?? [];
-  const popStr = affectedPop > 1000 ? `~${(affectedPop / 1000).toFixed(1)}k` : String(affectedPop || "—");
+  const popStr = affectedPop > 1000 ? `~${(affectedPop / 1000).toFixed(1)}k` : String(affectedPop || "-");
   const reportId = buildReportId(now);
 
   // Max 72h rainfall across watersheds for EDAN report
@@ -779,7 +779,7 @@ function CityOverview() {
               ? affectedPop > 1000
                 ? `~${(affectedPop / 1000).toFixed(0)}k`
                 : String(affectedPop)
-              : "—"}
+              : "-"}
           </p>
           <p className="text-xs text-ink-muted mt-1">
             {locale === "es" ? "Pob. en riesgo" : "Pop. at risk"}
@@ -903,7 +903,7 @@ function TopRiskList() {
   );
 }
 
-// ─── MetricCard — simple row layout ──────────────────────────────────────────
+// ─── MetricCard: simple row layout ──────────────────────────────────────────
 
 function MetricCard({
   label,
@@ -1034,7 +1034,7 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
         <MetricCard
           icon={Droplets}
           label={tr("dashboard", "rain24h")}
-          value={latestImerg > 0 ? `${latestImerg.toFixed(1)} mm` : "— mm"}
+          value={latestImerg > 0 ? `${latestImerg.toFixed(1)} mm` : ", mm"}
           sub={maxImerg > 0 ? `${tr("dashboard", "maxLast30d")} ${maxImerg.toFixed(1)} mm` : tr("dashboard", "noRecentData")}
           color="text-accent"
           valueCls="text-accent"
@@ -1042,7 +1042,7 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
         <MetricCard
           icon={Users}
           label={tr("dashboard", "people")}
-          value={data.district.population ? data.district.population.toLocaleString(locale === "es" ? "es-PE" : "en-US") : "—"}
+          value={data.district.population ? data.district.population.toLocaleString(locale === "es" ? "es-PE" : "en-US") : "-"}
           sub={data.district.area_km2 ? `${data.district.area_km2.toFixed(1)} km²` : ""}
           color="text-ink"
         />
@@ -1079,11 +1079,11 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
             values={imergValues}
             color={COSTA_300}
             thresholds={[
-              { value: 25, color: "oklch(73% 0.13 78)" },   // ALERTA — warn
-              { value: 50, color: "oklch(58% 0.20 28)" },   // EMERGENCIA — danger
+              { value: 25, color: "oklch(73% 0.13 78)" },   // ALERTA, warn
+              { value: 50, color: "oklch(58% 0.20 28)" },   // EMERGENCIA, danger
             ]}
           />
-          {/* Threshold legend — helps operators identify dashed reference lines */}
+          {/* Threshold legend: helps operators identify dashed reference lines */}
           <div className="flex gap-3 mt-1 text-[10px] text-ink-subtle">
             <span className="flex items-center gap-1">
               <span className="inline-block w-4 h-0.5 rounded" style={{ background: "oklch(73% 0.13 78)" }} aria-hidden="true" />
@@ -1246,7 +1246,7 @@ function ForecastSection({ locale }: { locale: Locale }) {
   const firstAlert = steps.find((s) => s.rimac_mm >= HUAYCO_THRESHOLD_MM);
 
   const label = {
-    title:    { es: "Pronóstico 72h — Cuenca Rímac",  en: "72h Forecast — Rímac Watershed" },
+    title:    { es: "Pronóstico 72h (Cuenca Rímac",  en: "72h Forecast)Rímac Watershed" },
     source:   { es: "SENAMHI · WRF",                  en: "SENAMHI · WRF" },
     preAlert: { es: "PRE-ALERTA",                     en: "PRE-ALERT" },
     thresh:   { es: "Umbral huayco",                  en: "Huayco threshold" },
@@ -1301,7 +1301,7 @@ function ForecastSection({ locale }: { locale: Locale }) {
         <div className="mt-3 pl-3 border-l-2 border-danger">
           <p className="text-2xs font-semibold tracking-caps uppercase text-danger mb-1">{L(label.preAlert)}</p>
           <p className="text-xs text-ink leading-snug">
-            {L(label.thresh)} {L(label.at)} +{firstAlert.hours}h —{" "}
+            {L(label.thresh)} {L(label.at)} +{firstAlert.hours}h: {" "}
             <span className="font-mono tabular-nums">{firstAlert.rimac_mm.toFixed(0)} mm</span>{" "}
             ({(firstAlert.huayco_prob * 100).toFixed(0)}% {L(label.prob)})
           </p>
@@ -1395,7 +1395,7 @@ const LOG_ACTION_ES: Record<string, { badge: string; verb: string }> = {
   protocol_step:       { badge: "PROT",    verb: "Paso de protocolo" },
   field_report:        { badge: "CAMPO",   verb: "Reporte de campo" },
   map_pin:             { badge: "PIN",     verb: "Marcador de campo" },
-  // Session 23 — new action types
+  // Session 23: new action types
   query:               { badge: "IA",      verb: "Consulta copiloto" },
   copilot:             { badge: "IA",      verb: "Consulta IA" },
   approve_proposal:    { badge: "APR",     verb: "Propuesta aprobada" },
@@ -1416,7 +1416,7 @@ const LOG_ACTION_EN: Record<string, { badge: string; verb: string }> = {
   protocol_step:       { badge: "PROT",    verb: "Protocol step" },
   field_report:        { badge: "FIELD",   verb: "Field report" },
   map_pin:             { badge: "PIN",     verb: "Field marker" },
-  // Session 23 — new action types
+  // Session 23: new action types
   query:               { badge: "AI",      verb: "Copilot query" },
   copilot:             { badge: "AI",      verb: "AI query" },
   approve_proposal:    { badge: "APR",     verb: "Proposal approved" },

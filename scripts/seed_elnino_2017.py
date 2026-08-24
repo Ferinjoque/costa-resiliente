@@ -27,7 +27,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://costa:costa@localhos
 
 # 2017 El Niño peak flood events sourced from SINPAD historical data
 # Approximate flood extents as GeoJSON Polygons per district
-# Derived from SINPAD event density for Lima 2017 (Mar–Apr events)
+# Derived from SINPAD event density for Lima 2017 (Mar: Apr events)
 # Coordinates are approximate bounding areas around high-impact zones
 FLOOD_FIXTURES = [
     {
@@ -67,14 +67,14 @@ FLOOD_FIXTURES = [
         "acquired_at": "2017-04-02T06:00:00Z",
         "area_km2": 5.6,
         "confidence": 0.91,
-        # Chaclacayo / Rímac upper Lima — peak event
+        # Chaclacayo / Rímac upper Lima: peak event
         "geom_wkt": "MULTIPOLYGON(((-76.78 -11.98, -76.76 -11.98, -76.76 -12.00, -76.78 -12.00, -76.78 -11.98)))",
     },
 ]
 
 
 # 2017 IMERG accumulations per watershed per day (ws 1=Rímac, 2=Chillón, 3=Lurín)
-# Peak event: March 15–22, 2017
+# Peak event: March 15-22, 2017
 # Units: mm; acc72 computed as rolling 3-day sum estimate
 IMERG_2017_ROWS = [
     # (date_str, ws_id, acc1, acc3, acc6, acc12, acc24, acc72)
@@ -161,7 +161,7 @@ async def seed(db_url: str) -> None:
         n = await seed_imerg_2017(conn)
         print(f"  ok {n} IMERG rows")
 
-        print(f"\nDone — El Niño 2017 data loaded. Use replay date 2017-03-15 or 2017-03-22.")
+        print(f"\nDone: El Niño 2017 data loaded. Use replay date 2017-03-15 or 2017-03-22.")
     finally:
         await conn.close()
 

@@ -1,4 +1,4 @@
-"""Fusion router tests — district multi-hazard join endpoint.
+"""Fusion router tests: district multi-hazard join endpoint.
 
 Verifies the GET /api/v1/fusion/{ubigeo} endpoint returns the correct shape,
 validates input (ubigeo format), and returns 404 for unknown districts.
@@ -14,9 +14,9 @@ from costa_api.main import app
 
 BASE = "http://test"
 
-# Lurigancho — seeded district with full geodata and SAR/huayco/social data
+# Lurigancho: seeded district with full geodata and SAR/huayco/social data
 LURIGANCHO_UBIGEO = "150118"
-# Lima district — also seeded
+# Lima district: also seeded
 LIMA_UBIGEO = "150101"
 
 
@@ -225,7 +225,7 @@ class TestRiskProse:
         """
         prose = self._prose(huayco_risk="high", huayco_prob=None)
         assert "huayco" in prose.lower(), (
-            "huayco prose must appear even when probability is None — "
+            "huayco prose must appear even when probability is None, "
             "risk_level alone is sufficient to surface the hazard"
         )
         # Must NOT show a percentage (no probability to display)

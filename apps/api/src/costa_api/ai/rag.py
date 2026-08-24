@@ -29,7 +29,7 @@ async def search_protocols(query: str, top_k: int = 3) -> list[dict]:
     try:
         embedding = await gateway.embed(query)
     except Exception as exc:
-        logger.error("RAG embed failed — search_protocols will return empty (Ollama unavailable?): %s", exc)
+        logger.error("RAG embed failed, search_protocols will return empty (Ollama unavailable?): %s", exc)
         return []
 
     if not embedding:
@@ -37,7 +37,7 @@ async def search_protocols(query: str, top_k: int = 3) -> list[dict]:
 
     vec_str = "[" + ",".join(f"{v:.6f}" for v in embedding) + "]"
 
-    # 2. Query pgvector — use CAST(:vec AS vector) so vec_str is a bound
+    # 2. Query pgvector, use CAST(:vec AS vector) so vec_str is a bound
     # parameter rather than interpolated SQL. The :: shorthand triggers an
     # SQLAlchemy false-parse of the colon; CAST() is the standard workaround.
     sql = text("""
@@ -56,7 +56,7 @@ async def search_protocols(query: str, top_k: int = 3) -> list[dict]:
             await session.execute(text("SET LOCAL statement_timeout = '10000'"))
             result = await session.execute(sql, {"vec": vec_str, "k": top_k})
             rows = [dict(r._mapping) for r in result]
-            # Filter below minimum similarity — prevents low-relevance protocol citations
+            # Filter below minimum similarity: prevents low-relevance protocol citations
             filtered = [r for r in rows if (r.get("similarity") or 0) >= _MIN_SIMILARITY]
             if len(filtered) < len(rows):
                 logger.debug(

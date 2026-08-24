@@ -1,4 +1,4 @@
-"""Input guardrail — screens operator queries before they reach the LLM.
+"""Input guardrail: screens operator queries before they reach the LLM.
 
 Threat model:
   - Prompt injection: attacker embeds instructions in query to hijack the model
@@ -25,25 +25,25 @@ logger = logging.getLogger(__name__)
 # ─── Regex blocklist ──────────────────────────────────────────────────────────
 
 _INJECTION_PATTERNS: list[tuple[str, str]] = [
-    # Role pivot — English
+    # Role pivot: English
     (r"ignore\s+(all\s+)?(previous|prior|above)\s+instructions?", "role_pivot"),
     (r"\bact\s+as\b.{0,30}\b(admin|root|god|jailbreak|DAN)\b", "role_pivot"),
     (r"\bforget\s+(all\s+)?(your\s+)?(previous\s+)?instructions?\b", "role_pivot"),
     (r"\byou\s+are\s+now\b.{0,40}\b(free|unrestricted|liberated)\b", "role_pivot"),
     (r"\bpretend\s+(you\s+are|to\s+be)\b.{0,40}\b(admin|root|expert|unrestricted)\b", "role_pivot"),
-    # Role pivot — Spanish (operators may attempt in Spanish inadvertently or deliberately)
+    # Role pivot: Spanish (operators may attempt in Spanish inadvertently or deliberately)
     (r"ignora\s+(todas?\s+)?(las?\s+)?(instrucciones?|reglas?)\s+(anteriores?|previas?)", "role_pivot"),
     (r"olvida\s+(todas?\s+)?(tus\s+)?(instrucciones?|reglas?)", "role_pivot"),
     (r"act[úu]a\s+como\b.{0,40}\b(admin|root|libre|sin\s+restricci)", "role_pivot"),
     (r"ahora\s+eres\b.{0,40}\b(libre|sin\s+restricci|desbloquead)", "role_pivot"),
-    # System-prompt leak — English
+    # System-prompt leak: English
     (r"\brepeat\b.{0,30}\b(system\s+prompt|instructions?)\b", "prompt_leak"),
     (r"\bwhat\s+(are|were|is)\s+your\s+(instructions?|prompt|initial\s+instructions?)\b", "prompt_leak"),
     (r"\bwhat\s+(were|are)\s+your\s+initial\b", "prompt_leak"),
     (r"\bprint\s+(your|the|my)?\s*(system\s+prompt|initial\s+prompt|instructions?)\b", "prompt_leak"),
     (r"\bshow\s+(me\s+)?(your\s+)?(system|internal)\s+prompt\b", "prompt_leak"),
     (r"\bwhat\s+is\s+your\s+system\s+prompt\b", "prompt_leak"),
-    # System-prompt leak — Spanish
+    # System-prompt leak: Spanish
     (r"(repite|muestra|dime|imprime)\s+(tu|el)\s+(prompt\s+del?\s+sistema|instrucciones?|prompt\s+inicial)", "prompt_leak"),
     (r"cu[áa]les?\s+son\s+tus\s+(instrucciones?|reglas?|restricciones?)\b", "prompt_leak"),
     # Shell / code injection
@@ -63,7 +63,7 @@ _INJECTION_PATTERNS: list[tuple[str, str]] = [
 
 _COMPILED = [(re.compile(p, re.IGNORECASE | re.DOTALL), label) for p, label in _INJECTION_PATTERNS]
 
-# Minimum query length — reject empty/trivial
+# Minimum query length: reject empty/trivial
 _MIN_LEN = 3
 _MAX_LEN = 2000
 
@@ -92,7 +92,7 @@ def check_input(query: str, operator_id: str = "unknown") -> GuardResult:
     if len(query) > _MAX_LEN:
         return GuardResult.block("Consulta demasiado larga", "too_long")
 
-    # NFKC normalise before pattern matching — decomposes compatibility characters
+    # NFKC normalise before pattern matching: decomposes compatibility characters
     # (ligatures, zero-width spaces, fullwidth letters) without splitting normal
     # accented chars like ú/á/ñ into base + combining mark, which would break
     # the Spanish injection patterns.

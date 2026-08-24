@@ -1,5 +1,5 @@
 """
-IMERG ingest contract tests — no NASA API calls.
+IMERG ingest contract tests: no NASA API calls.
 Validates data transformations and output schema.
 """
 import numpy as np

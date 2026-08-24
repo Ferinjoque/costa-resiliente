@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 # ─── Redis stale-reading cache ────────────────────────────────────────────────
 # Keyed as `costa:hydro:{station_code}:latest`.  TTL 24h.
 # When ANA/SENAMHI endpoint is down, the last known good reading is served
-# instead of returning nothing — critical during flood events when gauge sites
+# instead of returning nothing: critical during flood events when gauge sites
 # are overloaded.
 
 def _redis_url() -> str:
@@ -238,7 +238,7 @@ async def fetch_ana_station(station: dict) -> list[dict]:
             resp = await client.get(url)
             resp.raise_for_status()
         except httpx.HTTPError as exc:
-            logger.warning("ANA fetch failed for %s: %s — trying Redis cache", station["code"], exc)
+            logger.warning("ANA fetch failed for %s: %s, trying Redis cache", station["code"], exc)
             cached = await _get_cached_reading(station["code"])
             if cached:
                 logger.info("ANA %s: serving stale cached reading (cached_at=%s)", station["code"], cached.get("observed_at"))
@@ -271,7 +271,7 @@ async def fetch_senamhi_station(station: dict) -> list[dict]:
             resp = await client.get(url)
             resp.raise_for_status()
         except httpx.HTTPError as exc:
-            logger.warning("SENAMHI fetch failed for %s: %s — trying Redis cache", station["code"], exc)
+            logger.warning("SENAMHI fetch failed for %s: %s, trying Redis cache", station["code"], exc)
             cached = await _get_cached_reading(station["code"])
             if cached:
                 logger.info("SENAMHI %s: serving stale cached reading", station["code"])
@@ -402,7 +402,7 @@ async def upsert_observations(observations: list[dict], stations_meta: dict[str,
         for obs in observations:
             station_meta = stations_meta.get(obs["station_code"])
             if not station_meta:
-                logger.warning("upsert_observations: unknown station_code %r — skipping observation", obs.get("station_code"))
+                logger.warning("upsert_observations: unknown station_code %r, skipping observation", obs.get("station_code"))
                 continue
             # Get station DB id
             station_id = await pool.fetchval(
@@ -452,7 +452,7 @@ async def upsert_observations(observations: list[dict], stations_meta: dict[str,
 
 async def _check_stale_stations(pool: "asyncpg.Pool", threshold_hours: int = 2) -> list[str]:
     """Return station codes that have received no new observations in `threshold_hours` hours."""
-    import asyncpg  # noqa: F401 — ensure import inside async context
+    import asyncpg  # noqa: F401, ensure import inside async context
     rows = await pool.fetch(
         """
         SELECT s.code
@@ -500,13 +500,13 @@ async def ingest_hydro_stations_flow() -> dict:
         if obs and not obs[0].get("from_cache"):
             senamhi_ok_count += 1
 
-    # Open-Meteo fallback — only for stations that returned nothing at all
+    # Open-Meteo fallback: only for stations that returned nothing at all
     # (neither fresh nor cached).  Gives rain_mm even when gauges are down.
     stations_with_data = {o["station_code"] for o in all_observations}
     fallback_stations = [s for s in all_stations if s["code"] not in stations_with_data]
     if fallback_stations:
         logger.warning(
-            "%d station(s) have no data from primary or cache — Open-Meteo fallback: %s",
+            "%d station(s) have no data from primary or cache. Open-Meteo fallback: %s",
             len(fallback_stations),
             ", ".join(s["name"] for s in fallback_stations),
         )
@@ -527,14 +527,14 @@ async def ingest_hydro_stations_flow() -> dict:
             stale = await _check_stale_stations(pool, threshold_hours=2)
         if stale:
             logger.warning(
-                "SCRAPER ALERT — %d station(s) have received no data for >2h: %s",
+                "SCRAPER ALERT, %d station(s) have received no data for >2h: %s",
                 len(stale),
                 ", ".join(stale),
             )
     except Exception as exc:
         logger.warning("Stale-station check failed (non-fatal): %s", exc)
 
-    # Heartbeat for health endpoint liveness — distinct from scraper status (which
+    # Heartbeat for health endpoint liveness: distinct from scraper status (which
     # measures live-station count); this marks the flow as running on schedule.
     try:
         import redis.asyncio as aioredis
@@ -544,7 +544,7 @@ async def ingest_hydro_stations_flow() -> dict:
             await r.set(
                 "costa:scraper:last_run:stations",
                 datetime.now(timezone.utc).isoformat(),
-                ex=7200,  # 2h — covers actual observed 30-60min schedule intervals
+                ex=7200,  # 2h, covers actual observed 30-60min schedule intervals
             )
         finally:
             await r.aclose()

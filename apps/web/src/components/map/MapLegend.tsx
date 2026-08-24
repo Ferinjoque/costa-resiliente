@@ -119,7 +119,7 @@ export function MapLegend() {
       </button>
 
       {open && (
-        // Opens upward-left from the button — away from the bottom edge and
+        // Opens upward-left from the button: away from the bottom edge and
         // clear of the right edge. Scrollable so tall layer lists don't overflow.
         <div className="absolute bottom-full mb-2 right-0 bg-surface border border-border-strong rounded-2xl p-4 shadow-panel space-y-3 w-52 max-h-[70vh] overflow-y-auto">
           {showRisk && (

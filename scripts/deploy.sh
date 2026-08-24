@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# deploy.sh — Bootstrap Costa Resiliente on a fresh Ubuntu 22/24 LTS VPS.
+# deploy.sh: Bootstrap Costa Resiliente on a fresh Ubuntu 22/24 LTS VPS.
 #
 # VPS sizing (models are the locked stack: qwen2.5:7b-instruct-q4_K_M 4.7 GB +
 # gemma2:2b 1.6 GB + nomic-embed-text 274 MB ≈ 6.6 GB of model weights):
-#   Minimum:      Hetzner CX32  4 vCPU / 8 GB RAM  / 80 GB SSD  — €11/mo
-#   Comfortable:  Hetzner CX42  8 vCPU / 16 GB RAM / 240 GB SSD — €17/mo
+#   Minimum:      Hetzner CX32  4 vCPU / 8 GB RAM  / 80 GB SSD, €11/mo
+#   Comfortable:  Hetzner CX42  8 vCPU / 16 GB RAM / 240 GB SSD, €17/mo
 #   DigitalOcean equivalent:    4 vCPU / 8 GB  → $48/mo  |  8 vCPU / 16 GB → $96/mo
 #
 # Usage:
@@ -23,12 +23,12 @@ set -euo pipefail
 REPO_URL="${REPO_URL:-https://github.com/Ferinjoque/costa-resiliente.git}"
 BRANCH="${BRANCH:-develop}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/costa-resiliente}"
-# Locked model stack — must match .env / .env.production.example. See docs/COMPETITION.md.
+# Locked model stack: must match .env / .env.production.example. See docs/COMPETITION.md.
 LLM_PRIMARY_MODEL="${LLM_PRIMARY_MODEL:-qwen2.5:7b-instruct-q4_K_M}"   # copilot + triage
 LLM_FAST_MODEL="${LLM_FAST_MODEL:-gemma2:2b}"                          # guardrails
 LLM_EMBED_MODEL="${LLM_EMBED_MODEL:-nomic-embed-text}"                 # pgvector RAG
 
-echo "==> Costa Resiliente — production deploy"
+echo "==> Costa Resiliente: production deploy"
 echo "    Repo:   ${REPO_URL}"
 echo "    Branch: ${BRANCH}"
 echo "    Dir:    ${INSTALL_DIR}"
@@ -158,7 +158,7 @@ echo "    docker exec costa-prefect-worker python scripts/seed_elnino_2017.py   
 echo "    docker exec costa-prefect-worker python -m costa_workers.rag.ingest    # protocol RAG index (pgvector)"
 echo "    curl -X POST https://\${PUBLIC_DOMAIN}/api/v1/health/seed -H \"Authorization: Bearer \$TOKEN\"  # demo data refresh"
 echo ""
-echo "    Note: scripts/load_sigrid.py is optional — CENEPRED SIGRID is SSO-gated,"
+echo "    Note: scripts/load_sigrid.py is optional. CENEPRED SIGRID is SSO-gated,"
 echo "    hazard zones are served from the SINPAD-derived fallback above."
 echo ""
 

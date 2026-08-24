@@ -91,7 +91,7 @@ const SLA_MINUTES: Record<string, number> = {
 
 function SlaChip({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   if (alert.status !== "active") return null;
-  // Local tick to update SLA chip every 15 seconds — reduces stale display between 30s query refetches
+  // Local tick to update SLA chip every 15 seconds, reduces stale display between 30s query refetches
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 15_000);
@@ -269,8 +269,8 @@ function EscalationModal({
                 <Clock size={12} className="text-danger shrink-0" aria-hidden="true" />
                 <p className="text-xs text-danger font-semibold">
                   {locale === "es"
-                    ? `SLA VENCIDO — ${ageMin} min sin acción (límite ${slaMin} min). Escalar de inmediato.`
-                    : `SLA BREACHED — ${ageMin}min without action (limit ${slaMin}min). Escalate immediately.`}
+                    ? `SLA VENCIDO: ${ageMin} min sin acción (límite ${slaMin} min). Escalar de inmediato.`
+                    : `SLA BREACHED: ${ageMin}min without action (limit ${slaMin}min). Escalate immediately.`}
                 </p>
               </div>
             );
@@ -304,8 +304,8 @@ function EscalationModal({
 // ─── AlertRow ─────────────────────────────────────────────────────────────────
 
 const ACTION_TOAST: Record<string, { es: string; en: string }> = {
-  acknowledge:    { es: "Alerta reconocida — guardada en log", en: "Alert acknowledged — logged" },
-  escalate:       { es: "Escalada a INDECI COEN — registrado", en: "Escalated to INDECI COEN — logged" },
+  acknowledge:    { es: "Alerta reconocida (guardada en log", en: "Alert acknowledged)logged" },
+  escalate:       { es: "Escalada a INDECI COEN (registrado", en: "Escalated to INDECI COEN)logged" },
   false_positive: { es: "Marcada como falso positivo",        en: "Marked as false positive" },
   close:          { es: "Alerta cerrada",                     en: "Alert closed" },
 };
@@ -349,7 +349,7 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
         variant: action === "escalate" ? "warn" : "success",
       } as Omit<LiveToast, "id" | "at">);
     } catch (e) {
-      // Roll back optimistic status update — the action did NOT register.
+      // Roll back optimistic status update: the action did NOT register.
       // Telling an operator their escalation went through when it didn't is
       // worse than no UI at all in an emergency-ops context.
       qc.setQueriesData<Alert[]>({ queryKey: ["alerts"] }, (old) =>
@@ -392,7 +392,7 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
 
   const src    = alert.source_refs?.source ?? null;
   const rawUrl = alert.source_refs?.url    ?? null;
-  // Only allow http/https — blocks javascript: and data: URL injection from scraped content
+  // Only allow http/https, blocks javascript: and data: URL injection from scraped content
   const srcUrl = rawUrl && /^https?:\/\//i.test(rawUrl) ? rawUrl : null;
 
   return (
@@ -609,7 +609,7 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   if (locale === "es") {
     if (critical.length > 0 && isHuayco) {
       const districtNote = topDistrict ? ` en ${topDistrict}` : "";
-      rec = `${slaPrefix}Evacuación preventiva inmediata${districtNote} — quebrada activa detectada. Umbral EMERGENCIA ANA (50 mm/72h) superado. Desplegar USAR. Notificar INDECI COEN y activar albergues.`;
+      rec = `${slaPrefix}Evacuación preventiva inmediata${districtNote}: quebrada activa detectada. Umbral EMERGENCIA ANA (50 mm/72h) superado. Desplegar USAR. Notificar INDECI COEN y activar albergues.`;
     } else if (critical.length > 0 && isRainfall) {
       const refs = firstCritical!.source_refs && typeof firstCritical!.source_refs === "object" && !Array.isArray(firstCritical!.source_refs) ? firstCritical!.source_refs as Record<string, number> : {};
       const mm72 = refs.acc_72h_mm;
@@ -617,18 +617,18 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
       rec = `${slaPrefix}${firstCritical!.title}${mmNote}. Umbral EMERGENCIA ANA superado. Activar brigadas en quebradas. Escalar a COEN y pre-alertar municipios distritales.`;
     } else if (critical.length > 0 && firstCritical?.type === "social_cluster") {
       const districtNote = topDistrict ? ` en ${topDistrict}` : "";
-      rec = `${slaPrefix}Señales ciudadanas críticas${districtNote}: ${firstCritical!.title}. Verificar reportes de campo — posibles víctimas. Activar brigadas de respuesta y coordinar con INDECI COEN.`;
+      rec = `${slaPrefix}Señales ciudadanas críticas${districtNote}: ${firstCritical!.title}. Verificar reportes de campo, posibles víctimas. Activar brigadas de respuesta y coordinar con INDECI COEN.`;
     } else if (critical.length > 0) {
       const districtNote = topDistrict ? ` (${topDistrict})` : "";
       rec = `${slaPrefix}Alerta crítica activa${districtNote}: ${firstCritical!.title}. Activar protocolo DELTA COEN. Preposicionar botes. Confirmar capacidad de albergues.`;
     } else {
       const topName = topDistrict ?? "Lima Metro";
-      rec = `Riesgo compuesto ALTO — ${high.length} alerta${high.length !== 1 ? "s" : ""} alta${high.length !== 1 ? "s" : ""}, zona prioritaria: ${topName}. Pre-alertar INDECI y monitorear estaciones cada 15 min.`;
+      rec = `Riesgo compuesto ALTO, ${high.length} alerta${high.length !== 1 ? "s" : ""} alta${high.length !== 1 ? "s" : ""}, zona prioritaria: ${topName}. Pre-alertar INDECI y monitorear estaciones cada 15 min.`;
     }
   } else {
     if (critical.length > 0 && isHuayco) {
       const districtNote = topDistrict ? ` in ${topDistrict}` : "";
-      rec = `${slaPrefix}Immediate preventive evacuation${districtNote} — active quebrada detected. ANA EMERGENCY threshold (50 mm/72h) exceeded. Deploy USAR. Notify INDECI COEN and activate shelters.`;
+      rec = `${slaPrefix}Immediate preventive evacuation${districtNote}: active quebrada detected. ANA EMERGENCY threshold (50 mm/72h) exceeded. Deploy USAR. Notify INDECI COEN and activate shelters.`;
     } else if (critical.length > 0 && isRainfall) {
       const refs = firstCritical!.source_refs && typeof firstCritical!.source_refs === "object" && !Array.isArray(firstCritical!.source_refs) ? firstCritical!.source_refs as Record<string, number> : {};
       const mm72 = refs.acc_72h_mm;
@@ -636,13 +636,13 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
       rec = `${slaPrefix}${firstCritical!.title}${mmNote}. ANA EMERGENCY threshold exceeded. Deploy brigades to quebradas. Escalate to COEN and pre-alert district municipalities.`;
     } else if (critical.length > 0 && firstCritical?.type === "social_cluster") {
       const districtNote = topDistrict ? ` in ${topDistrict}` : "";
-      rec = `${slaPrefix}Critical social signals${districtNote}: ${firstCritical!.title}. Verify field reports — possible casualties. Activate response brigades and coordinate with INDECI COEN.`;
+      rec = `${slaPrefix}Critical social signals${districtNote}: ${firstCritical!.title}. Verify field reports, possible casualties. Activate response brigades and coordinate with INDECI COEN.`;
     } else if (critical.length > 0) {
       const districtNote = topDistrict ? ` (${topDistrict})` : "";
       rec = `${slaPrefix}Critical alert active${districtNote}: ${firstCritical!.title}. Activate COEN DELTA protocol. Pre-position boats. Confirm shelter capacity.`;
     } else {
       const topName = topDistrict ?? "Lima Metro";
-      rec = `HIGH composite risk — ${high.length} high alert${high.length !== 1 ? "s" : ""}, priority zone: ${topName}. Pre-alert INDECI and monitor stations every 15 min.`;
+      rec = `HIGH composite risk, ${high.length} high alert${high.length !== 1 ? "s" : ""}, priority zone: ${topName}. Pre-alert INDECI and monitor stations every 15 min.`;
     }
   }
 
@@ -708,7 +708,7 @@ function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en
         session_id: BROWSER_SESSION_ID,
       });
       addToast({
-        message: locale === "es" ? `${label} despachado — registrado en log` : `${label} dispatched — logged`,
+        message: locale === "es" ? `${label} despachado, registrado en log` : `${label} dispatched, logged`,
         variant: "success",
       } as Omit<LiveToast, "id" | "at">);
     } catch {
@@ -810,14 +810,14 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   const isRainfall = !isHuayco && active.some((a) => a.type === "rainfall" && (a.severity === "critical" || a.severity === "high"));
   const primaryAlert = urgent[0];
 
-  // Extract actual quebrada name from huayco alert title (e.g., "Riesgo de huayco — Huaycoloro")
+  // Extract actual quebrada name from huayco alert title (e.g., "Riesgo de huayco: Huaycoloro")
   const huaycoAlert = active.find((a) => a.type === "huayco" && (a.severity === "critical" || a.severity === "high"));
-  const huaycoQuebrada = huaycoAlert?.title?.match(/—\s*(.+)$|Quebrada\s+(\w+)/i)?.[1]?.trim() || "Jicamarca";
+  const huaycoQuebrada = huaycoAlert?.title?.match(/: \s*(.+)$|Quebrada\s+(\w+)/i)?.[1]?.trim() || "Jicamarca";
 
   const steps = isHuayco
     ? [
         { id: "s1", es: "Notificar COEN/INDECI por radio",           en: "Notify COEN/INDECI via radio" },
-        { id: "s2", es: `Evacuar ${huaycoQuebrada} — ruta Av. Las Torres`, en: `Evacuate ${huaycoQuebrada} via Av. Las Torres` },
+        { id: "s2", es: `Evacuar ${huaycoQuebrada}: ruta Av. Las Torres`, en: `Evacuate ${huaycoQuebrada} via Av. Las Torres` },
         { id: "s3", es: "Verificar albergues habilitados y capacidad", en: "Verify enabled shelters and capacity" },
         { id: "s4", es: "Desplegar USAR y botes en zona de descarga",  en: "Deploy USAR and boats to discharge zone" },
         { id: "s5", es: "Preparar ficha EDAN para COER",               en: "Prepare EDAN form for COER" },
@@ -854,20 +854,20 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
         const nextDone = [...next].filter((s) => steps.some((st) => st.id === s)).length;
         if (nextDone === steps.length) {
           addToast({
-            message: locale === "es" ? "Protocolo INDECI completado — log guardado" : "INDECI Protocol complete — log saved",
+            message: locale === "es" ? "Protocolo INDECI completado, log guardado" : "INDECI Protocol complete, log saved",
             variant: "success",
           } as Omit<LiveToast, "id" | "at">);
         } else {
           addToast({
-            message: locale === "es" ? `Paso ${nextDone}/${steps.length} completado — registrado` : `Step ${nextDone}/${steps.length} complete — logged`,
+            message: locale === "es" ? `Paso ${nextDone}/${steps.length} completado, registrado` : `Step ${nextDone}/${steps.length} complete, logged`,
             variant: "info",
           } as Omit<LiveToast, "id" | "at">);
         }
       } catch {
         addToast({
           message: locale === "es"
-            ? "Paso marcado localmente — no se pudo registrar en el log. Verifica conectividad."
-            : "Step marked locally — could not log to server. Check connectivity.",
+            ? "Paso marcado localmente: no se pudo registrar en el log. Verifica conectividad."
+            : "Step marked locally: could not log to server. Check connectivity.",
           variant: "warn",
         } as Omit<LiveToast, "id" | "at">);
       }
@@ -888,8 +888,8 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
         <Siren size={13} className={clsx("shrink-0 transition-colors", allDone ? "text-ok-muted" : "text-warn-muted")} aria-hidden="true" />
         <SectionLabel className="flex-1">
           {locale === "es"
-            ? (isRainfall ? "Protocolo Lluvia — SIAT" : isHuayco ? "Protocolo Huayco — USAR" : "Protocolo INDECI")
-            : (isRainfall ? "Rainfall Protocol — SIAT" : isHuayco ? "Huayco Protocol — USAR" : "INDECI Protocol")}
+            ? (isRainfall ? "Protocolo Lluvia, SIAT" : isHuayco ? "Protocolo Huayco, USAR" : "Protocolo INDECI")
+            : (isRainfall ? "Rainfall Protocol, SIAT" : isHuayco ? "Huayco Protocol, USAR" : "INDECI Protocol")}
         </SectionLabel>
         <span className={clsx("text-xs tabular-nums font-mono", allDone ? "text-ok-muted font-semibold" : "text-ink-subtle")}>
           {done}/{steps.length}
@@ -907,7 +907,7 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
             <div className="flex items-center gap-2 bg-ok-soft border border-ok/20 rounded-xl px-3 py-2 mb-3">
               <CheckCircle size={13} className="text-ok-muted shrink-0" aria-hidden="true" />
               <span className="text-xs text-ok-muted font-medium">
-                {locale === "es" ? "Protocolo completado — registrado en el log" : "Protocol complete — logged to decision log"}
+                {locale === "es" ? "Protocolo completado, registrado en el log" : "Protocol complete, logged to decision log"}
               </span>
             </div>
           )}
@@ -1018,7 +1018,7 @@ export function AlertsPanel() {
 
   if (activePanel !== "alerts") return null;
 
-  // True active count across ALL severities (unfiltered) — used for badge + LeftRail
+  // True active count across ALL severities (unfiltered): used for badge + LeftRail
   const allActiveAlerts = rawAlerts.filter((a) => a.status === "active");
   const activeAlerts    = alerts.filter((a) => a.status === "active");
   const historyAlerts   = alerts.filter((a) => a.status !== "active");
@@ -1083,7 +1083,7 @@ export function AlertsPanel() {
           ))}
         </div>
 
-        {/* District select — only shown for Lima Metro */}
+        {/* District select: only shown for Lima Metro */}
         {province === "Lima" && (
           <select
             value={district}
@@ -1170,7 +1170,7 @@ export function AlertsPanel() {
 
       {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto">
-        {/* Population exposure callout — only on active tab */}
+        {/* Population exposure callout: only on active tab */}
         {tab === "active" && exposure && exposure.total_affected_population > 0 && (
           <div className="bg-danger-soft border border-danger/20 rounded-xl mx-4 mt-3 mb-1 px-4 py-3">
             <div className="flex items-baseline gap-2 mb-0.5">
@@ -1186,13 +1186,13 @@ export function AlertsPanel() {
           </div>
         )}
 
-        {/* INDECI protocol checklist — active tab only; shown first for immediate visibility */}
+        {/* INDECI protocol checklist: active tab only; shown first for immediate visibility */}
         {tab === "active" && <ResponseProtocol alerts={alerts} locale={locale} />}
 
-        {/* AI recommendation — active tab only */}
+        {/* AI recommendation: active tab only */}
         {tab === "active" && <AiRecommendation alerts={alerts} locale={locale} />}
 
-        {/* Quick dispatch resources — active tab only */}
+        {/* Quick dispatch resources: active tab only */}
         {tab === "active" && <QuickDispatch alerts={alerts} locale={locale} />}
 
         {/* History header */}
@@ -1244,8 +1244,8 @@ export function AlertsPanel() {
                   : (locale === "es" ? "Sin alertas activas." : "No active alerts.")}
                 body={severityFilter && allActiveAlerts.length > 0
                   ? (locale === "es"
-                    ? `${allActiveAlerts.length} alerta${allActiveAlerts.length !== 1 ? "s" : ""} activa${allActiveAlerts.length !== 1 ? "s" : ""} en el sistema — ninguna con severidad seleccionada.`
-                    : `${allActiveAlerts.length} active alert${allActiveAlerts.length !== 1 ? "s" : ""} in system — none match the selected severity.`)
+                    ? `${allActiveAlerts.length} alerta${allActiveAlerts.length !== 1 ? "s" : ""} activa${allActiveAlerts.length !== 1 ? "s" : ""} en el sistema: ninguna con severidad seleccionada.`
+                    : `${allActiveAlerts.length} active alert${allActiveAlerts.length !== 1 ? "s" : ""} in system: none match the selected severity.`)
                   : (locale === "es"
                     ? "Los sensores satelitales y señales sociales se actualizan en segundo plano."
                     : "Satellite sensors and social signals refresh in the background.")}

@@ -74,11 +74,11 @@ def fetch_imerg_granule(granule_time: datetime) -> GranuleResult | None:
     try:
         import h5py
     except ImportError:
-        log.error("h5py not installed — add h5py to pyproject.toml dependencies")
+        log.error("h5py not installed: add h5py to pyproject.toml dependencies")
         return None
 
     if not EARTHDATA_USERNAME or not EARTHDATA_PASSWORD:
-        log.warning("EARTHDATA credentials not set — cannot fetch IMERG")
+        log.warning("EARTHDATA credentials not set: cannot fetch IMERG")
         return None
 
     # Build URL: half-hourly granule starting at granule_time
@@ -192,7 +192,7 @@ def compute_watershed_accumulations(
         ).astype(bool)
 
         if not mask.any():
-            log.warning("Watershed %d has no IMERG pixels — skipping", ws["id"])
+            log.warning("Watershed %d has no IMERG pixels: skipping", ws["id"])
             continue
 
         # Accumulations: sum last N granules
@@ -371,7 +371,7 @@ def fetch_imerg_openmeteo_fallback(lookback_hours: int = 73) -> list[dict]:
     for ws in _WATERSHED_OPENMETEO:
         base = latest_by_ws.get(ws["id"])
         if base is None:
-            log.warning("IMERG fallback: no existing row for watershed %d — skipping", ws["id"])
+            log.warning("IMERG fallback: no existing row for watershed %d, skipping", ws["id"])
             continue
 
         delta_1h = om_delta.get(ws["id"], 0.0)
@@ -423,7 +423,7 @@ def ingest_imerg_flow(lookback_hours: int = 169) -> dict:
 
     if not valid:
         log.warning(
-            "No NASA IMERG granules fetched (EarthData auth or data lag) — "
+            "No NASA IMERG granules fetched (EarthData auth or data lag): "
             "falling back to Open-Meteo precipitation for Lima watersheds"
         )
         fallback_records = fetch_imerg_openmeteo_fallback(lookback_hours)
@@ -432,14 +432,14 @@ def ingest_imerg_flow(lookback_hours: int = 169) -> dict:
             log.info("Open-Meteo IMERG fallback: %d accumulation records upserted", upserted)
             _write_imerg_heartbeat()
             return {"granules_fetched": 0, "records_upserted": upserted, "fallback": "openmeteo"}
-        log.error("Open-Meteo IMERG fallback also failed — no accumulations updated")
+        log.error("Open-Meteo IMERG fallback also failed: no accumulations updated")
         return {"granules_fetched": 0, "records_upserted": 0}
 
     valid_sorted = sorted(valid, key=lambda g: g.time)
     watersheds = load_watersheds_from_db()
 
     if not watersheds:
-        log.warning("No watersheds in DB — run scripts/load_lima_geodata.py first")
+        log.warning("No watersheds in DB: run scripts/load_lima_geodata.py first")
         return {"granules_fetched": len(valid), "records_upserted": 0}
 
     records = compute_watershed_accumulations(valid_sorted, watersheds, end_dt)
@@ -459,7 +459,7 @@ def _write_imerg_heartbeat() -> None:
             r.set(
                 "costa:scraper:last_run:imerg",
                 datetime.now(timezone.utc).isoformat(),
-                ex=3600,  # 1h — 2× the 30min schedule; stale if flow stops
+                ex=3600,  # 1h, 2× the 30min schedule; stale if flow stops
             )
         finally:
             r.close()

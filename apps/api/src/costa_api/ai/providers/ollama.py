@@ -1,4 +1,4 @@
-"""Ollama provider — wraps /api/chat and /api/embeddings with retries."""
+"""Ollama provider: wraps /api/chat and /api/embeddings with retries."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ async def chat(
     temperature: float = 0.1,
     timeout: float | None = None,
 ) -> dict:
-    """POST /api/chat — returns full Ollama response dict."""
+    """POST /api/chat: returns full Ollama response dict."""
     model = model or settings.llm_primary_model
     timeout = timeout or settings.llm_timeout_chat
 
@@ -46,7 +46,7 @@ async def chat(
         payload["format"] = "json"
 
     async with httpx.AsyncClient(timeout=timeout) as client:
-        for attempt in range(2):  # 1 retry max (not on timeout — callers use keyword fallback)
+        for attempt in range(2):  # 1 retry max (not on timeout: callers use keyword fallback)
             try:
                 resp = await client.post(
                     f"{settings.llm_base_url}/api/chat",
@@ -59,14 +59,14 @@ async def chat(
                 resp.raise_for_status()
                 return resp.json()
             except httpx.TimeoutException:
-                # Don't retry on timeout — let callers fall back to keyword dispatch
-                logger.warning("Ollama chat timeout (attempt %d) — not retrying", attempt + 1)
+                # Don't retry on timeout: let callers fall back to keyword dispatch
+                logger.warning("Ollama chat timeout (attempt %d): not retrying", attempt + 1)
                 raise
     raise RuntimeError("Ollama: all retries exhausted")
 
 
 async def embed(text: str, model: str | None = None) -> list[float]:
-    """POST /api/embeddings — returns embedding vector (1 retry on 429/503/502)."""
+    """POST /api/embeddings: returns embedding vector (1 retry on 429/503/502)."""
     model = model or settings.llm_embed_model
     async with httpx.AsyncClient(timeout=settings.llm_timeout_embed) as client:
         for attempt in range(2):
@@ -82,7 +82,7 @@ async def embed(text: str, model: str | None = None) -> list[float]:
                 resp.raise_for_status()
                 return resp.json()["embedding"]
             except httpx.TimeoutException:
-                logger.warning("Ollama embed timeout (attempt %d) — not retrying", attempt + 1)
+                logger.warning("Ollama embed timeout (attempt %d): not retrying", attempt + 1)
                 raise
     raise RuntimeError("Ollama embed: all retries exhausted")
 
@@ -104,7 +104,7 @@ def extract_tool_calls(response: dict) -> list[dict]:
     Ollama normally returns tool calls in the structured `tool_calls` field, but
     qwen2.5 intermittently emits them as JSON *inside* the message content
     instead. When that happened the agent loop saw "no tool calls", stopped, and
-    handed the raw content to the operator — producing answers like
+    handed the raw content to the operator: producing answers like
     `Ronaldo\\n{"name": "get_active_alerts", ...}`. So fall back to scraping
     tool-call JSON out of the content.
     """

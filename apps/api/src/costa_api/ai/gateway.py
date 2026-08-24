@@ -1,4 +1,4 @@
-"""Unified LLM gateway — single interface over Ollama or OpenAI-compat providers.
+"""Unified LLM gateway: single interface over Ollama or OpenAI-compat providers.
 
 Usage:
     from costa_api.ai.gateway import gateway

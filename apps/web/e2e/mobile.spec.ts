@@ -31,7 +31,7 @@ test("alerts are reachable from the bottom bar", async ({ page }) => {
   await tabs.getByRole("button", { name: /Alertas|Alerts/i }).click();
 
   // Above the fold on a phone: the panel header, the live indicator and the
-  // population-at-risk callout — the numbers a COEL coordinator needs first.
+  // population-at-risk callout: the numbers a COEL coordinator needs first.
   await expect(page.getByText(/EN VIVO|LIVE/i).first()).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/personas en zona inundada|people in flooded/i).first())
     .toBeVisible();

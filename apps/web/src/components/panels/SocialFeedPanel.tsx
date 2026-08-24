@@ -79,7 +79,7 @@ function buildSourceUrl(source: string, sourceId?: string | null): string | null
     }
   }
   if (s === "reddit") return `https://reddit.com/${sourceId}`;
-  // RSS: sourceId is the article URL — only allow http/https
+  // RSS: sourceId is the article URL, only allow http/https
   if (s.startsWith("rss")) return isSafeUrl(sourceId) ? sourceId : null;
   // Telegram stores "ChannelName/messageId" or a full https URL
   if (s === "telegram") {
@@ -114,7 +114,7 @@ function formatSignalDate(published_at: string | null | undefined, ingested_at: 
   return `${dateStr} ${timeStr}`;
 }
 
-// Urgency sort: SINAGERD-aligned severity — needs_help first (life safety), huayco second (imminent structural)
+// Urgency sort: SINAGERD-aligned severity, needs_help first (life safety), huayco second (imminent structural)
 const LABEL_PRIORITY: Record<string, number> = {
   needs_help:            0,
   huayco_observation:    1,
@@ -688,7 +688,7 @@ export function SocialFeedPanel() {
                   : [null, null];
               if (lng != null && lat != null) {
                 setFlyToPoint([lng, lat]);
-                // intentionally NOT closing sidebar — map pans without leaving social view
+                // intentionally NOT closing sidebar: map pans without leaving social view
               }
             }}
           />

@@ -3,10 +3,10 @@
 Load Lima Metropolitana reference geodata into PostGIS.
 
 Sources:
-  geo.districts       — OSM Overpass (admin_level=8, Lima Province) + hardcoded UBIGEO map
-  geo.watersheds      — Hardcoded simplified polygons (Rímac, Chillón, Lurín)
-  geo.quebradas       — Top-10 priority huayco gullies (manually curated)
-  geo.infrastructure  — OSM Overpass (hospitals, schools, fire stations, bridges)
+  geo.districts: OSM Overpass (admin_level=8, Lima Province) + hardcoded UBIGEO map
+  geo.watersheds: Hardcoded simplified polygons (Rímac, Chillón, Lurín)
+  geo.quebradas: Top-10 priority huayco gullies (manually curated)
+  geo.infrastructure: OSM Overpass (hospitals, schools, fire stations, bridges)
 
 Usage:
     python scripts/load_lima_geodata.py
@@ -50,7 +50,7 @@ _OVERPASS_HEADERS = {
 # "Pueblo Libre" at 150125. They are the same district (Pueblo Libre is the
 # modern name of Magdalena Vieja, INEI 150121), so the duplicate shifted every
 # code from 150125 onward by +1 and invented a non-existent 150144. That put
-# San Juan de Lurigancho — the demo COEL district — on 150133, which is
+# San Juan de Lurigancho, the demo COEL district, on 150133, which is
 # actually San Juan de Miraflores. Fixed by
 # infra/postgres/migration_ubigeo_fix.sql.
 LIMA_METRO_UBIGEOS = {
@@ -158,7 +158,7 @@ async def load_districts(conn: asyncpg.Connection) -> int:
         pop = POPULATION_2017.get(ubigeo)
         wkt = _build_polygon(rel, nodes_by_id, ways_by_id)
         if not wkt:
-            print(f"    skip {name} — no geometry")
+            print(f"    skip {name}: no geometry")
             continue
         try:
             await conn.execute(
@@ -193,7 +193,7 @@ WATERSHEDS = [
 ]
 
 # ── Quebradas ─────────────────────────────────────────────────────────────────
-# Top-10 Lima quebradas — seed data for r.avaflow triggers
+# Top-10 Lima quebradas: seed data for r.avaflow triggers
 QUEBRADAS = [
     ("Pedregal",    "Rímac",  1, 25.0),
     ("Quirio",      "Rímac",  2, 20.0),
@@ -296,7 +296,7 @@ async def load_infrastructure(conn: asyncpg.Connection) -> int:
 
 
 async def main() -> None:
-    print("Costa Resiliente — Lima geodata loader")
+    print("Costa Resiliente: Lima geodata loader")
     print(f"Connecting to {DSN.split('@')[-1]}...\n")
     conn = await asyncpg.connect(DSN)
     try:

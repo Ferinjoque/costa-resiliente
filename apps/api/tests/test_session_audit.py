@@ -589,7 +589,7 @@ class TestAlerts:
         assert r2.status_code in {400, 422}
 
     def test_action_missing_operator_id(self, client):
-        # operator_id is now Optional and ignored — JWT identity is always used.
+        # operator_id is now Optional and ignored: JWT identity is always used.
         # Request without operator_id should succeed (200) since JWT is present.
         r = client.get("/alerts")
         alert_id = r.json()[0]["id"]
@@ -687,7 +687,7 @@ class TestAlerts:
 # ─── 5. Copilot ───────────────────────────────────────────────────────────────
 
 class TestCopilot:
-    """Copilot tests — no LLM calls; use keyword dispatch via empty-model fallback."""
+    """Copilot tests: no LLM calls; use keyword dispatch via empty-model fallback."""
 
     VALID_QUERY = {
         "query": "¿Cuáles son las alertas activas?",
@@ -1180,7 +1180,7 @@ class TestSecurity:
             r = client.get("/districts/150101\x00")
             assert r.status_code in {400, 404, 422}
         except Exception:
-            pass  # httpx rejects null bytes at client level — acceptable
+            pass  # httpx rejects null bytes at client level, acceptable
 
     def test_unicode_in_path(self, client):
         r = client.get("/districts/ñoño")
@@ -1191,7 +1191,7 @@ class TestSecurity:
         assert r.status_code in {400, 404, 422}
 
     def test_alert_list_accessible_without_write_auth(self, client):
-        # Read-only endpoints require no auth — verify they remain accessible
+        # Read-only endpoints require no auth: verify they remain accessible
         r = client.get("/alerts")
         assert r.status_code == 200
 

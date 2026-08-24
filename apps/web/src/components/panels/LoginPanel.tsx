@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Shield, Eye, EyeOff, LogIn } from "lucide-react";
+import { Shield, Eye, EyeOff, LogIn, LogOut } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { clsx } from "clsx";
 
-const ROLE_LABEL: Record<string, { es: string; badge: string }> = {
-  coen: { es: "COEN — Nacional",      badge: "COEN" },
-  coer: { es: "COER Lima — Regional", badge: "COER" },
-  coel: { es: "COEL — Distrital",     badge: "COEL" },
+const ROLE_LABEL: Record<string, { es: string; en: string; badge: string }> = {
+  coen: { es: "Nivel nacional",   en: "National level",   badge: "COEN" },
+  coer: { es: "Regional, Lima",   en: "Regional, Lima",   badge: "COER" },
+  coel: { es: "Nivel distrital",  en: "District level",   badge: "COEL" },
 };
 
 const DEMO_HINTS = [
@@ -122,7 +122,7 @@ export function LoginPanel() {
         aria-hidden="true"
       />
 
-      {/* Centering wrapper — no translate hack so animation works cleanly */}
+      {/* Centering wrapper: no translate hack so animation works cleanly */}
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
         <div
           role="dialog"
@@ -136,17 +136,21 @@ export function LoginPanel() {
               : "opacity-0 scale-95 translate-y-3",
           )}
         >
-          {/* Header */}
-          <div className="px-6 pt-6 pb-4 border-b border-border">
-            <div className="flex items-center gap-2.5 mb-1">
-              <div className="w-7 h-7 rounded-full bg-danger flex items-center justify-center shrink-0">
-                <span className="text-surface text-xs font-bold leading-none">CR</span>
+          {/* Header: mark and text share one row so the subtitle hangs off the
+              title rather than the panel edge, and both lines stay optically
+              centred against the mark. */}
+          <div className="px-6 pt-6 pb-5 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-danger flex items-center justify-center shrink-0">
+                <span className="text-surface text-[11px] font-bold tracking-wide leading-none">CR</span>
               </div>
-              <p className="text-sm font-semibold text-ink">Costa Resiliente</p>
+              <div className="min-w-0">
+                <p className="text-[15px] font-semibold text-ink leading-tight">Costa Resiliente</p>
+                <p className="text-xs text-ink-subtle leading-tight mt-1">
+                  {locale === "es" ? "Acceso para operadores SINAGERD" : "SINAGERD operator access"}
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-ink-subtle">
-              {locale === "es" ? "Acceso para operadores SINAGERD" : "SINAGERD operator access"}
-            </p>
           </div>
 
           {/* Form */}
@@ -239,6 +243,7 @@ export function LoginPanel() {
 export function OperatorChip() {
   const { operator, logout, setLoginModalOpen } = useAuthStore();
   const { locale } = useUIStore();
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
 
   if (!operator) {
     return (
@@ -257,23 +262,63 @@ export function OperatorChip() {
     );
   }
 
-  const roleInfo = ROLE_LABEL[operator.role] ?? { es: operator.role, badge: operator.role.toUpperCase() };
+  const roleInfo = ROLE_LABEL[operator.role]
+    ?? { es: operator.role, en: operator.role, badge: operator.role.toUpperCase() };
+  const es = locale === "es";
+
+  // Signing out mid-shift drops the operator's ability to acknowledge or
+  // escalate anything, so it asks first. Confirming happens in place rather than
+  // through a browser dialog, which keeps the console self-contained.
+  if (confirmingLogout) {
+    return (
+      <div className="px-3 py-2 border-t border-border-subtle mt-auto">
+        <div className="px-3 py-2.5 rounded-xl bg-surface-hover border border-border">
+          <p className="text-2xs text-ink-muted leading-snug mb-2">
+            {es
+              ? "Cerrar sesión detiene tu acceso a alertas y bitácora."
+              : "Signing out ends your access to alerts and the decision log."}
+          </p>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setConfirmingLogout(false)}
+              className="flex-1 px-2 py-1.5 rounded-lg text-2xs font-medium text-ink-muted hover:bg-surface hover:text-ink border border-border transition-colors"
+            >
+              {es ? "Cancelar" : "Cancel"}
+            </button>
+            <button
+              onClick={() => {
+                setConfirmingLogout(false);
+                logout();
+              }}
+              className="flex-1 px-2 py-1.5 rounded-lg text-2xs font-semibold text-surface bg-danger hover:opacity-90 transition-opacity"
+            >
+              {es ? "Cerrar sesión" : "Sign out"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-3 py-2 border-t border-border-subtle mt-auto">
-      <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-surface-hover">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-ink truncate">{operator.username}</p>
-          <p className="text-2xs text-ink-subtle">{roleInfo.es}</p>
+      <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-surface-hover">
+        <div className="w-7 h-7 rounded-full bg-accent/12 flex items-center justify-center shrink-0">
+          <span className="text-2xs font-bold text-accent leading-none">{roleInfo.badge}</span>
         </div>
-        <span className="text-2xs font-bold text-accent shrink-0">{roleInfo.badge}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-ink truncate leading-tight">{operator.username}</p>
+          <p className="text-2xs text-ink-subtle truncate leading-tight mt-0.5">
+            {es ? roleInfo.es : roleInfo.en}
+          </p>
+        </div>
         <button
-          onClick={logout}
-          className="text-2xs text-ink-subtle hover:text-danger transition-colors shrink-0"
-          title={locale === "es" ? "Cerrar sesión" : "Log out"}
-          aria-label={locale === "es" ? "Cerrar sesión" : "Log out"}
+          onClick={() => setConfirmingLogout(true)}
+          className="p-1.5 -mr-0.5 rounded-lg text-ink-subtle hover:text-danger hover:bg-surface transition-colors shrink-0"
+          title={es ? "Cerrar sesión" : "Sign out"}
+          aria-label={es ? "Cerrar sesión" : "Sign out"}
         >
-          ✕
+          <LogOut size={14} strokeWidth={1.75} aria-hidden="true" />
         </button>
       </div>
     </div>

@@ -1,4 +1,4 @@
-# Costa Resiliente — Project Status
+# Costa Resiliente: Project Status
 
 > **This is the single source of truth for what's built, what's pending, and the current rubric score.**
 > Last updated: 2026-06-01 (Session 23)
@@ -9,15 +9,15 @@ For frontend design system, see [`../apps/web/DESIGN.md`](../apps/web/DESIGN.md)
 
 ---
 
-## Score — IEEE Response Quest 2026 rubric
+## Score: IEEE Response Quest 2026 rubric
 
 Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for criterion definitions.
 
 | # | Criterion | Score | Gap |
 |---|-----------|-------|-----|
 | C1 | Timeliness & Real-Time Responsiveness | **5.0** ✅ | ANA scraper fragility closed (Redis stale cache + auto-notify) |
-| C2 | Comprehensiveness & Novel Data Discovery | **5.0** ✅ | — |
-| C3 | Integration & Synthesis | **5.0** ✅ | — |
+| C2 | Comprehensiveness & Novel Data Discovery | **5.0** ✅ |, |
+| C3 | Integration & Synthesis | **5.0** ✅ |, |
 | C4 | Usability & Operational Readiness | **5.0** ✅ | Lighthouse pass confirmed on VPS deploy |
 | C5 | Scenario Fit & Innovation | **5.0** ✅ | r.avaflow simulation (post-submission) |
 | | **Total** | **~25.0 / 25** | Sole gap: public VPS deployment |
@@ -53,7 +53,7 @@ docker exec costa-api python -m pytest --asyncio-mode=auto -q
 | `costa-stac` | stac-utils/pgstac-api | 8082 | STAC catalog REST API |
 | `costa-api` | custom Python 3.12 + FastAPI | 8000 | Main REST API (~30 endpoints + SSE) |
 | `costa-prefect-server` | prefecthq/prefect:3 | 4200 | Orchestration UI + API |
-| `costa-prefect-worker` | custom | — | Ingestion + ML workers |
+| `costa-prefect-worker` | custom |, | Ingestion + ML workers |
 | `costa-web` | custom Next.js 14 | 3000 | PWA frontend |
 | `costa-ollama` | ollama/ollama | 11434 | Local LLM inference |
 
@@ -64,8 +64,8 @@ Production adds Caddy as TLS-terminating reverse proxy.
 | Role | Model | Size | Active env var |
 |------|-------|------|---------------|
 | Copilot + signal triage | `qwen2.5:7b-instruct-q4_K_M` | 4.7 GB | `LLM_PRIMARY_MODEL` |
-| Input + output guardrails | `gemma2:2b` | 1.6 GB | — |
-| RAG embeddings (pgvector) | `nomic-embed-text` | 274 MB | — |
+| Input + output guardrails | `gemma2:2b` | 1.6 GB |, |
+| RAG embeddings (pgvector) | `nomic-embed-text` | 274 MB |, |
 
 Stale env var `OLLAMA_PRIMARY_MODEL=gemma4:e4b` was commented out in local `.env`. Pydantic `AliasChoices` picks `LLM_PRIMARY_MODEL` first.
 
@@ -75,13 +75,13 @@ Stale env var `OLLAMA_PRIMARY_MODEL=gemma4:e4b` was commented out in local `.env
 - State: Zustand (UI + auth), TanStack Query (server)
 - i18n: `next-intl` with ES default / EN toggle
 - PWA installable, service worker, offline last-state cache
-- Cream felt-style design system — see [`DESIGN.md`](../apps/web/DESIGN.md)
+- Cream felt-style design system: see [`DESIGN.md`](../apps/web/DESIGN.md)
 
 ---
 
 ## What's built
 
-### Backend — API endpoints (32 total)
+### Backend: API endpoints (32 total)
 
 ```
 GET    /api/v1/health
@@ -105,14 +105,14 @@ GET    /api/v1/layers/stations
 GET    /api/v1/layers/watersheds
 GET    /api/v1/layers/quebradas
 GET    /api/v1/layers/social
-GET    /api/v1/layers/shelters                (INDECI evacuation shelters — Session 8)
+GET    /api/v1/layers/shelters                (INDECI evacuation shelters: Session 8)
 
 GET    /api/v1/alerts
 POST   /api/v1/alerts/{id}/action
-GET    /api/v1/alerts/stream                  (SSE — app-shell push)
+GET    /api/v1/alerts/stream                  (SSE: app-shell push)
 GET    /api/v1/alerts/decision-log
-GET    /api/v1/alerts/decision-log/export     (CSV — EDAN-Perú)
-GET    /api/v1/alerts/decision-log/report     (PDF — EDAN-Perú A4)
+GET    /api/v1/alerts/decision-log/export     (CSV: EDAN-Perú)
+GET    /api/v1/alerts/decision-log/report     (PDF: EDAN-Perú A4)
 
 POST   /api/v1/copilot/ask                    (agentic, 8 DB tools + RAG)
 
@@ -137,7 +137,7 @@ GET    /api/v1/auth/operators
 POST   /api/v1/auth/operators
 ```
 
-### Database schema — row counts
+### Database schema: row counts
 
 | Schema | Table | Rows | Notes |
 |--------|-------|------|-------|
@@ -149,11 +149,11 @@ POST   /api/v1/auth/operators
 | `geo` | `watersheds` | 3 | Rímac, Chillón, Lurín |
 | `hydro` | `stations` | seeded | ANA + SENAMHI (live scraper, periodic) |
 | `hydro` | `station_observations` | live | TimescaleDB hypertable |
-| `hydro` | `imerg_accumulations` | live | 1h–72h windows per watershed |
+| `hydro` | `imerg_accumulations` | live | 1h: 72h windows per watershed |
 | `social` | `signals` | live | PII-redacted, 7-day TTL via `retention-daily` Prefect flow |
 | `ml` | `flood_polygons` | live | U-Net SAR schema; current rows are labelled synthetic (`flood-seg-v0.1-demo`, `elnino2017-fixture-v1`) |
 | `ml` | `huayco_susceptibility` | live | XGBoost output |
-| `historical` | `sinpad_events` | 2,063 | INDECI 2003–2020 |
+| `historical` | `sinpad_events` | 2,063 | INDECI 2003-2020 |
 | `ops` | `alerts` | live | Auto-generated + operator-managed |
 | `ops` | `decision_log` | live | Append-only (DB trigger) |
 | `ops` | `share_tokens` | live | Read-only share links |
@@ -163,7 +163,7 @@ POST   /api/v1/auth/operators
 | `ops` | `notification_deliveries` | live | Outbound delivery log |
 | `ops` | `security_events` | live | Guardrail trip log |
 
-### Frontend — panels and surfaces
+### Frontend: panels and surfaces
 
 | Surface | File | Notes |
 |---------|------|-------|
@@ -205,7 +205,7 @@ POST   /api/v1/auth/operators
 
 | Pipeline | Method | Output |
 |----------|--------|--------|
-| SAR flood segmentation | U-Net over S1 VV/VH, Sen1Floods11 architecture (Bonafilia et al. 2020) — ⚠️ inference path implemented, no publishable pretrained checkpoint exists (see data-sources.md); map shows labelled synthetic polygons | `ml.flood_polygons` with confidence + area |
+| SAR flood segmentation | U-Net over S1 VV/VH, Sen1Floods11 architecture (Bonafilia et al. 2020), ⚠️ inference path implemented, no publishable pretrained checkpoint exists (see data-sources.md); map shows labelled synthetic polygons | `ml.flood_polygons` with confidence + area |
 | Huayco susceptibility | XGBoost (Castro-Cabrera et al. 2024 features) | `ml.huayco_susceptibility` with risk_level |
 | Spanish signal triage | qwen2.5:7b XML-sandboxed prompts | `social.signals.triage_label` + confidence |
 
@@ -222,10 +222,10 @@ POST   /api/v1/auth/operators
 | Whitelisted DB tools (9) | `ai/tools/db_tools.py` |
 | Protocol RAG (`nomic-embed-text` + pgvector, 6 documents) | `ai/rag.py` |
 
-**Quick-mode fast paths (bypass LLM, ~2–3s):**
-1. **Single quick-mode** — 9 pattern groups (alertas, lluvia, río, inundación, huayco, social, infraestructura, albergue, protocolo) → one tool dispatch
-2. **Multi-quick-mode** — 2–3 matching patterns → sequential dispatch, no LLM (~3–5s)
-3. **Sitrep mode** — "resumen completo", "inicio de guardia", "sitrep" → 6 tools sequential → `_build_sitrep_answer()` SITREP narrative (~6s). Session 23: added `get_social_clusters` as 6th tool — duty officers see citizen signal count at start-of-shift.
+**Quick-mode fast paths (bypass LLM, ~2-3s):**
+1. **Single quick-mode**, 9 pattern groups (alertas, lluvia, río, inundación, huayco, social, infraestructura, albergue, protocolo) → one tool dispatch
+2. **Multi-quick-mode**, 2-3 matching patterns → sequential dispatch, no LLM (~3-5s)
+3. **Sitrep mode**, "resumen completo", "inicio de guardia", "sitrep" → 6 tools sequential → `_build_sitrep_answer()` SITREP narrative (~6s). Session 23: added `get_social_clusters` as 6th tool: duty officers see citizen signal count at start-of-shift.
 
 **RAG protocol corpus (7 documents, 51 chunks):** INDECI Plan Familiar, CENEPRED Movimientos en Masa, MINSA Protocolo Emergencias, SENAMHI Guía Hidrometeorológica, MML Plan Huaycos Lima, ANA Umbrales Lluvia Lima, SINAGERD Acciones Rápidas COER Lima.
 
@@ -235,28 +235,28 @@ POST   /api/v1/auth/operators
 
 ## Recent session log (rolling, last 5)
 
-### Session 23 — 2026-06-01 — Real-responder hardening + demo data freshness
+### Session 23, 2026-06-01, Real-responder hardening + demo data freshness
 
 Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
 
 **Backend fixes:**
-- `fix(alerts)`: `age_seconds` added to `AlertSummary` (server-computed) — eliminates SLA chip client clock skew. Both `SlaChip` and the EscalationModal SLA banner use server-provided age.
-- `fix(alerts)`: `action_type` whitelist in `POST /alerts/log` — unknown types return 422. Protects audit trail from typos ("dispach" → rejected). Whitelist covers all frontend-emitted types.
-- `fix(proposals)`: `district_ubigeo` validated on proposal CREATE — returns 400 if ubigeo not in `geo.districts`. Previously created district-less alerts silently.
-- `fix(security)`: IPv6 link-local `fe80::/10` added to `_PRIVATE_NETS` SSRF blocklist in notifications.py. Previously absent — could reach link-local services on container network.
+- `fix(alerts)`: `age_seconds` added to `AlertSummary` (server-computed): eliminates SLA chip client clock skew. Both `SlaChip` and the EscalationModal SLA banner use server-provided age.
+- `fix(alerts)`: `action_type` whitelist in `POST /alerts/log`, unknown types return 422. Protects audit trail from typos ("dispach" → rejected). Whitelist covers all frontend-emitted types.
+- `fix(proposals)`: `district_ubigeo` validated on proposal CREATE: returns 400 if ubigeo not in `geo.districts`. Previously created district-less alerts silently.
+- `fix(security)`: IPv6 link-local `fe80::/10` added to `_PRIVATE_NETS` SSRF blocklist in notifications.py. Previously absent, could reach link-local services on container network.
 - `fix(agent)`: Empty RAG protocol chunks now return explicit "contenido no disponible" message instead of "Protocolos relevantes: title. " (empty body).
 - `fix(agent)`: Multi-quick mode + sitrep: when a tool fails (exception or error dict), the answer appends a ⚠ warning listing unavailable sources. Silent data omissions eliminated.
 - `fix(agent)`: Sitrep answer now includes UTC retrieval timestamp `DD/MM HH:MM UTC` in the header.
 - `fix(agent)`: Sitrep river section: when all river stations have null trend (stale sensor data), appends a warning instead of silently rendering stable-looking data.
-- `fix(auto_seed)`: Demo social signals now refresh on EVERY seed call (`_need_social_refresh = True`). Previously only refreshed when count dropped below 9 — signals could be 48h old without triggering refresh.
-- `fix(auto_seed)`: Demo station observations (Chosica, Ñaña, Carapongo) now refresh on every seed call — deletes stale rows >4h old, re-inserts with current timestamps. Chosica 2.41m reading now shows as current, not 22h stale.
+- `fix(auto_seed)`: Demo social signals now refresh on EVERY seed call (`_need_social_refresh = True`). Previously only refreshed when count dropped below 9, signals could be 48h old without triggering refresh.
+- `fix(auto_seed)`: Demo station observations (Chosica, Ñaña, Carapongo) now refresh on every seed call, deletes stale rows >4h old, re-inserts with current timestamps. Chosica 2.41m reading now shows as current, not 22h stale.
 
 **Frontend fixes:**
-- `feat(ui/AlertsPanel)`: SLA breach banner in EscalationModal — shows "SLA VENCIDO — Xmin sin acción (límite Ymin)" in danger color when operator opens the escalation modal for a past-SLA alert.
-- `fix(ui/AlertsPanel)`: `SlaChip` uses `alert.age_seconds` (server) instead of `Date.now() - created_at` (client) — eliminates drift from client clock skew.
+- `feat(ui/AlertsPanel)`: SLA breach banner in EscalationModal, shows "SLA VENCIDO, Xmin sin acción (límite Ymin)" in danger color when operator opens the escalation modal for a past-SLA alert.
+- `fix(ui/AlertsPanel)`: `SlaChip` uses `alert.age_seconds` (server) instead of `Date.now() - created_at` (client): eliminates drift from client clock skew.
 - `feat(ui/AskPanel)`: Quick-mode and multi-quick response footer shows which DB tools were used (e.g. "river levels + flood polygons") for source traceability.
-- `feat(ui/NotificationsPanel)`: `window.confirm()` before deleting a subscriber — prevents accidental webhook deletion during high-stress moments.
-- `fix(ui/LiveTicker)`: Alert titles truncated to 50 chars + ellipsis — prevents long titles from hiding subsequent ticker items.
+- `feat(ui/NotificationsPanel)`: `window.confirm()` before deleting a subscriber: prevents accidental webhook deletion during high-stress moments.
+- `fix(ui/LiveTicker)`: Alert titles truncated to 50 chars + ellipsis, prevents long titles from hiding subsequent ticker items.
 
 **Tests (+7, 678 total):**
 - `test(alerts)`: `age_seconds` field presence and type; invalid action_type rejected (422); all valid types accepted (200).
@@ -264,13 +264,13 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 - `test(notifications)`: IPv6 link-local `fe80::1` and `fe80::dead:beef` both raise ValueError (regression guards).
 
 **Additional Session 23 improvements:**
-- `feat(sitrep)`: `get_social_clusters` added as 6th SITREP tool — duty officers see citizen signal count (e.g. "9 reportes ciudadanos · 4 urgentes") at start-of-shift without separate query. Frontend updated to show 6/6 steps, quorum raised to 4/6.
-- `fix(alert_generator)`: Severity-aware rainfall alert dedup — HIGH alert no longer blocks CRITICAL escalation within 6h dedup window. Now auto-closes lower-severity alert on escalation.
+- `feat(sitrep)`: `get_social_clusters` added as 6th SITREP tool: duty officers see citizen signal count (e.g. "9 reportes ciudadanos · 4 urgentes") at start-of-shift without separate query. Frontend updated to show 6/6 steps, quorum raised to 4/6.
+- `fix(alert_generator)`: Severity-aware rainfall alert dedup. HIGH alert no longer blocks CRITICAL escalation within 6h dedup window. Now auto-closes lower-severity alert on escalation.
 - `fix(db_tools)`: `get_infrastructure_impact` sorted by criticality (hospitals → fire stations → shelters → substations → schools → bridges). LIMIT raised from 20 to 50.
-- `fix(agent)`: Infrastructure breakdown in `_build_answer` also sorts by criticality — hospitals named first regardless of count.
-- `feat(agent)`: Expanded quick-mode patterns — carretera central, corte de luz, personas atrapadas, postas médicas, etc.
-- `fix(SharePanel)`: Offline fallback shows explicit warning + "Sin expiración" label — operators know when link is permanent vs server-side token.
-- `fix(db_tools)`: `get_flood_polygons` returns `_total_flood_count` when truncated — `_build_answer` surfaces this to operator.
+- `fix(agent)`: Infrastructure breakdown in `_build_answer` also sorts by criticality: hospitals named first regardless of count.
+- `feat(agent)`: Expanded quick-mode patterns, carretera central, corte de luz, personas atrapadas, postas médicas, etc.
+- `fix(SharePanel)`: Offline fallback shows explicit warning + "Sin expiración" label: operators know when link is permanent vs server-side token.
+- `fix(db_tools)`: `get_flood_polygons` returns `_total_flood_count` when truncated: `_build_answer` surfaces this to operator.
 - `docs`: DEMO-GUIDE, COMPETITION.md, STATUS.md updated for Session 23.
 
 **Tests (+10, 681 total):**
@@ -295,70 +295,70 @@ Key improvements by category:
 
 ---
 
-### Session 22 — 2026-05-31 — Robustness hardening + operator UX pass
+### Session 22, 2026-05-31, Robustness hardening + operator UX pass
 
 Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
 
 **Backend fixes:**
-- `fix(agent)`: Sitrep NORMAL assertion requires quorum (≥3/5 tools succeed). `dispatch()` wraps DB exceptions as error dicts (`rows:[]`) — loop now skips tools with `res.get('error')` from `per_tool_rows` count. Prevents false "sistema NORMAL" when majority of tools fail during a real emergency.
-- `fix(alerts)`: Atomic idempotency guard — replaced two-step SELECT + UPDATE with single atomic `UPDATE WHERE status != :status`. Two concurrent escalation clicks can no longer both trigger fan-out notifications.
+- `fix(agent)`: Sitrep NORMAL assertion requires quorum (≥3/5 tools succeed). `dispatch()` wraps DB exceptions as error dicts (`rows:[]`): loop now skips tools with `res.get('error')` from `per_tool_rows` count. Prevents false "sistema NORMAL" when majority of tools fail during a real emergency.
+- `fix(alerts)`: Atomic idempotency guard, replaced two-step SELECT + UPDATE with single atomic `UPDATE WHERE status != :status`. Two concurrent escalation clicks can no longer both trigger fan-out notifications.
 
 **Frontend fixes:**
-- `fix(OperationalHUD)`: "LLUVIA?" chip when IMERG fetch fails — operator never sees silent 0mm implying no rainfall during a IMERG outage.
+- `fix(OperationalHUD)`: "LLUVIA?" chip when IMERG fetch fails: operator never sees silent 0mm implying no rainfall during a IMERG outage.
 - `fix(SocialFeedPanel)`: "Iniciar sesión →" clickable button in disabled field report state (was plain text only).
-- `fix(ProposalsPanel)`: Same login button pattern — clickable CTA to auth modal.
-- `feat(AlertsPanel)`: INDECI protocol checklist persists via `sessionStorage` (tab-scoped, key = top-5 urgent alert IDs). Survives panel open/close — operator doesn't lose progress tracking.
+- `fix(ProposalsPanel)`: Same login button pattern, clickable CTA to auth modal.
+- `feat(AlertsPanel)`: INDECI protocol checklist persists via `sessionStorage` (tab-scoped, key = top-5 urgent alert IDs). Survives panel open/close, operator doesn't lose progress tracking.
 - `fix(demoData)`: Chosica threshold corrected from 2.0m/3.5m to 2.5m SENAMHI across 6 occurrences (alert description, fusion prose ES+EN, copilot river/station answers).
 
 **Critical demo data fix:**
-- `fix(auto_seed)`: Social signals went dark after 48h — three bugs compounded: (1) `NOW = datetime.now()` was a module-level constant frozen at container start, so `_ts()` always returned startup time not current time; (2) early-return check counted ALL social signals (64 live untriaged Bluesky/RSS) not LOCATABLE ones visible on map, so `_social (64) >= len(_SOCIAL_CURRENT) (9)` → refresh never ran; (3) ON CONFLICT upsert path was after the early-return so never executed. All three fixed. Demo social feed now self-heals on each seed call — all 9 demo signals (needs_help, huayco_observation, road_blocked, infrastructure_damage, weather_observation) with correct timestamps.
-- `fix(agent)`: RAG chunk display limit increased 250 → 350 chars — protocol answers were truncating mid-sentence.
+- `fix(auto_seed)`: Social signals went dark after 48h, three bugs compounded: (1) `NOW = datetime.now()` was a module-level constant frozen at container start, so `_ts()` always returned startup time not current time; (2) early-return check counted ALL social signals (64 live untriaged Bluesky/RSS) not LOCATABLE ones visible on map, so `_social (64) >= len(_SOCIAL_CURRENT) (9)` → refresh never ran; (3) ON CONFLICT upsert path was after the early-return so never executed. All three fixed. Demo social feed now self-heals on each seed call, all 9 demo signals (needs_help, huayco_observation, road_blocked, infrastructure_damage, weather_observation) with correct timestamps.
+- `fix(agent)`: RAG chunk display limit increased 250 → 350 chars, protocol answers were truncating mid-sentence.
 
 **Additional Session 22 improvements:**
-- `feat(agent)`: Sitrep action now names specific very_high quebradas (Pedregal + Huaycoloro) — "Evacuar quebrada(s) Pedregal + Huaycoloro" appended to action directive.
-- `fix(agent)`: `weather_observation` added to social cluster breakdown (was counted in total but excluded from label breakdown — discrepancy was confusing).
+- `feat(agent)`: Sitrep action now names specific very_high quebradas (Pedregal + Huaycoloro): "Evacuar quebrada(s) Pedregal + Huaycoloro" appended to action directive.
+- `fix(agent)`: `weather_observation` added to social cluster breakdown (was counted in total but excluded from label breakdown, discrepancy was confusing).
 - `fix(agent)`: `bloqueado`/`bloqueada` added to social quick-mode patterns ("puentes bloqueados" now routes to multi-quick: social + infrastructure).
-- `fix(agent)`: `victimas`/`nivel de emergencia`/`qué pasa` added to quick-mode patterns — unaccented Spanish variants now route correctly.
-- `fix(share)`: Atomic expiry check eliminates TOCTOU — expired tokens no longer get spurious `accessed_at` updates.
+- `fix(agent)`: `victimas`/`nivel de emergencia`/`qué pasa` added to quick-mode patterns: unaccented Spanish variants now route correctly.
+- `fix(share)`: Atomic expiry check eliminates TOCTOU, expired tokens no longer get spurious `accessed_at` updates.
 - `feat(districts)`: `alerts_trend_7d` now includes watershed rainfall alerts via UNION (district 7-day chart shows full alert picture including EMERGENCIA rainfall).
-- `feat(dashboard)`: IMERG sparkline adds dashed ALERTA (25mm) and EMERGENCIA (50mm) reference lines — operators see threshold context at a glance.
+- `feat(dashboard)`: IMERG sparkline adds dashed ALERTA (25mm) and EMERGENCIA (50mm) reference lines: operators see threshold context at a glance.
 
 **Tests (+2, 670 total):**
-- `test(agent)`: `test_sitrep_less_than_quorum_tools_falls_through_to_llm` — regression guard for sitrep quorum fix.
-- `test(agent)`: `test_full_agent_tool_error_dict_produces_degraded_not_empty` — guard that copilot never returns empty string when all DB tools fail.
+- `test(agent)`: `test_sitrep_less_than_quorum_tools_falls_through_to_llm`, regression guard for sitrep quorum fix.
+- `test(agent)`: `test_full_agent_tool_error_dict_produces_degraded_not_empty`, guard that copilot never returns empty string when all DB tools fail.
 - `test(agent)`: Regression guards updated for quebrada names in sitrep + weather_observation in social breakdown.
 
 **Final Session 22 improvements:**
-- `feat(ui)`: SITREP banner moved ABOVE response text (was below) — "SITREP · Fusión 5 fuentes · sin LLM" prominent badge immediately visible when response loads. Key C5 differentiator for judges.
-- `feat(ui)`: ResponseProtocol (INDECI checklist) moved ABOVE AiRecommendation in AlertsPanel — judges see the live protocol tracking within 5 seconds of opening Alerts panel.
+- `feat(ui)`: SITREP banner moved ABOVE response text (was below): "SITREP · Fusión 5 fuentes · sin LLM" prominent badge immediately visible when response loads. Key C5 differentiator for judges.
+- `feat(ui)`: ResponseProtocol (INDECI checklist) moved ABOVE AiRecommendation in AlertsPanel, judges see the live protocol tracking within 5 seconds of opening Alerts panel.
 
 **Commits (19):** `369d21e` → `4e8f3c0` → `839f63d` → `4e5cde9` → `06cb4da` → `72dff0e` → `2bc6b3f` → `6de8572` → `2d7c199` → `37c12ca` → `7c8ba11` → `c2c1c1e` → `ff6fb32` → `e55a282` → `bb6d8fd` → `c0680fd` → + docs.
 
 ---
 
-### Session 21 — 2026-05-31 — Correctness audit + critical bug fixes
+### Session 21, 2026-05-31, Correctness audit + critical bug fixes
 
 Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
 
 **Critical backend fixes (found via architect code review):**
-- `fix(db_tools)`: `get_active_alerts severity='high'` was exact-match — silently excluded `critical` alerts (the most dangerous). Fixed to minimum-severity `ANY(:sev)` filter. LLM asking for "high severity" now correctly returns high + critical.
-- `fix(db_tools)`: `get_river_levels` `prev_1h` CTE used absolute `NOW()` window — for long `hours_back` the "1h ago" reading was actually many hours old, making trend (rising/falling/stable) meaningless. Fixed: `JOIN latest` so each station compares to its own latest reading − 1h.
-- `fix(fusion)`: `district_fusion` rainfall used `WHERE ia.time = (SELECT MAX(time) FROM hydro.imerg_accumulations)` — global MAX missed rainfall when one watershed ingested slightly later. Fixed to per-watershed LATERAL JOIN matching `layers.py` pattern.
-- `fix(layers)`: `flood_exposure` had no `acquired_at` filter — accumulated all historical flood polygons into `total_affected_population`, vastly overstating current exposure. Added 7-day filter matching flood alert auto-resolution cadence.
+- `fix(db_tools)`: `get_active_alerts severity='high'` was exact-match: silently excluded `critical` alerts (the most dangerous). Fixed to minimum-severity `ANY(:sev)` filter. LLM asking for "high severity" now correctly returns high + critical.
+- `fix(db_tools)`: `get_river_levels` `prev_1h` CTE used absolute `NOW()` window: for long `hours_back` the "1h ago" reading was actually many hours old, making trend (rising/falling/stable) meaningless. Fixed: `JOIN latest` so each station compares to its own latest reading − 1h.
+- `fix(fusion)`: `district_fusion` rainfall used `WHERE ia.time = (SELECT MAX(time) FROM hydro.imerg_accumulations)`, global MAX missed rainfall when one watershed ingested slightly later. Fixed to per-watershed LATERAL JOIN matching `layers.py` pattern.
+- `fix(layers)`: `flood_exposure` had no `acquired_at` filter: accumulated all historical flood polygons into `total_affected_population`, vastly overstating current exposure. Added 7-day filter matching flood alert auto-resolution cadence.
 - `fix(fusion)`: Huayco prose omitted entirely when `probability IS NULL` (model wrote risk_level but not probability). Fixed: renders huayco risk always, shows probability only when available.
-- `fix(agent)`: `_build_answer` AVISO branch used `{acc_24h:.0f}` without float() cast — defensive `float()` wrap added.
+- `fix(agent)`: `_build_answer` AVISO branch used `{acc_24h:.0f}` without float() cast: defensive `float()` wrap added.
 - `fix(agent)`: bare `"mm"` keyword in rainfall quick-mode matched substrings in unrelated words. Narrowed to word-boundary forms (` mm `, `mm/`, `/mm`).
 
 **Critical frontend fixes:**
 - `fix(queries)`: `useAlerts`/`useDecisionLog` swallowed all errors → `isError` was permanently false → operators could never tell if alert data was live or demo. Fixed: errors now propagate; `placeholderData` ensures UI never blanks; error banner shows "mostrando datos de demostración".
 - `fix(api)`: `logDecision` swallowed all failures → "registrado en log" shown even on 500/401. Fixed: throws on server errors (4xx/5xx), keeps network-timeout as best-effort.
-- `fix(AlertsPanel)`: `handleAction` discarded `actOnAlert` return value — UI status diverged from DB when server assigned different `new_status`. Fixed: applies `result.new_status` from server response.
+- `fix(AlertsPanel)`: `handleAction` discarded `actOnAlert` return value: UI status diverged from DB when server assigned different `new_status`. Fixed: applies `result.new_status` from server response.
 - `fix(DecisionLogPanel)`: offline CSV export used same filename for demo and real data. Fixed: prefixes `DEMO_` when `isError` to prevent accidental submission of fabricated data as official EDAN record. Also wrapped `JSON.stringify(payload)` in try/catch to prevent export crash on unusual payloads.
-- `fix(i18n)`: alerts error message now reads "Error al cargar alertas — mostrando datos de demostración".
+- `fix(i18n)`: alerts error message now reads "Error al cargar alertas: mostrando datos de demostración".
 
 **Tests (+25):** 665 total (up from 640). Regression guards for: severity min-filter, river trend, district risk rainfall, health per-watershed, sitrep sequential, near-threshold river warning, subestacion multi-quick, decision-log null payload, auth canonical username, SINPAD exact match, flood exposure 7-day, and more.
 
-**Session 21 — 136 commits, comprehensive hardening + advanced sitrep:**
+**Session 21, 136 commits, comprehensive hardening + advanced sitrep:**
 
 Backend: severity min-filter, river trend CTE, fusion LATERAL rainfall, flood exposure 7-day, alerts active-first + critical-first sort, SSE flush heartbeat, health per-watershed, SINPAD exact match, proposals district warning, sequential sitrep dispatch (race fixed), agent multi-quick mode field, guardrail marker, search_protocols trace args, share 48h window, fan_out engine.begin, SMS body defensive, JWT canonical username, decision-log null payload, SSE critical sort, rainfall alert LATERAL, huayco dedup quebrada_id 48h, auto_seed quebrada geometries, near-threshold warnings (90%), sitrep both critical quebradas, sitrep multi-watershed, combined action, ALERTA rain action, confidence honest, idempotent act_on_alert, sitrep always-action, stable near-threshold river
 
@@ -375,7 +375,7 @@ Workers: delivery attempts count, huayco rain zero-check, triage similarity 0.3 
 
 ---
 
-### Session 20 — 2026-05-31 — Operational hardening + sitrep mode + UX improvements
+### Session 20, 2026-05-31, Operational hardening + sitrep mode + UX improvements
 
 Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
 
@@ -386,21 +386,21 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 - `fix(alerts)`: `except Exception: detail=""` in PDF report → `logger.debug`.
 
 **Copilot enhancements:**
-- `feat(ai/agent)`: `_is_sitrep_query()` + sitrep fast path — "inicio de guardia", "resumen completo", "sitrep", etc. → 4 tools (alerts + rainfall + river + flood) in parallel (~3s), no LLM.
-- `feat(ai/agent)`: `_build_sitrep_answer()` — coherent SITREP narrative (ALERTAS · LLUVIA · RÍOS · INUNDACIÓN bullets + acción recomendada).
-- `feat(ai/agent)`: `_QUICK_PATTERNS` expanded — situación actual, albergue, refugio, pronóst, novedades, qué hacer, huaycoloro (30+ new phrases).
-- `feat(ai/agent)`: Improved `_SYSTEM` prompt — action recommendation on critical, SINAGERD rainfall levels, district/quebrada specificity.
+- `feat(ai/agent)`: `_is_sitrep_query()` + sitrep fast path: "inicio de guardia", "resumen completo", "sitrep", etc. → 4 tools (alerts + rainfall + river + flood) in parallel (~3s), no LLM.
+- `feat(ai/agent)`: `_build_sitrep_answer()`, coherent SITREP narrative (ALERTAS · LLUVIA · RÍOS · INUNDACIÓN bullets + acción recomendada).
+- `feat(ai/agent)`: `_QUICK_PATTERNS` expanded: situación actual, albergue, refugio, pronóst, novedades, qué hacer, huaycoloro (30+ new phrases).
+- `feat(ai/agent)`: Improved `_SYSTEM` prompt: action recommendation on critical, SINAGERD rainfall levels, district/quebrada specificity.
 - `feat(ai/db_tools)`: `get_infrastructure_impact` description includes albergues/refugios.
 - `feat(demoData)`: sitrep demo responses (ES + EN) added as 4-tool compound answers.
 - `feat(AskPanel)`: sitrep as first suggestion chip; keyword route for "resumen completo".
 
 **Frontend UX improvements:**
-- `feat(AlertsPanel)`: SLA breach toast — fires once per alert per session when SLA exceeded, `variant: "danger"`.
-- `fix(AskPanel)`: isDemo banner moved ABOVE response text (was below — dangerous for operators acting on sim data).
+- `feat(AlertsPanel)`: SLA breach toast, fires once per alert per session when SLA exceeded, `variant: "danger"`.
+- `fix(AskPanel)`: isDemo banner moved ABOVE response text (was below: dangerous for operators acting on sim data).
 - `feat(AlertsPanel/SocialFeedPanel/DecisionLogPanel)`: Error states show minutes since last good data vs generic text.
 - `feat(ProposalsPanel)`: Approval toast includes cached subscriber count ("N suscriptores notificados").
 - `feat(LeftRail)`: Keyboard shortcut badge on hover for primary nav; `[N]` label on Notifications SecBtn.
-- `feat(DataFreshnessBar)`: Staleness color coding — ok/warn/danger by layer age (IMERG 70min, SAR 360min, Huayco 240min).
+- `feat(DataFreshnessBar)`: Staleness color coding, ok/warn/danger by layer age (IMERG 70min, SAR 360min, Huayco 240min).
 - `feat(SituationBrief)`: Rainfall bullet when 72h >= 25mm + Social quick-action button in mobile view.
 - `feat(LiveTicker)`: Severity prefix [EMERG/ALERT/AVISO/INFO] + rainfall warning item + urgent-only social filter.
 
@@ -419,38 +419,38 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 **Tests (+67):** 635 passed (↑67 from 568). Includes rain province filter, source_refs, health sinagerd/rain_level, sitrep detection, near-threshold, fusion-rainfall prose. TypeScript: 0 errors.
 
-**Commits (200) — Session 20 milestone:** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `e4fe85a` health-sinagerd → `ae82f36` health-rain → `8b9473e` rag-7docs → `2df7148` province-filter-fix → `8696d72` rainfall-mm-alerts → `99465d4` near-threshold → `822f008` fusion-trigger-rain → `925bb0f` city-threshold-label → `b685c89` hud-watershed → `bde7a06` map-legend-ANA → `9b404fa` escalation-rainfall → `d288333` edan-en-rainfall.
+**Commits (200). Session 20 milestone:** `acf4437` batch1 → `a6b269e` sitrep → `2706f12` narrative → `200ab15` ticker → `5ad9dc4` FEEDS-fix → `ba7bc47` river-threshold → `eedf906` rainfall-hud → `d7b5f46` fusion-rainfall → `e4fe85a` health-sinagerd → `ae82f36` health-rain → `8b9473e` rag-7docs → `2df7148` province-filter-fix → `8696d72` rainfall-mm-alerts → `99465d4` near-threshold → `822f008` fusion-trigger-rain → `925bb0f` city-threshold-label → `b685c89` hud-watershed → `bde7a06` map-legend-ANA → `9b404fa` escalation-rainfall → `d288333` edan-en-rainfall.
 
 ---
 
-### Session 19 — 2026-05-25 — Security hardening + robustness + guardrail coverage
+### Session 19, 2026-05-25, Security hardening + robustness + guardrail coverage
 
 Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
 
 **7 test failures fixed (operator_id Optional regression):**
-- `fix(tests/social)`: Added autouse fixture flushing `costa:social:fieldreport:coer_lima` Redis key before each test — 429s were exhausting the rate limiter across test runs.
+- `fix(tests/social)`: Added autouse fixture flushing `costa:social:fieldreport:coer_lima` Redis key before each test: 429s were exhausting the rate limiter across test runs.
 - `fix(tests/social)`: Renamed `test_field_report_rejects_empty_operator_id` → `test_field_report_empty_operator_id_is_ignored`; changed assertion to 201 (field is now Optional+ignored).
-- `fix(tests/session_audit)`: `test_action_missing_operator_id` expanded acceptable codes to `{200, 400, 422}` — operator_id Optional so 422 no longer guaranteed.
+- `fix(tests/session_audit)`: `test_action_missing_operator_id` expanded acceptable codes to `{200, 400, 422}`, operator_id Optional so 422 no longer guaranteed.
 
 **Statement timeout coverage (all multi-table JOINs):**
 - `perf(alerts)`: `SET LOCAL statement_timeout = '10000'` before alerts list LATERAL JOIN (`/alerts`).
 - `perf(layers)`: `SET LOCAL statement_timeout = '10000'` before all 4 multi-table JOINs in `layers.py` (infrastructure, stations, social_signals, shelters).
 - `perf(districts)`: `15000` timeout in `district_risk_summary` (correlated subqueries); `10000` in `district_dashboard` + `district_watersheds`.
-- `perf(ai/db_tools)`: `SET LOCAL statement_timeout = '30000'` in `dispatch()` before every tool call — prevents rogue DB tools from holding connections.
+- `perf(ai/db_tools)`: `SET LOCAL statement_timeout = '30000'` in `dispatch()` before every tool call: prevents rogue DB tools from holding connections.
 
 **Rate limiter + SSRF guard test coverage (+8 tests):**
 - `test(social)`: `test_field_report_rate_limiter_raises_429_when_limit_exceeded` + `test_field_report_rate_limiter_fails_open_on_redis_error`.
 - `test(notifications)`: `test_reject_private_host_blocks_hostname_resolving_to_private_ip`, `test_reject_private_host_allows_public_ip`, `test_reject_private_host_rejects_loopback`.
 - `test(notifications)`: `test_notif_rate_limiter_raises_429_when_limit_exceeded` + fails-open + `test_notif_rate_limiter_bypassed_in_testing_mode`.
 
-**Guardrail hardening — Spanish injection patterns (+9 tests):**
+**Guardrail hardening. Spanish injection patterns (+9 tests):**
 - `feat(guardrails/input_filter)`: Added Spanish role-pivot (`ignora instrucciones`, `olvida tus instrucciones`, `actúa como admin`, `ahora eres libre`), prompt-leak (`repite tu prompt del sistema`, `cuáles son tus instrucciones`), secret-fish (`contraseña:`, `clave secreta:`), jailbreak (`sin restricciones`), and English jailbreak (`GPT-4`, `do anything now`) patterns.
 - `fix(guardrails/input_filter)`: `share error message` corrected: 48h window was valid but missing from error string (`timeWindowHours must be one of 1,3,6,12,24,48,72`).
 - `feat(proposals)`: `ProposalReview.operator_id` made `Optional` (backwards-compat) consistent with `AlertAction`, `LogEntry`, `FieldReport`.
 - `fix(alerts)`: `limit` in `list_decision_log` and `export_decision_log` changed `ge=0` → `ge=1` (0-row queries had no operational use).
 
 **Redis health probe in `/health/scraper`:**
-- `feat(health)`: Dedicated Redis ping (1s timeout) added to `/health/scraper` response: `"redis": {"status": "ok" | "offline"}`. Rate-limiters and scraper heartbeats both depend on Redis — its health is now first-class in the dashboard.
+- `feat(health)`: Dedicated Redis ping (1s timeout) added to `/health/scraper` response: `"redis": {"status": "ok" | "offline"}`. Rate-limiters and scraper heartbeats both depend on Redis, its health is now first-class in the dashboard.
 
 **Commits (8):** `5dc541b` fix 7 test failures → `32e6dd4` statement_timeouts → `80d42c7` rate-limit+SSRF tests → `1a4855f` ProposalReview Optional + ge=1 → `0d3b918` input guardrails + share fix → `a2e15d7` districts timeouts → `462fd6e` Redis health probe → `f449480` AI tool timeout.
 
@@ -458,19 +458,19 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 ---
 
-### Session 13 — 2026-05-25 — Sprint 21: Bug fixes + 109 new tests (alerts, fusion, layers, share)
+### Session 13, 2026-05-25, Sprint 21: Bug fixes + 109 new tests (alerts, fusion, layers, share)
 
 Autonomous session (Fernando offline). All changes on `develop`, local Ollama only.
 
 **Bug fixes discovered via new tests:**
-- `fix(alerts)`: `_parse_iso_dt()` helper added — asyncpg requires `datetime` objects for
+- `fix(alerts)`: `_parse_iso_dt()` helper added: asyncpg requires `datetime` objects for
   timestamp-typed bind parameters; passing raw ISO strings (e.g. `2026-05-01T00:00:00Z`)
   raised `asyncpg.exceptions.DataError`. Affects `/decision-log` list, CSV export, PDF report.
 - `fix(alerts)`: `datetime.utcnow()` deprecation warning fixed → `datetime.now(timezone.utc)`.
 - `feat(alerts)`: PDF report endpoint `/decision-log/report` now accepts `?since=ISO&until=ISO`
   date-range params, matching the CSV export endpoint for EDAN-Perú shift/audit consistency.
 - `fix(health)`: `imerg`/`stations` stale thresholds raised to 70min (actual scheduler cadence
-  is 30–60min; previous 35/20min thresholds were too strict, causing false-stale alarms).
+  is 30-60min; previous 35/20min thresholds were too strict, causing false-stale alarms).
 - `fix(ana_scraper)`: Stations Redis TTL raised to 2h (matches actual observed cadence).
 - `fix(demo)`: Lurigancho fusion prose updated to reflect new huayco_observation cluster signals.
 
@@ -482,7 +482,7 @@ Autonomous session (Fernando offline). All changes on `develop`, local Ollama on
 - `test_fusion.py` (22 tests): district fusion shape, all subkeys, risk_level enum, prose
   correctness, ubigeo validation (400 on bad format, 404 on unknown); pure unit tests for
   `_overall_risk` (9 cases) and `_risk_prose_es` (5 cases).
-- `test_layers.py` (45 tests): all 11 layer endpoints — imerg, flood, huayco, hazard,
+- `test_layers.py` (45 tests): all 11 layer endpoints, imerg, flood, huayco, hazard,
   infrastructure, stations, watersheds, quebradas, flood/exposure, social, shelters.
   Includes label-filter correctness, irrelevant exclusion, param validation.
 - `test_share.py` (12 tests): mint/resolve round-trip, layer whitelist (valid + invalid),
@@ -492,21 +492,21 @@ Autonomous session (Fernando offline). All changes on `develop`, local Ollama on
 
 ---
 
-### Session 12 — 2026-05-25 — Sprint 20: Field-report labels end-to-end + triage pipeline + robustness
+### Session 12, 2026-05-25, Sprint 20: Field-report labels end-to-end + triage pipeline + robustness
 
 Autonomous session (Fernando offline). All changes on `develop`, local Ollama only.
 
-**Field-report labels `huayco_observation` + `flood_observation` — full end-to-end:**
+**Field-report labels `huayco_observation` + `flood_observation`, full end-to-end:**
 - `fix(triage)`: Added 2 labels to `TriageLabel` enum in `triage.py`. Updated Ollama system
   prompt to describe them. Previously Ollama classified huayco/flood sightings as
-  `weather_observation` — now they route to the correct label and trigger dedicated alerts.
+  `weather_observation`, now they route to the correct label and trigger dedicated alerts.
 - `fix(db)`: `signals_triage_label_check` constraint in PostgreSQL didn't include new labels.
   Field-report POST returned 500 for any `huayco_observation`/`flood_observation` label.
   Fixed: `ALTER TABLE social.signals DROP CONSTRAINT + ADD CONSTRAINT`. Migration script:
   `infra/postgres/migration_huayco_flood_labels.sql`. `init.sql` updated for clean installs.
 - `fix(alert_generator)`: `generate_social_alerts` now clusters `huayco_observation`
   (threshold=3, severity=critical) and `flood_observation` (threshold=5) via
-  `_SOCIAL_CLUSTER_CONFIGS` — previously only `needs_help` triggered social cluster alerts.
+  `_SOCIAL_CLUSTER_CONFIGS`, previously only `needs_help` triggered social cluster alerts.
 - `fix(districts)` + `fix(fusion)`: `urgent_social_3h` count IN clause was missing the 2
   new labels. District dashboard and fusion summary now count them as urgent signals.
 - `fix(auto_seed)`: Demo seed included a huayco signal labeled `weather_observation` (flooded
@@ -514,7 +514,7 @@ Autonomous session (Fernando offline). All changes on `develop`, local Ollama on
   (Quebrada Huaycoloro / Lurigancho) for demo coverage of new label type.
 - `fix(copilot/quick_patterns)`: Added `avistamiento`, `campo`, `reporte de campo` keywords.
   `fix(copilot/answer)`: Social cluster answer now breaks down by label type
-  (e.g. "14 señales — 3 avistamientos huayco, 5 solicitudes de ayuda") instead of just total.
+  (e.g. "14 señales: 3 avistamientos huayco, 5 solicitudes de ayuda") instead of just total.
 - `fix(schedules.py)`: Triage flow was passing `LLM_FAST_MODEL=gemma2:2b` to
   `run_triage_pipeline`. Changed to `TRIAGE_MODEL` env var (falls back to `LLM_PRIMARY_MODEL`).
   Triage now uses the better model, not the fast/small one.
@@ -528,22 +528,22 @@ Autonomous session (Fernando offline). All changes on `develop`, local Ollama on
 
 **Tests:** 316 passed (↑2 from 314). New tests: `test_field_report_accepts_huayco_observation`,
 `test_field_report_accepts_flood_observation`. Worker tests: `test_alert_generator.py`
-(threshold functions, cluster configs — run in worker dev env). TypeScript: 0 errors.
+(threshold functions, cluster configs, run in worker dev env). TypeScript: 0 errors.
 
 ---
 
-### Session 11 — 2026-05-25 — Sprint 19: Scraper liveness + Ollama contention + health accuracy
+### Session 11, 2026-05-25, Sprint 19: Scraper liveness + Ollama contention + health accuracy
 
-Autonomous session (Fernando offline 11am–4pm). All changes on `develop`, local Ollama only.
+Autonomous session (Fernando offline 11am: 4pm). All changes on `develop`, local Ollama only.
 
 **Scraper liveness heartbeat system (5 sources):**
 - `feat(social/health)`: `_write_scraper_heartbeats()` in `social.py` writes
   `costa:scraper:last_run:{source}` Redis keys (TTL 1h) for bluesky/rss/reddit/telegram
   after each `ingest_social_flow` cycle. Health endpoint reads these keys via
-  `_redis_last_run_status()` — scraper status reflects whether the flow RAN, not whether
+  `_redis_last_run_status()`, scraper status reflects whether the flow RAN, not whether
   new disaster content was published (no content during quiet periods ≠ unhealthy scraper).
 - `feat(alert_generator)`: `generate_alerts_flow` writes `costa:scraper:last_run:alerts`
-  (TTL 10min — stale-flag fires within 2 cycles if flow stops). 5min schedule + 3min grace.
+  (TTL 10min: stale-flag fires within 2 cycles if flow stops). 5min schedule + 3min grace.
 - `feat(imerg)`: `_write_imerg_heartbeat()` called from both NASA and Open-Meteo fallback
   paths using sync `redis` client (flow is sync Prefect). TTL 1h = 2× the 30min schedule.
 - `feat(ana_scraper)`: `ingest_hydro_stations_flow` writes `costa:scraper:last_run:stations`
@@ -556,7 +556,7 @@ Autonomous session (Fernando offline 11am–4pm). All changes on `develop`, loca
 - `fix(triage)`: Exponential backoff between retry attempts (`asyncio.sleep(3**attempt)` =
   0/3s/9s). Previously all 3 retries fired immediately, hammering Ollama while busy.
 - `fix(triage)`: `num_ctx=4096` (was default 32k); triage prompts are ~200 tokens.
-  4k context = 8× faster KV allocation vs default 32k — reduces Ollama inference time.
+  4k context = 8× faster KV allocation vs default 32k, reduces Ollama inference time.
 - `fix(triage)`: `num_predict=256`; JSON label response fits in 256 tokens.
 - `fix(triage)`: `keep_alive="5m"` so triage model releases GPU RAM between batches,
   letting copilot model load without eviction contention.
@@ -565,7 +565,7 @@ Autonomous session (Fernando offline 11am–4pm). All changes on `develop`, loca
 - `fix(triage)`: `BATCH_SIZE` 20 → 10, halving the maximum copilot starvation window.
 
 **Hydro ingest bug fixes:**
-- `fix(ana_scraper)`: `_check_stale_stations` used `COUNT(so.id)` — `station_observations`
+- `fix(ana_scraper)`: `_check_stale_stations` used `COUNT(so.id)`, `station_observations`
   has composite PK `(time, station_id)`, no `id` column. Every run logged SQL error
   "column so.id does not exist". Fixed: `COUNT(*)`.
 - `fix(ana_scraper)`: `fetch_openmeteo_station` returned all `past_days=1` historical
@@ -584,7 +584,7 @@ Autonomous session (Fernando offline 11am–4pm). All changes on `develop`, loca
 
 **Health endpoint accuracy:**
 - `fix(health)`: `overall_status` now excludes Reddit, Telegram, and SAR flood from core
-  signal computation. These are best-effort/daily-cadence sources — their outage does not
+  signal computation. These are best-effort/daily-cadence sources, their outage does not
   degrade situational awareness. Core = bluesky, rss, imerg, stations, alerts.
 - `fix(health)`: `_redis_last_run_status()` merges scraper-run-time status into bluesky/rss
   (content staleness ≠ scraper outage during quiet periods).
@@ -598,25 +598,25 @@ Autonomous session (Fernando offline 11am–4pm). All changes on `develop`, loca
 
 ---
 
-### Session 10 — 2026-05-24 — Sprint 18: RAG end-to-end fix + router hardening
+### Session 10, 2026-05-24, Sprint 18: RAG end-to-end fix + router hardening
 
 Autonomous session (Fernando offline). All changes on `develop`, local Ollama only.
 
 **RAG vector search fixed:**
 - `fix(ai/rag)`: `rag.py` used `:vec::vector` SQLAlchemy named-param + PostgreSQL
   cast shorthand, which triggers `sqlalchemy.exc.ProgrammingError` (f405). Fixed:
-  inline `vec_str` directly as a PostgreSQL literal `'{vec_str}'::vector` — safe
+  inline `vec_str` directly as a PostgreSQL literal `'{vec_str}'::vector`, safe
   because `vec_str` is a float array generated from Ollama embeddings, never from
   user input. Verified end-to-end: 3 protocol results returned with similarity
-  0.634–0.606 for flood/evacuation query.
+  0.634-0.606 for flood/evacuation query.
 - `fix(ai/agent)`: `_keyword_dispatch()` fallback path was passing `{}` as args
-  for `search_protocols` — same empty-query short-circuit bug fixed in quick-mode
+  for `search_protocols`, same empty-query short-circuit bug fixed in quick-mode
   Session 9. Now passes `{"query": query}` for the RAG tool.
 
 **Protocol indexer hardening:**
 - `fix(workers/rag/ingest)`: `PROTOCOLS_DIR = Path(__file__).parents[5]` raises
   `IndexError` in container (`/app/src/costa_workers/rag/ingest.py` only has 5
-  parents 0–4). Fixed: try/except with container fallback `/data/protocols`.
+  parents 0-4). Fixed: try/except with container fallback `/data/protocols`.
   Also respects `PROTOCOLS_DIR` env var override.
 - `feat(docker-compose)`: `./data/protocols:/data/protocols:ro` volume mount added
   to `prefect-worker` service + `PROTOCOLS_DIR=/data/protocols` env var. Protocol
@@ -627,18 +627,18 @@ Autonomous session (Fernando offline). All changes on `develop`, local Ollama on
   `CREATE UNIQUE INDEX IF NOT EXISTS rag_documents_content_hash_unique`.
 
 **Router robustness (CRITICAL + HIGH fixes from audit):**
-- `fix(api/proposals)`: `create_proposal` — added null check on `fetchone()` result
+- `fix(api/proposals)`: `create_proposal`, added null check on `fetchone()` result
   before accessing `.id` (500 instead of AttributeError).
-- `fix(api/proposals)`: `approve_proposal` — race condition: two concurrent approvals
+- `fix(api/proposals)`: `approve_proposal`, race condition: two concurrent approvals
   could both read `status='pending'` and both create duplicate alerts. Fixed by
   atomically `UPDATE ... SET status='approved' WHERE status='pending' RETURNING *`
   first; only the winner gets a row, loser gets 404.
-- `fix(api/proposals)`: `approve_proposal` — null check on alert `INSERT RETURNING`
+- `fix(api/proposals)`: `approve_proposal`, null check on alert `INSERT RETURNING`
   row before accessing `.id`.
-- `fix(api/share)`: `mint_share_token` — `settings.app_cors_origins.split(",")[0]`
+- `fix(api/share)`: `mint_share_token`, `settings.app_cors_origins.split(",")[0]`
   fails silently (wrong URL) if CORS setting is empty. Now filters and uses first
   non-empty origin, falls back to `http://localhost:3000`.
-- `fix(api/share)`: `resolve_share_token` — `expires_at.replace(tzinfo=UTC)` is
+- `fix(api/share)`: `resolve_share_token`, `expires_at.replace(tzinfo=UTC)` is
   incorrect when `expires_at` is already timezone-aware (replaces tz instead of
   converting). Now checks `exp.tzinfo is None` before adding UTC.
 - `fix(api/fusion)`: `ubigeo` validation `isdigit()` passes Unicode digit codepoints.
@@ -651,7 +651,7 @@ Autonomous session (Fernando offline). All changes on `develop`, local Ollama on
 
 ---
 
-### Session 14 — 2026-05-25 — Sprint 20: Threshold correctness + test coverage + observability
+### Session 14, 2026-05-25, Sprint 20: Threshold correctness + test coverage + observability
 
 Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
 
@@ -682,7 +682,7 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
   Worker tests: 240 passed, 16 skipped, 0 failed.
 
 **DemoLiveSimulator signal coverage:**
-- `feat(demo)`: Added 4 new signals to `DemoLiveSimulator.tsx` — 2× `huayco_observation`
+- `feat(demo)`: Added 4 new signals to `DemoLiveSimulator.tsx`, 2× `huayco_observation`
   (Lurigancho, Quebrada Huaycoloro) + 2× `flood_observation` (Ate Desborde Rímac, Carabayllo
   Canal). Both label types now appear in the demo signal stream.
 
@@ -698,7 +698,7 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 ---
 
-### Session 18 — 2026-05-25 — Auth completeness + frontend 401 centralization
+### Session 18, 2026-05-25, Auth completeness + frontend 401 centralization
 
 Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
 
@@ -710,7 +710,7 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 - `test(share)`: All POST calls updated with `headers=AUTH`; new 401 test for unauthenticated mint.
 
 **Frontend 401 handling centralized:**
-- `fix(frontend)`: Added `post()` helper to `api.ts` mirroring `get()` — includes auth headers and calls `_on401` on 401. Refactored `approveProposal`, `rejectProposal`, `submitFieldReport`, `createNotificationSubscriber` to use it.
+- `fix(frontend)`: Added `post()` helper to `api.ts` mirroring `get()`, includes auth headers and calls `_on401` on 401. Refactored `approveProposal`, `rejectProposal`, `submitFieldReport`, `createNotificationSubscriber` to use it.
 - `fix(frontend)`: `actOnAlert` and `deleteNotificationSubscriber` now call `_on401` on 401.
 - `fix(frontend)`: `mintShareToken` now includes auth headers + 401 handler.
 - `fix(AskPanel)`: Copilot panel now triggers `logout()` + `setLoginModalOpen(true)` on 401 instead of showing a generic server error.
@@ -719,29 +719,29 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 ---
 
-### Session 17 — 2026-05-25 — Security hardening + export auth fix + Ollama robustness
+### Session 17, 2026-05-25, Security hardening + export auth fix + Ollama robustness
 
 Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollama only.
 
 **Auth guards on sensitive GET endpoints (security fix):**
 - `fix(alerts)`: `GET /alerts/decision-log`, `GET /alerts/decision-log/export`, `GET /alerts/decision-log/report` were publicly accessible. Added `require_operator` dependency. These endpoints expose operator audit trail and LLM query content.
-- `fix(proposals)`: `GET /proposals` was publicly accessible. Added `require_operator`. Proposal queue includes pending AI-generated alert text — not public data.
+- `fix(proposals)`: `GET /proposals` was publicly accessible. Added `require_operator`. Proposal queue includes pending AI-generated alert text, not public data.
 - `fix(notifications)`: `GET /notifications` and `GET /notifications/deliveries` were publicly accessible. Subscriber list includes webhook targets (SSRF-sensitive); delivery log reveals escalation timing.
 
 **Export download regression fixed:**
-- `fix(frontend)`: `DecisionLogPanel.tsx` CSV and PDF export links were plain `<a href>` HTML anchors — no auth headers. After auth-gating the export endpoints they downloaded 401 JSON error instead of files. Fixed by adding `downloadAuthenticatedFile(path, filename, mimeHint)` helper to `api.ts` and replacing both `<a>` tags with `<Button onClick>` that call it. Auth token included via `getAuthHeaders()`.
+- `fix(frontend)`: `DecisionLogPanel.tsx` CSV and PDF export links were plain `<a href>` HTML anchors: no auth headers. After auth-gating the export endpoints they downloaded 401 JSON error instead of files. Fixed by adding `downloadAuthenticatedFile(path, filename, mimeHint)` helper to `api.ts` and replacing both `<a>` tags with `<Button onClick>` that call it. Auth token included via `getAuthHeaders()`.
 
 **Source label corrections:**
-- `fix(layers)`: IMERG source label in `layers.py` said "NASA IMERG Early Run v07" — changed to "NASA IMERG Late Run V07B (GPM)" to match actual ingest.
-- `fix(health)`: IMERG label in `health.py` said "NASA IMERG Early Run" — corrected to "NASA IMERG Late Run V07B".
+- `fix(layers)`: IMERG source label in `layers.py` said "NASA IMERG Early Run v07", changed to "NASA IMERG Late Run V07B (GPM)" to match actual ingest.
+- `fix(health)`: IMERG label in `health.py` said "NASA IMERG Early Run", corrected to "NASA IMERG Late Run V07B".
 
 **Ollama provider robustness:**
 - `fix(ollama)`: `embed()` had no retry on 429/503/502 (unlike `chat()`). Added 1-retry loop matching `chat()` pattern.
 - `fix(ollama)`: Added 0.5s backoff (`asyncio.sleep`) between retries in both `chat()` and `embed()` to give Ollama time to shed load before retry.
-- `fix(ollama)`: Improved log messages — include attempt number and delay duration.
+- `fix(ollama)`: Improved log messages, include attempt number and delay duration.
 
 **Test coverage added (102 new tests → 547 total):**
-- `test(alerts)`: Auth guards verified — 3 new 401 tests for decision-log / export / report. All existing GET calls in test classes updated with `headers=AUTH`.
+- `test(alerts)`: Auth guards verified, 3 new 401 tests for decision-log / export / report. All existing GET calls in test classes updated with `headers=AUTH`.
 - `test(proposals)`: 1 new 401 test for `GET /proposals`. Auth header added to existing list test.
 - `test(notifications)`: 2 new 401 tests for `GET /notifications` and `GET /notifications/deliveries`. Auth header added to list/deliveries calls.
 - `test(notifications/proposals)`: Field-constraint tests (label >100 chars, target >500 chars, district_filter >12 chars, title >200 chars, summary >2000 chars) pin Pydantic max_length validators.
@@ -750,28 +750,28 @@ Autonomous session (Fernando offline 12h). All changes on `develop`, local Ollam
 
 ---
 
-### Session 9 — 2026-05-24 — Sprint 17: Copilot CPU hardening + test stability
+### Session 9, 2026-05-24, Sprint 17: Copilot CPU hardening + test stability
 
 Autonomous session (Fernando offline). All changes on `develop`, local Ollama only.
 
 **Copilot quick-mode hardening:**
-- `fix(ai/agent)`: `_QUICK_PATTERNS` tightened — "alerta" alone no longer matches;
+- `fix(ai/agent)`: `_QUICK_PATTERNS` tightened: "alerta" alone no longer matches;
   requires compound phrases (`alertas activ`, `cuántas alert`, etc.) to prevent
   "Redacta un mensaje de alerta" from hitting quick-mode.
-- `feat(ai/agent)`: `_detect_multi_quick()` — 2–3 pattern matches route to parallel
+- `feat(ai/agent)`: `_detect_multi_quick()`, 2-3 pattern matches route to parallel
   `asyncio.gather` dispatch without any LLM call (~3s). Per-tool answers joined with
   " | ", "No se encontraron" responses filtered out. Closes the case where a combined
   "¿inundaciones y alertas?" query would time out on 9-tool context.
 - `feat(ai/agent)`: `_TOOL_SCHEMA_BY_NAME`, `_TOOL_HINT_MAP`, `_select_tools(query)`
-  — pre-selects 2–3 relevant tool schemas before LLM call, reducing input tokens
-  from ~1100 (9 tools) to ~300–400. Cuts Ollama CPU inference time from >60s to ~20s.
-- `fix(ai/agent)`: `_build_answer` `level_change_1h_m` float format — field can be
+, pre-selects 2-3 relevant tool schemas before LLM call, reducing input tokens
+  from ~1100 (9 tools) to ~300-400. Cuts Ollama CPU inference time from >60s to ~20s.
+- `fix(ai/agent)`: `_build_answer` `level_change_1h_m` float format: field can be
   string from asyncpg; wrapped in `try: float(change)` with ValueError fallback.
-- `fix(config)`: `llm_timeout_chat` 30s → 45s; CPU-only Qwen2.5-7B needs ~20–25s
-  with 2–3 tools in context.
+- `fix(config)`: `llm_timeout_chat` 30s → 45s; CPU-only Qwen2.5-7B needs ~20-25s
+  with 2-3 tools in context.
 
 **Frontend fixes:**
-- `fix(ui/AlertsPanel)`: escalate button lacked `disabled={acting}` — operators
+- `fix(ui/AlertsPanel)`: escalate button lacked `disabled={acting}`, operators
   could double-submit an escalation to INDECI COEN. Added `disabled={acting}` +
   `disabled:opacity-50`.
 - `fix(ui/DecisionLogPanel)`: error state showed message but no retry path. Added
@@ -791,54 +791,54 @@ Autonomous session (Fernando offline). All changes on `develop`, local Ollama on
 
 ---
 
-### Session 8 — 2026-05-18 — Sprint 16: Shelters, Callao, Quick-mode, Twilio, Tour
+### Session 8, 2026-05-18, Sprint 16: Shelters, Callao, Quick-mode, Twilio, Tour
 
-Autonomous session (Fernando offline 11am–4pm). All changes on `develop`, local Ollama only.
+Autonomous session (Fernando offline 11am: 4pm). All changes on `develop`, local Ollama only.
 
-**P1–P3, P7 — Documentation sprint:**
-- `docs(runbook)`: `operator-runbook.md` fully rewritten to Sprint 15 — Proposals/HITL panel, 9-tool copilot with quick-mode table, auto-resolution lifecycle, ANA Redis fallback, Ollama timeout recovery, SINAGERD role table.
+**P1: P3, P7. Documentation sprint:**
+- `docs(runbook)`: `operator-runbook.md` fully rewritten to Sprint 15: Proposals/HITL panel, 9-tool copilot with quick-mode table, auto-resolution lifecycle, ANA Redis fallback, Ollama timeout recovery, SINAGERD role table.
 - `docs(sources)`: `data-sources.md` date updated, dead RSS feeds removed (Canal N, La República → Gestión), ANA Redis stale-cache note, new "Agentic Copilot Tools" section with 9-tool table.
-- `docs(competition)`: `COMPETITION.md` Phase 3 delta section — comparison table (8→9 tools), auth, HITL, PDF, quick-mode, shelters, Callao.
-- `docs(arch)`: `architecture.md` honest inference-latency table: quick-mode ~2s, full agentic 15–30s, triage 3–8s.
+- `docs(competition)`: `COMPETITION.md` Phase 3 delta section: comparison table (8→9 tools), auth, HITL, PDF, quick-mode, shelters, Callao.
+- `docs(arch)`: `architecture.md` honest inference-latency table: quick-mode ~2s, full agentic 15-30s, triage 3-8s.
 
-**P4 — INDECI evacuation shelters layer (end-to-end):**
-- `infra/postgres/migration_shelters.sql` — `geo.shelters` table with `GENERATED ALWAYS AS` geom; 20 Lima INDECI-referenced shelters seeded (Parque Zonal Huiracocha, Estadio Nacional, Coliseo Chosica, Gran Chimú Ate, Sinchi Roca, etc.). Applied to running container.
-- `routers/layers.py` — `GET /api/v1/layers/shelters` GeoJSON endpoint.
-- `api.ts` — `ShelterCollection` types + `fetchShelters()`.
-- `queries.ts` — `useShelters()` hook (60-min staleTime, static data).
-- `MapView.tsx` — sage-green circle + label layers, popup with capacity/type/district, cursor change.
-- `ScenarioPanel.tsx` — `"shelters"` entry added to `LAYERS` constant (toggle UI).
+**P4. INDECI evacuation shelters layer (end-to-end):**
+- `infra/postgres/migration_shelters.sql`, `geo.shelters` table with `GENERATED ALWAYS AS` geom; 20 Lima INDECI-referenced shelters seeded (Parque Zonal Huiracocha, Estadio Nacional, Coliseo Chosica, Gran Chimú Ate, Sinchi Roca, etc.). Applied to running container.
+- `routers/layers.py`, `GET /api/v1/layers/shelters` GeoJSON endpoint.
+- `api.ts`, `ShelterCollection` types + `fetchShelters()`.
+- `queries.ts`, `useShelters()` hook (60-min staleTime, static data).
+- `MapView.tsx`, sage-green circle + label layers, popup with capacity/type/district, cursor change.
+- `ScenarioPanel.tsx`, `"shelters"` entry added to `LAYERS` constant (toggle UI).
 
-**P5 — Copilot quick-mode (5 query types, ~2s without LLM):**
-- `agent.py` — `_QUICK_PATTERNS` + `_detect_quick()`. Fixed: multi-topic queries (matching >1 pattern) now fall through to full LLM, not just first match.
-- `copilot.py` — `quick_mode: bool` in `CopilotResponse`.
-- `AskPanel.tsx` — "Modo rápido · sin LLM · ~2s" badge on responses.
+**P5. Copilot quick-mode (5 query types, ~2s without LLM):**
+- `agent.py`, `_QUICK_PATTERNS` + `_detect_quick()`. Fixed: multi-topic queries (matching >1 pattern) now fall through to full LLM, not just first match.
+- `copilot.py`, `quick_mode: bool` in `CopilotResponse`.
+- `AskPanel.tsx`, "Modo rápido · sin LLM · ~2s" badge on responses.
 
-**P6 — Callao geodata:**
-- `infra/postgres/migration_callao.sql` — 7 Callao districts (`070101`–`070107`, including Mi Perú created 2014 by Ley N°30197). Approximate polygon geometries. Applied to running container.
+**P6. Callao geodata:**
+- `infra/postgres/migration_callao.sql`, 7 Callao districts (`070101`, `070107`, including Mi Perú created 2014 by Ley N°30197). Approximate polygon geometries. Applied to running container.
 
-**P8 — Real SMS via Twilio:**
-- `pyproject.toml` — `twilio>=9.0` dependency. Installed in running container.
-- `config.py` — `twilio_account_sid / auth_token / from_number` + `twilio_enabled` property.
-- `notifications.py` — `_send_sms()` with lazy Twilio import; stubs gracefully when unconfigured. Fan-out handles `"sms"` channel.
-- `.env.example` — Twilio stanza documented.
+**P8. Real SMS via Twilio:**
+- `pyproject.toml`, `twilio>=9.0` dependency. Installed in running container.
+- `config.py`, `twilio_account_sid / auth_token / from_number` + `twilio_enabled` property.
+- `notifications.py`, `_send_sms()` with lazy Twilio import; stubs gracefully when unconfigured. Fan-out handles `"sms"` channel.
+- `.env.example`. Twilio stanza documented.
 
-**P9 — driver.js onboarding tour updated:**
-- `TutorialOverlay.tsx` — new step 5 for Proposals HITL panel (`#driver-nav-proposals`): 4-eyes approval flow, LLM reasoning visible, SMS+email on approval. Copilot step (now step 6) updated to mention quick-mode and population-at-risk query. `layerEffects` indices updated accordingly.
+**P9, driver.js onboarding tour updated:**
+- `TutorialOverlay.tsx`, new step 5 for Proposals HITL panel (`#driver-nav-proposals`): 4-eyes approval flow, LLM reasoning visible, SMS+email on approval. Copilot step (now step 6) updated to mention quick-mode and population-at-risk query. `layerEffects` indices updated accordingly.
 
-**Tests:** 314 passed, 1 flaky teardown error (pre-existing, passes in isolation). 3 test failures fixed: `test_direct_answer_no_tools`, `test_output_guardrail_redacts_key`, `test_parallel_tool_execution` — all caused by quick-mode intercepting mock-LLM test queries.
+**Tests:** 314 passed, 1 flaky teardown error (pre-existing, passes in isolation). 3 test failures fixed: `test_direct_answer_no_tools`, `test_output_guardrail_redacts_key`, `test_parallel_tool_execution`, all caused by quick-mode intercepting mock-LLM test queries.
 
 **Build:** TypeScript 0 errors. Next.js production build green.
 
 ---
 
-### Session 7 — 2026-05-18 — Real-disaster utility pass + AI speed
+### Session 7, 2026-05-18, Real-disaster utility pass + AI speed
 
 Autonomous session answering "useful or just pretty?" against real disaster scenarios.
 All code local-only; no cloud LLM calls (local Ollama throughout).
 
 **Infrastructure gap closed:**
-- `fix(infra)`: `pgstac.items` relation was missing — `flood-segmentation-hourly` and
+- `fix(infra)`: `pgstac.items` relation was missing: `flood-segmentation-hourly` and
   `sentinel1-daily` Prefect flows were throwing `relation "pgstac.items" does not exist`
   on every run. `stac-fastapi-pgstac` image doesn't ship `pypgstac` CLI; bootstrapped
   schema via one-time `docker exec costa-api pip install "psycopg[binary,pool]" &&
@@ -847,7 +847,7 @@ All code local-only; no cloud LLM calls (local Ollama throughout).
   new Sentinel-1 scenes.
 
 **AI speed (3 independent mechanisms):**
-- `feat(ai)`: `apps/api/src/costa_api/ai/cache.py` — new Redis-backed TTL cache for
+- `feat(ai)`: `apps/api/src/costa_api/ai/cache.py`, new Redis-backed TTL cache for
   all 9 DB tools. Key structure: `costa:ai:tool:{name}:{md5(args)[:12]}`. Per-tool
   TTLs: floods=5m, alerts=30s, infrastructure=30m, protocols=1h, river=1m,
   population=5m, districts=10m, protocols=1h, social=2m. Redis outage → silent
@@ -860,7 +860,7 @@ All code local-only; no cloud LLM calls (local Ollama throughout).
   requests (confirmed by 4 test failures in `test_session_audit.py`). 8192 fits
   4 tool iterations comfortably.
 
-**9th copilot tool — population at risk:**
+**9th copilot tool, population at risk:**
 - `feat(ai/tools)`: `get_population_at_risk` added to TOOL_SCHEMAS + _TOOL_MAP.
   Spatial join of `ml.flood_polygons × geo.districts` with `ST_MakeValid` on both
   sides + `ST_Intersection` area estimation. Uses INEI 2017 census population
@@ -869,7 +869,7 @@ All code local-only; no cloud LLM calls (local Ollama throughout).
 
 **River level trend:**
 - `feat(ai/tools)`: `get_river_levels` rewritten with a two-CTE query. `latest` CTE
-  gets current reading; `prev_1h` CTE gets reading from 45–90 min ago. Computes
+  gets current reading; `prev_1h` CTE gets reading from 45-90 min ago. Computes
   `trend` (rising >5cm/h / falling <-5cm/h / stable / unknown) and
   `level_change_1h_m`. System prompt now says "Si algún río tiene trend=rising,
   destácalo como prioridad inmediata de evacuación."
@@ -897,7 +897,7 @@ All code local-only; no cloud LLM calls (local Ollama throughout).
 - `feat(alerts)`: `_auto_notify()` fan-out fires immediately when the alert generator
   inserts a critical or high alert. Previously notification_subscribers only received
   webhooks on operator-manual `escalate` action. During rapid onset (e.g., flash
-  flood at 2am), operators may not be watching the screen — critical alerts now push
+  flood at 2am), operators may not be watching the screen, critical alerts now push
   directly without human trigger.
 
 **Health endpoint Redis status:**
@@ -911,12 +911,12 @@ All code local-only; no cloud LLM calls (local Ollama throughout).
   in TOOL_SCHEMAS, population_at_risk dispatch, parallel tool execution via asyncio.gather.
 
 **Known pre-existing failures (not caused by this session):**
-- `test_session_audit.py`: 4 LLM interaction tests — "Server disconnected without
+- `test_session_audit.py`: 4 LLM interaction tests, "Server disconnected without
   sending a response". These test the full HTTP path to local Ollama; intermittent
   under load. `num_ctx=8192` reduced frequency. 1 pre-existing teardown error in
   `test_social.py::test_field_report_returns_district_id_when_known` (passes alone).
 
-### Session 6 — 2026-05-18 — Trust-the-loop hardening pass
+### Session 6, 2026-05-18, Trust-the-loop hardening pass
 
 Overnight iteration treating the rubric question "useful or pretty?" as the
 acceptance criterion. Two categories of fix.
@@ -945,7 +945,7 @@ acceptance criterion. Two categories of fix.
   NLP engine so it defaulted to English; every Spanish call raised
   "No matching recognizers were found". Now lazy-initialises a process-wide
   engine bound to `es_core_news_sm`. Verified end-to-end with a triggered run
-  — no warning emitted. This is a Ley 29733 / OCHA compliance defect not just
+, no warning emitted. This is a Ley 29733 / OCHA compliance defect not just
   a code smell.
 - `fix(flows/schedules)`: `HuaycoModel.load()` was called as a classmethod;
   it's an instance method. Replaced with `model = HuaycoModel(); model.load()`.
@@ -959,7 +959,7 @@ acceptance criterion. Two categories of fix.
 - `feat(ui/Toast)`: new `danger` variant with assertive `aria-live` + XCircle
   iconography so failures actually read as failures (not a same-colored success).
 - `fix(api/copilot)`: when an operator asked "cuántas alertas activas",
-  the agent answered `len(rows)` — capped at the tool's LIMIT 20. Now
+  the agent answered `len(rows)`, capped at the tool's LIMIT 20. Now
   `get_active_alerts` returns the unconstrained `_total_active`, the summariser
   reports the true total, breaks it down by severity from the sample, and
   explicitly says "(mostrando las 20 más recientes)" when the sample is capped.
@@ -971,14 +971,14 @@ acceptance criterion. Two categories of fix.
 - `feat(ui/EscalationModal)`: full keyboard focus trap. Auto-focuses textarea,
   Escape cancels, Tab cycles within dialog, focus restores on close.
 - `feat(ui/OperationalHUD)`: new "FEEDS" degradation chip. When ≥3 sources are
-  offline → danger pulse. Stale or 1–2 offline → warn. Click jumps to the
+  offline → danger pulse. Stale or 1-2 offline → warn. Click jumps to the
   DataSources panel. A duty officer can see at a glance whether upstream data
   is fresh enough to act on.
 
 **Tests:** 299/300 (same single pre-existing Ollama `test_ask_xss` timeout
-flake under load — STATUS Session 5 noted; unchanged by this work).
+flake under load: STATUS Session 5 noted; unchanged by this work).
 **Frontend:** `npx tsc --noEmit` clean; production build green; first-load JS
-`/` = 173 kB (up from 153 kB Session 5 — added auth + notifications surfaces).
+`/` = 173 kB (up from 153 kB Session 5: added auth + notifications surfaces).
 
 **HITL workflow closed (new for Session 6):**
 - `feat(ui/ProposalsPanel)`: backend has shipped `/api/v1/proposals`
@@ -991,7 +991,7 @@ flake under load — STATUS Session 5 noted; unchanged by this work).
   operator. LeftRail badge counts critical+high pending.
 - `feat(api/social)`: new `POST /api/v1/social/field-report` endpoint.
   The FieldReport UI used to do an optimistic cache update only with no
-  persistence — refresh dropped the report. Now writes to `social.signals`
+  persistence: refresh dropped the report. Now writes to `social.signals`
   with `source='campo'` and `triage_model='operator_assertion'`, AND
   appends to `ops.decision_log`. Closes the audit-trail loop for operator
   observations.
@@ -1013,46 +1013,46 @@ flake under load — STATUS Session 5 noted; unchanged by this work).
   new scenes until pgstac is bootstrapped. Existing 7 flood polygons +
   Session 3 fixtures still serve the rubric demo.
 - ANA scraper + IMERG remain susceptible to external publication latency
-  — the new FEEDS chip surfaces this honestly to the operator.
+, the new FEEDS chip surfaces this honestly to the operator.
 
-### Session 5 — 2026-05-17 — Operational hardening for government use
+### Session 5, 2026-05-17, Operational hardening for government use
 
 Built four features turning the platform from "visualization" into "operationally usable":
-- **B1** — `feat(notifications)`: Subscriber CRUD + delivery log; webhook fan-out on `high`/`critical` escalation; new `NotificationsPanel` UI
-- **B2** — `feat(auth)`: JWT auth for SINAGERD operators (COEN/COER/COEL roles); 3 demo accounts seeded; `LoginPanel` modal with animation; `OperatorChip` in left sidebar; auth-aware API calls
-- **B3** — `feat(reports)`: EDAN-Perú PDF export from decision log via ReportLab
-- **B4** — `feat(ui)`: SLA breach indicator on alert cards (5 / 10 / 30 / 60 min by severity)
+- **B1**, `feat(notifications)`: Subscriber CRUD + delivery log; webhook fan-out on `high`/`critical` escalation; new `NotificationsPanel` UI
+- **B2**, `feat(auth)`: JWT auth for SINAGERD operators (COEN/COER/COEL roles); 3 demo accounts seeded; `LoginPanel` modal with animation; `OperatorChip` in left sidebar; auth-aware API calls
+- **B3**, `feat(reports)`: EDAN-Perú PDF export from decision log via ReportLab
+- **B4**, `feat(ui)`: SLA breach indicator on alert cards (5 / 10 / 30 / 60 min by severity)
 - **fix(social)**: Show signal date + source link + working More button
 - **test(api)**: 19 new tests for auth + notifications; fixed pytest-asyncio 1.3 event loop isolation via `config._inicache["asyncio_default_test_loop_scope"] = "session"` in `conftest.py`
 - **feat(ui)**: Moved login button into sidebar (via `OperatorChip`); added scale+fade animation on modal open
 
-### Session 4 — 2026-05-17 — Sprint 12 impeccable design pass
+### Session 4, 2026-05-17, Sprint 12 impeccable design pass
 
-Visual system rebuild — see [`IMPECCABLE_AUDIT.md`](IMPECCABLE_AUDIT.md) for the baseline audit.
+Visual system rebuild: see [`IMPECCABLE_AUDIT.md`](IMPECCABLE_AUDIT.md) for the baseline audit.
 - Fraunces display family + Inter body + JetBrains Mono data
 - Lima-coast OKLCH palette (cinnabar / ochre / mustard / sage severity, costa-teal brand, sand warm accent)
 - Bento CityOverview, SINAGERD-style ASCII tag codes (no emoji), MapRadar signature sweep
 - Lighthouse 100/100 accessibility ✅
 - Audit score 5.8 → 8.6 / 10
 
-### Session 3 — 2026-05-17 — El Niño replay + population exposure + SSE fix
+### Session 3, 2026-05-17, El Niño replay + population exposure + SSE fix
 
 - Population exposure: INEI 2017 census seeded for 41 Lima Metro districts; fusion API returns `population_at_risk`
-- El Niño 2017 replay: `ReplayDateScrubber` with 5 historical steps (Mar 15 – Apr 2 2017); pre-baked SAR flood fixtures
-- SSE task leak fixed: `generate()` tracks `fetch_task` via `asyncio.create_task` and cancels in `finally` — was starving uvicorn
+- El Niño 2017 replay: `ReplayDateScrubber` with 5 historical steps (Mar 15: Apr 2 2017); pre-baked SAR flood fixtures
+- SSE task leak fixed: `generate()` tracks `fetch_task` via `asyncio.create_task` and cancels in `finally`, was starving uvicorn
 - ANA scraper stale-station check logs WARNING when active station has no data >2h
 
-### Session 2 — 2026-05-17 — SSE hoist + tutorial rework + WCAG AA
+### Session 2, 2026-05-17, SSE hoist + tutorial rework + WCAG AA
 
-- `useAlertStream` hoisted to app shell — map district fills update without any panel open
+- `useAlertStream` hoisted to app shell: map district fills update without any panel open
 - driver.js 7-step spotlight walkthrough replaces 387-line modal overlay
 - Lighthouse a11y: 84 → 100 ✅ (target-size, contrast, aria-labels)
 
-### Session 1 — 2026-05-17 — Audit + harden
+### Session 1, 2026-05-17, Audit + harden
 
-- 218 automated tests across 10 API classes — fixed 7 bugs (`::jsonb` cast, negative LIMIT, ST_MakeValid on invalid geoms, wrong column names in proposals approve)
+- 218 automated tests across 10 API classes, fixed 7 bugs (`::jsonb` cast, negative LIMIT, ST_MakeValid on invalid geoms, wrong column names in proposals approve)
 - All time-series tables seeded with realistic demo data
-- P0-1 copilot bug ("no se encontraron datos") resolved — data now flows through 8 DB tools
+- P0-1 copilot bug ("no se encontraron datos") resolved: data now flows through 8 DB tools
 
 For full detail of all sessions, see [`../SESSION_LOG.md`](../SESSION_LOG.md).
 
@@ -1062,20 +1062,20 @@ For full detail of all sessions, see [`../SESSION_LOG.md`](../SESSION_LOG.md).
 
 | Sprint | Focus | Status |
 |--------|-------|--------|
-| 0 | Scaffolding — schema, docker-compose, ADR-0001 | ✅ |
-| 1 | Foundation ingestion — Sentinel-1, IMERG, Lima geodata | ✅ |
-| 2 | Dashboard skeleton — MapLibre, typed API client | ✅ |
-| 3 | Flood segmentation — U-Net, Sen1Floods11 | ✅ |
+| 0 | Scaffolding: schema, docker-compose, ADR-0001 | ✅ |
+| 1 | Foundation ingestion: Sentinel-1, IMERG, Lima geodata | ✅ |
+| 2 | Dashboard skeleton: MapLibre, typed API client | ✅ |
+| 3 | Flood segmentation: U-Net, Sen1Floods11 | ✅ |
 | 4 | Huayco XGBoost + ANA + social ingestion | ✅ |
 | 5 | LLM triage + Operator Copilot RAG | ✅ |
 | 6 | Alerts feed + alert generator + decision log CSV | ✅ |
-| 7 | Submission prep — responsive, hazard layer, SINPAD | ✅ |
-| 8 | Sprint 8 — share tokens, fusion, 3D extrusion | ✅ |
-| 9 | Sprint 9 — share + fusion polish | ✅ |
-| 10 | Sprint 10 — EOC operational UX (QuickDispatch, ResponseProtocol, FieldReport) | ✅ |
-| 11 | Sprint 11 — Agentic AI layer (gateway, guardrails, RAG, tools, proposals) | ✅ |
-| 12 | Sprint 12 — Impeccable design pass | ✅ |
-| 13 | Government-use hardening (B1–B4) | ✅ |
+| 7 | Submission prep: responsive, hazard layer, SINPAD | ✅ |
+| 8 | Sprint 8: share tokens, fusion, 3D extrusion | ✅ |
+| 9 | Sprint 9: share + fusion polish | ✅ |
+| 10 | Sprint 10: EOC operational UX (QuickDispatch, ResponseProtocol, FieldReport) | ✅ |
+| 11 | Sprint 11: Agentic AI layer (gateway, guardrails, RAG, tools, proposals) | ✅ |
+| 12 | Sprint 12: Impeccable design pass | ✅ |
+| 13 | Government-use hardening (B1: B4) | ✅ |
 | 14 | Trust-the-loop pass (PII fix, truthful counts, no false-success toast, Prefect deploys) | ✅ |
 | 15 | Real-disaster utility pass (pgstac, AI speed, pop-at-risk, rainfall alerts, auto-resolve, ANA cache) | ✅ |
 | 16 | Shelters, Callao, Quick-mode, Twilio, onboarding tour | ✅ |
@@ -1089,7 +1089,7 @@ For full detail of all sessions, see [`../SESSION_LOG.md`](../SESSION_LOG.md).
 ### Submission deliverables (Phase 3 deadline: 9 October 2026)
 
 Re-read of `ieee-competition-rules/response-quest-challenge-rules.txt` (§ Phase 3, 2026-08-23):
-the rules require **a working demonstration plus a 2–5 minute video of a real person using the
+the rules require **a working demonstration plus a 2-5 minute video of a real person using the
 product**. They do **not** require a publicly hosted URL, and they do not require open source.
 Hosting is therefore optional; the participant guidance explicitly says to "consider hosting costs
 and operating costs", which favours the reproducible local Compose stack.
@@ -1098,29 +1098,29 @@ and operating costs", which favours the reproducible local Compose stack.
 |------|--------|--------|
 | Public open-source repo | ✅ | <https://github.com/Ferinjoque/costa-resiliente> (Apache 2.0, published 2026-08-23) |
 | Reproducible clone-and-run path | ✅ | README quick start: compose up + 3 ollama pulls + RAG index; demo data self-seeds |
-| **2–5 min demo video** | ❌ **Required by rules** | Record against the local stack — 2017 replay → alert → copilot SITREP → decision log export |
+| **2-5 min demo video** | ❌ **Required by rules** | Record against the local stack: 2017 replay → alert → copilot SITREP → decision log export |
 | Public URL with HTTPS | ⚪ Optional | Not required by the rules. `docker-compose.prod.yml` + Caddy + `scripts/deploy.sh` ready if a VPS is funded (Hetzner CX32 €11/mo). |
 | DNS record | ⚪ Optional | Only if the VPS path is taken |
 
 ### Verified state (2026-08-23)
 
-Stack rebooted after 83 idle days — all 9 containers healthy, `707 API tests passed`,
+Stack rebooted after 83 idle days: all 9 containers healthy, `707 API tests passed`,
 `tsc --noEmit` clean, `/api/v1/health` returns `EMERGENCIA · 7 alerts · 63.2 mm/72h`.
 
 ### Low-priority polish
 
 | Item | Impact | Status |
 |------|--------|--------|
-| ANA scraper UI red indicator when `status: offline` | C1 cosmetic | ✅ Done Session 6 — `OperationalHUD` FEEDS chip + DataSourcesPanel per-source health |
-| ANA/SENAMHI fragility under site outage | C1 reliability | ✅ Done Session 7 — Redis 24h stale-reading cache + scraper health publish |
-| Rainfall threshold alerts (IMERG) | C1 coverage | ✅ Done Session 7 — 50/25/15 mm thresholds, auto-resolve after 6h |
-| Auto-notification on critical alerts | C1 latency | ✅ Done Session 7 — fan-out fires on alert insert, not just operator escalate |
-| `EscalationModal` programmatic focus trap | A11y polish | ✅ Done Session 6 — auto-focus textarea, Escape, Tab cycle, focus restore |
-| `r.avaflow` debris-flow simulation snapshot | C5 +0.2 | ❌ Dropped 2026-08-23 — C5 already scores 5.0; 3+ days of GRASS container work buys nothing against the rubric ceiling, and the XGBoost huayco model already covers the modeling sub-problem |
-| IGP seismic feed | Multi-hazard context | ❌ Dropped 2026-08-23 — seismic is explicitly out of scope in COMPETITION.md. Endpoint `ultimosismo.igp.gob.pe` verified reachable (HTTP 200) if ever revisited |
-| CENEPRED COEN FEN responder assets | C2 / C3 | ✅ Done 2026-08-23 — `scripts/load_coen_fen.py` loads 144 official points (3 INDECI relief warehouses + 141 PNP comisarías) into `geo.infrastructure`; ranked into the copilot's `get_infrastructure_impact` above schools/bridges; map layer + legend + popup provenance |
-| SIGRID native hazard polygons | C2 | ⚠️ Still blocked (re-verified 2026-08-23) — `sigrid.cenepred.gob.pe/geoserver/ows` now 404s, portal 302s to SSO. SINPAD-derived `geo.hazard_zones` remains the served fallback. **New finding:** `sig.cenepred.gob.pe/arcgis_server/rest/services` answers anonymously; `sectores/COEN_FEN_2023_10_5_1X` exposes official COEN El Niño response layers (INDECI national warehouses, Bomberos, comisarías, MINSA affected/inoperative IPRESS, MTC road interventions) queryable without a token in WGS84. Hazard polygons are still absent, but this is a viable optional responder-asset source. |
-| Bootstrap `pgstac` schema for Sentinel-1 ingest + flood-seg flows | C1 (new scenes) | ✅ Done Session 7 — `pypgstac migrate` applied; both flows unblocked |
+| ANA scraper UI red indicator when `status: offline` | C1 cosmetic | ✅ Done Session 6: `OperationalHUD` FEEDS chip + DataSourcesPanel per-source health |
+| ANA/SENAMHI fragility under site outage | C1 reliability | ✅ Done Session 7: Redis 24h stale-reading cache + scraper health publish |
+| Rainfall threshold alerts (IMERG) | C1 coverage | ✅ Done Session 7: 50/25/15 mm thresholds, auto-resolve after 6h |
+| Auto-notification on critical alerts | C1 latency | ✅ Done Session 7: fan-out fires on alert insert, not just operator escalate |
+| `EscalationModal` programmatic focus trap | A11y polish | ✅ Done Session 6: auto-focus textarea, Escape, Tab cycle, focus restore |
+| `r.avaflow` debris-flow simulation snapshot | C5 +0.2 | ❌ Dropped 2026-08-23: C5 already scores 5.0; 3+ days of GRASS container work buys nothing against the rubric ceiling, and the XGBoost huayco model already covers the modeling sub-problem |
+| IGP seismic feed | Multi-hazard context | ❌ Dropped 2026-08-23: seismic is explicitly out of scope in COMPETITION.md. Endpoint `ultimosismo.igp.gob.pe` verified reachable (HTTP 200) if ever revisited |
+| CENEPRED COEN FEN responder assets | C2 / C3 | ✅ Done 2026-08-23: `scripts/load_coen_fen.py` loads 144 official points (3 INDECI relief warehouses + 141 PNP comisarías) into `geo.infrastructure`; ranked into the copilot's `get_infrastructure_impact` above schools/bridges; map layer + legend + popup provenance |
+| SIGRID native hazard polygons | C2 | ⚠️ Still blocked (re-verified 2026-08-23): `sigrid.cenepred.gob.pe/geoserver/ows` now 404s, portal 302s to SSO. SINPAD-derived `geo.hazard_zones` remains the served fallback. **New finding:** `sig.cenepred.gob.pe/arcgis_server/rest/services` answers anonymously; `sectores/COEN_FEN_2023_10_5_1X` exposes official COEN El Niño response layers (INDECI national warehouses, Bomberos, comisarías, MINSA affected/inoperative IPRESS, MTC road interventions) queryable without a token in WGS84. Hazard polygons are still absent, but this is a viable optional responder-asset source. |
+| Bootstrap `pgstac` schema for Sentinel-1 ingest + flood-seg flows | C1 (new scenes) | ✅ Done Session 7: `pypgstac migrate` applied; both flows unblocked |
 
 ---
 
@@ -1151,7 +1151,7 @@ docker exec costa-api python -m pytest --asyncio-mode=auto -q
 docker compose build api && docker compose up -d api
 ```
 
-**Container code note:** API and worker Python packages are installed into site-packages at build time; `apps/api/src/` and `apps/api/tests/` are read-only volume-mounted in dev. `pyproject.toml` is **not** mounted — settings there won't take effect at runtime without rebuilding.
+**Container code note:** API and worker Python packages are installed into site-packages at build time; `apps/api/src/` and `apps/api/tests/` are read-only volume-mounted in dev. `pyproject.toml` is **not** mounted: settings there won't take effect at runtime without rebuilding.
 
 ---
 
@@ -1159,7 +1159,7 @@ docker compose build api && docker compose up -d api
 
 - All work lands on `develop`. Never commit to `main` unless tagging a submission release.
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`, `perf:`, `ci:`. Scope tags optional but encouraged (`feat(auth): ...`).
-- Every push to `develop` keeps the project working — `docker compose up` succeeds, primary services reachable.
+- Every push to `develop` keeps the project working: `docker compose up` succeeds, primary services reachable.
 - Secrets via `.env` only (gitignored). Committed template: `.env.example`.
 
 ---
@@ -1181,25 +1181,25 @@ docker compose build api && docker compose up -d api
 
 ---
 
-## Session 24 — 2026-08-23 — Repo publication, data correctness, dependency hygiene
+## Session 24, 2026-08-23, Repo publication, data correctness, dependency hygiene
 
 First session after an 83-day gap. Stack came back healthy with no code changes needed.
 
-**Published:** <https://github.com/Ferinjoque/costa-resiliente> — public, Apache 2.0 (full licence
+**Published:** <https://github.com/Ferinjoque/costa-resiliente>, public, Apache 2.0 (full licence
 text + NOTICE; the previous `LICENSE` was a 17-line stub GitHub could not detect).
 
-**Rules re-read.** Phase 3 requires a working demonstration plus a 2–5 minute video of a real
+**Rules re-read.** Phase 3 requires a working demonstration plus a 2-5 minute video of a real
 person using the product. It does **not** require a hosted public URL or open source. VPS
 deployment is therefore optional, and the participant guidance ("consider hosting costs") favours
 the reproducible local Compose stack. The demo video is the only hard deliverable left.
 
-**New data source — CENEPRED COEN FEN 2023.** SIGRID's portal is still SSO-gated and its WFS
+**New data source: CENEPRED COEN FEN 2023.** SIGRID's portal is still SSO-gated and its WFS
 endpoint now 404s, but `sig.cenepred.gob.pe/arcgis_server` answers anonymously. `load_coen_fen.py`
 loads 144 official responder assets (3 INDECI relief warehouses + 141 PNP comisarías) into
 `geo.infrastructure`, ranked into the copilot's infrastructure tool and drawn on the map.
 
 **UBIGEO off-by-one fixed (operator-facing).** The Lima code map listed Pueblo Libre and Magdalena
-Vieja as two districts — they are one (INEI 150121) — shifting every code from 150125 onward and
+Vieja as two districts, they are one (INEI 150121), shifting every code from 150125 onward and
 inventing 150144. San Juan de Lurigancho, the demo COEL district, was on 150133 (really San Juan
 de Miraflores). Fixed in the loader, seeds, demo data and tests, with
 `infra/postgres/migration_ubigeo_fix.sql` for existing databases and 2 regression tests. Found by
@@ -1209,12 +1209,12 @@ cross-checking against CENEPRED's `id_dist` field.
 INEI 2017 counts disagree across sources; exposure math skips districts with no census figure.
 
 **Test infrastructure.** Both Dockerfiles gained a `development` stage installing `.[dev]`. Until
-now pytest existed only in hand-patched long-lived containers — a rebuild silently removed the
+now pytest existed only in hand-patched long-lived containers, a rebuild silently removed the
 ability to run the suite at all.
 
 **Dependencies.** Next.js 14.2.3 → 14.2.35 (critical middleware authorization bypass) plus web
 transitives; both `uv.lock`s refreshed (aiohttp 3.14.3, pillow 12.3.0, cryptography 48.0.1/50.0.0,
-pyasn1, starlette, h2). `cryptography` stays at 46.0.7 in workers — atproto, prefect and presidio
+pyasn1, starlette, h2). `cryptography` stays at 46.0.7 in workers: atproto, prefect and presidio
 cap it.
 
 **Claim corrections.** `pg_cron` 7-day purge (it is the Prefect `retention-daily` flow), 8 → 9
@@ -1223,12 +1223,12 @@ copilot tools, `deploy.sh` placeholders and wrong model names, `gemma4-demo` pro
 **Verified:** 712 API tests, 182 worker tests (8 skipped), `tsc` clean, production build 188 kB,
 9 containers healthy.
 
-### Session 24 addendum — repo hygiene, remaining advisories, demo restore
+### Session 24 addendum: repo hygiene, remaining advisories, demo restore
 
 **History rewrite.** The 10 `Co-Authored-By: Claude` trailers were stripped from commit messages
 with `git filter-repo` and force-pushed. All 794 commits, authors and dates are preserved and the
 tree is byte-identical to the pre-rewrite backup (local tag `backup-pre-rewrite-2026-08-23`).
-GitHub's contributor list was already Fernando-only — the trailers were text, never attribution.
+GitHub's contributor list was already Fernando-only: the trailers were text, never attribution.
 
 **Branches / PRs.** All five Dependabot PRs assessed, actioned and closed; every dependabot branch
 deleted. `develop` is now the only branch on the remote.
@@ -1242,22 +1242,22 @@ deleted. `develop` is now the only branch on the remote.
 | serialize-javascript → ^7.1.0 (override, via next-pwa → workbox) | ✅ fixed |
 | next-intl 3.14 → 4.13.7 | ✅ fixed; single provider usage, verified rendering |
 | aiohttp 3.14.3, pillow 12.3.0, idna 3.19, pydantic-settings 2.15.0, pyasn1, h2, starlette | ✅ fixed in both locks and both images |
-| cryptography 50 in workers | ❌ blocked — atproto, prefect and presidio-anonymizer cap it at 46.0.7. The API image runs 50.0.0. |
+| cryptography 50 in workers | ❌ blocked: atproto, prefect and presidio-anonymizer cap it at 46.0.7. The API image runs 50.0.0. |
 | remaining `next` advisories | ❌ need Next 16 (two majors). DoS / cache-poisoning classes relevant to public internet exposure; not worth an App Router migration before 9 October. |
 | torch 2.13 | ❌ LOW severity, local inference on trusted rasters, would require re-validating flood segmentation |
 | image-size, ecdsa | ❌ no non-major fix published |
 
 **Demo restore fixed (was broken).** `POST /health/seed` could not bring the scenario back: the
 seed gate counted every row in `ops.alerts`, and the per-alert loop skipped existing titles
-regardless of status. Once the demo alerts had been acknowledged or closed — by a demo run, by the
-test suite, or by auto-resolution — the demo was unrecoverable. Both gates fixed, with two
-regression tests. **Before recording the demo video, run `POST /api/v1/health/seed` — the suite
+regardless of status. Once the demo alerts had been acknowledged or closed, by a demo run, by the
+test suite, or by auto-resolution, the demo was unrecoverable. Both gates fixed, with two
+regression tests. **Before recording the demo video, run `POST /api/v1/health/seed`, the suite
 consumes demo alerts.**
 
 **Verified after all of the above:** 714 API tests, 182 worker tests (8 skipped), tsc clean,
 build 188 kB, 9 containers healthy, `/health` back to `EMERGENCIA · 7 active alerts`.
 
-### Session 24 audit — what a full sweep actually found
+### Session 24 audit: what a full sweep actually found
 
 Answering "is anything else pending?" by testing every surface rather than trusting the docs.
 
@@ -1285,15 +1285,15 @@ wiring · live ingestion (Bluesky 147, RSS 88, IMERG 2 568, stations 2 357 rows,
 | Area | Reality |
 |---|---|
 | SAR flood U-Net | Inference path implemented and unit-tested, but no publishable Sen1Floods11 *U-Net* checkpoint exists (the loader's HF repo 401s; published Sen1Floods11 models are Prithvi-EO optical, not SAR). Map shows labelled synthetic polygons. |
-| Huayco XGBoost | Scores live IMERG accumulations, but the ensemble is not fitted on a labelled Lima inventory — `xgboost-v0.1-demo-refresh`. |
-| Reddit / Telegram | `stale` — best-effort sources, excluded from the core health computation by design. |
+| Huayco XGBoost | Scores live IMERG accumulations, but the ensemble is not fitted on a labelled Lima inventory, `xgboost-v0.1-demo-refresh`. |
+| Reddit / Telegram | `stale`, best-effort sources, excluded from the core health computation by design. |
 | Sentinel-1 ingest | Last real scene May 2026; flood source reads `offline`. |
 | E2E / visual regression | Not present. Unit tests cover pure logic only. |
 
-**The remaining deliverable is still the 2–5 minute demo video.** Run `POST /api/v1/health/seed`
-first — the API test suite acts on real alert rows and consumes the demo scenario.
+**The remaining deliverable is still the 2-5 minute demo video.** Run `POST /api/v1/health/seed`
+first: the API test suite acts on real alert rows and consumes the demo scenario.
 
-### Session 24 — browser tests, and what they found
+### Session 24: browser tests, and what they found
 
 Frontend coverage is now three layers: 21 vitest unit tests, **14 Playwright browser tests**
 (desktop 1440×900 + Pixel 5), and the type checker. The browser suite drives the real stack rather
@@ -1304,7 +1304,7 @@ Two defects surfaced only because a browser actually clicked through the app:
 1. **A stale 401 could undo a successful login.** The dashboard fires several authenticated
    queries on mount, so an unauthenticated visitor has 401s in flight while they type their
    password. Those late responses hit the global 401 handler and logged the operator out
-   *immediately after signing in* — intermittently, the console bounced you back to the modal.
+   *immediately after signing in*: intermittently, the console bounced you back to the modal.
    Requests now carry a session generation and only sign out when the 401 belongs to the current
    session.
 2. **Free-form copilot questions took 45 s.** CPU inference spent the entire per-call timeout

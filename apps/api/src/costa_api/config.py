@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     postgres_user: str = "costa"
     postgres_password: str = "change_me_in_production"
 
-    # Read-only AI user (used by ai/ tools — no write access)
+    # Read-only AI user (used by ai/ tools: no write access)
     postgres_ai_user: str = "costa_ai_ro"
     postgres_ai_password: str = "change_me_in_production"
 
@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     minio_bucket_rasters: str = "rasters"
     minio_bucket_models: str = "models"
 
-    # LLM — accepts both new (LLM_*) and old (OLLAMA_*) env var names
+    # LLM: accepts both new (LLM_*) and old (OLLAMA_*) env var names
     llm_provider: str = "ollama"
     llm_base_url: str = Field(
         default="http://localhost:11434",
@@ -95,7 +95,7 @@ class Settings(BaseSettings):
     lima_bbox_east: float = -76.7
     lima_bbox_north: float = -11.7
 
-    # Twilio SMS (optional — stub fires if not set; only costs money when ACCOUNT_SID is configured)
+    # Twilio SMS (optional: stub fires if not set; only costs money when ACCOUNT_SID is configured)
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_from_number: str = ""  # E.164 format, e.g. +15005550006

@@ -1,4 +1,4 @@
-"""Agentic copilot loop — multi-tool reasoning for disaster queries.
+"""Agentic copilot loop: multi-tool reasoning for disaster queries.
 
 Flow:
   1. Input guardrail (regex)
@@ -75,7 +75,7 @@ class AgentResult:
 # Bypass LLM entirely: keyword match → DB tool → template answer (~2s).
 
 _QUICK_PATTERNS: list[tuple[list[str], str]] = [
-    # SLA breach queries — operators often ask "alertas sin reconocer" at shift change
+    # SLA breach queries: operators often ask "alertas sin reconocer" at shift change
     (["sla vencido", "sla breach", "alertas vencidas", "sin reconocer",
       "no reconocidas", "sin acción", "sin accion", "alertas incumplidas",
       "alertas atrasadas", "cuantos sla", "cuántos sla"], "get_active_alerts"),
@@ -153,7 +153,7 @@ _SITREP_PHRASES = [
     "resumen ejecutivo", "punto de situación", "reporte de turno",
     "cómo vamos", "como vamos", "panorama actual", "estado de situación",
     "como esta lima", "novedades de la emergencia",
-    # NOTE: "estado del sistema" was removed — too broad, matches subsystem queries
+    # NOTE: "estado del sistema" was removed: too broad, matches subsystem queries
     "me pones al día", "ponme al dia", "actualización del cuartel",
     "estado general", "que esta pasand", "qué está pasand", "que hay de nuevo", "qué hay de nuevo",
     "cómo estamos", "como estamos", "panorama general",
@@ -238,7 +238,7 @@ _TOOL_SCHEMA_BY_NAME: dict[str, dict] = {
 }
 
 # Maps keyword hints to the 1-2 primary tools most likely needed.
-# Used to pre-select schemas before sending to LLM — fewer input tokens
+# Used to pre-select schemas before sending to LLM, fewer input tokens
 # = faster inference on CPU (generation cost scales with context length).
 _TOOL_HINT_MAP: list[tuple[list[str], list[str]]] = [
     (["poblaci", "personas", "habitantes", "riesgo pob", "cuántas personas"],
@@ -287,7 +287,7 @@ def _select_tools(query: str) -> list[dict]:
 
 
 async def _keyword_dispatch(query: str, db, rag_fn) -> dict:
-    """Fast keyword-based tool dispatch — fallback when LLM is unavailable.
+    """Fast keyword-based tool dispatch: fallback when LLM is unavailable.
     Falls back to get_active_alerts (more operationally relevant than flood polygons).
     """
     q = query.lower()
@@ -318,9 +318,9 @@ async def run(
             confidence=0.0,
         )
 
-    # 1b-sitrep: start-of-shift comprehensive snapshot — 6 tools sequentially.
+    # 1b-sitrep: start-of-shift comprehensive snapshot, 6 tools sequentially.
     # Tools run sequentially (not gather) to avoid concurrent-session race on
-    # the shared AsyncSession — parallel dispatch was causing some tools to
+    # the shared AsyncSession: parallel dispatch was causing some tools to
     # return empty results when they should have returned data.
     # 6th tool (get_social_clusters) added Session 23: duty officers need
     # citizen signal count at start-of-shift to know if community is calling for help.
@@ -341,11 +341,11 @@ async def run(
             tc_list = []
             for tool_name, res in zip(sitrep_tools, sitrep_results):
                 if isinstance(res, Exception):
-                    # Raised before dispatch() — very rare (cache or network layer)
+                    # Raised before dispatch(): very rare (cache or network layer)
                     logger.warning("sitrep tool %s raised before dispatch: %s", tool_name, res)
                     continue
                 if res.get("error"):
-                    # dispatch() caught a DB exception and wrapped it — tool failed.
+                    # dispatch() caught a DB exception and wrapped it: tool failed.
                     # Don't include in per_tool_rows so quorum guard counts only
                     # tools that actually ran successfully (error or calm).
                     logger.warning("sitrep tool %s DB error: %s", tool_name, res["error"])
@@ -361,7 +361,7 @@ async def run(
                 combined = _build_sitrep_answer(per_tool_rows)
                 if combined:
                     if sitrep_failed:
-                        combined += f"\n\n⚠ Fuente(s) no disponible(s) en este SITREP: {', '.join(sitrep_failed)}. Datos parciales — verifique con fuentes oficiales."
+                        combined += f"\n\n⚠ Fuente(s) no disponible(s) en este SITREP: {', '.join(sitrep_failed)}. Datos parciales, verifique con fuentes oficiales."
                     clean_answer, triggered = sanitise(combined, all_rows)
                     logger.info("sitrep_mode hit: tools=%s rows=%d failed=%s op=%s", sitrep_tools, len(all_rows), sitrep_failed, operator_id)
                     return AgentResult(
@@ -376,13 +376,13 @@ async def run(
             elif per_tool_rows:
                 # Only declare NORMAL when ≥4 of 6 tools succeeded (≥4/6 = quorum).
                 # Raised from 3/5 to 4/6 with addition of get_social_clusters as 6th tool.
-                # If fewer tools responded, some may have failed with exceptions —
+                # If fewer tools responded, some may have failed with exceptions, 
                 # declaring "no emergency" when alerts/rainfall tools are down would
                 # give operators a false sense of calm during a real crisis.
                 if len(per_tool_rows) >= 4:
-                    logger.info("sitrep_mode: %d/6 tools returned 0 rows — no active emergency", len(per_tool_rows))
+                    logger.info("sitrep_mode: %d/6 tools returned 0 rows, no active emergency", len(per_tool_rows))
                     return AgentResult(
-                        answer="**SITREP — Lima Metropolitana**: Sin alertas activas, sin inundaciones SAR detectadas, sin riesgo crítico de huayco, niveles hidrológicos normales. Sistema en estado NORMAL.",
+                        answer="**SITREP. Lima Metropolitana**: Sin alertas activas, sin inundaciones SAR detectadas, sin riesgo crítico de huayco, niveles hidrológicos normales. Sistema en estado NORMAL.",
                         sources=[],
                         tool_calls=tc_list,
                         confidence=0.85,
@@ -390,14 +390,14 @@ async def run(
                         mode="sitrep",
                     )
                 else:
-                    # Too few tools responded — partial data, don't assert NORMAL.
+                    # Too few tools responded: partial data, don't assert NORMAL.
                     # Fall through to the full LLM agent for a best-effort answer.
                     logger.warning(
-                        "sitrep_mode: only %d/5 tools responded — not enough for NORMAL assertion, falling through",
+                        "sitrep_mode: only %d/5 tools responded, not enough for NORMAL assertion, falling through",
                         len(per_tool_rows),
                     )
         except Exception as exc:
-            logger.warning("sitrep_mode failed: %s — falling through to full agent", exc)
+            logger.warning("sitrep_mode failed: %s, falling through to full agent", exc)
 
     # 1c. Quick-mode: bypass LLM for single common query type (~2s vs 15-30s)
     quick_tool = _detect_quick(query)
@@ -420,7 +420,7 @@ async def run(
                 mode="quick",
             )
         except Exception as exc:
-            logger.warning("quick_mode dispatch failed (%s): %s — falling through to full agent", quick_tool, exc)
+            logger.warning("quick_mode dispatch failed (%s): %s, falling through to full agent", quick_tool, exc)
 
     # 1d. Multi-quick-mode: 2-3 signals matched → parallel tool calls, no LLM (~3s)
     multi_tools = _detect_multi_quick(query)
@@ -451,7 +451,7 @@ async def run(
             failed_tools = [t for t, r in zip(multi_tools, raw_results)
                             if isinstance(r, Exception) or (isinstance(r, dict) and r.get("error"))]
             if all_rows:
-                # Generate per-tool summaries and join — avoids _build_answer
+                # Generate per-tool summaries and join: avoids _build_answer
                 # using only the first row type when schemas are heterogeneous.
                 parts = [_build_answer([], rows, query) for _, rows in per_tool_rows if rows]
                 answer = " | ".join(p for p in parts if p and "No se encontraron" not in p) or _build_answer([], all_rows, query)
@@ -469,9 +469,9 @@ async def run(
                     mode="quick",
                 )
             else:
-                logger.warning("multi_quick: all tools returned empty rows for tools=%s — falling through to full agent", multi_tools)
+                logger.warning("multi_quick: all tools returned empty rows for tools=%s, falling through to full agent", multi_tools)
         except Exception as exc:
-            logger.warning("multi_quick failed: %s — falling through to full agent", exc)
+            logger.warning("multi_quick failed: %s, falling through to full agent", exc)
 
     messages: list[dict] = [
         {"role": "system", "content": _SYSTEM},
@@ -495,12 +495,12 @@ async def run(
     for iteration in range(max_iters):
         if iteration > 0 and _time.monotonic() - loop_started > settings.llm_agent_budget_s:
             logger.info(
-                "Agent budget %.0fs spent after %d iteration(s) — answering from %d row(s) already retrieved",
+                "Agent budget %.0fs spent after %d iteration(s): answering from %d row(s) already retrieved",
                 settings.llm_agent_budget_s, iteration, len(all_tool_results),
             )
             break
         # Bound every call by whatever is left of the budget, the first one
-        # included — otherwise a single CPU inference that never returns burns the
+        # included: otherwise a single CPU inference that never returns burns the
         # whole per-call timeout before the fallback can answer.
         remaining = settings.llm_agent_budget_s - (_time.monotonic() - loop_started)
         try:
@@ -511,7 +511,7 @@ async def run(
                 timeout=max(5.0, min(settings.llm_timeout_chat, remaining)),
             )
         except Exception as exc:
-            logger.warning("LLM call failed (iter %d): %s — falling back to keyword dispatch", iteration, exc)
+            logger.warning("LLM call failed (iter %d): %s, falling back to keyword dispatch", iteration, exc)
             llm_failed = True
             break
 
@@ -534,7 +534,7 @@ async def run(
                 try:
                     args = json.loads(args)
                 except json.JSONDecodeError as _json_err:
-                    logger.warning("Tool %s emitted malformed JSON args: %s — using empty args", name, _json_err)
+                    logger.warning("Tool %s emitted malformed JSON args: %s, using empty args", name, _json_err)
                     args = {}
             parsed_calls.append((name, args))
 
@@ -564,7 +564,7 @@ async def run(
 
     # 3b. LLM fallback: keyword-dispatch when model timed out or called no tools.
     # If tools were called but all returned empty data, we keep the trace as-is
-    # (legitimate "no data" state — callers see it as no results, not an error).
+    # (legitimate "no data" state: callers see it as no results, not an error).
     if llm_failed or (not all_tool_results and not tool_call_trace):
         kw_result = await _keyword_dispatch(query, db, rag_fn)
         if kw_result["rows"]:
@@ -579,7 +579,7 @@ async def run(
     redacted = bool(triggered)
     if redacted:
         logger.warning("output_guardrail triggered for op=%s labels=%s", operator_id, triggered)
-        # Append visible marker so operators know content was filtered — a silently
+        # Append visible marker so operators know content was filtered, a silently
         # truncated answer looks complete and could be acted on as if it were authoritative.
         clean_answer = clean_answer + " [⚠ contenido filtrado por guardrail de seguridad]"
 
@@ -597,7 +597,7 @@ async def run(
     )
 
 
-# SENAMHI alert thresholds (meters) per station name fragment — module-level for shared use
+# SENAMHI alert thresholds (meters) per station name fragment: module-level for shared use
 _STATION_THRESHOLDS: dict[str, float] = {
     "chosica": 2.5, "carapongo": 2.0, "chaclacayo": 1.5,
     "carabayllo": 2.5, "huachipa": 1.8, "manchay": 1.2, "obrajillo": 1.8,
@@ -620,7 +620,7 @@ def _threshold_note_for_row(row: dict) -> str:
                 if lv >= threshold:
                     return f" · umbral: {threshold:.1f} m (⚠ SOBRE umbral ALERTA SENAMHI)"
                 elif lv >= threshold * 0.9:
-                    return f" · umbral: {threshold:.1f} m (⚠ acercándose al umbral — {(lv/threshold*100):.0f}%)"
+                    return f" · umbral: {threshold:.1f} m (⚠ acercándose al umbral, {(lv/threshold*100):.0f}%)"
                 else:
                     return f" · umbral: {threshold:.1f} m (bajo umbral)"
     return ""
@@ -665,7 +665,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
 
     if "area_km2" in first:
         total_area = sum(r.get("area_km2") or 0 for r in rows)
-        # Largest polygon by area — most operationally significant
+        # Largest polygon by area: most operationally significant
         largest = max(rows, key=lambda r: r.get("area_km2") or 0)
         largest_area = largest.get("area_km2", 0)
         largest_district = largest.get("district_name") or largest.get("district")
@@ -673,7 +673,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         # Warn when total_count exceeds sample (injected by get_flood_polygons)
         total_flood_count = first.get("_total_flood_count", n)
         cap_note = f" (mostrando {n} de {total_flood_count})" if total_flood_count > n else ""
-        return f"Se detectaron {total_flood_count} polígono{'s' if total_flood_count != 1 else ''} de inundación SAR — total {total_area:.1f} km².{district_note}{cap_note}"
+        return f"Se detectaron {total_flood_count} polígono{'s' if total_flood_count != 1 else ''} de inundación SAR, total {total_area:.1f} km².{district_note}{cap_note}"
     if "risk_level" in first:
         top = rows[0]
         top_name = top.get("name", "?")
@@ -690,7 +690,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             vh_note = f" · {len(very_high)} quebrada{'s' if len(very_high) != 1 else ''} en umbral CRÍTICO: {vh_names}"
         else:
             vh_note = ""
-        # Model freshness — tell operators how old the XGBoost output is
+        # Model freshness: tell operators how old the XGBoost output is
         computed_at = top.get("computed_at")
         age_note = ""
         if computed_at:
@@ -709,12 +709,12 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                 pass
         return (
             f"Se identificaron {n} quebrada{'s' if n != 1 else ''} con riesgo elevado. "
-            f"La más crítica: {top_name} — {level_es}{prob_str}{trigger_str}{vh_note}{age_note}."
+            f"La más crítica: {top_name}: {level_es}{prob_str}{trigger_str}{vh_note}{age_note}."
         )
     if "level_m" in first:
         r = rows[0]
         trend = r.get("trend", "unknown")
-        trend_es = {"rising": "↑ subiendo", "falling": "↓ bajando", "stable": "estable", "unknown": "—"}.get(trend, "—")
+        trend_es = {"rising": "↑ subiendo", "falling": "↓ bajando", "stable": "estable", "unknown": "-"}.get(trend, "-")
         change = r.get("level_change_1h_m")
         try:
             change_str = f" ({float(change):+.3f} m en 1h)" if change is not None else ""
@@ -741,13 +741,13 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             for other_row in rising[1:3]:
                 note = _threshold_note(other_row)
                 if note and "bajo umbral" not in note:  # only show near/over threshold
-                    other_threshold_notes.append(f"{other_row.get('name','?')} {other_row.get('level_m','—')}m{note.split('·')[1].strip() if '·' in note else note}")
+                    other_threshold_notes.append(f"{other_row.get('name','?')} {other_row.get('level_m','-')}m{note.split('·')[1].strip() if '·' in note else note}")
             other_notes_str = f" · también: {'; '.join(other_threshold_notes)}" if other_threshold_notes else ""
             return (
-                f"⚠ {len(rising)} estación(es) en ascenso — acción inmediata: {names}. "
-                f"{top.get('name','?')}: {top.get('level_m','—')} m{top_change_str}{top_flow_str}{threshold_note}{other_notes_str}."
+                f"⚠ {len(rising)} estación(es) en ascenso, acción inmediata: {names}. "
+                f"{top.get('name','?')}: {top.get('level_m','-')} m{top_change_str}{top_flow_str}{threshold_note}{other_notes_str}."
             )
-        # Add recovery monitoring note when falling near threshold — operators should keep watching
+        # Add recovery monitoring note when falling near threshold, operators should keep watching
         recovery_note = ""
         if trend == "falling":
             tname = (r.get("name") or "").lower()
@@ -755,9 +755,9 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                 if key in tname:
                     lv = r.get("level_m")
                     if lv is not None and float(lv) >= threshold * 0.8:
-                        recovery_note = " · descenso en progreso — monitorear próximas 30min"
+                        recovery_note = " · descenso en progreso: monitorear próximas 30min"
                     break
-        return f"Última lectura: {r.get('name','?')} — nivel {r.get('level_m','—')} m ({trend_es}{change_str}), caudal {r.get('flow_m3s','—')} m³/s{_threshold_note(r)}{recovery_note}."
+        return f"Última lectura: {r.get('name','?')}: nivel {r.get('level_m','-')} m ({trend_es}{change_str}), caudal {r.get('flow_m3s','-')} m³/s{_threshold_note(r)}{recovery_note}."
     if "triage_label" in first:
         total = sum(r.get("count") or 0 for r in rows)
         # Highlight urgent label breakdown (huayco > needs_help > flood > infra > road)
@@ -781,20 +781,20 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                 if lbl == "huayco_observation": huayco_cnt = cnt
                 elif lbl == "needs_help": help_cnt = cnt
         breakdown = f" ({', '.join(urgent_parts)})" if urgent_parts else ""
-        # Add district context — show which districts are seeing most urgent signals
+        # Add district context: show which districts are seeing most urgent signals
         top_districts = []
         for lbl in ["huayco_observation", "needs_help", "flood_observation"]:
             row = next((r for r in rows if r.get("triage_label") == lbl), None)
             if row and row.get("top_district") and row.get("count", 0) > 0:
                 top_districts.append(f"{row['top_district']} ({_LABEL_ES.get(lbl, lbl)})")
-        district_note = f" — zonas: {', '.join(top_districts[:2])}" if top_districts else ""
+        district_note = f", zonas: {', '.join(top_districts[:2])}" if top_districts else ""
         # Add ⚠ when critical thresholds for social cluster alerts are reached
         # (alert generator fires at huayco>=3, needs_help>=5)
         urgency = ""
         if huayco_cnt >= 3:
-            urgency = " ⚠ UMBRAL ALERTA AUTOMÁTICA SUPERADO (huayco ≥3) — revisar alertas automáticas."
+            urgency = " ⚠ UMBRAL ALERTA AUTOMÁTICA SUPERADO (huayco ≥3): revisar alertas automáticas."
         elif help_cnt >= 5:
-            urgency = " ⚠ UMBRAL ALERTA AUTOMÁTICA SUPERADO (ayuda ≥5) — activar respuesta de campo."
+            urgency = " ⚠ UMBRAL ALERTA AUTOMÁTICA SUPERADO (ayuda ≥5): activar respuesta de campo."
         return f"Se registraron {total} señales sociales en el período consultado{breakdown}{district_note}.{urgency}"
     if "severity" in first:
         total = first.get("_total_active", n)
@@ -811,7 +811,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         capped = " (mostrando las 20 más recientes)" if total > n else ""
         # Compute SINAGERD level
         sinagerd = "EMERGENCIA" if crit > 0 else ("ALERTA" if high > 1 or total > 4 else "AVISO" if total > 0 else "NORMAL")
-        base = f"Hay {total} alerta{'s' if total != 1 else ''} activa{'s' if total != 1 else ''} — nivel SINAGERD {sinagerd}{capped}.{suffix}"
+        base = f"Hay {total} alerta{'s' if total != 1 else ''} activa{'s' if total != 1 else ''}: nivel SINAGERD {sinagerd}{capped}.{suffix}"
         # Mention the top critical alert by title for immediate operator context
         top_crit = next((r for r in rows if r.get("severity") == "critical"), None)
         if top_crit and top_crit.get("title"):
@@ -822,7 +822,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             if top_crit.get("alert_type") == "rainfall" and isinstance(refs, dict):
                 mm72 = refs.get("acc_72h_mm")
                 if mm72 is not None:
-                    rain_note = f" — {float(mm72):.0f} mm/72h"
+                    rain_note = f", {float(mm72):.0f} mm/72h"
             base += f" ⚠ Más crítica: {top_crit['title']}{district_note}{rain_note}."
         # Show oldest unacknowledged critical/high alert for SLA awareness
         try:
@@ -857,14 +857,14 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         acc_24h = mx_row.get("acc_24h_mm")
         acc_1h = mx_row.get("acc_1h_mm")
         if mx >= 50.0:
-            status = f"⚠ EMERGENCIA — supera umbral CRÍTICO ANA (>{50:.0f} mm/72h)"
+            status = f"⚠ EMERGENCIA, supera umbral CRÍTICO ANA (>{50:.0f} mm/72h)"
         elif mx >= 25.0:
-            status = f"⚠ ALERTA — supera umbral ALTO ANA (>{25:.0f} mm/72h)"
+            status = f"⚠ ALERTA, supera umbral ALTO ANA (>{25:.0f} mm/72h)"
         elif (acc_24h or 0) >= 15:
-            status = f"⚠ AVISO — lluvia 24h supera umbral ANA ({float(acc_24h or 0):.0f} mm)"
+            status = f"⚠ AVISO, lluvia 24h supera umbral ANA ({float(acc_24h or 0):.0f} mm)"
         else:
             status = "Por debajo del umbral de alerta SENAMHI (25 mm/72h)"
-        # Build detail string — skip windows with 0mm (not operationally useful)
+        # Build detail string: skip windows with 0mm (not operationally useful)
         detail_parts = [f"72h: {mx:.1f} mm"]
         if acc_24h is not None and acc_24h > 0: detail_parts.append(f"24h: {acc_24h:.1f} mm")
         if acc_1h is not None and acc_1h > 0: detail_parts.append(f"1h: {acc_1h:.1f} mm")
@@ -873,7 +873,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         if acc_1h is not None and acc_1h >= 5.0:
             detail += f" ⚠ intensidad en aumento ({acc_1h:.1f}mm/h)"
         # Show additional watersheds above ALERTA (25mm) threshold for full picture.
-        # Deduplicate by watershed name — tool may return multiple time slots per watershed.
+        # Deduplicate by watershed name: tool may return multiple time slots per watershed.
         seen_ws_other: set[str] = {mx_ws}
         other_elevated = []
         for r in rows:
@@ -882,7 +882,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                 seen_ws_other.add(ws)
                 other_elevated.append(f"{ws}: {int(r.get('acc_72h_mm') or 0)} mm")
         other_note = f" · También sobre umbral: {', '.join(other_elevated[:2])}" if other_elevated else ""
-        return f"Cuenca {mx_ws} — {detail}. {status}.{other_note}"
+        return f"Cuenca {mx_ws}: {detail}. {status}.{other_note}"
     if "estimated_population_at_risk" in first:
         total = sum(int(r.get("estimated_population_at_risk") or 0) for r in rows)
         # Show top 3 districts for context
@@ -924,16 +924,16 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             for r in rows if r.get("type") == "hospital" and r.get("name")
         ][:2]
         name_note = f" Hospitales afectados: {', '.join(hosp_names)}." if hosp_names else ""
-        # Shelters in flood zone are critical for evacuation — highlight their count
+        # Shelters in flood zone are critical for evacuation, highlight their count
         shelter_cnt = by_type.get("shelter", 0)
-        shelter_note = f" ⚠ {shelter_cnt} albergue(s) INDECI en zona inundada — verificar capacidad." if shelter_cnt > 0 else ""
+        shelter_note = f" ⚠ {shelter_cnt} albergue(s) INDECI en zona inundada: verificar capacidad." if shelter_cnt > 0 else ""
         return (
             f"⚠ {n} infraestructura(s) crítica(s) dentro de zonas inundadas: {breakdown}.{name_note}{shelter_note} "
             f"Verificar accesibilidad para respuesta de emergencia."
         )
 
     if "chunk" in first:
-        # Protocol/RAG rows — synthesise top excerpts (up to 3 most relevant chunks)
+        # Protocol/RAG rows: synthesise top excerpts (up to 3 most relevant chunks)
         # Deduplicate by title so multiple chunks from same doc don't crowd out others.
         seen_titles: set[str] = set()
         parts: list[str] = []
@@ -951,7 +951,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
         combined = " ".join(parts)
         titles_str = " / ".join(title_list[:3]) if title_list else "INDECI/SENAMHI"
         if not combined:
-            return f"Protocolos relevantes: {titles_str}. [Contenido de protocolo no disponible — consulte fuentes oficiales INDECI/SENAMHI]"
+            return f"Protocolos relevantes: {titles_str}. [Contenido de protocolo no disponible: consulte fuentes oficiales INDECI/SENAMHI]"
         return f"Protocolos relevantes: {titles_str}. {combined}"
 
     return f"Se recuperaron {n} registros. Revise los datos adjuntos."
@@ -1006,7 +1006,7 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             crit_note = f" · más crítica: {top_crit['title']}{rain_note}{sla_note}"
         else:
             crit_note = ""
-        sections.append(f"**Alertas:** {total} activa{'s' if total != 1 else ''}{sev_str} — nivel SINAGERD {level}{crit_note}")
+        sections.append(f"**Alertas:** {total} activa{'s' if total != 1 else ''}{sev_str}: nivel SINAGERD {level}{crit_note}")
         if crit > 0:
             action = "Activar protocolo EDAN y escalar a COEN para alertas críticas."
 
@@ -1032,23 +1032,23 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             other_note = f" · también {', '.join(other_parts)}"
 
         if mx >= 50.0:
-            sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm{detail_24h} ⚠ EMERGENCIA (>50 mm ANA){other_note}")
+            sections.append(f"**Lluvia:** {ws}, 72h: {mx:.0f} mm{detail_24h} ⚠ EMERGENCIA (>50 mm ANA){other_note}")
             if not action:
                 action = "Escalar a COEN. Activar evacuación preventiva quebradas cuenca " + ws + "."
             elif "EDAN" in action:
                 # Augment existing critical-alert action with specific evacuation directive
                 action = action.rstrip(".") + f". Activar evacuación preventiva quebradas cuenca {ws}."
         elif mx >= 25.0:
-            sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm{detail_24h} — ALERTA (>25 mm ANA){other_note}")
+            sections.append(f"**Lluvia:** {ws}, 72h: {mx:.0f} mm{detail_24h}, ALERTA (>25 mm ANA){other_note}")
             if not action:
                 action = "Activar brigadas de campo en quebradas cuenca " + ws + "."
             elif action and "brigadas" not in action:
                 # Augment existing action with ALERTA rain directive
                 action = action.rstrip(".") + f". Activar brigadas de campo en quebradas cuenca {ws}."
         elif acc_24h is not None and acc_24h >= 15:
-            sections.append(f"**Lluvia:** {ws} — 24h: {acc_24h:.0f} mm — AVISO (>15 mm/24h ANA)")
+            sections.append(f"**Lluvia:** {ws}, 24h: {acc_24h:.0f} mm, AVISO (>15 mm/24h ANA)")
         elif mx > 0:
-            sections.append(f"**Lluvia:** {ws} — 72h: {mx:.0f} mm — bajo umbral")
+            sections.append(f"**Lluvia:** {ws}, 72h: {mx:.0f} mm, bajo umbral")
 
     # 3. River levels
     river_rows = tool_rows.get("get_river_levels", [])
@@ -1056,7 +1056,7 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
         # Check if ANY row has meaningful trend data; if all are null/unknown, note the gap
         has_trend_data = any(r.get("trend") in ("rising", "falling", "stable") for r in river_rows)
         if not has_trend_data:
-            sections.append("**Ríos:** ⚠ Datos de tendencia no disponibles — estaciones sin actualización reciente")
+            sections.append("**Ríos:** ⚠ Datos de tendencia no disponibles, estaciones sin actualización reciente")
         rising = [r for r in river_rows if r.get("trend") == "rising"]
         if has_trend_data and rising:
             names = ", ".join(r.get("name", "?") for r in rising[:3])
@@ -1075,12 +1075,12 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
                             # Near-threshold (within 10%): flag as approaching
                             top_threshold_note = f" ⚠ {top_r.get('name')}: {lv_f:.2f}m acercándose al umbral {threshold:.1f}m"
                     break
-            sections.append(f"**Ríos:** {len(rising)} estación(es) en ascenso — {names}{top_threshold_note}")
+            sections.append(f"**Ríos:** {len(rising)} estación(es) en ascenso: {names}{top_threshold_note}")
             if not action:
                 action = f"Prioridad inmediata: monitorear evacuación preventiva en {names}."
         elif has_trend_data:
             top = river_rows[0]
-            _trend_es = {"rising": "↑ ascenso", "falling": "↓ descenso", "stable": "estable"}.get(top.get("trend", ""), "—")
+            _trend_es = {"rising": "↑ ascenso", "falling": "↓ descenso", "stable": "estable"}.get(top.get("trend", ""), "-")
             # Check near-threshold even for stable stations
             stable_threshold = ""
             top_name_lower = (top.get("name") or "").lower()
@@ -1091,7 +1091,7 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
                         pct = round(float(lv) / threshold * 100)
                         stable_threshold = f" ⚠ acercándose al umbral {threshold:.1f}m ({pct}%)"
                     break
-            sections.append(f"**Ríos:** {top.get('name','?')} {top.get('level_m','—')} m — {_trend_es}{stable_threshold}")
+            sections.append(f"**Ríos:** {top.get('name','?')} {top.get('level_m','-')} m: {_trend_es}{stable_threshold}")
 
     # 4. Flood polygons
     flood_rows = tool_rows.get("get_flood_polygons", [])
@@ -1125,7 +1125,7 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
                 vh_note = f" · también: {', '.join(other_vh)}"
             else:
                 vh_note = ""
-            sections.append(f"**Huayco:** {top_name} — {level_es}{prob_str}{trigger_str}{vh_note}")
+            sections.append(f"**Huayco:** {top_name}: {level_es}{prob_str}{trigger_str}{vh_note}")
             if top_level == "very_high":
                 # Name critical quebradas in action directive regardless of what else is set
                 critical_qbr_names = [r.get("name", "?") for r in very_high_rows[:2]]
@@ -1161,11 +1161,11 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             # Deduplicate while preserving order
             seen_dists: set[str] = set()
             unique_dists = [d for d in urgent_districts if not (d in seen_dists or seen_dists.add(d))]  # type: ignore[func-returns-value]
-            district_note = f" — zona: {', '.join(unique_dists[:2])}" if unique_dists else ""
+            district_note = f", zona: {', '.join(unique_dists[:2])}" if unique_dists else ""
             sections.append(f"**Señales sociales (3h):** {total_social} reportes ciudadanos{urgent_note}{district_note}")
             if urgent_total >= 3:
                 district_suffix = f" en {', '.join(unique_dists[:2])}" if unique_dists else ""
-                social_brigade = f"Verificar señales urgentes de ciudadanos{district_suffix} — activar brigadas de campo."
+                social_brigade = f"Verificar señales urgentes de ciudadanos{district_suffix}: activar brigadas de campo."
                 if not action:
                     action = social_brigade
                 elif "brigadas" not in action:
@@ -1177,9 +1177,9 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
 
     ts = _dt.now(_tz.utc).strftime("%Y-%m-%d %H:%M UTC")
     body = "\n".join(f"• {s}" for s in sections)
-    # Always end with an action — default to monitoring if no specific trigger.
+    # Always end with an action: default to monitoring if no specific trigger.
     # Explicit guard: ensure action is always a non-empty string (defensive coding).
     if not action or not isinstance(action, str) or not action.strip():
-        logger.debug("_build_sitrep_answer: no action directive set — using monitoring fallback")
+        logger.debug("_build_sitrep_answer: no action directive set, using monitoring fallback")
         action = "Mantener monitoreo activo. Verificar scrapers y revisar fuentes en panel Datos."
-    return f"**SITREP — Lima Metropolitana** · {ts}\n\n{body}\n\nAcción recomendada: {action}"
+    return f"**SITREP. Lima Metropolitana** · {ts}\n\n{body}\n\nAcción recomendada: {action}"

@@ -1,6 +1,6 @@
-# Operator Runbook — Costa Resiliente
+# Operator Runbook: Costa Resiliente
 
-> Updated through Session 23 — covers auth, SLA toasts (server-side age_seconds, SLA breach modal in EscalationModal), notifications (delete confirm), PDF export, HITL proposals (ubigeo validation), population at risk, auto-resolution, 6-tool sitrep mode (alerts + rainfall + rivers + flood + huayco + social clusters), enhanced quick-mode copilot, watershed rainfall in district risk (39 districts → ALTO during EMERGENCIA), quebrada district assignment, social signal district attribution fix.
+> Updated through Session 23: covers auth, SLA toasts (server-side age_seconds, SLA breach modal in EscalationModal), notifications (delete confirm), PDF export, HITL proposals (ubigeo validation), population at risk, auto-resolution, 6-tool sitrep mode (alerts + rainfall + rivers + flood + huayco + social clusters), enhanced quick-mode copilot, watershed rainfall in district risk (39 districts → ALTO during EMERGENCIA), quebrada district assignment, social signal district attribution fix.
 
 ## Quick Start
 
@@ -13,7 +13,7 @@
 
 | Username | Password | Role | Scope |
 |----------|----------|------|-------|
-| `coen_lima` | `demo1234` | COEN | National — full access |
+| `coen_lima` | `demo1234` | COEN | National: full access |
 | `coer_lima` | `demo1234` | COER | Lima region |
 | `coel_sjl` | `demo1234` | COEL | District 150132 |
 
@@ -24,8 +24,8 @@
 ### Escenario Panel (top-left)
 
 - Select a district or leave blank for full Lima view
-- Adjust time window (1h–72h) — all layers filter to this window
-- **El Niño 2017 Replay** button: loads pre-baked SAR fixtures and steps through Mar 15 – Apr 2 2017 using the date scrubber
+- Adjust time window (1h, 72h): all layers filter to this window
+- **El Niño 2017 Replay** button: loads pre-baked SAR fixtures and steps through Mar 15. Apr 2 2017 using the date scrubber
 - Pinned scenario persists across browser sessions (IndexedDB)
 
 ### Mapa View (center)
@@ -35,29 +35,29 @@
 - 3D extrusion toggle shows SAR flood polygons in height-encoded view
 - Use scroll/pinch to zoom; keyboard arrow keys to pan
 
-### Alertas Feed (right panel — keyboard shortcut: A)
+### Alertas Feed (right panel, keyboard shortcut: A)
 
 - Color-coded by severity: red=critical, orange=high, yellow=medium, green=low
 - **SLA breach chips**: timer turns red when SINAGERD SLA is exceeded (server-computed age, no clock skew); a danger toast also fires so breach is visible even without the Alertas panel open
   - Critical: 5 min · High: 10 min · Medium: 30 min · Low: 60 min
-- **SLA breach modal**: when opening Escalate on a past-SLA alert, a red banner shows "SLA VENCIDO — Xmin sin acción (límite 5min)" — operators see exactly how late they are
+- **SLA breach modal**: when opening Escalate on a past-SLA alert, a red banner shows "SLA VENCIDO, Xmin sin acción (límite 5min)", operators see exactly how late they are
 - Actions per alert card: **Reconocer**, **Escalar**, **Falsa alarma**, **Despachar**
 - All actions logged to Decision Log automatically (action types validated against whitelist)
 - **Auto-resolution**: alerts resolve automatically when hazard passes (flood: 7d, huayco: 48h, social-cluster: 4h, rainfall: 6h)
-- **Auto-notification**: critical and high alerts fan-out to registered subscribers immediately on creation — no operator trigger needed
+- **Auto-notification**: critical and high alerts fan-out to registered subscribers immediately on creation, no operator trigger needed
 - **Rainfall escalation**: if a high rainfall alert exists and rainfall exceeds critical threshold, the high alert is auto-closed and replaced with a critical alert (Session 23)
 
-### Propuestas Panel (bottom-right drawer — keyboard shortcut: P)
+### Propuestas Panel (bottom-right drawer, keyboard shortcut: P)
 
 - The agentic copilot may submit pre-published alert proposals requiring human approval
 - Badge count on LeftRail shows pending critical/high proposals
 - **Aprobar**: inserts alert into live ops.alerts + records in Decision Log under your username
 - **Rechazar**: removes from queue; reason logged
-- HITL (Human-in-the-Loop) — no AI-generated alert reaches the live feed without operator approval
+- HITL (Human-in-the-Loop): no AI-generated alert reaches the live feed without operator approval
 
 ### Consultar Panel / Copilot (keyboard shortcut: C)
 
-- Type a question in Spanish — first suggestion chip: "Dame el resumen completo de la situación"
+- Type a question in Spanish, first suggestion chip: "Dame el resumen completo de la situación"
 - **SITREP mode** (~6s): use "resumen completo", "inicio de guardia", "sitrep", or "situation report" → calls 6 tools sequentially (alertas + lluvia + ríos + SAR + huayco + señales sociales) and returns a structured SITREP narrative with UTC timestamp and district context for social signals (Session 23)
 - **Quick mode** (~2s): 9 common query patterns bypass the LLM entirely:
   - "¿alertas activas?" / "situación actual" → alert count + severity breakdown
@@ -69,18 +69,18 @@
   - "señales sociales / avistamiento / vecinos" → urgent signal breakdown by label
   - "albergue / hospital / puente" → critical infrastructure in flood zones
   - "protocolo / INDECI / qué hacer" → protocol RAG (pgvector)
-- **Full mode** (~15–30s): all other queries go through the 9-tool agentic loop:
-  - `get_flood_polygons` — SAR flood extents
-  - `get_huayco_risk` — quebrada susceptibility
-  - `get_river_levels` — station readings + 1h trend
-  - `get_social_clusters` — triage-labeled social signals
-  - `get_infrastructure_impact` — hospitals, bridges, substations in hazard zones
-  - `get_rainfall_accumulation` — IMERG 1h–72h per watershed
-  - `get_active_alerts` — ops.alerts with true total count
-  - `search_protocols` — pgvector RAG over INDECI / MINSA / CENEPRED protocols
-  - `get_population_at_risk` — INEI 2017 census × SAR flood polygon spatial join
+- **Full mode** (~15-30s): all other queries go through the 9-tool agentic loop:
+  - `get_flood_polygons`. SAR flood extents
+  - `get_huayco_risk`, quebrada susceptibility
+  - `get_river_levels`, station readings + 1h trend
+  - `get_social_clusters`, triage-labeled social signals
+  - `get_infrastructure_impact`, hospitals, bridges, substations in hazard zones
+  - `get_rainfall_accumulation`. IMERG 1h, 72h per watershed
+  - `get_active_alerts`, ops.alerts with true total count
+  - `search_protocols`, pgvector RAG over INDECI / MINSA / CENEPRED protocols
+  - `get_population_at_risk`. INEI 2017 census × SAR flood polygon spatial join
 - All numerical answers cite their data source and timestamp
-- The LLM never fabricates — if a tool returns 0 rows, the answer says so explicitly
+- The LLM never fabricates: if a tool returns 0 rows, the answer says so explicitly
 
 ### Registro (keyboard shortcut: L)
 
@@ -92,7 +92,7 @@
 
 - Triage-labelled signals from Bluesky, Reddit (r/Peru, r/Lima, r/Chosica), RSS, and Telegram
 - Each signal shows date, triage label, and source link
-- **Reporte de Campo** form: operator can record a field observation — persists to `social.signals` (source='campo') and appends to Decision Log
+- **Reporte de Campo** form: operator can record a field observation, persists to `social.signals` (source='campo') and appends to Decision Log
 
 ### Notificaciones (bell icon)
 
@@ -104,7 +104,7 @@
 ### FEEDS Chip (OperationalHUD, top-right)
 
 - Shows data freshness across all upstream sources
-- Green: all feeds live · Yellow: 1–2 offline or stale · Red: ≥3 offline
+- Green: all feeds live · Yellow: 1-2 offline or stale · Red: ≥3 offline
 - Click to jump to DataSources panel for per-source health
 
 ---
@@ -189,8 +189,8 @@ docker compose up -d --force-recreate prefect-worker
 | ANA stations | Every 15 min | >1h (shows cached after outage) |
 | SENAMHI stations | Every 15 min | >1h |
 | Social signals | Every 15 min | >30 min |
-| Flood polygons | After each S1 scene | — |
-| Alert auto-resolution | Continuous | — |
+| Flood polygons | After each S1 scene |, |
+| Alert auto-resolution | Continuous |, |
 
 ---
 

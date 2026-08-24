@@ -43,7 +43,7 @@ const SOURCES: Source[] = [
     id: "sentinel1",
     name: "Sentinel-1 SAR",
     provider: "ESA / Microsoft Planetary Computer",
-    coverage: "Lima AOI — 10 m resolución",
+    coverage: "Lima AOI: 10 m resolución",
     latency: "~3 h tras adquisición",
     url: "https://planetarycomputer.microsoft.com/dataset/sentinel-1-grd",
     status: "ok",
@@ -52,7 +52,7 @@ const SOURCES: Source[] = [
     id: "imerg",
     name: "NASA IMERG Late Run V07B",
     provider: "NASA GES DISC",
-    coverage: "Global — 0.1° (~11 km), cada 30 min",
+    coverage: "Global: 0.1° (~11 km), cada 30 min",
     latency: "~12 h tras observación",
     url: "https://gpm.nasa.gov/data/imerg",
     status: "ok",
@@ -65,7 +65,7 @@ const SOURCES: Source[] = [
     coverage: "Estaciones cuencas Rímac, Chillón, Lurín",
     latency: "30 min (scraper)",
     url: "https://observatoriochirilu.ana.gob.pe",
-    notes: "Scraper HTML — puede ser frágil si el sitio cambia su estructura.",
+    notes: "Scraper HTML: puede ser frágil si el sitio cambia su estructura.",
     status: "warn",
     healthKey: "stations",
   },
@@ -81,9 +81,9 @@ const SOURCES: Source[] = [
   },
   {
     id: "sinpad",
-    name: "INDECI SINPAD 2003–2020",
+    name: "INDECI SINPAD 2003-2020",
     provider: "Instituto Nacional de Defensa Civil",
-    coverage: "2 063 eventos Lima — inundación y huayco",
+    coverage: "2 063 eventos Lima: inundación y huayco",
     latency: "Histórico (estático)",
     url: "https://sinpad2.indeci.gob.pe",
     notes: "Base de peligro derivada de densidad histórica. SIGRID nativo requiere autenticación SSO.",
@@ -102,7 +102,7 @@ const SOURCES: Source[] = [
     id: "bluesky",
     name: "Bluesky Jetstream v2",
     provider: "Bluesky PBC (AT Protocol)",
-    coverage: "Firehose público — publicaciones con palabras clave de desastre",
+    coverage: "Firehose público: publicaciones con palabras clave de desastre",
     latency: "Tiempo real (lotes de 15 min)",
     url: "https://bsky.app",
     status: "ok",
@@ -110,9 +110,9 @@ const SOURCES: Source[] = [
   },
   {
     id: "rss",
-    name: "RSS — 6 medios peruanos",
+    name: "RSS: 6 medios peruanos",
     provider: "RPP, Andina, Canal N, El Comercio, La República, Peru21",
-    coverage: "Noticias filtradas por palabras clave — últimas 48 h",
+    coverage: "Noticias filtradas por palabras clave: últimas 48 h",
     latency: "15 min",
     url: "https://andina.pe/agencia/rss.aspx",
     status: "ok",
@@ -130,7 +130,7 @@ const SOURCES: Source[] = [
   },
   {
     id: "telegram",
-    name: "Telegram — Senamhi_Peru",
+    name: "Telegram: Senamhi_Peru",
     provider: "Canal oficial SENAMHI en Telegram",
     coverage: "Alertas hidrometeorológicas oficiales",
     latency: "15 min",
@@ -367,7 +367,7 @@ export function DataSourcesPanel() {
         })}
       </div>
 
-      {/* Footer — status summary + privacy */}
+      {/* Footer: status summary + privacy */}
       <div className="border-t border-border px-4 py-3 flex flex-col gap-1.5">
         {/* Status dots */}
         <div className="flex items-center gap-3">

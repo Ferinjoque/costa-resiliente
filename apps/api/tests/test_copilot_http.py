@@ -1,7 +1,7 @@
 """HTTP-level tests for POST /api/v1/copilot/ask.
 
 These pin the Pydantic field constraints on CopilotQuery at the transport
-layer — complementing the unit-level tests in test_ai_agent.py which mock
+layer: complementing the unit-level tests in test_ai_agent.py which mock
 the LLM.  No Ollama is needed: requests that fail Pydantic validation are
 rejected before the agent runs.
 
@@ -22,7 +22,7 @@ from costa_api.main import app
 BASE = "http://test"
 AUTH = {"X-Testing-Operator": "1:test-op:coer"}
 
-# Minimal valid payload — small enough to pass guardrails without touching LLM
+# Minimal valid payload: small enough to pass guardrails without touching LLM
 _VALID = {
     "query": "¿Cuántas alertas activas hay?",
     "operator_id": "coen_lima",
@@ -146,7 +146,7 @@ async def test_copilot_rate_limiter_fails_open_on_redis_error():
         patch("costa_api.routers.copilot._get_copilot_rl_client", return_value=mock_redis),
         patch.dict(os.environ, {"TESTING": "0"}),
     ):
-        # Should not raise — fail-open means Redis errors are swallowed
+        # Should not raise: fail-open means Redis errors are swallowed
         await _check_copilot_rate("test_operator")
 
 
@@ -154,7 +154,7 @@ async def test_copilot_rate_limiter_fails_open_on_redis_error():
 
 @pytest.mark.asyncio
 async def test_copilot_sitrep_query_returns_200():
-    """'resumen completo' triggers sitrep mode — must return 200 with quick_mode field."""
+    """'resumen completo' triggers sitrep mode: must return 200 with quick_mode field."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         resp = await c.post(
             "/api/v1/copilot/ask",

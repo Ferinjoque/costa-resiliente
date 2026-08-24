@@ -16,9 +16,9 @@ function freezeClock() {
 
 describe("timeAgo", () => {
   it("renders an em dash for a missing timestamp", () => {
-    expect(timeAgo(null)).toBe("—");
-    expect(timeAgo(undefined)).toBe("—");
-    expect(timeAgo("")).toBe("—");
+    expect(timeAgo(null)).toBe("-");
+    expect(timeAgo(undefined)).toBe("-");
+    expect(timeAgo("")).toBe("-");
   });
 
   it("renders Spanish relative time across each unit boundary", () => {

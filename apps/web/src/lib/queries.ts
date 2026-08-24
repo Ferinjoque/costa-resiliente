@@ -259,7 +259,7 @@ export function useAlerts(
     },
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
-    // Keep showing previous/demo data when refetch errors — never blank the alert list
+    // Keep showing previous/demo data when refetch errors, never blank the alert list
     placeholderData: (prev) => prev ?? demoFallback,
     ...opts,
   });
@@ -296,7 +296,7 @@ export function useFloodExposure(
       }
     },
     staleTime: 10 * MIN,
-    // Keep showing previous data while refetching — prevents banner flash.
+    // Keep showing previous data while refetching, prevents banner flash.
     placeholderData: (prev) => prev,
     ...opts,
   });
@@ -334,7 +334,7 @@ export function useFusion(
       try {
         return await fetchDistrictFusion(ubigeo!);
       } catch (err: unknown) {
-        // 404 = district exists in map but not seeded in DB — show partial data rather than crash
+        // 404 = district exists in map but not seeded in DB, show partial data rather than crash
         const status = (err as { status?: number })?.status;
         if (status === 404) return null as unknown as DistrictFusion;
         throw err;
@@ -468,7 +468,7 @@ export function useShelters(
         return { type: "FeatureCollection" as const, source: "", retrieved_at: "", count: 0, features: [] };
       }
     },
-    staleTime: 60 * MIN,  // static data — refresh once per hour
+    staleTime: 60 * MIN,  // static data, refresh once per hour
     refetchInterval: 60 * MIN,
     ...opts,
   });

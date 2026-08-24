@@ -8,7 +8,7 @@
 
 ## What it is
 
-A browser-accessible operational dashboard for Peru's SINAGERD emergency managers (COEN, COER Lima Metropolitana, distrital COELs) responding to El Niño Costero floods and huaycos. Fuses satellite radar, hydrometeorological data, infrastructure layers, and Spanish-language social signals through an agentic AI copilot — all running on local hardware, no cloud API dependency.
+A browser-accessible operational dashboard for Peru's SINAGERD emergency managers (COEN, COER Lima Metropolitana, distrital COELs) responding to El Niño Costero floods and huaycos. Fuses satellite radar, hydrometeorological data, infrastructure layers, and Spanish-language social signals through an agentic AI copilot. Everything runs on local hardware, with no cloud API dependency.
 
 ## Documentation map
 
@@ -26,7 +26,7 @@ A browser-accessible operational dashboard for Peru's SINAGERD emergency manager
 
 ## Quick start
 
-The whole platform is one `docker compose up` — **no cloud account, no API key, and no hosted
+The whole platform is one `docker compose up`. **No cloud account, no API key and no hosted
 deployment are required to run it.** Every model runs locally on Ollama; the demo scenario seeds
 itself so the dashboard is populated on first boot.
 
@@ -40,7 +40,7 @@ docker compose up -d             # 9 services
 docker compose ps                # wait until all report healthy (first build: 5-10 min)
 ```
 
-Pull the three local models once (~6.6 GB total — the copilot stays offline without them):
+Pull the three local models once (~6.6 GB total, the copilot stays offline without them):
 
 ```bash
 docker exec costa-ollama ollama pull qwen2.5:7b-instruct-q4_K_M   # copilot + Spanish triage
@@ -64,9 +64,9 @@ and seed the scenario first. Install the browser once with `npx playwright insta
 Web at <http://localhost:3000> · API at <http://localhost:8000> · API docs at <http://localhost:8000/docs>.
 
 Demo SINAGERD operator accounts (password `demo1234`):
-- `coen_lima` — COEN, national
-- `coer_lima` — COER, Lima region
-- `coel_sjl` — COEL, San Juan de Lurigancho (150132)
+- `coen_lima`. COEN, national
+- `coer_lima`. COER, Lima region
+- `coel_sjl`. COEL, San Juan de Lurigancho (150132)
 
 ### Live data (optional)
 
@@ -78,7 +78,7 @@ limits) in `.env`. Bluesky, RSS, Reddit, ANA, and SENAMHI ingestion need no cred
 ### Deployment
 
 A single-VPS production path is included (`docker-compose.prod.yml`, Caddy auto-HTTPS,
-`scripts/deploy.sh`) and targets ~€11-17/mo on a Hetzner CX32/CX42 — the cost ceiling matters
+`scripts/deploy.sh`) and targets ~€11-17/mo on a Hetzner CX32/CX42, the cost ceiling matters
 because the intended operators are public emergency-management agencies. It is optional: the
 platform is designed to run on an agency's own hardware, air-gapped from any cloud LLM API.
 
@@ -95,7 +95,7 @@ bash scripts/deploy.sh           # on a fresh Ubuntu 22/24 LTS VPS, with .env in
 └─────────────────────┬──────────────────────────────────────┘
               HTTP REST · SSE · JWT auth
 ┌─────────────────────▼──────────────────────────────────────┐
-│   FastAPI — ~32 endpoints + SSE alert stream               │
+│   FastAPI: ~32 endpoints + SSE alert stream               │
 │   Agentic copilot · 9 DB tools · pgvector RAG · guardrails │
 └──────┬──────────────────────┬──────────────────────────────┘
        │                      │
@@ -123,7 +123,7 @@ bash scripts/deploy.sh           # on a fresh Ubuntu 22/24 LTS VPS, with .env in
 
 ## Data sources
 
-10 sources across satellite, hydromet, historical, social, and infrastructure tiers. Full list in [`docs/data-sources.md`](docs/data-sources.md). Notable: Sentinel-1 GRD via Microsoft Planetary Computer, NASA IMERG Early Run V07B, ANA + SENAMHI scrapers, INDECI SINPAD 2003–2020 (2,063 Lima events), Bluesky AT Protocol firehose, Telegram SENAMHI_Peru channel.
+10 sources across satellite, hydromet, historical, social, and infrastructure tiers. Full list in [`docs/data-sources.md`](docs/data-sources.md). Notable: Sentinel-1 GRD via Microsoft Planetary Computer, NASA IMERG Early Run V07B, ANA + SENAMHI scrapers, INDECI SINPAD 2003-2020 (2,063 Lima events), Bluesky AT Protocol firehose, Telegram SENAMHI_Peru channel.
 
 ## Responsible data handling
 
@@ -132,11 +132,11 @@ Code-level, not aspirational:
 - Location coarsened to manzana centroid (~100 m) for non-responder views
 - 7-day retention purge on raw social signals (Prefect `retention-daily` flow, 03:00 UTC)
 - Append-only operator decision log enforced by DB trigger
-- LLM anti-fabrication guarantee — all claims trace to DB rows
+- LLM anti-fabrication guarantee: all claims trace to DB rows
 - Compliant with Peru Ley 29733 + DS 016-2024-JUS, OCHA, IASC
 
 See [`docs/responsible-data-handling.md`](docs/responsible-data-handling.md).
 
 ## License
 
-Apache 2.0 — see [`LICENSE`](LICENSE).
+Apache 2.0: see [`LICENSE`](LICENSE).

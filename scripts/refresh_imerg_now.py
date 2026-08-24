@@ -41,7 +41,7 @@ async def main():
         for ws in _WATERSHEDS:
             b = base.get(ws["id"])
             if not b:
-                print(f"  SKIP watershed {ws['id']} — no existing row")
+                print(f"  SKIP watershed {ws['id']}: no existing row")
                 continue
             await conn.execute(
                 """

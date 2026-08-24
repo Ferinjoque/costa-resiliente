@@ -50,18 +50,18 @@ export function useAlertStream() {
       es.onmessage = (evt) => {
         try {
           JSON.parse(evt.data); // validate frame
-          // Heartbeat only resets on valid frames — malformed frames must not
+          // Heartbeat only resets on valid frames: malformed frames must not
           // mask a broken backend; the 30s heartbeat timeout will force reconnect.
           resetHeartbeat(es);
           // Invalidate so the full list (all statuses) refetches from the API.
-          // Never use setQueryData here — SSE only carries active alerts and
+          // Never use setQueryData here: SSE only carries active alerts and
           // would silently overwrite the panel's full history view.
           qc.invalidateQueries({ queryKey: ["alerts"] });
           qc.invalidateQueries({ queryKey: ["district-risk-summary"] });
-          // flood-exposure is derived from polygon geometry, not alert counts —
+          // flood-exposure is derived from polygon geometry, not alert counts, 
           // no need to invalidate on every 10-second SSE heartbeat.
         } catch {
-          // malformed frame — heartbeat not extended; reconnect will trigger after HEARTBEAT_TIMEOUT_MS
+          // malformed frame: heartbeat not extended; reconnect will trigger after HEARTBEAT_TIMEOUT_MS
         }
       };
 

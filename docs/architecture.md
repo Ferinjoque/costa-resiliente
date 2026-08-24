@@ -1,6 +1,6 @@
-# Architecture — Costa Resiliente
+# Architecture: Costa Resiliente
 
-> Full architecture doc — Sprint 7 deliverable. Last updated: 2026-05-13.
+> Full architecture doc: Sprint 7 deliverable. Last updated: 2026-05-13.
 
 See [ADR-0001](decisions/0001-project-charter.md) for technology choices and rationale.
 See [ADR-0002](decisions/0002-ml-architecture.md) for ML model decisions.
@@ -18,8 +18,8 @@ See [ADR-0002](decisions/0002-ml-architecture.md) for ML model decisions.
 │  └──────────┘ └──────────┘ └──────────┘ └────────┘ └──────┘ │
 └───────────────────────┬───────────────────────────────────────┘
                         │ HTTP REST (TanStack Query)
-                        │ WebSocket (live layer updates — planned)
-                        │ SSE (alerts ticker — planned)
+                        │ WebSocket (live layer updates: planned)
+                        │ SSE (alerts ticker: planned)
 ┌───────────────────────▼───────────────────────────────────────┐
 │                      FastAPI (port 8000)                       │
 │  /api/v1/health  /districts  /layers/*  /alerts  /copilot     │
@@ -69,7 +69,7 @@ See [ADR-0002](decisions/0002-ml-architecture.md) for ML model decisions.
 | `costa-stac` | stac-utils/pgstac-api | 8082 | STAC catalog REST API |
 | `costa-api` | custom (Python 3.12 + FastAPI) | 8000 | Main REST API |
 | `costa-prefect-server` | prefecthq/prefect:3 | 4200 | Prefect orchestration UI + API |
-| `costa-prefect-worker` | custom (Python 3.12 + workers) | — | Prefect process worker |
+| `costa-prefect-worker` | custom (Python 3.12 + workers) |, | Prefect process worker |
 | `costa-web` | custom (Next.js 14) | 3000 | Frontend dashboard |
 | `costa-ollama` | ollama/ollama | 11434 | Local LLM inference |
 
@@ -105,7 +105,7 @@ postgres/costa_resiliente
 │   └── decision_log   -- append-only immutable operator action log
 │
 └── historical.*       -- reference / historical data
-    └── sinpad_events  -- INDECI SINPAD 2003–2020 emergency records
+    └── sinpad_events  -- INDECI SINPAD 2003-2020 emergency records
 ```
 
 ---
@@ -175,17 +175,17 @@ All inference is local. No cloud API dependency. No data egress for citizen PII 
 
 Model selection via env vars: `LLM_PRIMARY_MODEL`, `LLM_GUARDRAIL_MODEL`, `LLM_EMBED_MODEL`. Pydantic `AliasChoices` falls back to legacy `OLLAMA_*` names if set. No code changes needed to swap models.
 
-### Inference latency — honest disclosure
+### Inference latency: honest disclosure
 
 This platform runs Ollama on CPU (no dedicated GPU assumed). Measured on an AMD Ryzen 5 / 16 GB machine:
 
 | Operation | Typical latency | Notes |
 |-----------|----------------|-------|
 | Copilot quick-mode (5 common queries) | **~2s** | Keyword match → DB tool → template; LLM not invoked |
-| Full agentic loop (1–4 tool iterations) | **15–30s** | qwen2.5:7b Q4_K_M on CPU; acceptable for deliberate queries |
-| Signal triage (background, per signal) | **3–8s** | Same model; runs in Prefect worker, not in critical path |
+| Full agentic loop (1-4 tool iterations) | **15-30s** | qwen2.5:7b Q4_K_M on CPU; acceptable for deliberate queries |
+| Signal triage (background, per signal) | **3-8s** | Same model; runs in Prefect worker, not in critical path |
 | Embedding (nomic-embed-text) | **<1s** | 274 MB model; fast even on CPU |
-| Guardrail check (gemma2:2b) | **1–3s** | Runs after agentic answer; adds tail latency |
+| Guardrail check (gemma2:2b) | **1-3s** | Runs after agentic answer; adds tail latency |
 
 **Operational implications:**
 - At 2am during a flash flood, duty officers should use **quick-mode queries** for status checks. Full agentic reasoning is appropriate for nuanced strategic questions ("¿qué distritos debo evacuar primero?").

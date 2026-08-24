@@ -1,4 +1,4 @@
-"""Social ingest contract tests — pure logic, no network, no DB.
+"""Social ingest contract tests: pure logic, no network, no DB.
 
 Tests keyword filter, PII redaction fallback, RawSignal structure,
 and disaster vocabulary completeness.
@@ -49,7 +49,7 @@ class TestKeywordFilter:
         assert not self._matches("")
 
     def test_partial_keyword_no_match(self):
-        # "rimacero" should not match "rimac" — but our check is substring-based
+        # "rimacero" should not match "rimac", but our check is substring-based
         # so this documents the known behavior
         from costa_workers.ingest.social import DISASTER_KEYWORDS
         assert "rimac" in DISASTER_KEYWORDS  # lowercase keyword present
@@ -172,10 +172,10 @@ class TestRedactPii:
         mock_analyzer = MagicMock()
         mock_analyzer.analyze.return_value = []
         mock_anonymizer = MagicMock()
-        mock_anonymizer.anonymize.return_value = MagicMock(text="Huayco en Chosica — sin víctimas reportadas")
+        mock_anonymizer.anonymize.return_value = MagicMock(text="Huayco en Chosica: sin víctimas reportadas")
 
         with patch("costa_workers.ingest.social._get_presidio", return_value=(mock_analyzer, mock_anonymizer)):
-            result = redact_pii("Huayco en Chosica — sin víctimas reportadas")
+            result = redact_pii("Huayco en Chosica: sin víctimas reportadas")
         assert isinstance(result, str)
         assert len(result) > 0
 

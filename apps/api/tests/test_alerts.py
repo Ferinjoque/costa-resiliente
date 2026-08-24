@@ -1,4 +1,4 @@
-"""Alerts router tests — covers list, action, log, decision-log, export, PDF report.
+"""Alerts router tests: covers list, action, log, decision-log, export, PDF report.
 
 Uses both ASGI transport (fast, no network) and live httpx for streaming endpoints.
 All writes are cleaned up by conftest.py session teardown (decision_log truncate +
@@ -259,7 +259,7 @@ class TestAlertAction:
             r1 = await c.post(f"/api/v1/alerts/{alert_id}/action",
                               json={"action": "acknowledge"}, headers=AUTH)
             assert r1.status_code == 200
-            # Second ack — must also return 200 (idempotent)
+            # Second ack: must also return 200 (idempotent)
             r2 = await c.post(f"/api/v1/alerts/{alert_id}/action",
                               json={"action": "acknowledge"}, headers=AUTH)
             assert r2.status_code == 200, (
@@ -389,7 +389,7 @@ class TestLogDecision:
 
     @pytest.mark.asyncio
     async def test_log_arbitrary_payload(self):
-        """Payload is free-form JSON — any shape must be accepted."""
+        """Payload is free-form JSON: any shape must be accepted."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.post(
                 "/api/v1/alerts/log",
@@ -418,12 +418,12 @@ class TestLogDecision:
 
     @pytest.mark.asyncio
     async def test_log_invalid_action_type_rejected(self):
-        """Unknown action_type must return 422 — protects audit-trail integrity."""
+        """Unknown action_type must return 422: protects audit-trail integrity."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.post(
                 "/api/v1/alerts/log",
                 json={
-                    "action_type": "dispach",  # typo — not in whitelist
+                    "action_type": "dispach",  # typo, not in whitelist
                     "payload": {"note": "typo test"},
                 },
                 headers=AUTH,
@@ -463,7 +463,7 @@ class TestLogDecision:
 class TestDecisionLog:
     @pytest.mark.asyncio
     async def test_unauthenticated_returns_401(self):
-        """Decision log is operator-only — no auth header → 401."""
+        """Decision log is operator-only: no auth header → 401."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get("/api/v1/alerts/decision-log")
         assert resp.status_code == 401
@@ -510,7 +510,7 @@ class TestDecisionLog:
                 },
                 headers=AUTH,
             )
-            # AUTH header username is "test-op" — that's what gets stored
+            # AUTH header username is "test-op", that's what gets stored
             resp = await c.get(
                 "/api/v1/alerts/decision-log?operator_id=test-op&limit=20",
                 headers=AUTH,
@@ -580,7 +580,7 @@ class TestDecisionLog:
 class TestDecisionLogExport:
     @pytest.mark.asyncio
     async def test_unauthenticated_returns_401(self):
-        """Export endpoint is operator-only — no auth → 401."""
+        """Export endpoint is operator-only: no auth → 401."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get("/api/v1/alerts/decision-log/export")
         assert resp.status_code == 401
@@ -649,7 +649,7 @@ class TestDecisionLogExport:
 class TestDecisionLogReport:
     @pytest.mark.asyncio
     async def test_unauthenticated_returns_401(self):
-        """PDF report endpoint is operator-only — no auth → 401."""
+        """PDF report endpoint is operator-only: no auth → 401."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get("/api/v1/alerts/decision-log/report")
         assert resp.status_code == 401
@@ -714,7 +714,7 @@ class TestDecisionLogReport:
 
 @pytest.mark.asyncio
 async def test_decision_log_limit_zero_returns_422():
-    """limit=0 must be rejected — ge=1 validator prevents zero-row queries."""
+    """limit=0 must be rejected: ge=1 validator prevents zero-row queries."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         resp = await c.get("/api/v1/alerts/decision-log?limit=0", headers=AUTH)
     assert resp.status_code == 422

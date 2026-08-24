@@ -4,7 +4,7 @@ Run this script to register all deployments and start the inline runner:
   python -m costa_workers.flows.schedules
 
 The runner polls the Prefect server and executes flows in-process.
-No separate work pool is required — serve() handles both registration + execution.
+No separate work pool is required: serve() handles both registration + execution.
 """
 import os
 
@@ -64,63 +64,63 @@ if __name__ == "__main__":
     from costa_workers.ml.alert_generator import generate_alerts_flow
 
     serve(
-        # Satellite ingest — daily at 06:00 UTC (01:00 Lima)
+        # Satellite ingest, daily at 06:00 UTC (01:00 Lima)
         ingest_sentinel1_flow.to_deployment(
             name="sentinel1-daily",
             cron="0 6 * * *",
             parameters={"lookback_days": 3},
             tags=["ingest", "satellite"],
         ),
-        # Rainfall — every hour, 169h lookback ensures accurate 168h (7d) accumulations
+        # Rainfall: every hour, 169h lookback ensures accurate 168h (7d) accumulations
         ingest_imerg_flow.to_deployment(
             name="imerg-hourly",
             interval=3600,
             parameters={"lookback_hours": 169},
             tags=["ingest", "rainfall"],
         ),
-        # Hydro stations (ANA + SENAMHI) — every 30 minutes
+        # Hydro stations (ANA + SENAMHI): every 30 minutes
         ingest_hydro_stations_flow.to_deployment(
             name="hydro-stations-30min",
             interval=1800,
             tags=["ingest", "hydro"],
         ),
-        # Social signals (Bluesky + RSS + Reddit + Telegram) — every 15 minutes
+        # Social signals (Bluesky + RSS + Reddit + Telegram): every 15 minutes
         ingest_social_flow.to_deployment(
             name="social-15min",
             interval=900,
             tags=["ingest", "social"],
         ),
-        # Flood segmentation — every hour (processes new pgstac scenes)
+        # Flood segmentation: every hour (processes new pgstac scenes)
         flood_segmentation_flow.to_deployment(
             name="flood-seg-hourly",
             interval=3600,
             tags=["ml", "flood"],
         ),
-        # Huayco susceptibility — every hour
+        # Huayco susceptibility: every hour
         huayco_flow.to_deployment(
             name="huayco-hourly",
             interval=3600,
             tags=["ml", "huayco"],
         ),
-        # LLM triage — every 15 minutes (matches social ingest cadence)
+        # LLM triage: every 15 minutes (matches social ingest cadence)
         triage_flow.to_deployment(
             name="triage-15min",
             interval=900,
             tags=["ml", "triage"],
         ),
-        # Alert generation — every 5 minutes
+        # Alert generation: every 5 minutes
         generate_alerts_flow.to_deployment(
             name="alerts-5min",
             interval=300,
             tags=["ml", "alerts"],
         ),
-        # RAG protocol index — daily at 02:00 UTC (idempotent)
+        # RAG protocol index, daily at 02:00 UTC (idempotent)
         rag_index_flow.to_deployment(
             name="rag-index-daily",
             cron="0 2 * * *",
             tags=["rag", "ai"],
         ),
-        # Data retention — daily at 03:00 UTC (prune expired signals, alerts, tokens)
+        # Data retention, daily at 03:00 UTC (prune expired signals, alerts, tokens)
         retention_flow.to_deployment(
             name="retention-daily",
             cron="0 3 * * *",

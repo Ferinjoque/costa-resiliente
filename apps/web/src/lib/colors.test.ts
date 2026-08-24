@@ -4,7 +4,7 @@ import { HUAYCO_COLOR, INFRA_COLOR, RISK_COLOR, SEVERITY_COLOR, SOCIAL_LABEL_COL
 /**
  * The map paints infrastructure with a MapLibre `match` expression and the
  * legend reads INFRA_COLOR. When the two drift, a layer renders in the fallback
- * grey with a legend swatch that claims otherwise — an operator then cannot tell
+ * grey with a legend swatch that claims otherwise, an operator then cannot tell
  * a hospital from a school on a live map.
  */
 describe("infrastructure colours", () => {

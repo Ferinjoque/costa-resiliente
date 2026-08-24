@@ -7,7 +7,7 @@ import { URGENT_SOCIAL_LABELS } from "@/lib/constants";
 import { clsx } from "clsx";
 
 // ─── HUD: solid surface chip anchored top-right ───────────────────────────────
-// Felt/Linear style — a single opaque card that lists key metrics.
+// Felt/Linear style: a single opaque card that lists key metrics.
 // No glass, no backdrop-blur. Positioned so it doesn't fight the ScenarioPanel.
 
 function limaTime(): string {
@@ -79,7 +79,7 @@ export function OperationalHUD() {
 
   // Scraper degradation: count offline sources for an at-a-glance chip.
   // Exclude best-effort / long-cadence sources (reddit, telegram, flood/SAR)
-  // from the degradation calculation — they're expected offline between acquisitions.
+  // from the degradation calculation: they're expected offline between acquisitions.
   const _SCRAPER_CORE_KEYS = new Set(["bluesky", "rss", "imerg", "stations", "alerts"]);
   const scraperSources = scraperHealth?.sources
     ? Object.entries(scraperHealth.sources)
@@ -147,26 +147,26 @@ export function OperationalHUD() {
         {urgentSocial > 0 && (
           <HudMetric value={String(urgentSocial)} label={locale === "es" ? "señales" : "signals"} border />
         )}
-        {/* Rainfall data-gap chip — shown when IMERG fetch failed so operator knows data is missing */}
+        {/* Rainfall data-gap chip: shown when IMERG fetch failed so operator knows data is missing */}
         {imergError && (
           <div
             className="flex items-center gap-1 px-2.5 py-1.5 border-r border-border-subtle"
-            title={locale === "es" ? "Datos de lluvia IMERG no disponibles — verifica conexión" : "IMERG rainfall data unavailable — check connection"}
+            title={locale === "es" ? "Datos de lluvia IMERG no disponibles, verifica conexión" : "IMERG rainfall data unavailable, check connection"}
           >
             <span className="text-2xs font-bold uppercase tracking-widest text-ink-subtle">
               {locale === "es" ? "LLUVIA?" : "RAIN?"}
             </span>
           </div>
         )}
-        {/* Rainfall chip — only show when above AVISO threshold (≥25 mm/72h) */}
+        {/* Rainfall chip: only show when above AVISO threshold (≥25 mm/72h) */}
         {!imergError && rainLevel !== "ok" && maxRain72h > 0 && (
           <div
             className={clsx(
               "flex items-center gap-1 px-2.5 py-1.5 border-r border-border-subtle",
             )}
             title={locale === "es"
-              ? `Lluvia 72h: ${maxRain72h.toFixed(0)} mm${maxRainWs ? ` (${maxRainWs})` : ""} — ${rainLevel === "danger" ? "⚠ EMERGENCIA ANA (>50mm)" : "ALERTA ANA (>25mm)"}`
-              : `72h rain: ${maxRain72h.toFixed(0)} mm${maxRainWs ? ` (${maxRainWs})` : ""} — ${rainLevel === "danger" ? "⚠ ANA EMERGENCY (>50mm)" : "ANA ALERT (>25mm)"}`}
+              ? `Lluvia 72h: ${maxRain72h.toFixed(0)} mm${maxRainWs ? ` (${maxRainWs})` : ""}, ${rainLevel === "danger" ? "⚠ EMERGENCIA ANA (>50mm)" : "ALERTA ANA (>25mm)"}`
+              : `72h rain: ${maxRain72h.toFixed(0)} mm${maxRainWs ? ` (${maxRainWs})` : ""}, ${rainLevel === "danger" ? "⚠ ANA EMERGENCY (>50mm)" : "ANA ALERT (>25mm)"}`}
           >
             <span className="text-xs font-mono tabular-nums">
               <span className={rainLevel === "danger" ? "text-danger font-bold" : "text-warn-muted font-semibold"}>
@@ -190,7 +190,7 @@ export function OperationalHUD() {
               : `Core feeds: ${offlineSources} offline, ${staleSources} stale (Bluesky/RSS/IMERG/stations/alerts). Click for details.`}
             aria-label={locale === "es" ? "Estado de fuentes degradado" : "Data source status degraded"}
           >
-            {/* Fast pulse (0.8s) for danger — matches EMERGENCIA HUD urgency signal */}
+            {/* Fast pulse (0.8s) for danger: matches EMERGENCIA HUD urgency signal */}
             <span
               className={clsx(
                 "w-1.5 h-1.5 rounded-full shrink-0",
@@ -228,7 +228,7 @@ export function OperationalHUD() {
           )}
           {/* Show DEMO badge only when we have a confirmed error, not during initial load */}
           {apiDown && !healthLoading && (
-            <span className="ml-1 text-2xs font-semibold text-warn bg-warn-soft px-1.5 py-0.5 rounded-full animate-pulse" title={locale === "en" ? "API unavailable — showing demo data" : "API no disponible — mostrando datos de demostración"}>
+            <span className="ml-1 text-2xs font-semibold text-warn bg-warn-soft px-1.5 py-0.5 rounded-full animate-pulse" title={locale === "en" ? "API unavailable, showing demo data" : "API no disponible, mostrando datos de demostración"}>
               {locale === "en" ? "DEMO DATA" : "DATOS DEMO"}
             </span>
           )}

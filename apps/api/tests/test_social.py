@@ -70,7 +70,7 @@ def test_field_report_stores_signal_and_decision_log(client):
     )
     assert resp.status_code == 201
     body = resp.json()
-    assert body["status"] in ("stored", "duplicate")  # idempotent — same hash deduplicates
+    assert body["status"] in ("stored", "duplicate")  # idempotent: same hash deduplicates
     assert isinstance(body["signal_id"], int)
     assert body["signal_id"] > 0
     assert body["ingested_at"] is not None
@@ -147,7 +147,7 @@ def test_field_report_returns_district_id_when_known(client):
 
 
 def test_field_report_accepts_huayco_observation(client):
-    """huayco_observation is a valid label — field team reporting debris flow sighting."""
+    """huayco_observation is a valid label: field team reporting debris flow sighting."""
     resp = client.post(
         "/social/field-report",
         json={
@@ -162,7 +162,7 @@ def test_field_report_accepts_huayco_observation(client):
 
 
 def test_field_report_accepts_flood_observation(client):
-    """flood_observation is a valid label — field team reporting inundation sighting."""
+    """flood_observation is a valid label: field team reporting inundation sighting."""
     resp = client.post(
         "/social/field-report",
         json={
@@ -192,7 +192,7 @@ def test_field_report_rejects_text_over_2000_chars(client):
 
 
 def test_field_report_empty_operator_id_is_ignored(client):
-    """operator_id is Optional and always ignored — JWT identity is used.
+    """operator_id is Optional and always ignored: JWT identity is used.
     Empty string is accepted by Pydantic and the request succeeds."""
     resp = client.post(
         "/social/field-report",

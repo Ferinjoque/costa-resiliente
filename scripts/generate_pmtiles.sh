@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# generate_pmtiles.sh — Generate Lima Metropolitana PMTiles basemap via Planetiler
+# generate_pmtiles.sh: Generate Lima Metropolitana PMTiles basemap via Planetiler
 #
 # Prerequisites:
 #   docker (or podman), curl, mc (MinIO client) or boto3-based upload
@@ -49,11 +49,11 @@ if [[ ! -f "$OSM_EXTRACT" ]]; then
   echo "[pmtiles] Downloading OSM Peru extract (~60 MB)…"
   curl -L --progress-bar "$OSM_URL" -o "$OSM_EXTRACT"
 else
-  echo "[pmtiles] OSM extract already at $OSM_EXTRACT — skipping download"
+  echo "[pmtiles] OSM extract already at $OSM_EXTRACT: skipping download"
 fi
 
 # ─── Step 2: Run Planetiler ────────────────────────────────────────────────────
-echo "[pmtiles] Running Planetiler (zoom ${MIN_ZOOM}–${MAX_ZOOM}, bbox ${LIMA_BBOX})…"
+echo "[pmtiles] Running Planetiler (zoom ${MIN_ZOOM}: ${MAX_ZOOM}, bbox ${LIMA_BBOX})…"
 
 # Planetiler needs the OSM PBF accessible inside the container
 docker run --rm \
@@ -80,7 +80,7 @@ if [[ "$UPLOAD" == "true" ]]; then
     mc cp "$OUTPUT_FILE" "costa/${MINIO_BUCKET_PMTILES}/lima-basemap.pmtiles"
     mc anonymous set download "costa/${MINIO_BUCKET_PMTILES}/lima-basemap.pmtiles"
   else
-    echo "[pmtiles] 'mc' not found — using Python boto3 upload"
+    echo "[pmtiles] 'mc' not found: using Python boto3 upload"
     python3 - <<PYEOF
 import boto3, botocore
 s3 = boto3.client(

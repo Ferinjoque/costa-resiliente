@@ -51,7 +51,7 @@ async def _do_restore(snap: dict) -> None:
     """Remove or revert all data written during the test session."""
     pool = await asyncpg.create_pool(_db_dsn(), min_size=1, max_size=2)
     try:
-        # 1. decision_log — TRUNCATE bypasses append-only row trigger
+        # 1. decision_log. TRUNCATE bypasses append-only row trigger
         await pool.execute("TRUNCATE TABLE ops.decision_log")
 
         # 2. alert_proposals created by tests (by test operator or during test window)

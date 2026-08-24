@@ -97,8 +97,8 @@ function DemoBanner() {
     >
       <span aria-hidden="true">⚠</span>
       {locale === "en"
-        ? "API unavailable — displaying cached demo data. Live alerts and sensor readings are not updating."
-        : "API no disponible — mostrando datos de demostración. Alertas y sensores no se actualizan en tiempo real."}
+        ? "API unavailable: displaying cached demo data. Live alerts and sensor readings are not updating."
+        : "API no disponible: mostrando datos de demostración. Alertas y sensores no se actualizan en tiempo real."}
     </div>
   );
 }
@@ -148,14 +148,14 @@ export default function Home() {
           }>
             <MapView />
           </Suspense>
-          {/* Map overlays — all solid surfaces, no blur */}
+          {/* Map overlays: all solid surfaces, no blur */}
           <MapLegend />
           <OperationalHUD />
           <LiveTicker />
           <DataFreshnessBar />
         </div>
 
-        {/* Panels — solid surface drawers, each isolated by an error boundary */}
+        {/* Panels: solid surface drawers, each isolated by an error boundary */}
         <PanelErrorBoundary label="Escenario"><ScenarioPanel /></PanelErrorBoundary>
         <PanelErrorBoundary label="Alertas"><AlertsPanel /></PanelErrorBoundary>
         <PanelErrorBoundary label="Copiloto"><AskPanel /></PanelErrorBoundary>

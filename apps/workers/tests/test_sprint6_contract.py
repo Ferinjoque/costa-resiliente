@@ -104,7 +104,7 @@ class TestAlertApiSchema:
 class TestDecisionLogAppendOnly:
     def test_prevent_mutation_trigger_function_name(self):
         """The trigger function name must match what init.sql defines."""
-        # This is a naming contract — if renamed, the trigger breaks
+        # This is a naming contract: if renamed, the trigger breaks
         expected_fn = "ops.prevent_decision_log_mutation"
         # Just assert the string appears in the init.sql (read by conftest at import)
         import importlib.util, os

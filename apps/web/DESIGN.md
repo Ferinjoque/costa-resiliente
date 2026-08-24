@@ -1,4 +1,4 @@
-# Costa Resiliente — Frontend Design System
+# Costa Resiliente: Frontend Design System
 
 > **This is the single source of truth for the frontend visual system.**
 > Read it before touching any file in `apps/web/src/components/` or `apps/web/src/app/`.
@@ -9,19 +9,19 @@ For competition context, see [`../../docs/COMPETITION.md`](../../docs/COMPETITIO
 
 ---
 
-## 1. Direction — Felt-style operator console
+## 1. Direction. Felt-style operator console
 
 **Dark map canvas. Warm-cream solid panels. No glass, no backdrop-blur.**
 
-Inspired by: felt.com, Mapbox Studio, Linear.app. The map is the product; chrome is furniture. Anchored visually in the Pacific coast geography of Lima — deep ocean teal, desert sand, cinnabar alert.
+Inspired by: felt.com, Mapbox Studio, Linear.app. The map is the product; chrome is furniture. Anchored visually in the Pacific coast geography of Lima, deep ocean teal, desert sand, cinnabar alert.
 
 The system was rebuilt during Sprint 12 (the `/impeccable` design pass) after a baseline audit identified the prior UI as reading like an AI-template dashboard (Tailwind stock palette, glass overlays, emoji icons, single Inter typeface, sub-12px primary text). Final audit score: 5.8 → 8.6 / 10. See historical summary in §10.
 
 ### Persona priorities
 
-1. **COER Lima operator under EMERGENCIA** — top-priority signal findable in <2 seconds
-2. **IEEE judge in first 30 seconds** — must not look like a weekend shadcn build
-3. **Mobile responder on 375 px Android** — tap targets ≥44 px, no horizontal overflow
+1. **COER Lima operator under EMERGENCIA**, top-priority signal findable in <2 seconds
+2. **IEEE judge in first 30 seconds**, must not look like a weekend shadcn build
+3. **Mobile responder on 375 px Android**, tap targets ≥44 px, no horizontal overflow
 
 ---
 
@@ -29,14 +29,14 @@ The system was rebuilt during Sprint 12 (the `/impeccable` design pass) after a 
 
 Defined in [`tailwind.config.ts`](tailwind.config.ts) + mirrored as CSS custom properties in [`src/app/globals.css`](src/app/globals.css). **All values expressed in OKLCH** for perceptual uniformity. No stock Tailwind hex in component JSX.
 
-### 2.1 Canvas (dark — the map area)
+### 2.1 Canvas (dark: the map area)
 
 | Token | Value | Use |
 |-------|-------|-----|
 | `canvas` | `oklch(13% 0.005 240)` | Page background, map area |
 | `canvas-deep` | `oklch(9% 0.004 240)` | LiveTicker strip, deepest bg |
 
-### 2.2 Surface (cream — the panels / furniture)
+### 2.2 Surface (cream: the panels / furniture)
 
 | Token | Value | Use |
 |-------|-------|-----|
@@ -62,7 +62,7 @@ Defined in [`tailwind.config.ts`](tailwind.config.ts) + mirrored as CSS custom p
 | `border-strong` | `oklch(78% 0.009 80)` | Panel outer edge |
 | `border-subtle` | `oklch(93% 0.006 80)` | Very light separator |
 
-### 2.5 Accent — coastal teal (brand + interactive)
+### 2.5 Accent: coastal teal (brand + interactive)
 
 | Token | Value | Use |
 |-------|-------|-----|
@@ -71,18 +71,18 @@ Defined in [`tailwind.config.ts`](tailwind.config.ts) + mirrored as CSS custom p
 | `accent-soft` | `oklch(93% 0.04 210)` | Light tint backgrounds |
 | `accent-muted` | `oklch(65% 0.09 210)` | Secondary accent text |
 
-### 2.6 Semantic — SINAGERD-aligned severity
+### 2.6 Semantic: SINAGERD-aligned severity
 
 Used **only** for genuinely dangerous states. Never as chrome decoration.
 
 | Token | OKLCH | SINAGERD level |
 |-------|-------|----------------|
-| `danger` | `oklch(58% 0.20 28)` | EMERGENCIA — cinnabar |
+| `danger` | `oklch(58% 0.20 28)` | EMERGENCIA: cinnabar |
 | `danger-soft` | `oklch(96% 0.04 28)` | Surface tint |
 | `danger-deep` | `oklch(50% 0.20 28)` | Higher-contrast text on light bg (WCAG AA) |
-| `warn` | `oklch(73% 0.13 78)` | ALERTA / AVISO — burnt ochre |
+| `warn` | `oklch(73% 0.13 78)` | ALERTA / AVISO: burnt ochre |
 | `warn-soft` | `oklch(96% 0.04 78)` | Surface tint |
-| `ok` | `oklch(62% 0.10 152)` | NORMAL — muted sage |
+| `ok` | `oklch(62% 0.10 152)` | NORMAL: muted sage |
 | `ok-soft` | `oklch(95% 0.04 152)` | Surface tint |
 
 These four levels map 1:1 to the INDECI alert ladder. Earthier and less neon than the Tailwind severity wheel.
@@ -104,7 +104,7 @@ Three families loaded via `next/font` in [`src/app/layout.tsx`](src/app/layout.t
 Reserved for moments that should feel **editorial, not stock**:
 
 1. SINAGERD level word in HUD ("EMERGENCIA", "ALERTA")
-2. Hero metric numerals in DistrictDashboard (active alerts, flood km², population at risk) — always with `tabular-nums` + `tracking-display`
+2. Hero metric numerals in DistrictDashboard (active alerts, flood km², population at risk), always with `tabular-nums` + `tracking-display`
 3. Panel section titles (`h2` on AlertsPanel, DistrictDashboard, FusionCallout)
 4. Two-letter SINAGERD-style chip codes (`AI`, `LIVE`, `REPLAY`, resource tags) with `tracking-ops` (0.12em uppercase)
 5. Costa Resiliente monogram in LeftRail
@@ -146,16 +146,16 @@ Any label carrying **operational meaning** must sit ≥ 11 px. Body copy ≥ 12 
 │  └─ OperatorChip (login button OR username/role/logout)      │
 ├──────────────────────────────────────────────────────────────┤
 │ Map canvas (bg-canvas, fills remaining space)                │
-│  ├─ ScenarioPanel  — top-left, below HUD (top-20 left-4)     │
-│  ├─ OperationalHUD — top-right (top-4 right-4) desktop only  │
-│  ├─ Right drawers  — flush right edge, full height           │
+│  ├─ ScenarioPanel: top-left, below HUD (top-20 left-4)     │
+│  ├─ OperationalHUD: top-right (top-4 right-4) desktop only  │
+│  ├─ Right drawers: flush right edge, full height           │
 │  │    AlertsPanel, Dashboard, Ask, Log, Social, Share,       │
 │  │    Sources, Notifications                                 │
-│  ├─ FusionCallout  — bottom-left, above ticker (bottom-12)   │
-│  ├─ MapLegend      — bottom-left (bottom-20 sm:bottom-16)    │
-│  ├─ MapRadar       — bottom-right (bottom-32 right-5)        │
-│  ├─ DataFreshness  — bottom-center, above ticker             │
-│  └─ LiveTicker     — full-width bottom bar (h-9, dark)       │
+│  ├─ FusionCallout: bottom-left, above ticker (bottom-12)   │
+│  ├─ MapLegend, bottom-left (bottom-20 sm:bottom-16)    │
+│  ├─ MapRadar: bottom-right (bottom-32 right-5)        │
+│  ├─ DataFreshness: bottom-center, above ticker             │
+│  └─ LiveTicker: full-width bottom bar (h-9, dark)       │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -186,10 +186,10 @@ bg-surface border border-border-strong rounded-2xl shadow-panel
 
 ### 4.5 Modal pattern (with animation)
 
-Used by LoginPanel. Centering wrapper + animated inner dialog — never use `translate-x-1/2 -translate-y-1/2` on the animated element (transform conflicts).
+Used by LoginPanel. Centering wrapper + animated inner dialog, never use `translate-x-1/2 -translate-y-1/2` on the animated element (transform conflicts).
 
 ```tsx
-{/* Centering wrapper — pointer-events-none */}
+{/* Centering wrapper: pointer-events-none */}
 <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
   <div
     className={clsx(
@@ -226,7 +226,7 @@ Use `shadow-panel` on panels. Use `shadow-card` on small chips. **Never use Tail
 
 ## 6. Shared primitives
 
-`src/components/ui/primitives.tsx` is the single component set. **Always use these — never write bespoke button / pill / toggle markup.**
+`src/components/ui/primitives.tsx` is the single component set. **Always use these, never write bespoke button / pill / toggle markup.**
 
 | Component | When |
 |-----------|------|
@@ -240,13 +240,13 @@ Use `shadow-panel` on panels. Use `shadow-card` on small chips. **Never use Tail
 | `<Divider>` | Horizontal rule between sections |
 | `<Toggle checked onChange>` | Layer / feature switch (no `label` prop when row already shows label inline) |
 | `<PillSegment active onClick>` | Time-window selector segment |
-| `<EmptyState title body icon>` | Empty panel state — never bare grey strings |
+| `<EmptyState title body icon>` | Empty panel state: never bare grey strings |
 
 ---
 
 ## 7. Iconography
 
-**`lucide-react` is the canonical icon set.** Sizes 11–15 px in panel headers and rows.
+**`lucide-react` is the canonical icon set.** Sizes 11-15 px in panel headers and rows.
 
 ### No emoji in UI chrome
 
@@ -261,7 +261,7 @@ Operator-facing logging uses SINAGERD-style ASCII tags rendered in the display f
 | Resource category | `PE`, `HE`, `AM`, `CA`, `RA`, `AL` |
 | AI prefix | `AI` (display caps, costa-300) |
 
-Reasons: editorial identity, and portability — emoji render differently across operator workstations.
+Reasons: editorial identity, and portability, emoji render differently across operator workstations.
 
 ---
 
@@ -292,16 +292,16 @@ Reserve `animate-pulse` for the **single highest-priority signal** (critical ale
 
 ---
 
-## 9. Rules — non-negotiable
+## 9. Rules, non-negotiable
 
 1. **No glass.** `backdrop-blur-*` is banned everywhere except internal map overlay components that already work without it.
 2. **No dark panel surfaces.** All panels use `bg-surface` (cream). The map (`bg-canvas`) is the only persistently dark area.
 3. **No inline hex colors** in component JSX. Use token classes or CSS variables. (Map raster styles via MapLibre paint specs are the documented exception.)
 4. **Semantic color only.** `text-danger` / `bg-danger-soft` only when the state genuinely is dangerous. Never for decoration.
-5. **No `rounded-xl` on full-height drawers** — desktop side panels are flush; no rounding on the outer edge.
-6. **`Toggle` `label` prop** — only pass it when you want the Toggle to render the label itself. If the row already shows the label inline, omit the prop to avoid duplication.
-7. **MapLibre controls** — navigation at `bottom-right`, attribution + scale at `bottom-left`. CSS in `globals.css` lifts them 40 px above ticker. Never put controls at `top-right` (conflicts with HUD).
-8. **LiveTicker** — uses `bg-canvas-deep`; text minimum `oklch(72% 0 0)` on dark for AA contrast. Only persistently dark chrome element.
+5. **No `rounded-xl` on full-height drawers**: desktop side panels are flush; no rounding on the outer edge.
+6. **`Toggle` `label` prop**: only pass it when you want the Toggle to render the label itself. If the row already shows the label inline, omit the prop to avoid duplication.
+7. **MapLibre controls**, navigation at `bottom-right`, attribution + scale at `bottom-left`. CSS in `globals.css` lifts them 40 px above ticker. Never put controls at `top-right` (conflicts with HUD).
+8. **LiveTicker**, uses `bg-canvas-deep`; text minimum `oklch(72% 0 0)` on dark for AA contrast. Only persistently dark chrome element.
 
 ---
 
@@ -367,7 +367,7 @@ Lazy-loaded panels (excluded from initial bundle): `TutorialOverlay`, `SharePane
 
 ---
 
-## 14. Anti-patterns — rejected
+## 14. Anti-patterns, rejected
 
 | Pattern | Why rejected |
 |---------|--------------|
@@ -384,7 +384,7 @@ Lazy-loaded panels (excluded from initial bundle): `TutorialOverlay`, `SharePane
 
 ---
 
-## 15. Historical — Sprint 12 audit findings
+## 15. Historical. Sprint 12 audit findings
 
 The `/impeccable` design pass (Sprint 12) closed the long-running C4 Usability gap by intervening at the visual-system level rather than per-feature. Baseline audit score: **5.8 / 10** with 9/9 AI-template markers detected. Post-refactor: **8.6 / 10**, 2/9 markers remaining.
 

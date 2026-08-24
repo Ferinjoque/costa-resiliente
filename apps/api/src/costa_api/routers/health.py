@@ -127,7 +127,7 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
 
 @router.get("/health/seed", response_model=SeedStatus)
 async def seed_status(db: AsyncSession = Depends(get_db)) -> SeedStatus:
-    """Return row counts for seeded tables — useful for diagnosing empty data."""
+    """Return row counts for seeded tables: useful for diagnosing empty data."""
     await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     counts: dict[str, int] = {}
     for key, tbl in [
@@ -150,7 +150,7 @@ async def seed_status(db: AsyncSession = Depends(get_db)) -> SeedStatus:
 async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """
     Per-source scraper health: last ingested record timestamp + total count.
-    Status: 'ok' (<15min), 'stale' (15min–2h), 'offline' (>2h or no data).
+    Status: 'ok' (<15min), 'stale' (15min: 2h), 'offline' (>2h or no data).
     """
     now = datetime.now(timezone.utc)
 
@@ -200,7 +200,7 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     )
 
     # Merge Redis scraper health (written by workers after each run).
-    # One shared client for all reads + ping — avoids 9 separate connection opens.
+    # One shared client for all reads + ping: avoids 9 separate connection opens.
     ana_scraper: dict = {}
     senamhi_scraper: dict = {}
     bluesky_run: dict = {}
@@ -289,7 +289,7 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     }
 
     # Overall status uses operational sources only.
-    # Reddit and Telegram are best-effort external scrapers — their outage does
+    # Reddit and Telegram are best-effort external scrapers, their outage does
     # not degrade situational awareness (Bluesky + RSS carry the social signal).
     # SAR flood is daily cadence; offline between acquisitions is expected.
     _core = {k: v for k, v in sources.items() if k not in ("reddit", "telegram", "flood")}

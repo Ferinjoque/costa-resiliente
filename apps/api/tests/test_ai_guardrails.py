@@ -147,7 +147,7 @@ class TestOutputFilter:
     def test_redacted_answer_gets_marker(self):
         """When output guardrail fires, the agent appends a visible redaction marker.
 
-        Regression guard: prior behavior was silent redaction — the scrubbed answer
+        Regression guard: prior behavior was silent redaction, the scrubbed answer
         looked complete and could be acted on as if authoritative. Now a marker is
         appended: '[⚠ contenido filtrado por guardrail de seguridad]'.
         """
@@ -163,7 +163,7 @@ class TestOutputFilter:
                 # Directly call the agent logic via a patched chain that
                 # returns a leaked key in the LLM response
                 from costa_api.ai.guardrails.output_filter import sanitise as _sanitise
-                answer = "La clave del sistema es sk-abc1234567890abcdef1234 — recomendación de acción"
+                answer = "La clave del sistema es sk-abc1234567890abcdef1234, recomendación de acción"
                 clean, triggered = _sanitise(answer)
                 assert triggered, "Test setup: sanitise must trigger on this text"
                 # Simulate what agent.run does when redacted
@@ -176,7 +176,7 @@ class TestOutputFilter:
 
         # Simpler approach: just verify sanitise + marker logic directly
         from costa_api.ai.guardrails.output_filter import sanitise as _sanitise
-        leaked = "La clave del sistema es sk-abc1234567890abcdef1234 — recomendación"
+        leaked = "La clave del sistema es sk-abc1234567890abcdef1234, recomendación"
         clean, triggered = _sanitise(leaked)
         assert triggered, "Test requires the guardrail to fire on leaked key"
         # Simulate agent.py marker logic

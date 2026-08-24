@@ -8,7 +8,7 @@
 INSERT INTO geo.districts (ubigeo, name, province, region, geom, area_km2, population)
 VALUES
 
--- ── Callao (capital district — port area) ─────────────────────────────────────
+-- ── Callao (capital district: port area) ─────────────────────────────────────
 ('070101', 'Callao', 'Callao', 'Callao',
   ST_Multi(ST_GeomFromText(
     'POLYGON((-77.175 -12.020, -77.095 -12.020, -77.095 -12.075, -77.175 -12.075, -77.175 -12.020))',
@@ -36,7 +36,7 @@ VALUES
     4326)),
   6.18, 62757),
 
--- ── La Punta (narrow coastal peninsula — lowest ground, high surge risk) ──────
+-- ── La Punta (narrow coastal peninsula: lowest ground, high surge risk) ──────
 ('070105', 'La Punta', 'Callao', 'Callao',
   ST_Multi(ST_GeomFromText(
     'POLYGON((-77.175 -12.070, -77.150 -12.070, -77.150 -12.092, -77.175 -12.092, -77.175 -12.070))',

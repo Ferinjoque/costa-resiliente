@@ -117,7 +117,7 @@ export const useUIStore = create<UIState>((set) => ({
         const pruned = [...current.slice(0, dropIdx), ...current.slice(dropIdx + 1)];
         return { toasts: [...pruned, newToast] };
       }
-      // All existing are danger — drop oldest
+      // All existing are danger: drop oldest
       return { toasts: [...current.slice(1), newToast] };
     }),
   removeToast: (id) =>

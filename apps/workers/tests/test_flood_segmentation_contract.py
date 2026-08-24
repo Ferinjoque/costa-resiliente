@@ -1,5 +1,5 @@
 """
-Flood segmentation contract tests — pure math, no model weights, no GPU.
+Flood segmentation contract tests: pure math, no model weights, no GPU.
 Validates preprocessing, normalization, and vectorization logic.
 """
 import math
@@ -167,7 +167,7 @@ def test_sar_to_flood_polygons_empty_mask():
             scene_id="TEST_SCENE",
             vv_linear=vv,
             vh_linear=vh,
-            transform=object(),  # opaque — passed through to vectorize_mask
+            transform=object(),  # opaque, passed through to vectorize_mask
             crs_wkt="EPSG:4326",
             model=mock_model,
         )

@@ -1,4 +1,4 @@
-"""SAR flood segmentation — Sen1Floods11 U-Net + vectorization pipeline.
+"""SAR flood segmentation: Sen1Floods11 U-Net + vectorization pipeline.
 
 Model: Sen1Floods11 U-Net (Bonafilia et al., CVPR Workshop 2020).
   Weights downloaded from HuggingFace hub on first use.
@@ -175,7 +175,7 @@ class FloodSegmentationModel:
             state = torch.load(self.weights_path, map_location=self.device, weights_only=True)
         else:
             logger.info(
-                "Weights not at %s — downloading from HuggingFace %s",
+                "Weights not at %s: downloading from HuggingFace %s",
                 self.weights_path, self.hf_repo,
             )
             try:
@@ -194,7 +194,7 @@ class FloodSegmentationModel:
                 if _os.getenv("FLOOD_ALLOW_RANDOM_WEIGHTS", "0") == "1":
                     logger.warning(
                         "HuggingFace download failed (%s). "
-                        "FLOOD_ALLOW_RANDOM_WEIGHTS=1 — using random weights (dev only).",
+                        "FLOOD_ALLOW_RANDOM_WEIGHTS=1: using random weights (dev only).",
                         exc,
                     )
                     state = net.state_dict()
@@ -232,7 +232,7 @@ class FloodSegmentationModel:
         import torch.nn.functional as F
 
         if self._model is None:
-            raise RuntimeError("Model not loaded — call load() first")
+            raise RuntimeError("Model not loaded: call load() first")
 
         tensor = preprocess_scene(vv_linear, vh_linear)  # (2, H, W)
         H, W = tensor.shape[1], tensor.shape[2]
@@ -317,7 +317,7 @@ def vectorize_mask(
     try:
         transformer = Transformer.from_crs(crs_wkt, "EPSG:4326", always_xy=True)
     except Exception as exc:
-        logger.warning("CRS transformer init failed: %s — no polygons returned", exc)
+        logger.warning("CRS transformer init failed: %s, no polygons returned", exc)
         return []
 
     polygons = []
@@ -333,7 +333,7 @@ def vectorize_mask(
                 list(transformer.transform(x, y)) for x, y in coords
             ]
         except Exception as exc:
-            logger.warning("CRS reprojection failed: %s — skipping polygon", exc)
+            logger.warning("CRS reprojection failed: %s, skipping polygon", exc)
             continue
 
         area_m2 = _shoelace_area(coords)

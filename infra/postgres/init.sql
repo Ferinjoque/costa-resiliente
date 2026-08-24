@@ -1,4 +1,4 @@
--- Costa Resiliente — PostGIS + TimescaleDB + pgstac schema bootstrap
+-- Costa Resiliente: PostGIS + TimescaleDB + pgstac schema bootstrap
 -- Runs once on first container start via docker-entrypoint-initdb.d
 
 -- ─── Extensions ───────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS geo.quebradas (
     geom            GEOMETRY(MULTILINESTRING, 4326),
     priority        INTEGER DEFAULT 5,  -- 1-10; top-10 get r.avaflow simulations
     threshold_24h_mm DOUBLE PRECISION,  -- IMERG 24h threshold to trigger avaflow
-    -- XGBoost feature columns (static terrain — filled at geodata load time)
+    -- XGBoost feature columns (static terrain: filled at geodata load time)
     slope_deg       DOUBLE PRECISION,
     aspect_deg      DOUBLE PRECISION,
     lithology_class INTEGER,            -- 0-5 per INGEMMET 1:100k map
@@ -258,11 +258,11 @@ CREATE TABLE IF NOT EXISTS ops.decision_log (
     payload         JSONB NOT NULL, -- full action payload for EDAN-Perú export
     session_id      TEXT
 );
--- Prevent updates/deletes — append-only enforced via application + trigger
+-- Prevent updates/deletes: append-only enforced via application + trigger
 CREATE OR REPLACE FUNCTION ops.prevent_decision_log_mutation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
-    RAISE EXCEPTION 'decision_log is append-only — DELETE and UPDATE are forbidden';
+    RAISE EXCEPTION 'decision_log is append-only: DELETE and UPDATE are forbidden';
 END;
 $$;
 CREATE TRIGGER decision_log_no_update

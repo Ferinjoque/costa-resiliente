@@ -2,7 +2,7 @@
   <rect width="512" height="512" rx="80" fill="#0f172a"/>
   <!-- Wave base -->
   <path d="M64 300 Q128 260 192 300 Q256 340 320 300 Q384 260 448 300 L448 400 Q384 440 320 400 Q256 360 192 400 Q128 440 64 400 Z" fill="#0ea5e9" opacity="0.7"/>
-  <!-- Mountain/peak — huayco signal -->
+  <!-- Mountain/peak: huayco signal -->
   <path d="M180 320 L256 160 L332 320 Z" fill="#38bdf8" opacity="0.9"/>
   <!-- Alert dot -->
   <circle cx="370" cy="130" r="40" fill="#ef4444"/>

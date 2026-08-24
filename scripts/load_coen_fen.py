@@ -6,8 +6,8 @@ Source:
   https://sig.cenepred.gob.pe/arcgis_server/rest/services/sectores/COEN_FEN_2023_10_5_1X/MapServer
 
 This is the official COEN (Centro de Operaciones de Emergencia Nacional) El Niño
-response layer set. Unlike the SIGRID portal — which is SSO-gated and whose WFS
-endpoint now returns 404 — this ArcGIS REST service answers anonymously, so no
+response layer set. Unlike the SIGRID portal, which is SSO-gated and whose WFS
+endpoint now returns 404: this ArcGIS REST service answers anonymously, so no
 credentials are required and the load is reproducible by anyone.
 
 Layers loaded (only asset classes OSM does not already cover, to avoid
@@ -91,7 +91,7 @@ def _name_for(layer_label: str, attrs: dict) -> str:
     if name:
         return name
     district = _first(attrs, _DISTRICT_NAME_FIELDS)
-    return f"{layer_label} — {district}" if district else layer_label
+    return f"{layer_label}: {district}" if district else layer_label
 
 
 async def fetch_layer(client: httpx.AsyncClient, layer_id: int) -> list[dict]:
@@ -121,7 +121,7 @@ async def load_layer(conn: asyncpg.Connection, client: httpx.AsyncClient, layer_
     try:
         features = await fetch_layer(client, layer_id)
     except Exception as exc:  # network / service outage must not abort the whole load
-        print(f"  layer {layer_id} ({label}): FAILED — {exc}")
+        print(f"  layer {layer_id} ({label}): FAILED, {exc}")
         return 0
 
     loaded = 0
@@ -200,7 +200,7 @@ async def load_layer(conn: asyncpg.Connection, client: httpx.AsyncClient, layer_
 
 
 async def main() -> None:
-    print("Costa Resiliente — CENEPRED COEN FEN 2023 responder-asset loader")
+    print("Costa Resiliente: CENEPRED COEN FEN 2023 responder-asset loader")
     print(f"Source: {MAPSERVER}")
     print(f"Connecting to {DSN.split('@')[-1]}...\n")
 
@@ -224,7 +224,7 @@ async def main() -> None:
         for row in rows:
             print(f"  {row['type']:<20} {row['n']}")
         if total == 0:
-            print("\nWARNING: nothing loaded — CENEPRED service may be unreachable.")
+            print("\nWARNING: nothing loaded. CENEPRED service may be unreachable.")
             sys.exit(1)
     finally:
         await conn.close()

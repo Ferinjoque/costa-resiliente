@@ -1,13 +1,13 @@
-# Costa Resiliente — Demo Guide (IEEE Response Quest 2026)
+# Costa Resiliente: Demo Guide (IEEE Response Quest 2026)
 
-> **Scenario:** El Niño Costero — Lima Metropolitana, March 15–April 2, 2017
+> **Scenario:** El Niño Costero. Lima Metropolitana, March 15. April 2, 2017
 > **Setup:** `docker compose up -d` → http://localhost:3000
 
 ---
 
 ## 2-Minute Express Demo
 
-### Step 0 — Verify via API (5s)
+### Step 0: Verify via API (5s)
 
 ```bash
 curl http://localhost:8000/api/v1/health
@@ -15,32 +15,32 @@ curl http://localhost:8000/api/v1/health
 #    "max_rain_72h_mm":63.2,"rain_level":"emergencia"}
 ```
 
-The health endpoint reports SINAGERD level + active alerts + ANA rainfall level — single-call external monitoring.
+The health endpoint reports SINAGERD level + active alerts + ANA rainfall level, single-call external monitoring.
 
-### Step 1 — System Check (15s)
+### Step 1: System Check (15s)
 
 Open http://localhost:3000.
 
 **What judges see:**
-- Top-right HUD: **"EMERGENCIA"** (pulsing red) — from 7 active alerts (3 critical huayco + 1 critical rain)
+- Top-right HUD: **"EMERGENCIA"** (pulsing red): from 7 active alerts (3 critical huayco + 1 critical rain)
 - Rainfall chip: **63 mm** (red, Rímac watershed above 50mm EMERGENCIA threshold)
 - Clock: Lima time (PET, UTC-5)
-- Map: Lima Metropolitana — **40 districts colored ALTO** (red, incl. SJL 1.04M pop), SAR flood polygon, huayco risk dots, rainfall layer
+- Map: Lima Metropolitana, **40 districts colored ALTO** (red, incl. SJL 1.04M pop), SAR flood polygon, huayco risk dots, rainfall layer
 
 The FEEDS chip (core sources only) shows all 5 core sources active: Bluesky ✓ RSS ✓ IMERG ✓ Stations ✓ Alerts ✓
 
 ---
 
-### Step 2 — SITREP Query (30s)
+### Step 2: SITREP Query (30s)
 
 Click **"Consultar"** (C key) → left panel, or tap the Copilot icon.
 
 Click the first suggestion: **"Dame el resumen completo de la situación"**
 
 **What happens:**
-- Loading indicator shows: **"SITREP — Herramienta 1/5: Alertas activas…" → 2/5 Lluvia → 3/5 Ríos → 4/5 SAR → 5/5 Huayco** (sequential tool progress visible in real time)
+- Loading indicator shows: **"SITREP. Herramienta 1/5: Alertas activas…" → 2/5 Lluvia → 3/5 Ríos → 4/5 SAR → 5/5 Huayco** (sequential tool progress visible in real time)
 - Sitrep mode triggers (5 tools sequential, ~5 seconds, no LLM)
-- Response header shows **UTC retrieval timestamp**: "SITREP — Lima Metropolitana · 01/06 HH:MM UTC" — operators know exactly when data was retrieved (Session 23)
+- Response header shows **UTC retrieval timestamp**: "SITREP, Lima Metropolitana · 01/06 HH:MM UTC", operators know exactly when data was retrieved (Session 23)
 - Response includes: **7 active alerts** (3 crit, 4 high) + Rímac 63mm EMERGENCIA **· también Chillón: 28mm**, **Chosica 2.41m → acercándose** (2.5m threshold), SAR flood, **Pedregal MUY ALTO 91% · también: Huaycoloro**
 - SITREP banner shown **ABOVE** response text: "SITREP · Fusión 5 fuentes · sin LLM"
 - Action: **"Activar protocolo EDAN y escalar a COEN. Activar evacuación preventiva quebradas cuenca Rímac. Evacuar quebrada(s) Pedregal + Huaycoloro."** (combined: critical alerts + EMERGENCIA rainfall + specific very_high quebradas named)
@@ -49,12 +49,12 @@ Click the first suggestion: **"Dame el resumen completo de la situación"**
 
 ---
 
-### Step 3 — Alerts Panel (20s)
+### Step 3: Alerts Panel (20s)
 
 Click **"Alertas"** (A key).
 
 **What judges see:**
-- **7 active alerts** shown (sorted: 3 critical first, then 4 high) — SLA breach badges on unacknowledged critical alerts
+- **7 active alerts** shown (sorted: 3 critical first, then 4 high). SLA breach badges on unacknowledged critical alerts
 - Filter by severity: click **"⚠ Crit"** → shows 3 critical alerts (2 huayco + 1 rainfall EMERGENCIA)
 - Each alert card shows: type, district, SLA timer, source refs
 - AI Recommendation box: specific action using actual district/watershed name
@@ -62,11 +62,11 @@ Click **"Alertas"** (A key).
 
 If any alert is older than its SLA (5min critical, 10min high), a **danger toast fires** even if the panel is closed.
 
-When clicking **Escalate** on a past-SLA alert, the escalation modal shows a **red SLA breach banner**: "SLA VENCIDO — Xmin sin acción (límite 5min). Escalar de inmediato." — operators see exactly how late they are (Session 23).
+When clicking **Escalate** on a past-SLA alert, the escalation modal shows a **red SLA breach banner**: "SLA VENCIDO, Xmin sin acción (límite 5min). Escalar de inmediato.", operators see exactly how late they are (Session 23).
 
 ---
 
-### Step 4 — Copilot Full Query (30s)
+### Step 4: Copilot Full Query (30s)
 
 In the Copilot panel, type: **"¿Qué subestaciones están en zona inundada?"** (or "hospitales")
 
@@ -78,31 +78,31 @@ Type: **"Nivel del río en Chosica"**
 
 **What happens:**
 - Quick mode: `get_river_levels`
-- Answer: level in meters, flow m³/s, trend (↑ rising), **SENAMHI threshold comparison** — "⚠ acercándose al umbral 2.5m" (2.41m, within 90% threshold — Session 21 near-threshold warning)
-- Footer shows **tool attribution**: "Modo rápido · sin LLM · ~2s · river levels" — operators see which data source was used (Session 23)
+- Answer: level in meters, flow m³/s, trend (↑ rising), **SENAMHI threshold comparison** ("⚠ acercándose al umbral 2.5m" (2.41m, within 90% threshold)Session 21 near-threshold warning)
+- Footer shows **tool attribution**: "Modo rápido · sin LLM · ~2s · river levels", operators see which data source was used (Session 23)
 
 ---
 
-### Step 5 — District Fusion (20s)
+### Step 5: District Fusion (20s)
 
 Click on Lurigancho district on the map.
 
 **FusionCallout opens:**
 - Population: 213,386 hab.
 - SAR Flood: 1 polygon, 3.0 km²
-- Huayco risk: MUY ALTO (91%) — Quebrada Pedregal (trigger: 12 mm/24h)
+- Huayco risk: MUY ALTO (91%). Quebrada Pedregal (trigger: 12 mm/24h)
 - **Rainfall: 63 mm (Rímac) · ⚠ EMERGENCIA** (>50mm ANA threshold)
-- Social: 1 urgent signal (needs_help — Jicamarca) in last 3h (Session 23: district attribution fix)
+- Social: 1 urgent signal (needs_help. Jicamarca) in last 3h (Session 23: district attribution fix)
 - Risk level pill: ALTO (elevation from rainfall EMERGENCIA + SAR flood + very high huayco)
-- Prose (Spanish): "Lurigancho: 1 polígono SAR activo (3.0 km²; ~213,386 personas) · Riesgo huayco muy alto (91%) · Lluvia 72h cuenca Rímac: 63 mm — ⚠ EMERGENCIA · 1 señal(es) urgente(s)."
+- Prose (Spanish): "Lurigancho: 1 polígono SAR activo (3.0 km²; ~213,386 personas) · Riesgo huayco muy alto (91%) · Lluvia 72h cuenca Rímac: 63 mm, ⚠ EMERGENCIA · 1 señal(es) urgente(s)."
 
 Click **"Análisis completo"** → DistrictDashboardPanel shows **8 active alerts** (4 huayco + 4 rainfall) with social_24h breakdown: huayco_observation, infrastructure_damage, needs_help, weather_observation.
 
-**Also click San Juan de Lurigancho (150133)** → FusionCallout shows **4 citizen reports, 3 urgent** (needs_help, huayco_observation, infrastructure_damage) — the most populous Lima district (1.03M pop) with active social signal cluster (Session 23).
+**Also click San Juan de Lurigancho (150133)** → FusionCallout shows **4 citizen reports, 3 urgent** (needs_help, huayco_observation, infrastructure_damage), the most populous Lima district (1.03M pop) with active social signal cluster (Session 23).
 
 ---
 
-### Step 6 — Decision Log + EDAN Export (15s)
+### Step 6: Decision Log + EDAN Export (15s)
 
 Click **"Registro"** (L key) → shows all operator actions (copilot queries, alert actions, protocol steps).
 
@@ -115,7 +115,7 @@ Click **PDF** → downloads EDAN-Perú A4 situational report with active alerts 
 
 Add these steps to the express demo:
 
-### A — El Niño 2017 Replay
+### A: El Niño 2017 Replay
 
 Scenario Panel → **"Replay El Niño 2017"** button → date scrubber at Mar 15, 2017.
 
@@ -123,25 +123,25 @@ TutorialOverlay opens (or press **?** key) → step-by-step spotlight walkthroug
 
 Advance to Apr 2, 2017 (highest flood extent day).
 
-### B — Proposals Panel (HITL)
+### B: Proposals Panel (HITL)
 
 Click **"Propuestas"** (P key) → AI-submitted alert proposals awaiting operator approval.
 
-Approve one: toast shows **"Propuesta aprobada — publicada como alerta · N suscriptores notificados"** (NEW Session 20).
+Approve one: toast shows **"Propuesta aprobada: publicada como alerta · N suscriptores notificados"** (NEW Session 20).
 
-### C — Social Feed
+### C: Social Feed
 
 Click **"Social"** (S key) → urgent signals (huayco_observation, needs_help, road_blocked, flood_observation) sorted by urgency.
 
 Click **"Reporte de Campo"** → operator submits field observation (persisted to DB, logged to Decision Log).
 
-### D — Notifications
+### D: Notifications
 
 Click **"Notificaciones [N]"** → subscriber management.
 
 Add a webhook URL → all critical/high alerts auto-notify this endpoint (no operator trigger needed).
 
-### E — Share
+### E: Share
 
 Click **"Compartir"** → operator shares read-only link of current scenario with COEN coordinators. Link encodes: district, time window, active layers, replay mode.
 
@@ -153,31 +153,31 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 |---------|----------------|
 | **SITREP mode (~6s)** | Start-of-shift: 6 tools sequential (alerts+rain+rivers+SAR+huayco+social signals), all sections guaranteed, UTC timestamp, district context for social |
 | **SENAMHI thresholds in copilot** | Level 2.41m at Chosica rising +0.130m/h → "⚠ acercándose al umbral 2.5m" (near-threshold) |
-| **Rainfall multi-watershed** | "Rímac 63mm EMERGENCIA · También sobre umbral: Chillón 28mm" — operators see full rainfall picture in one query |
-| **SLA breach modal** | When clicking Escalate on a past-SLA alert: red banner "SLA VENCIDO — Xmin sin acción (límite 5min)" — operators know how late they are |
-| **Server-side age_seconds** | SLA chips use server-computed age (no client clock skew) — critical for cross-timezone team coordination |
+| **Rainfall multi-watershed** | "Rímac 63mm EMERGENCIA · También sobre umbral: Chillón 28mm", operators see full rainfall picture in one query |
+| **SLA breach modal** | When clicking Escalate on a past-SLA alert: red banner "SLA VENCIDO, Xmin sin acción (límite 5min)", operators know how late they are |
+| **Server-side age_seconds** | SLA chips use server-computed age (no client clock skew): critical for cross-timezone team coordination |
 | **Rainfall in FusionCallout** | District-level rainfall context (Rímac watershed 63mm) integrated into multi-hazard view |
 | **ANA protocol RAG (7 docs)** | "¿cómo lleno el EDAN?" + "¿qué hago en EMERGENCIA?" from real INDECI/ANA/SINAGERD documents |
-| **Health API enriched** | `curl /health` → `sinagerd_level:EMERGENCIA, active_alerts:7, critical_alerts:3, high_alerts:4, sinagerd_primary_trigger:combined` — full monitoring context |
-| **Social district attribution** | Signals now show which district reported them — "zonas: San Juan de Lurigancho (avistamientos huayco), Lurigancho (solicitudes de ayuda)" in SITREP |
+| **Health API enriched** | `curl /health` → `sinagerd_level:EMERGENCIA, active_alerts:7, critical_alerts:3, high_alerts:4, sinagerd_primary_trigger:combined`, full monitoring context |
+| **Social district attribution** | Signals now show which district reported them, "zonas: San Juan de Lurigancho (avistamientos huayco), Lurigancho (solicitudes de ayuda)" in SITREP |
 | **FEEDS chip (core only)** | No false alarms from expected-offline reddit/telegram/SAR between acquisitions |
 | **Province filter bug fix** | Rainfall alerts (district-less) correctly appear in Lima Metro view |
-| **Local Ollama (zero cloud)** | All ML inference local — no API keys, no data egress, works offline |
+| **Local Ollama (zero cloud)** | All ML inference local: no API keys, no data egress, works offline |
 | **670 API tests** | End-to-end coverage of every endpoint, guardrail, quick-mode, sitrep, multi-watershed, near-threshold, idempotency, atomic alert guard, sitrep quorum |
-| **SINAGERD level consistency** | Rainfall ≥50mm always elevates to EMERGENCIA across health API, HUD, SituationBrief, CityOverview, EDAN — 5 consistent surfaces |
-| **Append-only decision log** | DB trigger rejects UPDATE/DELETE — full audit trail for SINAGERD post-event review |
-| **Map: 40 districts show ALTO (incl. SJL)** | District risk map includes watershed rainfall — Rímac EMERGENCIA elevates all intersecting districts incl. SJL (1.04M pop) |
+| **SINAGERD level consistency** | Rainfall ≥50mm always elevates to EMERGENCIA across health API, HUD, SituationBrief, CityOverview, EDAN, 5 consistent surfaces |
+| **Append-only decision log** | DB trigger rejects UPDATE/DELETE: full audit trail for SINAGERD post-event review |
+| **Map: 40 districts show ALTO (incl. SJL)** | District risk map includes watershed rainfall: Rímac EMERGENCIA elevates all intersecting districts incl. SJL (1.04M pop) |
 | **7 active alerts + 3 critical** | El Niño scenario: 2 critical huayco (Huaycoloro/Pedregal) + 1 critical rainfall + 4 high alerts |
-| **Alerts sorted critical-first** | Critical alerts always appear before high within active group — no operator context loss |
+| **Alerts sorted critical-first** | Critical alerts always appear before high within active group, no operator context loss |
 | **Copilot: minimum severity filter** | `get_active_alerts(severity="high")` returns both high+critical (prior exact-match hid criticals) |
-| **Copilot: sequential tool dispatch** | All 3 dispatch paths run tools sequentially — eliminates AsyncSession race, all sections always present |
+| **Copilot: sequential tool dispatch** | All 3 dispatch paths run tools sequentially: eliminates AsyncSession race, all sections always present |
 | **Copilot: combined action directive** | SITREP action augments with specific evacuation directive when EMERGENCIA rain AND critical huayco present |
-| **Alerts: atomic idempotent actions** | Single `UPDATE WHERE status != target` — eliminates race where 2 concurrent escalations both trigger fan-out |
+| **Alerts: atomic idempotent actions** | Single `UPDATE WHERE status != target`, eliminates race where 2 concurrent escalations both trigger fan-out |
 | **Multi-watershed sitrep** | Rímac 63mm EMERGENCIA + "también Chillón: 28mm ALERTA" shown in single sitrep bullet |
 | **Near-threshold warnings** | Chosica 2.41m → "⚠ acercándose al umbral 2.5m" shown in copilot + dashboard |
-| **Sitrep quorum guard** | Sitrep only asserts NORMAL when ≥3/5 tools succeed — prevents false-calm when DB tools fail |
-| **IMERG data-gap in HUD** | "LLUVIA?" chip appears in HUD when IMERG fetch fails — operator never sees silent 0mm |
-| **INDECI checklist persists** | Protocol checkboxes survive panel open/close (sessionStorage) — operator doesn't lose progress |
+| **Sitrep quorum guard** | Sitrep only asserts NORMAL when ≥3/5 tools succeed, prevents false-calm when DB tools fail |
+| **IMERG data-gap in HUD** | "LLUVIA?" chip appears in HUD when IMERG fetch fails: operator never sees silent 0mm |
+| **INDECI checklist persists** | Protocol checkboxes survive panel open/close (sessionStorage): operator doesn't lose progress |
 | **Login CTA in Social+Proposals** | Unauthenticated operators see "Iniciar sesión →" button in field report + proposal panels |
 
 ---
@@ -187,17 +187,17 @@ Click **"Compartir"** → operator shares read-only link of current scenario wit
 ```
 9 Docker containers:
   PostgreSQL 16 + PostGIS 3.4 + TimescaleDB + pgstac + pgvector
-  FastAPI (Python 3.12) — 32+ REST endpoints + SSE
-  Prefect 3 — 9 ingestion/ML/alert flows
-  Ollama — qwen2.5:7b (copilot) + gemma2:2b (guardrails) + nomic-embed-text (RAG)
-  Next.js 14 — PWA, WCAG AA, ES/EN, offline cache
+  FastAPI (Python 3.12): 32+ REST endpoints + SSE
+  Prefect 3: 9 ingestion/ML/alert flows
+  Ollama, qwen2.5:7b (copilot) + gemma2:2b (guardrails) + nomic-embed-text (RAG)
+  Next.js 14: PWA, WCAG AA, ES/EN, offline cache
 
 10 data sources:
   Sentinel-1 GRD (Planetary Computer)
   NASA IMERG Late Run V07B
   ANA Observatorio Chirilu (gauge scraper + Redis cache)
   SENAMHI (Open-Meteo fallback)
-  INDECI SINPAD 2003–2020 (2,063 Lima events)
+  INDECI SINPAD 2003-2020 (2,063 Lima events)
   INEI 2017 census
   OpenStreetMap infrastructure (43,072 POIs)
   Bluesky Jetstream v2 (AT Protocol)

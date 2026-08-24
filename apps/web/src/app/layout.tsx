@@ -15,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-// Display family — used sparingly: SINAGERD level word, hero metrics, panel
+// Display family, used sparingly: SINAGERD level word, hero metrics, panel
 // section titles. Two static weights to keep LCP budget tight.
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -25,9 +25,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Costa Resiliente — Lima Metropolitana",
+  title: "Costa Resiliente: Lima Metropolitana",
   description:
-    "Plataforma de conciencia situacional en tiempo real para inundaciones y huaycos — Lima Metropolitana",
+    "Plataforma de conciencia situacional en tiempo real para inundaciones y huaycos. Lima Metropolitana",
   manifest: "/manifest.json",
   icons: {
     icon: "/icon.svg",
@@ -55,7 +55,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`dark ${inter.variable} ${jetbrainsMono.variable} ${fraunces.variable}`}>
       <body className="bg-canvas text-ink antialiased font-sans">
-        {/* Skip-to-content — WCAG 2.4.1 Bypass Blocks */}
+        {/* Skip-to-content: WCAG 2.4.1 Bypass Blocks */}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-paper focus:text-ink focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:outline-none"

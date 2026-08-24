@@ -1,4 +1,4 @@
-"""Unit tests for alert_generator business logic — no DB required.
+"""Unit tests for alert_generator business logic: no DB required.
 
 Covers threshold functions, cluster config structure, and severity mappings.
 The live asyncpg integration (generate_* tasks) is exercised via E2E only.
@@ -67,7 +67,7 @@ class TestSocialClusterConfigs:
     def test_huayco_observation_config(self):
         from costa_workers.ml.alert_generator import _SOCIAL_CLUSTER_CONFIGS, HUAYCO_CLUSTER_MIN
         cfg = next(c for c in _SOCIAL_CLUSTER_CONFIGS if "huayco_observation" in c["labels"])
-        assert cfg["min"] == HUAYCO_CLUSTER_MIN  # 3 — lower than needs_help
+        assert cfg["min"] == HUAYCO_CLUSTER_MIN  # 3: lower than needs_help
         assert cfg["severity_fn"](3) == "critical"  # even at threshold = critical
         assert cfg["alert_type"] == "social_cluster"
 
@@ -174,7 +174,7 @@ class TestRejectPrivateHost:
 
     def test_allows_public_ip(self):
         from costa_workers.ml.alert_generator import _reject_private_host
-        _reject_private_host("1.1.1.1")  # Cloudflare — must not raise
+        _reject_private_host("1.1.1.1")  # Cloudflare: must not raise
 
     def test_blocks_hostname_resolving_to_private_ip(self):
         from unittest.mock import patch
@@ -214,7 +214,7 @@ class TestRainfallSeverityRanking:
     prevents a lower-severity alert from blocking escalation to critical.
 
     Regression guard: before Session 23 fix, ANY existing rainfall alert blocked
-    new ones regardless of severity — a 'high' alert blocked a 'critical' one.
+    new ones regardless of severity: a 'high' alert blocked a 'critical' one.
     """
 
     def _sev_rank(self) -> dict:

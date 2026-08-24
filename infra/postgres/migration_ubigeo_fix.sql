@@ -1,12 +1,12 @@
--- migration_ubigeo_fix.sql — correct Lima Province INEI district codes.
+-- migration_ubigeo_fix.sql: correct Lima Province INEI district codes.
 --
 -- Bug: scripts/load_lima_geodata.py listed "Magdalena Vieja" at 150121 and
 -- "Pueblo Libre" at 150125. They are the same district (Pueblo Libre is the
 -- modern name of Magdalena Vieja, INEI 150121), so every code from 150125
 -- onward was shifted by +1 and a non-existent 150144 was invented.
 --
--- Operator impact: San Juan de Lurigancho — the demo COEL district and one of
--- the highest-risk huayco districts — carried 150133, which is really San Juan
+-- Operator impact: San Juan de Lurigancho, the demo COEL district and one of
+-- the highest-risk huayco districts: carried 150133, which is really San Juan
 -- de Miraflores. Santiago de Surco, Villa El Salvador, Villa María del Triunfo,
 -- Rímac and 15 others were likewise off by one. These codes are surfaced to
 -- operators and written into EDAN-Perú exports, so they must match INEI.
@@ -65,7 +65,7 @@ ORDER BY i.ubigeo;
 -- Two-step swap: codes are shifted by one, so a direct UPDATE would collide
 -- with the unique constraint mid-flight. Park the affected rows on a 'Z'-prefixed
 -- placeholder first, then write the correct codes. The placeholder has to stay
--- six characters wide — geo.districts.ubigeo is CHAR(6).
+-- six characters wide: geo.districts.ubigeo is CHAR(6).
 UPDATE geo.districts d
 SET ubigeo = 'Z' || right(trim(d.ubigeo), 5)
 FROM inei_lima_districts i

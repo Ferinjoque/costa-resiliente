@@ -1,13 +1,13 @@
-# Responsible Data Handling — Costa Resiliente
+# Responsible Data Handling: Costa Resiliente
 
 ## Legal Basis
 
 - **Peru Ley 29733** (Ley de Protección de Datos Personales) + **DS 016-2024-JUS**
-  (2025 Reglamento revision) — governs PII handling for citizen-sourced data
-- **OCHA Data Responsibility Guidelines** (2025 revision) — humanitarian data
+  (2025 Reglamento revision): governs PII handling for citizen-sourced data
+- **OCHA Data Responsibility Guidelines** (2025 revision): humanitarian data
   principles: do no harm, purpose limitation, data minimization
 - **IASC Operational Guidance on Data Responsibility in Humanitarian Action**
-  (April 2023) — SINAGERD operational context
+  (April 2023): SINAGERD operational context
 
 ## Implementation Commitments (Code, Not Aspirations)
 
@@ -43,9 +43,9 @@ the schema, and the flow only deletes rows the schema already marked expired.
 
 | Data type | Retention | Mechanism |
 |-----------|-----------|-----------|
-| Raw social firehose (social.signals) | 7 days | `retention-daily` flow — `DELETE WHERE expires_at < NOW()` |
+| Raw social firehose (social.signals) | 7 days | `retention-daily` flow: `DELETE WHERE expires_at < NOW()` |
 | Resolved alerts (closed / false_positive) | 90 days | `retention-daily` flow |
-| Share tokens | 30 days | `retention-daily` flow — `expires_at` |
+| Share tokens | 30 days | `retention-daily` flow: `expires_at` |
 | Security events (guardrail trips) | 180 days | `retention-daily` flow |
 | Derived non-PII features | 12 months | Prefect scheduled cleanup flow |
 | Aggregated statistics | Indefinite | No deletion |
@@ -81,7 +81,7 @@ Social signal content is treated as fully untrusted:
 - Sandboxed in `<SEÑAL>...</SEÑAL>` XML tags, never interpolated into system prompt
 - Triage prompt instructs model to ignore instructions inside tags
 - Aegis-style cognitive firewall: separate model calls for triage vs. operator context
-- Operator copilot never receives raw signal content — only structured DB fields
+- Operator copilot never receives raw signal content, only structured DB fields
 
 ## Audit Trail
 

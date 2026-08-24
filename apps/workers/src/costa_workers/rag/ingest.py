@@ -9,7 +9,7 @@ Sources bundled:
   - CENEPRED Susceptibilidad por movimientos en masa (public)
   - MINSA Protocolo de emergencias y desastres (public)
   - SENAMHI Guía hidrometeorológica (public)
-  - Plan Lima ante huaycos — Municipalidad Metropolitana de Lima (public)
+  - Plan Lima ante huaycos: Municipalidad Metropolitana de Lima (public)
 
 Documents are plain-text .txt files in data/protocols/{source_key}.txt.
 To add a new source: add the .txt file and re-run index_protocols_flow().
@@ -58,19 +58,19 @@ _DB_DSN = (
 # Protocol metadata: {filename_stem: (source_key, title, lang)}
 PROTOCOL_REGISTRY: dict[str, tuple[str, str, str]] = {
     "indeci_plan_familiar_2024":
-        ("INDECI_Plan_Familiar_2024", "Plan Familiar de Emergencia 2024 — INDECI", "es"),
+        ("INDECI_Plan_Familiar_2024", "Plan Familiar de Emergencia 2024: INDECI", "es"),
     "cenepred_movimientos_masa":
-        ("CENEPRED_Movimientos_Masa", "Susceptibilidad por Movimientos en Masa — CENEPRED", "es"),
+        ("CENEPRED_Movimientos_Masa", "Susceptibilidad por Movimientos en Masa: CENEPRED", "es"),
     "minsa_protocolo_emergencias":
-        ("MINSA_Protocolo_Emergencias", "Protocolo de Emergencias y Desastres — MINSA", "es"),
+        ("MINSA_Protocolo_Emergencias", "Protocolo de Emergencias y Desastres: MINSA", "es"),
     "senamhi_guia_hidrometeorologica":
-        ("SENAMHI_Guia_Hidro", "Guía Hidrometeorológica — SENAMHI", "es"),
+        ("SENAMHI_Guia_Hidro", "Guía Hidrometeorológica: SENAMHI", "es"),
     "mml_plan_huaycos_lima":
-        ("MML_Plan_Huaycos", "Plan Lima ante Huaycos — Municipalidad Metropolitana", "es"),
+        ("MML_Plan_Huaycos", "Plan Lima ante Huaycos: Municipalidad Metropolitana", "es"),
     "ana_umbrales_lluvia_lima":
-        ("ANA_Umbrales_Lluvia", "Umbrales de Lluvia para Alertas Lima — ANA / INDECI", "es"),
+        ("ANA_Umbrales_Lluvia", "Umbrales de Lluvia para Alertas Lima: ANA / INDECI", "es"),
     "sinagerd_acciones_rapidas":
-        ("SINAGERD_Acciones_Rapidas", "Guía de Acciones Rápidas SINAGERD — COER Lima", "es"),
+        ("SINAGERD_Acciones_Rapidas", "Guía de Acciones Rápidas SINAGERD: COER Lima", "es"),
 }
 
 
@@ -164,7 +164,7 @@ async def index_protocols(dry_run: bool = False) -> dict:
             chunks = chunk_text(text)
             stats["total_files"] += 1
             stats["total_chunks"] += len(chunks)
-            logger.info("Indexing %s — %d chunks", source, len(chunks))
+            logger.info("Indexing %s: %d chunks", source, len(chunks))
 
             for i, chunk in enumerate(chunks):
                 if dry_run:

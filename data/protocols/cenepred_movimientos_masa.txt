@@ -1,11 +1,11 @@
 SUSCEPTIBILIDAD POR MOVIMIENTOS EN MASA EN LIMA METROPOLITANA
-Centro Nacional de Estimación, Prevención y Reducción del Riesgo de Desastres — CENEPRED
+Centro Nacional de Estimación, Prevención y Reducción del Riesgo de Desastres. CENEPRED
 
 DEFINICIONES
 
 Movimientos en masa: desplazamiento de suelos, rocas o detritos por efecto de la gravedad, acelerados por lluvia intensa, sismos o saturación del suelo. Incluyen: huaycos, deslizamientos, derrumbes y flujos de lodo.
 
-Huayco (aluvión): flujo rápido de mezcla de agua, sedimentos y rocas por quebradas andinas. Velocidad típica: 3–10 m/s. Distancia de viaje: 1–15 km desde la cabecera de la quebrada. Triggerado por: lluvia acumulada > 30 mm en 24h en la cabecera de cuenca.
+Huayco (aluvión): flujo rápido de mezcla de agua, sedimentos y rocas por quebradas andinas. Velocidad típica: 3-10 m/s. Distancia de viaje: 1-15 km desde la cabecera de la quebrada. Triggerado por: lluvia acumulada > 30 mm en 24h en la cabecera de cuenca.
 
 Umbral de alerta temprana CENEPRED:
 - Lluvia 24h en cuenca alta ≥ 20 mm: VIGILANCIA
@@ -16,28 +16,28 @@ QUEBRADAS CRÍTICAS EN LIMA METROPOLITANA
 
 Las 10 quebradas de mayor riesgo según el Inventario Nacional de Peligros Geológicos:
 
-1. Quebrada Pedregal (Carabayllo) — Cuenca: Chillón. Exposición: 3,200 hab. en zona de influencia directa.
-2. Quebrada Quirio (Chosica, Lurigancho) — Cuenca: Rímac. Exposición: 2,100 hab. Historial de eventos: 1987, 2015, 2017.
-3. Quebrada Carossio (Chosica, Lurigancho) — Cuenca: Rímac. Exposición: 1,800 hab.
-4. Quebrada Huaycoloro (Lurigancho-Chosica) — Cuenca: Rímac. Desemboca al Río Rímac. Mayor frecuencia de eventos.
-5. Quebrada Rímac (Sector Chosica) — Cuenca: Rímac. Exposición alta: zona urbana consolidada.
-6. Quebrada Manchay (Pachacámac) — Cuenca: Lurín. Expansión urbana informal en zona de riesgo.
-7. Quebrada La Molina (Ate, La Molina) — Cuenca: Rímac/Lurín. Crecimiento urbano en lecho de quebrada seca.
-8. Quebrada Cieneguilla (Cieneguilla) — Cuenca: Lurín. Baja densidad poblacional actual, alto potencial de expansión.
-9. Quebrada Pampa de Comas (Comas) — Cuenca: Chillón. Asentamientos informales en ladera.
-10. Quebrada Surco (Surco, Santiago de Surco) — Cuenca: Rímac. Parcialmente urbanizada; tramo bajo canalizado.
+1. Quebrada Pedregal (Carabayllo). Cuenca: Chillón. Exposición: 3,200 hab. en zona de influencia directa.
+2. Quebrada Quirio (Chosica, Lurigancho). Cuenca: Rímac. Exposición: 2,100 hab. Historial de eventos: 1987, 2015, 2017.
+3. Quebrada Carossio (Chosica, Lurigancho). Cuenca: Rímac. Exposición: 1,800 hab.
+4. Quebrada Huaycoloro (Lurigancho-Chosica). Cuenca: Rímac. Desemboca al Río Rímac. Mayor frecuencia de eventos.
+5. Quebrada Rímac (Sector Chosica). Cuenca: Rímac. Exposición alta: zona urbana consolidada.
+6. Quebrada Manchay (Pachacámac). Cuenca: Lurín. Expansión urbana informal en zona de riesgo.
+7. Quebrada La Molina (Ate, La Molina). Cuenca: Rímac/Lurín. Crecimiento urbano en lecho de quebrada seca.
+8. Quebrada Cieneguilla (Cieneguilla). Cuenca: Lurín. Baja densidad poblacional actual, alto potencial de expansión.
+9. Quebrada Pampa de Comas (Comas). Cuenca: Chillón. Asentamientos informales en ladera.
+10. Quebrada Surco (Surco, Santiago de Surco). Cuenca: Rímac. Parcialmente urbanizada; tramo bajo canalizado.
 
 NIVELES DE SUSCEPTIBILIDAD
 
 - MUY ALTA: quebrada activa, pendiente > 25°, litología inestable, sin vegetación. Ocurrencia reciente (< 10 años).
-- ALTA: quebrada activa o semiactiva, pendiente 15°–25°, sin obras de control. Ocurrencia histórica.
-- MEDIA: terreno con potencial de inestabilidad, pendiente 10°–15°. Sin evento reciente documentado.
+- ALTA: quebrada activa o semiactiva, pendiente 15°-25°, sin obras de control. Ocurrencia histórica.
+- MEDIA: terreno con potencial de inestabilidad, pendiente 10°-15°. Sin evento reciente documentado.
 - BAJA: terreno relativamente estable, pendiente < 10°. Bajo historial de eventos.
 
 FACTORES CONDICIONANTES Y DESENCADENANTES
 
 Factores condicionantes (permanentes):
-- Pendiente: > 30° en cabecera, 5°–15° en zona de deposición.
+- Pendiente: > 30° en cabecera, 5°-15° en zona de deposición.
 - Litología: depósitos cuaternarios no consolidados, suelos residuales, arenas sueltas.
 - Geomorfología: conos aluviales, abanicos torrenciales, coluvios.
 - Cobertura vegetal: escasa o nula aumenta la susceptibilidad.
@@ -60,12 +60,12 @@ Signos que preceden o acompañan un huayco:
 
 ACCIONES DE RESPUESTA POR NIVEL
 
-VIGILANCIA (lluvia 20–29 mm/24h):
+VIGILANCIA (lluvia 20-29 mm/24h):
 - Activar brigadas de vigilancia de quebradas.
 - Informar a la población de la activación del sistema.
 - Preparar albergues de emergencia.
 
-ALERTA TEMPRANA (lluvia 30–41 mm/24h):
+ALERTA TEMPRANA (lluvia 30-41 mm/24h):
 - Evacuar preventivamente a familias en zona de influencia directa.
 - Cerrar vías de acceso a quebradas (barreras físicas).
 - Activar COEN y COER Lima.

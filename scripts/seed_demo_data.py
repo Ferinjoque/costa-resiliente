@@ -32,7 +32,7 @@ ALERTS = [
         "type": "flood",
         "severity": "high",
         "status": "active",
-        "title": "Inundación activa — Sector Huachipa",
+        "title": "Inundación activa: Sector Huachipa",
         "description": "Desborde del río Rímac detectado por Sentinel-1 (SAR). Área afectada: ~1.8 km². Afecta zonas agrícolas y residenciales.",
         "lon": -76.8800, "lat": -11.9500,
         "created_offset_h": 2.5,
@@ -41,7 +41,7 @@ ALERTS = [
         "type": "huayco",
         "severity": "critical",
         "status": "active",
-        "title": "Riesgo crítico de huayco — Quebrada Jicamarca",
+        "title": "Riesgo crítico de huayco: Quebrada Jicamarca",
         "description": "Precipitación acumulada 24h supera umbral (42 mm). Modelo XGBoost: probabilidad 0.91. Evacuar zona baja.",
         "lon": -76.9200, "lat": -11.9100,
         "created_offset_h": 1.0,
@@ -50,7 +50,7 @@ ALERTS = [
         "type": "flood",
         "severity": "medium",
         "status": "active",
-        "title": "Nivel del río Rímac elevado — Estación Chosica",
+        "title": "Nivel del río Rímac elevado: Estación Chosica",
         "description": "Nivel actual: 2.4 m (umbral de alerta: 2.0 m). Tendencia ascendente.",
         "lon": -76.6950, "lat": -11.9380,
         "created_offset_h": 4.0,
@@ -59,7 +59,7 @@ ALERTS = [
         "type": "social_cluster",
         "severity": "medium",
         "status": "active",
-        "title": "Cluster social — reportes de bloqueo vial en La Molina",
+        "title": "Cluster social: reportes de bloqueo vial en La Molina",
         "description": "8 publicaciones geolocalizadas en 15 min. Triage: 6 × 'road_blocked', 2 × 'infrastructure_damage'.",
         "lon": -76.9450, "lat": -12.0800,
         "created_offset_h": 0.5,
@@ -68,7 +68,7 @@ ALERTS = [
         "type": "flood",
         "severity": "high",
         "status": "acknowledged",
-        "title": "Inundación contenida — Sector Ñaña",
+        "title": "Inundación contenida: Sector Ñaña",
         "description": "Desborde menor controlado por defensa ribereña. Monitoreo continuo activo.",
         "lon": -76.8200, "lat": -11.9800,
         "created_offset_h": 8.0,
@@ -77,7 +77,7 @@ ALERTS = [
         "type": "huayco",
         "severity": "low",
         "status": "active",
-        "title": "Alerta temprana — Quebrada Canto Grande",
+        "title": "Alerta temprana: Quebrada Canto Grande",
         "description": "Precipitación 24h: 18 mm (umbral: 35 mm). Susceptibilidad moderada. Vigilancia preventiva.",
         "lon": -76.9900, "lat": -11.9350,
         "created_offset_h": 3.0,
@@ -227,7 +227,7 @@ async def seed_huayco(conn: asyncpg.Connection) -> int:
     # Check we have quebradas
     n = await conn.fetchval("SELECT COUNT(*) FROM geo.quebradas")
     if n == 0:
-        print("  WARN: No quebradas found — run load_lima_geodata.py first")
+        print("  WARN: No quebradas found, run load_lima_geodata.py first")
         return 0
 
     count = 0
@@ -348,7 +348,7 @@ STATIONS = [
 ]
 
 STATION_OBS = [
-    # Chosica (code ANA-001) — elevated, trending up
+    # Chosica (code ANA-001): elevated, trending up
     {"code": "ANA-001-DEMO", "h": 0,   "level": 2.41, "flow": 68.2, "rain": 1.2},
     {"code": "ANA-001-DEMO", "h": 1,   "level": 2.28, "flow": 61.4, "rain": 3.8},
     {"code": "ANA-001-DEMO", "h": 3,   "level": 2.05, "flow": 52.1, "rain": 7.2},
@@ -444,7 +444,7 @@ async def seed_stations(conn: asyncpg.Connection) -> int:
 
 
 async def main() -> None:
-    print("Costa Resiliente — demo data seeder")
+    print("Costa Resiliente: demo data seeder")
     print(f"Connecting to {DSN.split('@')[-1]}...\n")
 
     conn = await asyncpg.connect(DSN)
