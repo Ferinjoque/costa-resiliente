@@ -290,9 +290,9 @@ export function OperatorChip() {
                 setConfirmingLogout(false);
                 logout();
               }}
-              className="flex-1 px-2 py-1.5 rounded-lg text-2xs font-semibold text-surface bg-danger hover:opacity-90 transition-opacity"
+              className="flex-1 px-2 py-1.5 rounded-lg text-2xs font-semibold text-surface bg-danger hover:opacity-90 transition-opacity whitespace-nowrap"
             >
-              {es ? "Cerrar sesión" : "Sign out"}
+              {es ? "Salir" : "Sign out"}
             </button>
           </div>
         </div>
