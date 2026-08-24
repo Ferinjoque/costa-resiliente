@@ -112,6 +112,13 @@ const ACTION_META: Record<
   resource_dispatch:      { es: "Despacho recurso",    en: "Resource dispatch", icon: Truck,         variant: "warn"     },
   protocol_step:          { es: "Paso de protocolo",   en: "Protocol step",     icon: ChevronRight,  variant: "default"  },
   field_report:           { es: "Reporte de campo",    en: "Field report",      icon: FileText,      variant: "accent"   },
+  // Written by POST /alerts/{id}/action, which prefixes the action with the
+  // alert it belongs to. Without these the chips fall through to the raw column
+  // value and read as "alert dispatch".
+  alert_dispatch:         { es: "Recurso despachado",  en: "Resource dispatched", icon: Truck,       variant: "warn"     },
+  alert_note:             { es: "Nota de alerta",      en: "Alert note",         icon: FileText,     variant: "default"  },
+  checklist:              { es: "Lista verificada",    en: "Checklist item",     icon: CheckSquare,  variant: "default"  },
+  note:                   { es: "Nota",                en: "Note",               icon: FileText,     variant: "default"  },
   // HITL proposal actions (Session 23)
   create_proposal:        { es: "Propuesta creada",    en: "Proposal created",  icon: AlertTriangle, variant: "warn"     },
   approve_proposal:       { es: "Propuesta aprobada",  en: "Proposal approved", icon: CheckCircle,   variant: "accent"   },
@@ -222,7 +229,6 @@ export function DecisionLogPanel() {
           className="gap-1"
         >
           <Download size={13} />
-          <span className="hidden sm:inline">CSV</span>
         </Button>
 
         {/* Export PDF (EDAN-Perú report) */}
@@ -242,8 +248,9 @@ export function DecisionLogPanel() {
             title={locale === "es" ? "Informe situacional EDAN-Perú (PDF)" : "EDAN-Perú situational report (PDF)"}
             className="gap-1"
           >
-            <Download size={13} />
-            <span className="hidden sm:inline">PDF</span>
+            {/* Distinct from the CSV download beside it: two identical arrows
+                give the operator no way to tell the exports apart. */}
+            <FileText size={13} />
           </Button>
         )}
 
@@ -311,7 +318,13 @@ export function DecisionLogPanel() {
         {entries.map((entry) => {
           const meta = ACTION_META[entry.action_type];
           const Icon = meta?.icon ?? ChevronRight;
-          const label = meta ? meta[locale] : entry.action_type.replace(/_/g, " ");
+          // Anything not in the table still reads as a label rather than a
+          // column value: alert_dispatch becomes "Alert dispatch", not
+          // "alert dispatch".
+          const fallback = entry.action_type
+            .replace(/_/g, " ")
+            .replace(/^./, (c) => c.toUpperCase());
+          const label = meta ? meta[locale] : fallback;
           const variant = meta?.variant ?? "default";
           const preview = payloadPreview(entry);
 

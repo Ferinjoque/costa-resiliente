@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  ChevronDown, ChevronUp, Target, Loader2, X,
+  ChevronDown, ChevronUp, Target, Loader2, X, Lock,
 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useDistrictList, useProvinces } from "@/lib/queries";
@@ -80,7 +80,7 @@ export function ScenarioPanel() {
         <div className="border-t border-border-subtle">
           {isShareMode && (
             <div className="mx-4 mt-3 px-3 py-2 bg-warn-soft border border-warn/30 rounded-xl text-xs text-warn-muted flex items-center gap-2">
-              <span>🔒</span>
+              <Lock size={13} strokeWidth={1.75} className="shrink-0" aria-hidden="true" />
               <span>{L(locale, "Vista de solo lectura", "Read-only view")}</span>
             </div>
           )}

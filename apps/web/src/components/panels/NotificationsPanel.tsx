@@ -25,7 +25,9 @@ import { timeAgo } from "@/lib/utils";
 const CHANNEL_LABEL: Record<string, { es: string; en: string }> = {
   webhook:  { es: "Webhook",  en: "Webhook"  },
   email:    { es: "Email",    en: "Email"    },
-  sms_stub: { es: "SMS (demo)", en: "SMS (demo)" },
+  sms:      { es: "SMS",      en: "SMS"      },
+  // Legacy rows created before the Twilio channel existed.
+  sms_stub: { es: "SMS",      en: "SMS"      },
 };
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
@@ -42,7 +44,7 @@ const SEV_OPTIONS = ["critical", "high", "medium", "low"] as const;
 function AddSubscriberForm({ locale, onClose }: { locale: "es" | "en"; onClose: () => void }) {
   const qc = useQueryClient();
   const { addToast } = useUIStore();
-  const [channel, setChannel] = useState<"webhook" | "email" | "sms_stub">("webhook");
+  const [channel, setChannel] = useState<"webhook" | "email" | "sms">("webhook");
   const [target, setTarget] = useState("");
   const [label, setLabel] = useState("");
   const [sevMin, setSevMin] = useState<"critical" | "high" | "medium" | "low">("high");
@@ -89,7 +91,7 @@ function AddSubscriberForm({ locale, onClose }: { locale: "es" | "en"; onClose: 
 
       {/* Channel */}
       <div className="flex gap-1 flex-wrap">
-        {(["webhook", "email", "sms_stub"] as const).map((ch) => (
+        {(["webhook", "email", "sms"] as const).map((ch) => (
           <button
             key={ch}
             type="button"
@@ -157,10 +159,10 @@ function AddSubscriberForm({ locale, onClose }: { locale: "es" | "en"; onClose: 
       {error && <p className="text-xs text-danger">{error}</p>}
 
       {channel !== "webhook" && (
-        <p className="text-2xs text-ink-subtle italic">
+        <p className="text-2xs text-ink-subtle">
           {locale === "es"
-            ? "Email y SMS en modo demo (sin envío real). Solo webhook POST está activo."
-            : "Email and SMS are demo-only (no real send). Only webhook POST is active."}
+            ? "SMS requiere credenciales Twilio en el servidor; email requiere SMTP. Sin ellas, el envío queda registrado en el log de entregas."
+            : "SMS needs Twilio credentials on the server and email needs SMTP. Without them the attempt is recorded in the delivery log."}
         </p>
       )}
 

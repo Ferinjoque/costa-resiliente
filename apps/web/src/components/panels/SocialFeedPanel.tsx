@@ -49,12 +49,46 @@ const SOURCE_LABEL: Record<string, string> = {
   reddit:   "Reddit",
   campo:    "Campo",
   rss:      "RSS",
-  rss_rpp:  "RSS RPP",
 };
+
+// The scrapers name each feed after its outlet, so the raw values arrive as
+// rss_rpp_noticias, rss_canal_n, rss_andina. Rendering those verbatim puts
+// "Rss_andina" on a chip, so the prefix becomes the source and the remainder
+// becomes the outlet, with the known mastheads spelled the way Peru writes them.
+const OUTLET_LABEL: Record<string, string> = {
+  rpp:          "RPP",
+  rpp_noticias: "RPP",
+  canal_n:      "Canal N",
+  andina:       "Andina",
+  el_comercio:  "El Comercio",
+  la_republica: "La República",
+  peru21:       "Perú21",
+  gestion:      "Gestión",
+  senamhi:      "SENAMHI",
+  indeci:       "INDECI",
+  coen:         "COEN",
+};
+
+function titleCase(value: string): string {
+  return value
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
 
 function formatSource(src: string): string {
   const key = src.toLowerCase();
-  return SOURCE_LABEL[key] ?? src.charAt(0).toUpperCase() + src.slice(1);
+  if (SOURCE_LABEL[key]) return SOURCE_LABEL[key];
+
+  const underscore = key.indexOf("_");
+  if (underscore > 0) {
+    const prefix = key.slice(0, underscore);
+    const rest = key.slice(underscore + 1);
+    const base = SOURCE_LABEL[prefix] ?? titleCase(prefix);
+    return `${base} ${OUTLET_LABEL[rest] ?? titleCase(rest)}`;
+  }
+  return titleCase(key);
 }
 
 function isSafeUrl(url: string): boolean {
@@ -603,16 +637,6 @@ export function SocialFeedPanel() {
         {(["bluesky", "telegram", "reddit", "campo"] as const).map((src) => (
           <Pill key={src} variant="default">{formatSource(src)}</Pill>
         ))}
-        <span
-          className="text-xs text-ink-subtle ml-auto cursor-help"
-          title={
-            locale === "es"
-              ? "Señales clasificadas automáticamente por IA. Datos personales anonimizados antes del almacenamiento."
-              : "Signals classified automatically by AI. Personal data anonymised before storage."
-          }
-        >
-          {locale === "es" ? "IA · anonimizado" : "AI · anonymised"}
-        </span>
       </div>
 
       {/* Feed */}

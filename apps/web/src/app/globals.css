@@ -318,6 +318,15 @@ html, body {
   font-family: var(--font-mono, 'JetBrains Mono', monospace) !important;
   letter-spacing: 0.04em !important;
 }
+/* driver.js ships a white 1px text-shadow on its buttons. On the blue Next
+   button that reads as the label printed twice, slightly offset. */
+.driver-popover button,
+.driver-popover-next-btn,
+.driver-popover-prev-btn,
+.driver-popover-done-btn,
+.driver-popover-close-btn {
+  text-shadow: none !important;
+}
 .driver-popover-next-btn,
 .driver-popover-done-btn {
   background: oklch(47% 0.12 210) !important;

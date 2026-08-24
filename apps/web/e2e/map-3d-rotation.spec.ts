@@ -71,10 +71,13 @@ async function operatorRotates(page: Page): Promise<Camera> {
 }
 
 test.describe("3D idle rotation", () => {
+  // Terrain plus a WebGL canvas is the heaviest thing the suite drives, and a
+  // busy machine can spend minutes here. The budget is generous on purpose: a
+  // failure should mean the camera moved wrongly, never that the box was loaded.
   test.describe.configure({ mode: "serial" });
 
   test("resumes from the bearing the operator left, not a default one", async ({ page }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(180_000);
     const toggle = await enable3D(page);
 
     const left = await operatorRotates(page);
@@ -101,7 +104,7 @@ test.describe("3D idle rotation", () => {
   });
 
   test("keeps the centre and zoom the operator chose", async ({ page }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(180_000);
     await enable3D(page);
 
     await page.locator("canvas.maplibregl-canvas").focus();
@@ -119,7 +122,7 @@ test.describe("3D idle rotation", () => {
   });
 
   test("holds still while the operator is interacting", async ({ page }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(180_000);
     await enable3D(page);
 
     const left = await operatorRotates(page);

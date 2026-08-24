@@ -299,6 +299,18 @@ export function AskPanel() {
     if (activePanel === "ask") setTimeout(() => inputRef.current?.focus(), 120);
   }, [activePanel]);
 
+  // Hooks must run on every render, so these sit above the early return below.
+  // A question held back by a 401, resent as soon as a session exists.
+  const pendingQueryRef = useRef<string | null>(null);
+  const submitRef = useRef<((q: string) => Promise<void>) | null>(null);
+
+  useEffect(() => {
+    if (!operator || !pendingQueryRef.current) return;
+    const held = pendingQueryRef.current;
+    pendingQueryRef.current = null;
+    void submitRef.current?.(held);
+  }, [operator]);
+
   if (activePanel !== "ask") return null;
 
   const es = locale === "es";
@@ -336,6 +348,7 @@ export function AskPanel() {
     }, 10);
   }
 
+  // Question held back by a 401, resent as soon as a session exists.
   const submit = async (q: string) => {
     const trimmed = q.trim();
     if (!trimmed || loading) return;
@@ -381,8 +394,18 @@ export function AskPanel() {
       let isRedacted = false;
       let isQuickMode = false;
       if (res.status === 401) {
+        // Hold the question and resend it once they are signed in. Making the
+        // operator retype a query they already sent, mid-emergency, is the worst
+        // possible moment to lose their words.
+        pendingQueryRef.current = trimmed;
         useAuthStore.getState().logout();
-        useAuthStore.getState().setLoginModalOpen(true);
+        useAuthStore.getState().promptLogin();
+        const noticeId = Math.random().toString(36).slice(2);
+        const notice = es
+          ? "Inicia sesión para consultar al copiloto. Tu pregunta se enviará automáticamente."
+          : "Sign in to query the copilot. Your question will be sent automatically.";
+        setMessages((prev) => [...prev, { id: noticeId, role: "assistant", content: notice, displayed: "" }]);
+        animateMessage(notice, noticeId);
         setLoading(false);
         return;
       } else if (res.status === 429) {
@@ -439,6 +462,10 @@ export function AskPanel() {
       setLoading(false);
     }
   };
+
+  // Kept in a ref so the sign-in effect above can call the latest closure
+  // without listing submit as a dependency.
+  submitRef.current = submit;
 
   const clearChat = () => {
     if (typewriterRef.current) clearInterval(typewriterRef.current);
