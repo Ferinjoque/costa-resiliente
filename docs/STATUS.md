@@ -1256,3 +1256,39 @@ consumes demo alerts.**
 
 **Verified after all of the above:** 714 API tests, 182 worker tests (8 skipped), tsc clean,
 build 188 kB, 9 containers healthy, `/health` back to `EMERGENCIA · 7 active alerts`.
+
+### Session 24 audit — what a full sweep actually found
+
+Answering "is anything else pending?" by testing every surface rather than trusting the docs.
+
+**Working, verified live:** all 9 containers · 719 API tests · 182 worker tests · 21 frontend
+tests · copilot SITREP (6 tools, ~1.3 s) · RAG protocol retrieval · quick-mode · EDAN CSV + PDF
+export · share tokens · proposals · notifications · fusion · shelters · 20 districts · tutorial
+wiring · live ingestion (Bluesky 147, RSS 88, IMERG 2 568, stations 2 357 rows, all `ok`).
+
+**Defects found and fixed during the audit:**
+
+1. **Copilot leaked raw tool-call JSON.** A free-form question returned
+   `Ronaldo\n{"name": "get_active_alerts", ...}`. qwen2.5 sometimes emits tool calls as text and
+   `extract_tool_calls` only read the structured field. Fixed in two layers, +5 tests.
+2. **The demo could not be reset.** `POST /health/seed` returned early whenever any alert row
+   existed and skipped alerts by title regardless of status, so a consumed scenario stayed
+   consumed. Fixed, +2 tests.
+3. **Empty audit trail on a fresh install.** The Bitácora panel and both EDAN exports contained
+   nothing until an operator clicked something. Now seeds an opening shift of 5 entries.
+4. **No frontend tests existed at all.** Added 21 (vitest).
+5. **Synthetic flood polygons were indistinguishable from real detections.** Now labelled in the
+   popup and documented honestly.
+
+**Known limitations, stated rather than hidden:**
+
+| Area | Reality |
+|---|---|
+| SAR flood U-Net | Inference path implemented and unit-tested, but no publishable Sen1Floods11 *U-Net* checkpoint exists (the loader's HF repo 401s; published Sen1Floods11 models are Prithvi-EO optical, not SAR). Map shows labelled synthetic polygons. |
+| Huayco XGBoost | Scores live IMERG accumulations, but the ensemble is not fitted on a labelled Lima inventory — `xgboost-v0.1-demo-refresh`. |
+| Reddit / Telegram | `stale` — best-effort sources, excluded from the core health computation by design. |
+| Sentinel-1 ingest | Last real scene May 2026; flood source reads `offline`. |
+| E2E / visual regression | Not present. Unit tests cover pure logic only. |
+
+**The remaining deliverable is still the 2–5 minute demo video.** Run `POST /api/v1/health/seed`
+first — the API test suite acts on real alert rows and consumes the demo scenario.
