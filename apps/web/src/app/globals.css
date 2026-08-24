@@ -259,6 +259,19 @@ html, body {
   font-size: 10px !important;
   color: oklch(40% 0.006 240) !important;
 }
+/* Lay the bottom-right stack out as a row so the scale bar sits beside the zoom
+   buttons rather than above them, aligned on their bottom edges. MapLibre
+   prepends each control it is given, so plain `row` leaves the zoom group hard
+   against the edge with the scale to its left. */
+.maplibregl-ctrl-bottom-right {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+}
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-scale {
+  margin-bottom: 10px;
+}
+
 .maplibregl-ctrl-scale {
   background: oklch(97.5% 0.006 80 / 0.85) !important;
   border-color: oklch(78% 0.009 80) !important;
