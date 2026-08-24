@@ -313,7 +313,7 @@ const ACTION_TOAST: Record<string, { es: string; en: string }> = {
 function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
   const qc = useQueryClient();
   const { setFlyToPoint, addToast } = useUIStore();
-  const { operator } = useAuthStore();
+  const { operator, promptLogin } = useAuthStore();
   const operatorId = operator?.username ?? DEFAULT_OPERATOR_ID;
   const Icon = TYPE_ICON[alert.type] ?? Bell;
   const tr = useT(locale);
@@ -363,8 +363,8 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
             : `Rate limited. Wait ${(e as RateLimitError).retryAfter}s before retrying.`)
         : isAuthError
         ? (locale === "es"
-            ? `Sesión expirada. Por favor, inicia sesión nuevamente.`
-            : `Session expired. Please sign in again.`)
+            ? `Inicia sesión para registrar esta acción.`
+            : `Sign in to register this action.`)
         : (locale === "es"
             ? `No se pudo registrar la acción. Verifica conectividad e inténtalo de nuevo.`
             : `Could not register the action. Check connectivity and retry.`);
@@ -372,8 +372,11 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
         message: errMsg,
         variant: "danger",
       } as Omit<LiveToast, "id" | "at">);
-      // re-throw in dev so it surfaces; in prod, swallow to keep UI alive
-      if (process.env.NODE_ENV !== "production") throw e;
+      // The operator asked for something that needs a session, so offer one.
+      if (isAuthError) promptLogin();
+      // Logged rather than rethrown: this path is already handled, and throwing
+      // only raises the Next.js error overlay on top of the operator's console.
+      console.error("alert action failed", e);
     } finally {
       setActing(false);
     }
@@ -678,7 +681,7 @@ const RESOURCES: Resource[] = [
 
 function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en" }) {
   const { addToast } = useUIStore();
-  const { operator } = useAuthStore();
+  const { operator, promptLogin } = useAuthStore();
   const operatorId = operator?.username ?? DEFAULT_OPERATOR_ID;
   const [dispatched, setDispatched] = useState<Map<ResourceId, string>>(new Map());
   const active   = alerts.filter((a) => a.status === "active");
@@ -711,9 +714,17 @@ function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en
         message: locale === "es" ? `${label} despachado, registrado en log` : `${label} dispatched, logged`,
         variant: "success",
       } as Omit<LiveToast, "id" | "at">);
-    } catch {
+    } catch (e) {
+      const needsLogin = e instanceof AuthError;
+      if (needsLogin) promptLogin();
       addToast({
-        message: locale === "es" ? `${label} despachado (log no disponible)` : `${label} dispatched (log unavailable)`,
+        message: needsLogin
+          ? (locale === "es"
+              ? `Inicia sesión para registrar el despacho de ${label}.`
+              : `Sign in to log the ${label} dispatch.`)
+          : (locale === "es"
+              ? `${label} despachado, sin registro en el log.`
+              : `${label} dispatched, not written to the log.`),
         variant: "warn",
       } as Omit<LiveToast, "id" | "at">);
     }
@@ -772,7 +783,7 @@ function QuickDispatch({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en
 
 function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | "en" }) {
   const { addToast } = useUIStore();
-  const { operator } = useAuthStore();
+  const { operator, promptLogin } = useAuthStore();
   const operatorId = operator?.username ?? DEFAULT_OPERATOR_ID;
   const [collapsed, setCollapsed] = useState(true);
   // Persist checked steps in sessionStorage (tab-scoped) so state survives panel open/close.
@@ -863,11 +874,17 @@ function ResponseProtocol({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
             variant: "info",
           } as Omit<LiveToast, "id" | "at">);
         }
-      } catch {
+      } catch (e) {
+        const needsLogin = e instanceof AuthError;
+        if (needsLogin) promptLogin();
         addToast({
-          message: locale === "es"
-            ? "Paso marcado localmente: no se pudo registrar en el log. Verifica conectividad."
-            : "Step marked locally: could not log to server. Check connectivity.",
+          message: needsLogin
+            ? (locale === "es"
+                ? "Inicia sesión para registrar el avance del protocolo."
+                : "Sign in to record protocol progress.")
+            : (locale === "es"
+                ? "Paso marcado localmente, sin registro en el log."
+                : "Step marked locally, not written to the log."),
           variant: "warn",
         } as Omit<LiveToast, "id" | "at">);
       }
@@ -990,31 +1007,43 @@ export function AlertsPanel() {
   // Track which alert IDs have already triggered a breach toast this session
   const notifiedBreachIds = useRef<Set<number>>(new Set());
 
-  // Fire a danger toast whenever an active alert crosses its SLA threshold.
-  // Prune notified IDs that are no longer in the active alert set so a new
-  // alert reusing a previously-closed ID gets its breach toast correctly.
+  // Have we recorded the breaches that already existed when the panel opened?
+  const breachBaselineTaken = useRef(false);
+
+  // Fire a danger toast when an active alert crosses its SLA threshold while the
+  // operator is watching.
+  //
+  // Two things this must not do. It must not re-announce a breach when the
+  // province or severity chips change: those filter the visible list, so the
+  // pruning below reads the UNFILTERED set, otherwise every alert outside the
+  // current filter looks resolved and gets announced again on the way back. And
+  // it must not empty a whole shift's worth of overdue alerts into the corner
+  // the moment the panel opens, so the first pass records them silently.
   useEffect(() => {
     const now = Date.now();
-    const activeIds = new Set(alerts.filter((a) => a.status === "active").map((a) => a.id));
-    // Remove IDs that are no longer active (closed/acked/false-positive)
+    const activeIds = new Set(rawAlerts.filter((a) => a.status === "active").map((a) => a.id));
     notifiedBreachIds.current.forEach((id) => {
       if (!activeIds.has(id)) notifiedBreachIds.current.delete(id);
     });
-    alerts.forEach((alert) => {
+
+    const seeding = !breachBaselineTaken.current;
+    rawAlerts.forEach((alert) => {
       if (alert.status !== "active") return;
       const ageMin = Math.floor((now - new Date(alert.created_at).getTime()) / 60_000);
       const sla = SLA_MINUTES[alert.severity] ?? 30;
-      if (ageMin >= sla && !notifiedBreachIds.current.has(alert.id)) {
-        notifiedBreachIds.current.add(alert.id);
-        addToast({
-          message: locale === "es"
-            ? `SLA vencido: "${alert.title}" sin acción por ${ageMin}m (límite ${sla}min)`
-            : `SLA breach: "${alert.title}" unactioned for ${ageMin}m (limit ${sla}min)`,
-          variant: "danger",
-        } as Omit<LiveToast, "id" | "at">);
-      }
+      if (ageMin < sla || notifiedBreachIds.current.has(alert.id)) return;
+
+      notifiedBreachIds.current.add(alert.id);
+      if (seeding) return;
+      addToast({
+        message: locale === "es"
+          ? `SLA vencido: "${alert.title}" sin acción por ${ageMin}m (límite ${sla}min)`
+          : `SLA breach: "${alert.title}" unactioned for ${ageMin}m (limit ${sla}min)`,
+        variant: "danger",
+      } as Omit<LiveToast, "id" | "at">);
     });
-  }, [alerts, addToast, locale]);
+    if (rawAlerts.length) breachBaselineTaken.current = true;
+  }, [rawAlerts, addToast, locale]);
 
   if (activePanel !== "alerts") return null;
 

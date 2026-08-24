@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useAlerts, useFloodExposure, useApiHealth, useSocialSignals, useScraperHealth, useImerg } from "@/lib/queries";
 import { URGENT_SOCIAL_LABELS } from "@/lib/constants";
@@ -222,14 +223,24 @@ export function OperationalHUD() {
           />
           <span className="text-xs font-mono tabular-nums text-ink-muted">{clock}</span>
           {scenario.isReplayMode && (
-            <span className="ml-1 text-2xs font-semibold text-warn bg-warn-soft px-1.5 py-0.5 rounded-full">
-              REPLAY {scenario.replayDate?.slice(0, 7) ?? "2017"}
-            </span>
+            // The tutorial drops the console into the 2017 replay, and the only
+            // way back used to be a small chip inside the Scenario panel. This
+            // badge is always on screen, so it is where the exit belongs.
+            <button
+              onClick={() => useUIStore.getState().setScenario({ isReplayMode: false, replayDate: null })}
+              className="ml-1 flex items-center gap-1 text-2xs font-semibold text-warn bg-warn-soft px-2 py-0.5 rounded-full hover:bg-warn/20 transition-colors"
+              title={locale === "es" ? "Volver a datos en vivo" : "Return to live data"}
+              aria-label={locale === "es" ? "Salir de la simulación El Niño 2017" : "Exit the El Niño 2017 simulation"}
+            >
+              {locale === "es" ? "SIMULACIÓN 2017" : "SIMULATION 2017"}
+              <X size={9} strokeWidth={2.5} aria-hidden="true" />
+              {locale === "es" ? "Salir" : "Exit"}
+            </button>
           )}
           {/* Show DEMO badge only when we have a confirmed error, not during initial load */}
           {apiDown && !healthLoading && (
             <span className="ml-1 text-2xs font-semibold text-warn bg-warn-soft px-1.5 py-0.5 rounded-full animate-pulse" title={locale === "en" ? "API unavailable, showing demo data" : "API no disponible, mostrando datos de demostración"}>
-              {locale === "en" ? "DEMO DATA" : "DATOS DEMO"}
+              {locale === "en" ? "NO CONNECTION" : "SIN CONEXIÓN"}
             </span>
           )}
         </div>

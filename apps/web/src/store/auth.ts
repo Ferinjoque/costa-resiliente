@@ -23,6 +23,12 @@ interface AuthState {
    */
   suppressLoginPrompt: boolean;
   setLoginModalOpen: (v: boolean) => void;
+  /**
+   * Raise the login modal for an action the operator just tried to take. Unlike
+   * a background 401, this is never suppressed: they asked for something that
+   * needs a session, so they get the chance to sign in.
+   */
+  promptLogin: () => void;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   hydrate: () => void;
@@ -45,6 +51,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       loginModalOpen: v,
       suppressLoginPrompt: v ? false : state.token === null,
     })),
+
+  promptLogin: () => set({ loginModalOpen: true, suppressLoginPrompt: false }),
 
   hydrate: () => {
     if (typeof window === "undefined") return;

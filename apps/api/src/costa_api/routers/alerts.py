@@ -592,13 +592,51 @@ async def export_pdf_report(
         params,
     )).mappings().all()
 
+    def _esc(value: str) -> str:
+        """Escape for ReportLab's mini-HTML, which reads &, < and > as markup."""
+        return (
+            str(value)
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
+
+    # EDAN-Perú readers should see the action, not the column value: the log
+    # stores alert_dispatch, the report says "Recurso despachado".
+    _ACTION_LABELS_ES = {
+        "alert_acknowledge": "Alerta reconocida",
+        "alert_escalate": "Alerta escalada",
+        "alert_false_positive": "Falso positivo",
+        "alert_close": "Alerta cerrada",
+        "alert_dispatch": "Recurso despachado",
+        "resource_dispatch": "Recurso despachado",
+        "protocol_step": "Paso de protocolo",
+        "field_report": "Reporte de campo",
+        "create_proposal": "Propuesta creada",
+        "approve_proposal": "Propuesta aprobada",
+        "reject_proposal": "Propuesta rechazada",
+        "copilot": "Consulta al copiloto",
+        "query": "Consulta al copiloto",
+        "export": "Exportación de datos",
+        "share": "Enlace compartido",
+        "login": "Inicio de sesión",
+        "note": "Nota",
+        "checklist": "Lista de verificación",
+    }
+
+    def _action_label(action_type: str) -> str:
+        known = _ACTION_LABELS_ES.get(action_type)
+        if known:
+            return known
+        return action_type.replace("_", " ").capitalize()
+
     # ── Build PDF ─────────────────────────────────────────────────────────────
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf,
         pagesize=A4,
-        leftMargin=2.5 * cm, rightMargin=2.5 * cm,
-        topMargin=2 * cm, bottomMargin=2 * cm,
+        leftMargin=1.8 * cm, rightMargin=1.8 * cm,
+        topMargin=1.8 * cm, bottomMargin=1.8 * cm,
         title="Costa Resiliente: Informe Situacional",
     )
 
@@ -617,6 +655,16 @@ async def export_pdf_report(
                            textColor=DARK, spaceAfter=2)
     small = ParagraphStyle("Small", parent=styles["Normal"], fontSize=8,
                             textColor=SUBTLE)
+    # Table cells hold Paragraphs rather than raw strings: a plain string is
+    # drawn on one line and simply runs past the column edge, which is why long
+    # alert titles and operator notes spilled out of the tables.
+    cell = ParagraphStyle("Cell", parent=styles["Normal"], fontSize=8,
+                          leading=9.5, textColor=DARK)
+    cell_head = ParagraphStyle("CellHead", parent=cell, fontSize=8,
+                               textColor=colors.white, fontName="Helvetica-Bold")
+
+    # A4 (21cm) minus the two 1.8cm margins.
+    USABLE_W = 21 * cm - 3.6 * cm
 
     SEV_COLOR = {"critical": RED, "high": YELLOW, "medium": BLUE,
                  "low": colors.HexColor("#27AE60")}
@@ -654,7 +702,8 @@ async def export_pdf_report(
     if not alert_rows:
         story.append(Paragraph("No hay alertas activas en este momento.", body))
     else:
-        alert_data = [["ID", "Tipo", "Severidad", "Título", "Distrito", "Creado"]]
+        alert_data = [[Paragraph(h, cell_head) for h in
+                       ("ID", "Tipo", "Severidad", "Título", "Distrito", "Creado")]]
         for r in alert_rows:
             created = r["created_at"]
             if hasattr(created, "strftime"):
@@ -662,15 +711,20 @@ async def export_pdf_report(
             else:
                 created_s = str(created)[:16]
             alert_data.append([
-                str(r["id"]),
-                (r["type"] or "")[:20],
-                (r["severity"] or "").upper(),
-                (r["title"] or "")[:50],
-                (r["district_name"] or "-")[:25],
-                created_s,
+                Paragraph(str(r["id"]), cell),
+                Paragraph(_esc(r["type"] or ""), cell),
+                Paragraph((r["severity"] or "").upper(), cell),
+                Paragraph(_esc(r["title"] or ""), cell),
+                Paragraph(_esc(r["district_name"] or "-"), cell),
+                Paragraph(created_s, cell),
             ])
 
-        at = Table(alert_data, colWidths=[1*cm, 2.5*cm, 2*cm, 6*cm, 3.5*cm, 2*cm])
+        at = Table(
+            alert_data,
+            colWidths=[w * USABLE_W for w in (0.07, 0.13, 0.12, 0.36, 0.20, 0.12)],
+            repeatRows=1,
+            hAlign="CENTER",
+        )
         ts_alert = TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), DARK),
             ("TEXTCOLOR",  (0, 0), (-1, 0), colors.white),
@@ -700,7 +754,8 @@ async def export_pdf_report(
     if not log_rows:
         story.append(Paragraph("No hay entradas en el registro.", body))
     else:
-        log_data = [["#", "Fecha/Hora", "Operador", "Acción", "Alerta", "Detalle"]]
+        log_data = [[Paragraph(h, cell_head) for h in
+                     ("#", "Fecha/Hora", "Operador", "Acción", "Alerta", "Detalle")]]
         for r in log_rows:
             logged = r["logged_at"]
             if hasattr(logged, "strftime"):
@@ -710,20 +765,25 @@ async def export_pdf_report(
             try:
                 payload = json.loads(r["payload_json"] or "{}")
                 detail = payload.get("note") or payload.get("action") or ""
-                detail = str(detail)[:60]
+                detail = str(detail)
             except Exception as _json_exc:
                 log.debug("PDF report: failed to parse payload_json for log row %s: %s", r.get("id"), _json_exc)
                 detail = ""
             log_data.append([
-                str(r["id"]),
-                logged_s,
-                (r["operator_id"] or "")[:20],
-                (r["action_type"] or "")[:20],
-                str(r["alert_id"]) if r["alert_id"] else "-",
-                detail,
+                Paragraph(str(r["id"]), cell),
+                Paragraph(logged_s, cell),
+                Paragraph(_esc(r["operator_id"] or ""), cell),
+                Paragraph(_esc(_action_label(r["action_type"] or "")), cell),
+                Paragraph(str(r["alert_id"]) if r["alert_id"] else "-", cell),
+                Paragraph(_esc(detail), cell),
             ])
 
-        lt = Table(log_data, colWidths=[0.7*cm, 2*cm, 2.5*cm, 2.5*cm, 1.5*cm, 5.8*cm])
+        lt = Table(
+            log_data,
+            colWidths=[w * USABLE_W for w in (0.06, 0.13, 0.15, 0.19, 0.09, 0.38)],
+            repeatRows=1,
+            hAlign="CENTER",
+        )
         lt.setStyle(TableStyle([
             ("BACKGROUND",    (0, 0), (-1, 0), DARK),
             ("TEXTCOLOR",     (0, 0), (-1, 0), colors.white),

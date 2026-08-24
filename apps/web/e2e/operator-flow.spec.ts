@@ -74,7 +74,12 @@ test("copilot answers a Spanish question with grounded data, not raw JSON", asyn
 
 test("decision log panel offers the EDAN-Perú exports", async ({ page }) => {
   await nav(page, "log").click();
-  await expect(page.locator("body")).toContainText(/CSV|PDF|EDAN/i, { timeout: 20_000 });
+  // The export buttons are icon-only, so the assertion goes through their
+  // accessible names rather than visible text.
+  await expect(page.getByRole("button", { name: /Exportar CSV|Export CSV/i }))
+    .toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("button", { name: /Exportar informe PDF|Export PDF report/i }))
+    .toBeVisible();
 });
 
 test("the rail shows the signed-in operator identity", async ({ page }) => {
