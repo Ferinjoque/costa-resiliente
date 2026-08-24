@@ -153,3 +153,28 @@ test("hovering a rail item does not shift the alert badge", async ({ page }) => 
   expect(after, "badge should have a box after hover").not.toBeNull();
   expect(Math.abs((after!.x) - (before!.x)), "badge moved horizontally on hover").toBeLessThanOrEqual(1);
 });
+
+test("the scale bar sits beside the zoom buttons, clear of the panels", async ({ page }) => {
+  // It used to render bottom-left, where it tucked under the Scenario panel and
+  // overlapped the "Vista 3D" row.
+  await page.locator("canvas.maplibregl-canvas").waitFor({ state: "visible", timeout: 30_000 });
+  await page.waitForTimeout(1500);
+
+  const scale = await page.locator(".maplibregl-ctrl-scale").boundingBox();
+  const zoom = await page.locator(".maplibregl-ctrl-group").first().boundingBox();
+  const viewport = page.viewportSize();
+  expect(scale, "scale control missing").not.toBeNull();
+  expect(zoom, "zoom control missing").not.toBeNull();
+  expect(viewport).not.toBeNull();
+
+  // Right-hand side of the map, not tucked under the left rail or panels.
+  expect(scale!.x, "scale drifted back to the left half").toBeGreaterThan(viewport!.width / 2);
+  // Immediately left of the zoom buttons, not stacked above them.
+  expect(scale!.x + scale!.width, "scale overlaps the zoom buttons")
+    .toBeLessThanOrEqual(zoom!.x + 1);
+  // Bottom edges line up.
+  expect(
+    Math.abs((scale!.y + scale!.height) - (zoom!.y + zoom!.height)),
+    "scale and zoom bottoms are not aligned",
+  ).toBeLessThanOrEqual(4);
+});

@@ -55,7 +55,7 @@ docker exec costa-prefect-worker python -m costa_workers.rag.ingest  # index pro
 docker exec costa-api python -m pytest --asyncio-mode=auto -q   # 719 API tests
 docker exec costa-prefect-worker python -m pytest -q            # 182 worker tests
 cd apps/web && npm test && npx tsc --noEmit                     # 21 unit tests + types
-cd apps/web && npx playwright test                              # 20 browser tests (desktop + mobile)
+cd apps/web && npx playwright test                              # 21 browser tests (desktop + mobile)
 ```
 
 The browser suite drives the real stack (it does not start its own server), so bring the stack up

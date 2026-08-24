@@ -177,11 +177,13 @@ export default function MapView() {
       (window as unknown as { __crMap?: maplibregl.Map }).__crMap = m;
     }
 
-    // Navigation: moved to bottom-right (below MapRadar, clear of the HUD top-right pills).
-    // Attribution: bottom-left alongside scale so it clears the MapRadar widget.
+    // Navigation: bottom-right (below MapRadar, clear of the HUD top-right pills).
+    // Scale: bottom-right too, sitting to the left of the zoom buttons. Bottom
+    // left is where the Scenario panel ends, and the scale bar tucked under it.
+    // Attribution: bottom-left on its own, where it clears the MapRadar widget.
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    m.addControl(new maplibregl.ScaleControl({ maxWidth: 90, unit: "metric" }), "bottom-right");
     m.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
-    m.addControl(new maplibregl.ScaleControl(), "bottom-left");
 
     m.once("load", () => {
       // Force recompute canvas size: prevents blank map when CSS settles after MapLibre init
