@@ -321,12 +321,20 @@ export default function MapView() {
             const popLabel = polyAtRisk != null && polyAtRisk > 0
               ? `~${polyAtRisk.toLocaleString("es-PE")} personas`
               : null;
+            // Provenance is not optional on a polygon an operator may evacuate
+            // against: fixture and demo polygons must announce themselves.
+            const modelVersion = p.model_version ? String(p.model_version) : null;
+            const isSynthetic = modelVersion != null
+              && (modelVersion.includes("demo") || modelVersion.includes("fixture"));
             openPopup(m, e.lngLat, popupHtml("Inundación detectada (SAR)", [
               ["Distrito",   expDistrict?.district_name ?? null],
               ["Confianza",  p.confidence != null ? `${(Number(p.confidence) * 100).toFixed(0)}%` : null],
               ["Área",       p.area_km2 != null ? `${Number(p.area_km2).toFixed(2)} km²` : null],
               ["Pob. en riesgo", popLabel, popLabel ? "cr-val-alert" : undefined],
               ["Escena SAR", trunc(p.scene_id ? String(p.scene_id) : null)],
+              ["Modelo",     modelVersion],
+              ["Origen",     isSynthetic ? "Datos de demostración — no es una detección real" : null,
+                             isSynthetic ? "cr-val-alert" : undefined],
             ], "cr-title-flood"), activePopup);
             return;
           }

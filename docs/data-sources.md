@@ -146,17 +146,35 @@
 ## ML-Derived Layers
 
 ### SAR Flood Segmentation
-- **Model**: U-Net initialized from Sen1Floods11 weights (Bonafilia et al. 2020)
+- **Model**: U-Net over Sentinel-1 GRD IW VV/VH, architecture and preprocessing following
+  Sen1Floods11 (Bonafilia et al. 2020)
 - **Input**: Sentinel-1 GRD IW VV/VH dual-polarization
 - **Output**: `ml.flood_polygons` (MultiPolygon, confidence, area_km2)
 - **Inference time**: <5 min CPU per scene
-- **Status**: ✅ Implemented; polygon layer live on map
+- **Weights — honest status (verified 2026-08-23)**: the pipeline expects a pretrained
+  checkpoint at `weights/sen1floods11_unet.pt`, falling back to a HuggingFace download from
+  `isp-uv-es/SEN1Floods11_Unet_Flood_Detection`. **That repo returns HTTP 401 and no public
+  Sen1Floods11 *U-Net* checkpoint is currently published.** The Sen1Floods11 checkpoints that
+  are reachable on HuggingFace are Prithvi-EO variants, which take optical HLS bands rather
+  than SAR VV/VH, so they are not drop-in substitutes for this architecture. Inference
+  therefore refuses to run on random weights unless `FLOOD_ALLOW_RANDOM_WEIGHTS=1` is set
+  explicitly (dev only).
+- **What is on the map today**: labelled synthetic polygons — `flood-seg-v0.1-demo` for the
+  current scenario and `elnino2017-fixture-v1` for the 2017 replay. Every polygon carries its
+  `model_version`, and the map popup states *"Datos de demostración — no es una detección
+  real"* for both. No synthetic polygon is ever presented as a live detection.
+- **Status**: ⚠️ Inference path implemented and unit-tested; awaiting publishable weights or a
+  locally trained checkpoint before it can produce real detections
 
 ### Huayco Susceptibility
 - **Model**: XGBoost, methodology from Castro-Cabrera et al. (Geosciences 14(6):168, 2024)
 - **Features**: slope, aspect, lithology, distance-to-stream, NDVI, soil_moisture, IMERG 24h/72h
 - **Output**: `ml.huayco_susceptibility` (probability + risk_level per quebrada)
-- **Status**: ✅ Implemented; susceptibility circles live on map
+- **Current model_version**: `xgboost-v0.1-demo-refresh` — the feature pipeline and scoring run
+  on live IMERG accumulations, but the tree ensemble itself is not yet fitted on a labelled
+  Lima landslide inventory, so probabilities are calibrated demonstration values.
+- **Status**: ⚠️ Implemented and scoring live rainfall; model fitting on SINPAD-derived labels
+  is the remaining step
 
 ### Hazard Zone Classification (SINPAD-derived)
 - **Method**: District-level event frequency + severity score from SINPAD 2003–2020; quartile classification → muy_alto / alto / medio / bajo per hazard type (flood, landslide)
