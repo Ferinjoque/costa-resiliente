@@ -2,10 +2,10 @@
 Auto-seed demo data on first boot.
 
 Checks whether flood_polygons is empty. If so, inserts demo fixtures so
-every panel shows data out of the box — no manual seed step required.
+every panel shows data out of the box: no manual seed step required.
 
 Seeds:
-  1. Lima watersheds (3) — required FK for IMERG
+  1. Lima watersheds (3): required FK for IMERG
   2. Current-time flood polygons + IMERG + alerts + social signals + stations
   3. El Niño 2017 historical fixtures (for replay tutorial)
 """
@@ -158,21 +158,21 @@ _WATERSHEDS = [
 # ─── Current-time IMERG (live scenario data) ──────────────────────────────────
 _IMERG_CURRENT = [
     # (watershed_name_key, offset_h, a1, a3, a6, a12, a24, a72)
-    # Rímac — ws index 0
+    # Rímac: ws index 0
     (0, 0,  0.0,  2.1,  8.4,  22.1, 41.8, 63.2),
     (0, 1,  1.2,  3.8,  9.1,  23.4, 42.9, 64.1),
     (0, 3,  3.8,  7.2,  12.0, 26.8, 45.2, 66.3),
-    # Chillón — ws index 1
+    # Chillón: ws index 1
     (1, 0,  0.0,  1.1,  4.2,  11.0, 18.5, 28.4),
     (1, 1,  0.8,  2.3,  5.1,  12.3, 19.8, 29.9),
-    # Lurín — ws index 2
+    # Lurín: ws index 2
     (2, 0,  0.0,  0.5,  1.8,  4.2,  7.1,  11.0),
 ]
 
 # ─── Current flood polygons ───────────────────────────────────────────────────
 _FLOOD_CURRENT = [
     {
-        # Chillón river corridor — inside Puente Piedra district (362k pop)
+        # Chillón river corridor: inside Puente Piedra district (362k pop)
         "scene_id": "S1A_IW_SLC__1SDV_DEMO-RIMAC-HUACHIPA",
         "offset_h": 2.5,
         "model_version": "flood-seg-v0.1-demo",
@@ -184,7 +184,7 @@ _FLOOD_CURRENT = [
         ),
     },
     {
-        # Rímac river corridor — inside Lurigancho district (213k pop)
+        # Rímac river corridor: inside Lurigancho district (213k pop)
         "scene_id": "S1B_IW_SLC__1SDV_DEMO-RIMAC-NANA",
         "offset_h": 8.0,
         "model_version": "flood-seg-v0.1-demo",
@@ -203,7 +203,7 @@ _ALERTS_CURRENT = [
         "type": "flood",
         "severity": "high",
         "status": "active",
-        "title": "Inundación activa — Sector Huachipa",
+        "title": "Inundación activa: Sector Huachipa",
         "description": "Desborde del río Rímac detectado por Sentinel-1 (SAR). Área afectada: ~1.8 km².",
         "lon": -76.8800, "lat": -11.9500,
         "offset_h": 2.5,
@@ -212,7 +212,7 @@ _ALERTS_CURRENT = [
         "type": "huayco",
         "severity": "critical",
         "status": "active",
-        "title": "Riesgo crítico de huayco — Quebrada Jicamarca",
+        "title": "Riesgo crítico de huayco: Quebrada Jicamarca",
         "description": "Precipitación acumulada 24h supera umbral (42 mm). Modelo XGBoost: probabilidad 0.91.",
         "lon": -76.9200, "lat": -11.9100,
         "offset_h": 1.0,
@@ -221,7 +221,7 @@ _ALERTS_CURRENT = [
         "type": "flood",
         "severity": "medium",
         "status": "active",
-        "title": "Nivel del río Rímac elevado — Estación Chosica",
+        "title": "Nivel del río Rímac elevado: Estación Chosica",
         "description": "Nivel actual: 2.4 m (umbral de alerta: 2.0 m). Tendencia ascendente.",
         "lon": -76.6950, "lat": -11.9380,
         "offset_h": 4.0,
@@ -230,7 +230,7 @@ _ALERTS_CURRENT = [
         "type": "social_cluster",
         "severity": "medium",
         "status": "active",
-        "title": "Cluster social — reportes de bloqueo vial en La Molina",
+        "title": "Cluster social: reportes de bloqueo vial en La Molina",
         "description": "8 publicaciones geolocalizadas en 15 min. Triage: 6 × road_blocked.",
         "lon": -76.9450, "lat": -12.0800,
         "offset_h": 0.5,
@@ -239,7 +239,7 @@ _ALERTS_CURRENT = [
         "type": "flood",
         "severity": "high",
         "status": "acknowledged",
-        "title": "Inundación contenida — Sector Ñaña",
+        "title": "Inundación contenida: Sector Ñaña",
         "description": "Desborde menor controlado por defensa ribereña. Monitoreo continuo activo.",
         "lon": -76.8200, "lat": -11.9800,
         "offset_h": 8.0,
@@ -248,7 +248,7 @@ _ALERTS_CURRENT = [
         "type": "huayco",
         "severity": "low",
         "status": "active",
-        "title": "Alerta temprana — Quebrada Canto Grande",
+        "title": "Alerta temprana: Quebrada Canto Grande",
         "description": "Precipitación 24h: 18 mm (umbral: 35 mm). Susceptibilidad moderada.",
         "lon": -76.9900, "lat": -11.9350,
         "offset_h": 3.0,
@@ -262,7 +262,7 @@ _ALERTS_CURRENT = [
 # the table is empty; every later entry comes from real operator actions.
 _DECISION_LOG_CURRENT = [
     {
-        "alert_title": "Riesgo crítico de huayco — Quebrada Jicamarca",
+        "alert_title": "Riesgo crítico de huayco: Quebrada Jicamarca",
         "operator_id": "coer_lima",
         "action_type": "alert_acknowledge",
         "offset_h": 2.0,
@@ -273,7 +273,7 @@ _DECISION_LOG_CURRENT = [
         },
     },
     {
-        "alert_title": "Riesgo crítico de huayco — Quebrada Jicamarca",
+        "alert_title": "Riesgo crítico de huayco: Quebrada Jicamarca",
         "operator_id": "coer_lima",
         "action_type": "alert_escalate",
         "offset_h": 1.6,
@@ -284,7 +284,7 @@ _DECISION_LOG_CURRENT = [
         },
     },
     {
-        "alert_title": "Nivel del río Rímac elevado — Estación Chosica",
+        "alert_title": "Nivel del río Rímac elevado: Estación Chosica",
         "operator_id": "coer_lima",
         "action_type": "alert_acknowledge",
         "offset_h": 1.2,
@@ -295,7 +295,7 @@ _DECISION_LOG_CURRENT = [
         },
     },
     {
-        "alert_title": "Cluster social — reportes de bloqueo vial en La Molina",
+        "alert_title": "Cluster social: reportes de bloqueo vial en La Molina",
         "operator_id": "coel_sjl",
         "action_type": "alert_dispatch",
         "offset_h": 0.8,
@@ -306,7 +306,7 @@ _DECISION_LOG_CURRENT = [
         },
     },
     {
-        "alert_title": "Inundación contenida — Sector Ñaña",
+        "alert_title": "Inundación contenida: Sector Ñaña",
         "operator_id": "coen_lima",
         "action_type": "alert_false_positive",
         "offset_h": 0.4,
@@ -464,7 +464,7 @@ _ELNINO_FLOODS = [
     },
 ]
 
-# ─── Demo quebradas (huayco-prone gullies — MULTILINESTRING centerlines) ─────
+# ─── Demo quebradas (huayco-prone gullies: MULTILINESTRING centerlines) ─────
 # ws_idx: 0=Rímac, 1=Chillón, 2=Lurín
 _QUEBRADAS = [
     {
@@ -511,7 +511,7 @@ _QUEBRADAS = [
     },
 ]
 
-# Huayco susceptibility — El Niño scenario values for priority Lima quebradas.
+# Huayco susceptibility: El Niño scenario values for priority Lima quebradas.
 # Names match geo.quebradas (SINPAD short names without "Quebrada" prefix).
 _HUAYCO_SUSCEPTIBILITY = [
     # (quebrada_name, probability, risk_level, trigger_rain_24h_mm)
@@ -661,7 +661,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
             await conn.execute(text("SELECT COUNT(*) FROM ml.flood_polygons"))
         ).scalar_one()
 
-        # Check structural tables — these may be missing even if flood data exists
+        # Check structural tables: these may be missing even if flood data exists
         # (added in a later session after first boot)
         _qbr = (await conn.execute(text("SELECT COUNT(*) FROM geo.quebradas"))).scalar_one()
         _infra = (await conn.execute(text("SELECT COUNT(*) FROM geo.infrastructure"))).scalar_one()
@@ -674,7 +674,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         # Count the ACTIVE demo alerts specifically. Counting every row meant that
         # once the demo alerts had been acted on (acknowledged / closed by a demo
         # run, by the test suite, or by auto-resolution) the seed pass still saw a
-        # populated table and returned early — so POST /health/seed could never
+        # populated table and returned early: so POST /health/seed could never
         # bring the scenario back, which is the one thing it exists to do.
         # Real ingested alerts are ignored here on purpose: this is the demo
         # bootstrap, and it should key off demo rows only.
@@ -685,7 +685,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
             """).bindparams(bindparam("titles", type_=ARRAY(String))),
             {"titles": [a["title"] for a in _ALERTS_CURRENT]},
         )).scalar_one()
-        # Count only RECENT + LOCATABLE social signals — the map layer filters by both
+        # Count only RECENT + LOCATABLE social signals, the map layer filters by both
         # 48h window AND (geom IS NOT NULL OR district_id IS NOT NULL). Raw social scraper
         # signals without geom don't count as operational demo signal data.
         _social = (await conn.execute(text("""
@@ -703,7 +703,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         )).scalar_one()
 
         # Has the opening decision-log shift been written? Checked here because it
-        # gates the early return below — otherwise a database that still has its
+        # gates the early return below: otherwise a database that still has its
         # demo alerts never reaches the decision-log seeding step, and the Bitácora
         # panel and EDAN-Perú exports stay empty forever.
         _dlog_seeded = (await conn.execute(
@@ -742,7 +742,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                         logger.debug("auto_seed: skip geom update for %s: %s", qname, exc)
                 await conn.commit()
 
-        # Check if latest huayco data has high/very_high risk — ML pipeline can overwrite
+        # Check if latest huayco data has high/very_high risk. ML pipeline can overwrite
         # demo seed values with lower estimates. Refresh when that happens.
         _high_huayco = (await conn.execute(text("""
             SELECT COUNT(*) FROM (
@@ -754,7 +754,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         need_huayco_refresh = _qbr > 0 and _high_huayco == 0
 
         if need_huayco_refresh:
-            logger.info("auto_seed: refreshing huayco data — ML pipeline overwrote demo scenario with low-risk values")
+            logger.info("auto_seed: refreshing huayco data. ML pipeline overwrote demo scenario with low-risk values")
             # Re-seed with El Niño scenario values at current timestamp
             for name, prob, risk, rain24 in _HUAYCO_SUSCEPTIBILITY:
                 qid = (await conn.execute(
@@ -777,7 +777,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         # Always refresh demo social signals so they stay within the 48h map window.
         # Uses ON CONFLICT DO UPDATE to bump ingested_at even if the signal already exists.
         # Runs before the early-return check so it fires on every seed call.
-        # Previously conditioned on count — but signals can be within the 48h window yet
+        # Previously conditioned on count: but signals can be within the 48h window yet
         # have stale timestamps (e.g. seeded 20h ago). Always refresh to keep them current.
         _need_social_refresh = True
         if _need_social_refresh:
@@ -831,13 +831,13 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         # Always refresh demo station observations so their timestamps stay current.
         # Demo stations (ANA-001-DEMO etc.) carry actual readings (level_m, flow_m3s)
         # that the copilot and dashboard rely on. Without refresh they go stale after
-        # the initial seed — 22h-old readings look offline to operators.
+        # the initial seed: 22h-old readings look offline to operators.
         demo_codes = [s["code"] for s in _STATIONS]
         if demo_codes:
             try:
                 # Delete stale demo observations (> 4h old) for demo stations only,
                 # then re-insert fresh ones. A plain DELETE without time filter would
-                # need to scan the entire TimescaleDB hypertable — use the 4h window
+                # need to scan the entire TimescaleDB hypertable, use the 4h window
                 # to limit I/O while ensuring the refresh keeps latest readings current.
                 await conn.execute(
                     text("""
@@ -970,7 +970,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
 
         if flood_count > 0 and _qbr > 0 and _infra > 0 and _hazard > 0 and _elnino >= len(_ELNINO_FLOODS) and operational_ok:
             logger.info(
-                "auto_seed: all tables populated (flood=%d elnino=%d alerts=%d social=%d) — skipping",
+                "auto_seed: all tables populated (flood=%d elnino=%d alerts=%d social=%d): skipping",
                 flood_count, _elnino, _alerts, _social,
             )
             return
@@ -1203,10 +1203,10 @@ async def maybe_seed(engine: AsyncEngine) -> None:
 
         # ── 4b. Decision log ──────────────────────────────────────────────────
         # A fresh install opened the Bitácora panel on an empty table, and the
-        # EDAN-Perú CSV/PDF exports produced a header row and nothing else — the
+        # EDAN-Perú CSV/PDF exports produced a header row and nothing else, the
         # audit trail is a headline capability, so it needs a starting shift.
         # ops.decision_log is append-only by DB trigger (no UPDATE, no DELETE), so
-        # these can only ever be inserted — never reset. Keyed on the seeded notes
+        # these can only ever be inserted: never reset. Keyed on the seeded notes
         # rather than on an empty table, so a log that already holds real operator
         # actions still gets the opening shift exactly once.
         _seed_notes = [e["payload"]["note"] for e in _DECISION_LOG_CURRENT]
@@ -1521,7 +1521,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
 
         await conn.commit()
         logger.info(
-            "auto_seed: done — %d flood (current) + %d flood (2017) polygons seeded",
+            "auto_seed: done, %d flood (current) + %d flood (2017) polygons seeded",
             len(_FLOOD_CURRENT),
             len(_ELNINO_FLOODS),
         )

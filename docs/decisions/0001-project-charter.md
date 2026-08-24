@@ -1,4 +1,4 @@
-# ADR-0001: Project Charter — Costa Resiliente
+# ADR-0001: Project Charter. Costa Resiliente
 
 **Date:** 2026-05-11  
 **Status:** Accepted  
@@ -11,7 +11,7 @@
 Costa Resiliente is a near-real-time operational awareness platform for emergency
 managers responding to El Niño-driven floods and huaycos (debris flows) in
 Lima Metropolitana, Peru. It is submitted to the IEEE Response Quest Challenge 2026
-(judged November–December 2026, product due 9 October 2026).
+(judged November: December 2026, product due 9 October 2026).
 
 The platform fuses satellite radar (Sentinel-1), hydrometeorological feeds (IMERG,
 ANA, SENAMHI), infrastructure layers (OSM, CENEPRED SIGRID), and Spanish-language
@@ -23,8 +23,8 @@ Metropolitana, and distrital COELs.
 
 ## Mission Statement
 
-Deliver decision-support tooling — not autonomous decision-making — to Peruvian
-emergency managers during El Niño Costero 2026–2027. The system surfaces timely,
+Deliver decision-support tooling, not autonomous decision-making, to Peruvian
+emergency managers during El Niño Costero 2026-2027. The system surfaces timely,
 fused situational awareness; the humans act. Every data claim shown to operators
 must trace to a timestamped, sourced database row. The LLM routes and summarizes;
 it never fabricates.
@@ -37,7 +37,7 @@ it never fabricates.
 - Lima Metropolitana: 43 districts of Lima Province (Callao optional in Phase 3)
 - Disaster types: El Niño-driven floods and huaycos (debris flows) only
 - Languages: Spanish UI + NLP (primary); English toggle on UI
-- Actor: SINAGERD system — COEN, COER Lima, distrital COELs
+- Actor: SINAGERD system. COEN, COER Lima, distrital COELs
 
 **Out of scope (locked, no silent expansion):**
 - Geographic regions outside Lima Metropolitana
@@ -45,7 +45,7 @@ it never fabricates.
 - Languages beyond Spanish/English: no Quechua, Aymara, or other indigenous NLP
 - Mobile-native apps (PWA only)
 - Real-time COEN/COER integration requiring authorized accounts (Phase 3 stretch)
-- Mobile carrier signaling (Movistar/Claro/Entel) — Phase 3 stretch
+- Mobile carrier signaling (Movistar/Claro/Entel): Phase 3 stretch
 
 ---
 
@@ -83,7 +83,7 @@ Celery lacks first-class geospatial aware scheduling.
 Ollama containerizes model serving with zero custom inference code. Gemma 3 12B-IT
 (Q4_K_M GGUF) is verified released (March 2025) and Apache 2.0 licensed for the
 weights we need. The fallback Qwen3-30B-A3B-Instruct-2507 is also Apache 2.0.
-Neither OpenAI nor Anthropic APIs are used — zero external API cost, no data
+Neither OpenAI nor Anthropic APIs are used: zero external API cost, no data
 egress for citizen PII signals.
 
 ### Why MapLibre + PMTiles (not Mapbox/Google Maps)
@@ -121,14 +121,14 @@ These are **code-level** commitments, not documentation aspirations:
 
 | Sprint | Days   | Deliverable                                      |
 |--------|--------|--------------------------------------------------|
-| 0      | 1–3    | Scaffolding, docker-compose, services green      |
-| 1      | 4–10   | Sentinel-1 + IMERG ingest, PostGIS schema        |
-| 2      | 11–18  | Dashboard skeleton, MapLibre, first data layer   |
-| 3      | 19–30  | SAR flood segmentation, polygons on map          |
-| 4      | 31–45  | Huayco XGBoost, ANA scraper, social ingest       |
-| 5      | 46–60  | Ollama LLM triage, operator copilot RAG          |
-| 6      | 61–75  | UI polish, alerts, decision log, PWA, tutorial   |
-| 7      | 76–95  | Docs, video, hardening, submission               |
+| 0      | 1-3    | Scaffolding, docker-compose, services green      |
+| 1      | 4-10   | Sentinel-1 + IMERG ingest, PostGIS schema        |
+| 2      | 11-18  | Dashboard skeleton, MapLibre, first data layer   |
+| 3      | 19-30  | SAR flood segmentation, polygons on map          |
+| 4      | 31-45  | Huayco XGBoost, ANA scraper, social ingest       |
+| 5      | 46-60  | Ollama LLM triage, operator copilot RAG          |
+| 6      | 61-75  | UI polish, alerts, decision log, PWA, tutorial   |
+| 7      | 76-95  | Docs, video, hardening, submission               |
 
 ---
 

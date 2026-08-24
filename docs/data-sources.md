@@ -1,10 +1,10 @@
-# Data Sources — Costa Resiliente
+# Data Sources: Costa Resiliente
 
 > Status column reflects actual implementation state as of 2026-06-01 (Session 23).
 
 ---
 
-## Tier 1 — Foundation
+## Tier 1: Foundation
 
 ### Sentinel-1 GRD (Microsoft Planetary Computer)
 - **Endpoint**: `https://planetarycomputer.microsoft.com/api/stac/v1`
@@ -44,13 +44,13 @@
 
 ---
 
-## Tier 2 — Operational Layers
+## Tier 2: Operational Layers
 
 ### ANA Observatorio Chirilu + SNIRH
 - **URLs**: `observatoriochirilu.ana.gob.pe`, `snirh.ana.gob.pe`
 - **Access**: HTML scraper (no public REST API confirmed)
 - **Known fragility**: scraping is brittle; government sites go down during active flood events
-- **Resilience**: every successful gauge reading cached to Redis (`costa:gauge:reading:{code}`, 24h TTL); scraper falls back to last known reading with `from_cache=True` on HTTP failure — station layer never goes blank during an outage
+- **Resilience**: every successful gauge reading cached to Redis (`costa:gauge:reading:{code}`, 24h TTL); scraper falls back to last known reading with `from_cache=True` on HTTP failure: station layer never goes blank during an outage
 - **Storage**: `hydro.stations` + `hydro.station_observations`
 - **Implementation**: `apps/workers/src/costa_workers/ingest/hydro.py` + `ana_scraper.py`
 - **SENAMHI alert thresholds (meters):**
@@ -59,9 +59,9 @@
 |---------|-------|--------|------------|
 | ANA-Chosica | Rímac | 2.5 m | 3.2 m |
 | ANA-Chaclacayo | Rímac | 1.5 m | 2.0 m |
-| ANA-Carabayllo | Chillón | 2.5 m | — |
-| ANA-Huachipa | Rímac | 1.8 m | — |
-| ANA-Manchay | Lurín | 1.2 m | — |
+| ANA-Carabayllo | Chillón | 2.5 m |, |
+| ANA-Huachipa | Rímac | 1.8 m |, |
+| ANA-Manchay | Lurín | 1.2 m |, |
 
 - **Status**: ✅ Scraper implemented with Redis stale-reading cache; health published to `costa:scraper:status:{ana|senamhi}`
 
@@ -74,39 +74,39 @@
 ### INDECI SINPAD Historical
 - **Source file**: `docs/BD-EMER-Y-DAÑOS-INTEGRADA-2003-2020-validada.xlsx` (gitignored, large binary)
 - **Download URL**: `datosabiertos.gob.pe/dataset/emergencias-históricas-registradas-con-sinpad`
-- **Coverage**: 96,531 national records (2003–2020); 2,063 Lima flood/huayco records loaded
+- **Coverage**: 96,531 national records (2003-2020); 2,063 Lima flood/huayco records loaded
 - **Load script**: `scripts/load_sinpad.py`
 - **Storage**: `historical.sinpad_events` (BIGSERIAL, indexed by ubigeo/year/event_type)
 - **Use**: Hazard zone classification (SINPAD event density → flood/landslide levels per district)
-- **Note**: SINPAD v2.0 live feed requires authorized INDECI account — documented as Phase 3 partnership ask; not used here
+- **Note**: SINPAD v2.0 live feed requires authorized INDECI account, documented as Phase 3 partnership ask; not used here
 - **Status**: ✅ Historical data loaded (2,063 Lima records); hazard zones derived and in `geo.hazard_zones`
 
 ### CENEPRED SIGRID
 - **URL**: `sigrid.cenepred.gob.pe` / `sig.cenepred.gob.pe/arcgis_server/`
-- **Access**: ArcGIS REST — requires token. Portal uses SSO (browser OAuth); `generateToken` endpoint returns 401 for direct API auth. Tokens are IP-bound and short-lived (60 min).
+- **Access**: ArcGIS REST, requires token. Portal uses SSO (browser OAuth); `generateToken` endpoint returns 401 for direct API auth. Tokens are IP-bound and short-lived (60 min).
 - **Current approach**: `geo.hazard_zones` is populated from SINPAD historical event density (18-year record as proxy for hazard classification). See `scripts/load_sigrid.py` for future ArcGIS REST loader.
 - **Re-verified 2026-08-23**: `sigrid.cenepred.gob.pe/geoserver/ows` GetCapabilities now returns **404** (WFS endpoint retired); `sigridv3/mapa` returns 302 to SSO. Hazard polygons remain unavailable.
-- **Open sibling endpoint (new, 2026-08-23)**: `sig.cenepred.gob.pe/arcgis_server/rest/services` responds **anonymously, no token**. Folder `sectores/COEN_FEN_2023_10_5_1X/MapServer` publishes official COEN Fenómeno El Niño response layers — `AlmacenesNacionales` (INDECI relief warehouses, 21 national records with Lima/Callao entries), `Bomberos`, `ComisariasBasicas`, `ComisariasFamilia`, `ipress_afectadas_inoperativas` / `ipress_afectadas_operativas_COESALUD` (MINSA facilities affected during FEN), `maquinaria` (MIDAGRI), `INTERVENCIONES_PVN_FEN_*` (MTC road works). Queryable with `outSR=4326`, GeoJSON supported, `maxRecordCount=1000`. Folder `sigrid` itself only exposes `sigrid_collect` (workshop points — not hazard data).
+- **Open sibling endpoint (new, 2026-08-23)**: `sig.cenepred.gob.pe/arcgis_server/rest/services` responds **anonymously, no token**. Folder `sectores/COEN_FEN_2023_10_5_1X/MapServer` publishes official COEN Fenómeno El Niño response layers, `AlmacenesNacionales` (INDECI relief warehouses, 21 national records with Lima/Callao entries), `Bomberos`, `ComisariasBasicas`, `ComisariasFamilia`, `ipress_afectadas_inoperativas` / `ipress_afectadas_operativas_COESALUD` (MINSA facilities affected during FEN), `maquinaria` (MIDAGRI), `INTERVENCIONES_PVN_FEN_*` (MTC road works). Queryable with `outSR=4326`, GeoJSON supported, `maxRecordCount=1000`. Folder `sigrid` itself only exposes `sigrid_collect` (workshop points: not hazard data).
 - **Status**: ⚠️ SIGRID native hazard polygons blocked (SSO); SINPAD-derived fallback loaded and serving. COEN FEN responder-asset layers available as an optional additive source (not yet ingested).
 
-### CENEPRED / COEN — Fenómeno El Niño 2023 responder assets
+### CENEPRED / COEN: Fenómeno El Niño 2023 responder assets
 - **Endpoint**: `https://sig.cenepred.gob.pe/arcgis_server/rest/services/sectores/COEN_FEN_2023_10_5_1X/MapServer`
-- **Access**: ArcGIS REST, **anonymous — no token, no SSO**. `outSR=4326`, JSON/GeoJSON, `maxRecordCount=1000`.
+- **Access**: ArcGIS REST, **anonymous, no token, no SSO**. `outSR=4326`, JSON/GeoJSON, `maxRecordCount=1000`.
 - **Loaded**: layer 1 `AlmacenesNacionales` → `relief_warehouse` (INDECI relief stock), layers 4 + 5 `ComisariasBasicas` / `ComisariasFamilia` → `police_station`. **144 points** inside Lima Metropolitana + Callao.
-- **Deliberately skipped**: layer 3 `Bomberos` — `geo.infrastructure` already carries OSM `fire_station` points for Lima and merging would double-count. Layers `ipress_afectadas_*` are a 2023 event snapshot, not current state, so they are not shown to operators as live data.
+- **Deliberately skipped**: layer 3 `Bomberos`, `geo.infrastructure` already carries OSM `fire_station` points for Lima and merging would double-count. Layers `ipress_afectadas_*` are a 2023 event snapshot, not current state, so they are not shown to operators as live data.
 - **Load script**: `scripts/load_coen_fen.py` (idempotent; keyed on `properties.source_id`)
-- **District resolution**: UBIGEO (`id_dist`) → district name (unaccented, case-folded) → `ST_Contains`. The seeded district polygons are simplified — Santiago de Surco measures 12 km² against a real ~34 km² — so point-in-polygon alone drops more than half the real assets. Points that resolve to no seeded district are outside the locked scope and are not loaded.
+- **District resolution**: UBIGEO (`id_dist`) → district name (unaccented, case-folded) → `ST_Contains`. The seeded district polygons are simplified, Santiago de Surco measures 12 km² against a real ~34 km², so point-in-polygon alone drops more than half the real assets. Points that resolve to no seeded district are outside the locked scope and are not loaded.
 - **Per-feature provenance**: `properties.source = 'CENEPRED COEN FEN 2023'`, surfaced in the map popup.
 - **Status**: ✅ Loaded and serving via `/api/v1/layers/infrastructure`
 
 ### IGP Seismic Feed
 - **URL**: `ultimosismo.igp.gob.pe` (verified reachable, HTTP 200, 2026-08-23)
 - **Use**: Multi-hazard context (secondary to flood/huayco scenario)
-- **Status**: ❌ Dropped — seismic is explicitly out of scope per [`COMPETITION.md`](COMPETITION.md); revisit only post-competition
+- **Status**: ❌ Dropped, seismic is explicitly out of scope per [`COMPETITION.md`](COMPETITION.md); revisit only post-competition
 
 ---
 
-## Tier 3 — Social & Infrastructure Signals
+## Tier 3: Social & Infrastructure Signals
 
 ### Bluesky Jetstream v2
 - **Endpoint**: `wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post`
@@ -121,7 +121,7 @@
 - RPP: `https://rpp.pe/rss`
 - Andina (official Peru news agency): `https://andina.pe/agencia/rss.aspx`
 - El Comercio: `https://elcomercio.pe/rss/`
-- Gestión: `https://gestion.pe/rss/` *(replaced Canal N and La República — both returned 404 consistently as of 2026-05)*
+- Gestión: `https://gestion.pe/rss/` *(replaced Canal N and La República: both returned 404 consistently as of 2026-05)*
 - Peru21: `https://peru21.pe/rss/`
 - **Filter**: Disaster keyword match; last 48h only
 - **Implementation**: `apps/workers/src/costa_workers/ingest/social.py::ingest_rss_feeds()`
@@ -129,13 +129,13 @@
 
 ### Reddit
 - **Subreddits**: r/Peru, r/Lima, r/Chosica
-- **Access**: Public JSON API (`/r/{sub}/new.json`) — no OAuth required. `REDDIT_CLIENT_ID/SECRET` optional (higher rate limit if set)
+- **Access**: Public JSON API (`/r/{sub}/new.json`): no OAuth required. `REDDIT_CLIENT_ID/SECRET` optional (higher rate limit if set)
 - **Filter**: Disaster keywords; last 48h
 - **Implementation**: `apps/workers/src/costa_workers/ingest/social.py::ingest_reddit()`
 - **Status**: ✅ Active (public API, no credentials needed)
 
 ### Telegram
-- **Channel**: `Senamhi_Peru` — SENAMHI official weather and hydro alerts
+- **Channel**: `Senamhi_Peru`. SENAMHI official weather and hydro alerts
 - **Access**: Telethon library, read-only. Credentials: `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_SESSION_STRING` (all set in `.env`)
 - **Filter**: Disaster keywords; last 48h
 - **Implementation**: `apps/workers/src/costa_workers/ingest/social.py::ingest_telegram()`
@@ -151,7 +151,7 @@
 - **Input**: Sentinel-1 GRD IW VV/VH dual-polarization
 - **Output**: `ml.flood_polygons` (MultiPolygon, confidence, area_km2)
 - **Inference time**: <5 min CPU per scene
-- **Weights — honest status (verified 2026-08-23)**: the pipeline expects a pretrained
+- **Weights, honest status (verified 2026-08-23)**: the pipeline expects a pretrained
   checkpoint at `weights/sen1floods11_unet.pt`, falling back to a HuggingFace download from
   `isp-uv-es/SEN1Floods11_Unet_Flood_Detection`. **That repo returns HTTP 401 and no public
   Sen1Floods11 *U-Net* checkpoint is currently published.** The Sen1Floods11 checkpoints that
@@ -159,9 +159,9 @@
   than SAR VV/VH, so they are not drop-in substitutes for this architecture. Inference
   therefore refuses to run on random weights unless `FLOOD_ALLOW_RANDOM_WEIGHTS=1` is set
   explicitly (dev only).
-- **What is on the map today**: labelled synthetic polygons — `flood-seg-v0.1-demo` for the
+- **What is on the map today**: labelled synthetic polygons, `flood-seg-v0.1-demo` for the
   current scenario and `elnino2017-fixture-v1` for the 2017 replay. Every polygon carries its
-  `model_version`, and the map popup states *"Datos de demostración — no es una detección
+  `model_version`, and the map popup states *"Datos de demostración: no es una detección
   real"* for both. No synthetic polygon is ever presented as a live detection.
 - **Status**: ⚠️ Inference path implemented and unit-tested; awaiting publishable weights or a
   locally trained checkpoint before it can produce real detections
@@ -170,14 +170,14 @@
 - **Model**: XGBoost, methodology from Castro-Cabrera et al. (Geosciences 14(6):168, 2024)
 - **Features**: slope, aspect, lithology, distance-to-stream, NDVI, soil_moisture, IMERG 24h/72h
 - **Output**: `ml.huayco_susceptibility` (probability + risk_level per quebrada)
-- **Current model_version**: `xgboost-v0.1-demo-refresh` — the feature pipeline and scoring run
+- **Current model_version**: `xgboost-v0.1-demo-refresh`, the feature pipeline and scoring run
   on live IMERG accumulations, but the tree ensemble itself is not yet fitted on a labelled
   Lima landslide inventory, so probabilities are calibrated demonstration values.
 - **Status**: ⚠️ Implemented and scoring live rainfall; model fitting on SINPAD-derived labels
   is the remaining step
 
 ### Hazard Zone Classification (SINPAD-derived)
-- **Method**: District-level event frequency + severity score from SINPAD 2003–2020; quartile classification → muy_alto / alto / medio / bajo per hazard type (flood, landslide)
+- **Method**: District-level event frequency + severity score from SINPAD 2003-2020; quartile classification → muy_alto / alto / medio / bajo per hazard type (flood, landslide)
 - **Output**: `geo.hazard_zones` (50 district polygons; source_layer='sinpad_historical')
 - **Status**: ✅ Loaded; layer live on map as "Peligro Histórico"
 
@@ -200,25 +200,25 @@ Nine whitelisted parameterised tools available to the copilot. The LLM never exe
 | `get_river_levels` | `hydro.station_observations` | Latest reading + 1h trend (rising/stable/falling) |
 | `get_social_clusters` | `social.signals` | Triage-labelled signal counts |
 | `get_infrastructure_impact` | `geo.infrastructure` | Hospitals, bridges, substations in flood zones |
-| `get_rainfall_accumulation` | `hydro.imerg_accumulations` | 1h–72h per watershed; ANA-aligned thresholds |
+| `get_rainfall_accumulation` | `hydro.imerg_accumulations` | 1h: 72h per watershed; ANA-aligned thresholds |
 | `get_active_alerts` | `ops.alerts` | Full count + severity breakdown; uncapped total |
 | `search_protocols` | pgvector RAG | INDECI / MINSA / CENEPRED / ANA / MML / SINAGERD protocol embeddings (7 docs, 51 chunks) |
 | `get_population_at_risk` | `geo.districts` × `ml.flood_polygons` | INEI 2017 census × SAR spatial join; estimates affected persons per district |
 
 **RAG Protocol Corpus (7 documents, 51 chunks):**
-- `INDECI Plan Familiar de Emergencia 2024` — family emergency plan
-- `CENEPRED Susceptibilidad por Movimientos en Masa` — debris flow susceptibility
-- `MINSA Protocolo de Emergencias y Desastres` — health emergency protocol
-- `SENAMHI Guía Hidrometeorológica` — ANA station thresholds + IMERG interpretation
-- `MML Plan Lima ante Huaycos` — Lima municipal huayco response plan
-- `ANA Umbrales de Lluvia para Alertas Lima` — ANA/INDECI rainfall thresholds (15/25/50 mm at 24/72h windows)
-- `SINAGERD Guía de Acciones Rápidas COER Lima` — quick-action guide per SINAGERD level (AVISO/ALERTA/EMERGENCIA/huayco/desborde)
+- `INDECI Plan Familiar de Emergencia 2024`, family emergency plan
+- `CENEPRED Susceptibilidad por Movimientos en Masa`, debris flow susceptibility
+- `MINSA Protocolo de Emergencias y Desastres`, health emergency protocol
+- `SENAMHI Guía Hidrometeorológica`. ANA station thresholds + IMERG interpretation
+- `MML Plan Lima ante Huaycos`. Lima municipal huayco response plan
+- `ANA Umbrales de Lluvia para Alertas Lima`. ANA/INDECI rainfall thresholds (15/25/50 mm at 24/72h windows)
+- `SINAGERD Guía de Acciones Rápidas COER Lima`, quick-action guide per SINAGERD level (AVISO/ALERTA/EMERGENCIA/huayco/desborde)
 
 ---
 
 ## Novelty Justification (IEEE Rubric)
 
-1. **Bluesky AT Protocol firehose** — underutilized in disaster platforms (most use Twitter/X or WhatsApp groups); provides real-time Spanish citizen reports
+1. **Bluesky AT Protocol firehose**, underutilized in disaster platforms (most use Twitter/X or WhatsApp groups); provides real-time Spanish citizen reports
 2. **Spanish-language LLM triage** with Pydantic-validated structured output and prompt-injection hardening (Aegis-style cognitive firewall)
-3. **pgstac + PostGIS + TimescaleDB** unified in one Postgres instance — single engine for spatial vector, raster catalog, and time-series; enables complex spatial-temporal joins without cross-service latency
-4. **SINPAD 18-year event density** as a data-driven hazard proxy — honest, reproducible, and more operationally grounded than GIS polygon approximations
+3. **pgstac + PostGIS + TimescaleDB** unified in one Postgres instance, single engine for spatial vector, raster catalog, and time-series; enables complex spatial-temporal joins without cross-service latency
+4. **SINPAD 18-year event density** as a data-driven hazard proxy, honest, reproducible, and more operationally grounded than GIS polygon approximations

@@ -1,5 +1,5 @@
-PLAN METROPOLITANO DE CONTINGENCIA ANTE HUAYCOS — LIMA
-Municipalidad Metropolitana de Lima — Gerencia de Gestión del Riesgo de Desastres
+PLAN METROPOLITANO DE CONTINGENCIA ANTE HUAYCOS. LIMA
+Municipalidad Metropolitana de Lima: Gerencia de Gestión del Riesgo de Desastres
 
 INTRODUCCIÓN
 
@@ -22,23 +22,23 @@ Protocolo de activación de sirenas:
 
 FASES DE RESPUESTA
 
-FASE 0 — Pre-alerta (lluvia pronosticada ≥ 20 mm):
+FASE 0. Pre-alerta (lluvia pronosticada ≥ 20 mm):
 - SENAMHI emite boletín de alerta.
 - COER Lima activa monitoreo permanente.
 - Municipios distritales verifican funcionamiento de vías de evacuación y albergues.
 
-FASE 1 — Alerta amarilla (lluvia 20–30 mm/24h observada):
+FASE 1. Alerta amarilla (lluvia 20-30 mm/24h observada):
 - Brigadas de Defensa Civil en campo (puntos de vigilancia de quebradas).
 - Establecimientos educativos y de salud en zonas de riesgo inician protocolo de resguardo.
 - Comunicación a medios de comunicación.
 
-FASE 2 — Alerta naranja (lluvia 30–42 mm/24h o señales de inestabilidad):
+FASE 2: Alerta naranja (lluvia 30-42 mm/24h o señales de inestabilidad):
 - Evacuación preventiva de familias en primera línea de quebradas.
 - Apertura de albergues de emergencia (Coliseo Eduardo Dibós, Colegio Particular San José, Estadio de la UNMSM).
 - Cierre de vía a la Sierra (carretera central) a vehículos livianos.
 - Activación de brigadas de búsqueda y rescate (CGBVP, PNP, Ejército).
 
-FASE 3 — Alerta roja (lluvia ≥ 42 mm/24h o huayco en curso):
+FASE 3. Alerta roja (lluvia ≥ 42 mm/24h o huayco en curso):
 - Sirenas: activación de señal de EVACUACIÓN INMEDIATA.
 - Evacuación total de zonas de riesgo alto y muy alto.
 - Cierre total de carretera central y vías alternas.
@@ -96,8 +96,8 @@ Primeras 24 horas:
 4. Habilitación de vías de acceso para entrada de ayuda humanitaria.
 
 Semana 1:
-- Evaluación estructural de viviendas (MVCS — ingenieros de SENCICO).
-- Distribución de kits de emergencia (INDECI — familias damnificadas).
+- Evaluación estructural de viviendas (MVCS: ingenieros de SENCICO).
+- Distribución de kits de emergencia (INDECI: familias damnificadas).
 - Inicio de proceso de reasentamiento si hay zonas intangibles.
 
 Mes 1:

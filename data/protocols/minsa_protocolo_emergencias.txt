@@ -1,5 +1,5 @@
-PROTOCOLO DE EMERGENCIAS Y DESASTRES — MINSA
-Ministerio de Salud del Perú — Dirección General de Operaciones en Salud
+PROTOCOLO DE EMERGENCIAS Y DESASTRES: MINSA
+Ministerio de Salud del Perú: Dirección General de Operaciones en Salud
 
 ACTIVACIÓN DEL SISTEMA DE SALUD EN EMERGENCIAS
 
@@ -8,11 +8,11 @@ Niveles de activación:
 2. NIVEL 2 (Regional): DIRIS o DIRESA Lima coordina refuerzos entre establecimientos.
 3. NIVEL 3 (Nacional): MINSA activa el Centro de Operaciones de Emergencias en Salud (COES-MINSA). Convocatoria de brigadas nacionales.
 
-TRIAGE EN DESASTRES (Método START — Simple Triage And Rapid Treatment)
+TRIAGE EN DESASTRES (Método START: Simple Triage And Rapid Treatment)
 
 Categorías de triage:
 - ROJO (Inmediato): paciente con riesgo vital, tratamiento en < 1 hora. Prioridad máxima.
-- AMARILLO (Diferido): lesiones graves, estabilizado, puede esperar 1–6 horas.
+- AMARILLO (Diferido): lesiones graves, estabilizado, puede esperar 1-6 horas.
 - VERDE (Leve): ambulatorio, heridas menores. Puede esperar.
 - NEGRO (Fallecido o sin sobrevivencia posible): no se iniciará reanimación en escenario masivo con recursos limitados.
 
@@ -35,7 +35,7 @@ Lesiones más frecuentes:
 Atención de casi-ahogamiento:
 1. Retirar del agua manteniendo la columna vertebral alineada.
 2. Si no respira: iniciar RCP (30 compresiones : 2 ventilaciones).
-3. No usar maniobra de Heimlich para eliminar agua — no es efectiva.
+3. No usar maniobra de Heimlich para eliminar agua, no es efectiva.
 4. Trasladar a establecimiento de salud aunque el paciente esté asintomático (edema pulmonar diferido).
 
 Hipotermia:
@@ -49,7 +49,7 @@ Heridas en zonas inundadas:
 2. Aplicar antiséptico: povidona yodada al 10% o clorhexidina.
 3. Cubrir con apósito estéril.
 4. Evaluar necesidad de profilaxis antitetánica (< 5 años desde última dosis → aplicar toxoide).
-5. Alto riesgo de infección por agua contaminada con aguas servidas — consultar médico si hay enrojecimiento, pus o fiebre.
+5. Alto riesgo de infección por agua contaminada con aguas servidas, consultar médico si hay enrojecimiento, pus o fiebre.
 
 SALUD AMBIENTAL Y AGUA SEGURA POST-DESASTRE
 

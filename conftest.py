@@ -1,5 +1,5 @@
 """
-Root conftest.py — adds app src paths to sys.path and mocks heavy dependencies
+Root conftest.py: adds app src paths to sys.path and mocks heavy dependencies
 that are not available in the lightweight test venv.
 Heavy runtime deps (prefect, pystac_client, boto3, h5py, rasterio, etc.)
 are mocked at import time so pure logic tests can run without them.

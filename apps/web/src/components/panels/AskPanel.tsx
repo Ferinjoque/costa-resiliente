@@ -66,20 +66,20 @@ const THINKING_STEPS: Record<"es" | "en", string[]> = {
 
 const SITREP_STEPS: Record<"es" | "en", string[]> = {
   es: [
-    "SITREP — Herramienta 1/6: Alertas activas…",
-    "SITREP — Herramienta 2/6: Lluvia IMERG…",
-    "SITREP — Herramienta 3/6: Niveles de ríos…",
-    "SITREP — Herramienta 4/6: Inundaciones SAR…",
-    "SITREP — Herramienta 5/6: Riesgo huayco…",
-    "SITREP — Herramienta 6/6: Señales sociales…",
+    "SITREP. Herramienta 1/6: Alertas activas…",
+    "SITREP. Herramienta 2/6: Lluvia IMERG…",
+    "SITREP. Herramienta 3/6: Niveles de ríos…",
+    "SITREP. Herramienta 4/6: Inundaciones SAR…",
+    "SITREP. Herramienta 5/6: Riesgo huayco…",
+    "SITREP. Herramienta 6/6: Señales sociales…",
   ],
   en: [
-    "SITREP — Tool 1/6: Active alerts…",
-    "SITREP — Tool 2/6: IMERG rainfall…",
-    "SITREP — Tool 3/6: River levels…",
-    "SITREP — Tool 4/6: SAR flood extents…",
-    "SITREP — Tool 5/6: Huayco risk…",
-    "SITREP — Tool 6/6: Social signals…",
+    "SITREP. Tool 1/6: Active alerts…",
+    "SITREP. Tool 2/6: IMERG rainfall…",
+    "SITREP. Tool 3/6: River levels…",
+    "SITREP. Tool 4/6: SAR flood extents…",
+    "SITREP. Tool 5/6: Huayco risk…",
+    "SITREP. Tool 6/6: Social signals…",
   ],
 };
 
@@ -106,7 +106,7 @@ function ThinkingBubble({ locale, query }: { locale: "es" | "en"; query: string 
 
   useEffect(() => {
     if (isSitrep) {
-      // 6 tools at ~1s each — show each step progressing
+      // 6 tools at ~1s each: show each step progressing
       const t1 = setTimeout(() => setStep(1), 900);
       const t2 = setTimeout(() => setStep(2), 1900);
       const t3 = setTimeout(() => setStep(3), 2900);
@@ -163,7 +163,7 @@ function InfoPopover({ locale, onClose }: { locale: "es" | "en"; onClose: () => 
           [es ? "Datos" : "Data",              "PostGIS · IMERG · ANA"],
           [es ? "SITREP" : "SITREP",           es ? "~6s · 6 herramientas secuencial" : "~6s · 6 tools sequential"],
           [es ? "Modo rápido" : "Quick mode",   es ? "~2s · sin LLM" : "~2s · no LLM"],
-          [es ? "Modo completo" : "Full mode",   es ? "15–30s · CPU" : "15–30s · CPU"],
+          [es ? "Modo completo" : "Full mode",   es ? "15-30s · CPU" : "15-30s · CPU"],
           [es ? "Privacidad" : "Privacy",      es ? "Sin datos externos" : "No third-party data"],
         ].map(([k, v]) => (
           <div key={k} className="flex justify-between gap-2">
@@ -226,7 +226,7 @@ const GREETING_WORDS = new Set([
   "hey", "hola", "hi", "hello", "hallo", "oi", "ola", "sup", "okay",
   "buenos días", "good morning", "good afternoon",
 ]);
-// Note: "ok", "yo", "test", "prueba", "buenas" are intentionally excluded —
+// Note: "ok", "yo", "test", "prueba", "buenas" are intentionally excluded: 
 // they can appear in terse operational commands ("ok prueba", "yo buenas") and
 // must not be silently dropped as greetings during an active emergency.
 
@@ -347,7 +347,7 @@ export function AskPanel() {
       { id: Math.random().toString(36).slice(2), role: "user", content: trimmed, displayed: trimmed },
     ]);
 
-    // Short-circuit greetings — don't waste model inference on them
+    // Short-circuit greetings: don't waste model inference on them
     if (isGreeting(trimmed)) {
       const reply = GREETING_REPLY[locale];
       const asstId = Math.random().toString(36).slice(2);
@@ -397,8 +397,8 @@ export function AskPanel() {
         const err = await res.json().catch(() => ({}));
         answerText = (err as { detail?: string }).detail
           ?? (es
-            ? "El asistente no respondió a tiempo. El modelo de IA está ocupado — reintenta en unos segundos."
-            : "The assistant timed out. The AI model is busy — please retry in a few seconds.");
+            ? "El asistente no respondió a tiempo. El modelo de IA está ocupado, reintenta en unos segundos."
+            : "The assistant timed out. The AI model is busy, please retry in a few seconds.");
       } else if (!res.ok) {
         answerText = es
           ? `Error del servidor (${res.status}). Reintenta o usa una consulta diferente.`
@@ -572,7 +572,7 @@ export function AskPanel() {
                     <p>{msg.content}</p>
                   ) : (
                     <div className="text-sm text-ink leading-relaxed">
-                      {/* SITREP mode banner — shown before answer for immediate identification */}
+                      {/* SITREP mode banner: shown before answer for immediate identification */}
                       {msg.quickMode && msg.mode === "sitrep" && (
                         <div className="flex items-center gap-1.5 mb-2 px-2 py-1 rounded-lg bg-accent-soft border border-accent/20">
                           <span className="text-[10px] font-bold text-accent uppercase tracking-widest">SITREP</span>
@@ -583,7 +583,7 @@ export function AskPanel() {
                       {msg.isDemo && (
                         <div className="flex items-center gap-1.5 mb-2 px-2 py-1.5 rounded-lg bg-warn-soft border border-warn/30">
                           <span className="text-[10px] font-semibold text-warn uppercase tracking-wide">
-                            {es ? "⚠ DEMO — Sin datos en vivo" : "⚠ DEMO — No live data"}
+                            {es ? "⚠ DEMO, Sin datos en vivo" : "⚠ DEMO, No live data"}
                           </span>
                         </div>
                       )}

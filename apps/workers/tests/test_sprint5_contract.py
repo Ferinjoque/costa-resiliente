@@ -76,9 +76,9 @@ class TestPromptInjectionHardening:
 
     def test_user_content_not_in_system_prompt(self):
         from costa_workers.ml.triage import TRIAGE_SYSTEM_PROMPT, TRIAGE_USER_TEMPLATE
-        user_content = "Huayco en Chosica — evacuaciones urgentes"
+        user_content = "Huayco en Chosica: evacuaciones urgentes"
         user_msg = TRIAGE_USER_TEMPLATE.format(content=user_content)
-        # System prompt must be static — user content must NOT appear in it
+        # System prompt must be static: user content must NOT appear in it
         assert user_content not in TRIAGE_SYSTEM_PROMPT
 
     @pytest.mark.asyncio
@@ -121,7 +121,7 @@ class TestPromptInjectionHardening:
         assert "</SEÑAL><SEÑAL>" not in user_msg
 
 
-# ─── triage_signal — Ollama integration (mocked) ─────────────────────────────
+# ─── triage_signal: Ollama integration (mocked) ─────────────────────────────
 
 class TestTriageSignal:
     def _mock_ollama_response(self, label="weather_observation", confidence=0.75):

@@ -1,4 +1,4 @@
-"""Triage output schema validation tests — no LLM required."""
+"""Triage output schema validation tests: no LLM required."""
 import pytest
 from costa_workers.ml.triage import TriageResult, TriageLabel
 

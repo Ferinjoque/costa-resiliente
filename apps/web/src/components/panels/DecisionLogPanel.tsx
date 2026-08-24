@@ -211,7 +211,7 @@ export function DecisionLogPanel() {
                 `costa_resiliente_decision_log_${new Date().toISOString().slice(0, 10)}.csv`,
                 "text/csv",
               );
-              if (!ok) addToast({ message: locale === "es" ? "Error al exportar CSV — reintenta" : "CSV export failed — please retry", variant: "danger" });
+              if (!ok) addToast({ message: locale === "es" ? "Error al exportar CSV, reintenta" : "CSV export failed, please retry", variant: "danger" });
             } else {
               // When offline and query errored, entries are demo/placeholder data.
               // Prefix filename to prevent accidental submission as official record.
@@ -236,7 +236,7 @@ export function DecisionLogPanel() {
                 `costa_resiliente_report_${new Date().toISOString().slice(0, 10)}.pdf`,
                 "application/pdf",
               );
-              if (!ok) addToast({ message: locale === "es" ? "Error al exportar PDF — reintenta" : "PDF export failed — please retry", variant: "danger" });
+              if (!ok) addToast({ message: locale === "es" ? "Error al exportar PDF, reintenta" : "PDF export failed, please retry", variant: "danger" });
             }}
             aria-label={locale === "es" ? "Exportar informe PDF" : "Export PDF report"}
             title={locale === "es" ? "Informe situacional EDAN-Perú (PDF)" : "EDAN-Perú situational report (PDF)"}
@@ -285,7 +285,7 @@ export function DecisionLogPanel() {
                 </span>
               ) : !online ? (
                 <span className="text-[11px] text-ink-muted block">
-                  {locale === "es" ? "API no disponible — revisa los servicios" : "API unavailable — check services"}
+                  {locale === "es" ? "API no disponible, revisa los servicios" : "API unavailable, check services"}
                 </span>
               ) : null}
             </div>

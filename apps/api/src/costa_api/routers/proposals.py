@@ -1,14 +1,14 @@
-"""HITL Alert Proposals — AI proposes, human approves.
+"""HITL Alert Proposals: AI proposes, human approves.
 
 The copilot can call propose_alert() which writes to ops.alert_proposals
 (status=pending).  An operator reviews via this router and approves/rejects.
 Only on approval does the record move into ops.alerts (the real alert feed).
 
 Endpoints:
-  GET  /proposals                   — list pending proposals
-  POST /proposals                   — create proposal (internal, from copilot tool)
-  POST /proposals/{id}/approve      — operator approval → insert into ops.alerts
-  POST /proposals/{id}/reject       — operator rejection
+  GET  /proposals: list pending proposals
+  POST /proposals: create proposal (internal, from copilot tool)
+  POST /proposals/{id}/approve: operator approval → insert into ops.alerts
+  POST /proposals/{id}/reject: operator rejection
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ class ProposalCreate(BaseModel):
 
 
 class ProposalReview(BaseModel):
-    # operator_id accepted for backwards-compatibility but IGNORED — JWT identity
+    # operator_id accepted for backwards-compatibility but IGNORED. JWT identity
     # (op.username) is always used to prevent review forgery.
     operator_id: Optional[str] = Field(None, max_length=100)
     notes: Optional[str] = Field(None, max_length=2000)
@@ -132,7 +132,7 @@ async def approve_proposal(
     op: CurrentOperator = Depends(require_operator),
 ) -> dict:
     await db.execute(text("SET LOCAL statement_timeout = '10000'"))
-    # Atomically claim the proposal — prevents double-approve race condition.
+    # Atomically claim the proposal: prevents double-approve race condition.
     # If two requests arrive simultaneously, only one UPDATE sees status='pending'.
     claimed = await db.execute(
         text("""
@@ -162,7 +162,7 @@ async def approve_proposal(
         district_id = did_row.scalar()
         if district_id is None:
             logger.warning(
-                "approve_proposal: district_ubigeo '%s' not found in geo.districts — "
+                "approve_proposal: district_ubigeo '%s' not found in geo.districts: "
                 "alert will have no district assignment",
                 p["district_ubigeo"],
             )

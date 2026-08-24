@@ -1,4 +1,4 @@
-"""Alerts feed — read/write ops.alerts + operator actions → decision_log."""
+"""Alerts feed: read/write ops.alerts + operator actions → decision_log."""
 
 from __future__ import annotations
 
@@ -70,7 +70,7 @@ _VALID_ACTION_TYPES = {
 
 
 class LogEntry(BaseModel):
-    # operator_id accepted for backwards-compatibility but IGNORED — the JWT
+    # operator_id accepted for backwards-compatibility but IGNORED, the JWT
     # identity (op.username) is always used to prevent forgery.
     operator_id: Optional[str] = Field(None, max_length=100)
     action_type: str = Field(..., min_length=1, max_length=100)
@@ -80,7 +80,7 @@ class LogEntry(BaseModel):
 
 
 class AlertAction(BaseModel):
-    # operator_id accepted for backwards-compatibility but IGNORED — the JWT
+    # operator_id accepted for backwards-compatibility but IGNORED, the JWT
     # identity (op.username) is always used to prevent forgery.
     operator_id: Optional[str] = Field(None, max_length=100)
     action: str = Field(..., min_length=1, max_length=32)
@@ -165,7 +165,7 @@ async def list_alerts(
         params,
     )
     def _coerce_refs(raw):
-        # source_refs is JSONB — may be a dict OR a list of dicts depending on
+        # source_refs is JSONB: may be a dict OR a list of dicts depending on
         # who inserted the alert (alert_generator vs proposal-approval). Pass
         # through unchanged; the Pydantic model accepts either shape.
         if raw is None:
@@ -239,7 +239,7 @@ async def act_on_alert(
         {"status": new_status, "id": alert_id},
     )
     if not result.fetchone():
-        # 0 rows returned: alert is already in target state — idempotent no-op.
+        # 0 rows returned: alert is already in target state, idempotent no-op.
         # Still return age_seconds for consistent client-side SLA chip update.
         age_idem = (await db.execute(
             text("SELECT EXTRACT(EPOCH FROM (NOW() - created_at))::int FROM ops.alerts WHERE id = :id"),
@@ -280,7 +280,7 @@ async def act_on_alert(
         )
 
     # Include server-side age_seconds so frontend SLA chip stays accurate
-    # after escalation — eliminates client clock-skew reintroduced by re-fetch lag.
+    # after escalation: eliminates client clock-skew reintroduced by re-fetch lag.
     age_row = await db.execute(
         text("SELECT EXTRACT(EPOCH FROM (NOW() - created_at))::int FROM ops.alerts WHERE id = :id"),
         {"id": alert_id},
@@ -324,15 +324,15 @@ async def log_decision(
 
 # ─── Decision log ─────────────────────────────────────────────────────────────
 
-_STREAM_MAX_LIFETIME_S = 3600  # force reconnect after 1 h — prevents zombie connections
+_STREAM_MAX_LIFETIME_S = 3600  # force reconnect after 1 h, prevents zombie connections
 
 @router.get("/stream")
 async def alerts_stream(request: Request) -> StreamingResponse:
-    """Server-Sent Events — pushes active alerts every 10 s.
+    """Server-Sent Events: pushes active alerts every 10 s.
 
     Connection is capped at _STREAM_MAX_LIFETIME_S (1 h) to prevent indefinite
     resource holding. Clients receive a 'retry' event and should reconnect.
-    Alert data is public (matches GET /alerts) — no auth required for read.
+    Alert data is public (matches GET /alerts): no auth required for read.
     """
     async def _fetch_alerts() -> str:
         async with engine.connect() as conn:
@@ -362,7 +362,7 @@ async def alerts_stream(request: Request) -> StreamingResponse:
         return json.dumps(alerts, default=str)
 
     async def generate():
-        # Flush headers immediately with an SSE comment — defeats proxy buffering
+        # Flush headers immediately with an SSE comment, defeats proxy buffering
         # and makes the stream appear "live" to browsers on first connection.
         yield ": connected\n\n"
         deadline = asyncio.get_running_loop().time() + _STREAM_MAX_LIFETIME_S
@@ -546,7 +546,7 @@ async def export_pdf_report(
             SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, HRFlowable,
         )
     except ImportError:
-        raise HTTPException(status_code=503, detail="PDF export no disponible — dependencia reportlab no instalada")
+        raise HTTPException(status_code=503, detail="PDF export no disponible: dependencia reportlab no instalada")
 
     await db.execute(text("SET LOCAL statement_timeout = '15000'"))
     # ── Fetch active alerts ───────────────────────────────────────────────────
@@ -599,7 +599,7 @@ async def export_pdf_report(
         pagesize=A4,
         leftMargin=2.5 * cm, rightMargin=2.5 * cm,
         topMargin=2 * cm, bottomMargin=2 * cm,
-        title="Costa Resiliente — Informe Situacional",
+        title="Costa Resiliente: Informe Situacional",
     )
 
     styles = getSampleStyleSheet()
@@ -625,7 +625,7 @@ async def export_pdf_report(
 
     # ── Cover section ──────────────────────────────────────────────────────
     story.append(Paragraph("INFORME SITUACIONAL", h1))
-    story.append(Paragraph("Sistema Costa Resiliente — Lima Metropolitana", body))
+    story.append(Paragraph("Sistema Costa Resiliente: Lima Metropolitana", body))
     now = datetime.now(timezone.utc)
     story.append(Paragraph(
         f"Generado: {now.strftime('%d/%m/%Y %H:%M')} UTC  ·  "
@@ -666,7 +666,7 @@ async def export_pdf_report(
                 (r["type"] or "")[:20],
                 (r["severity"] or "").upper(),
                 (r["title"] or "")[:50],
-                (r["district_name"] or "—")[:25],
+                (r["district_name"] or "-")[:25],
                 created_s,
             ])
 
@@ -719,7 +719,7 @@ async def export_pdf_report(
                 logged_s,
                 (r["operator_id"] or "")[:20],
                 (r["action_type"] or "")[:20],
-                str(r["alert_id"]) if r["alert_id"] else "—",
+                str(r["alert_id"]) if r["alert_id"] else "-",
                 detail,
             ])
 

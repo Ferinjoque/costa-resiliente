@@ -1,7 +1,7 @@
 """DB query tools for the agentic copilot.
 
 Every function here executes ONLY parameterised whitelisted queries via the
-read-only AI engine.  The LLM never generates raw SQL — it only calls these
+read-only AI engine.  The LLM never generates raw SQL, it only calls these
 functions by name with extracted parameters.
 
 Each tool is described in TOOL_SCHEMAS (OpenAI function-calling format), which
@@ -389,7 +389,7 @@ async def get_social_clusters(db: AsyncSession, hours_back: int = 24, district_n
 async def get_infrastructure_impact(db: AsyncSession, hours_back: int = 240) -> list[dict]:
     hours_back = min(max(int(hours_back), 1), 240)
     # Sort by criticality: hospitals first (life safety), then other critical infra.
-    # Subquery deduplicates infrastructure that intersects multiple flood polygons —
+    # Subquery deduplicates infrastructure that intersects multiple flood polygons, 
     # without this, a hospital near two overlapping polygons would consume 2 of 50 rows,
     # potentially pushing fire stations/shelters out of the result set.
     sql = text("""

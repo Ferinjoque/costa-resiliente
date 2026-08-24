@@ -38,7 +38,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const operator = raw ? (JSON.parse(raw) as Operator) : null;
       if (token && operator) set({ token, operator });
     } catch {
-      // corrupted storage — ignore
+      // corrupted storage: ignore
     }
     // Register the 401 handler so a stale/expired token triggers auto-logout
     // and the login modal instead of a confusing "unauthorized" error toast.

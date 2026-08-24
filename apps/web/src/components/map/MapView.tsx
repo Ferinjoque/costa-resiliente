@@ -50,8 +50,8 @@ const HUAYCO_COLOR: Record<string, string> = {
 
 // Human-readable source names
 const SOURCE_LABEL: Record<string, string> = {
-  sinpad_historical:    "SINPAD histórico 2003–2020",
-  sinpad:              "SINPAD – INDECI",
+  sinpad_historical:    "SINPAD histórico 2003-2020",
+  sinpad:              "SINPAD: INDECI",
   sen1floods11:        "Sen1Floods11 (SAR U-Net)",
   planetary_computer:  "Microsoft Planetary Computer",
   senamhi:             "SENAMHI",
@@ -70,7 +70,7 @@ function trunc(s: string | null | undefined, max = 22): string | null {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Read current activeLayers imperatively — avoids stale closure. */
+/** Read current activeLayers imperatively: avoids stale closure. */
 function vis(key: string): "visible" | "none" {
   return useUIStore.getState().activeLayers.has(key) ? "visible" : "none";
 }
@@ -177,14 +177,14 @@ export default function MapView() {
     m.addControl(new maplibregl.ScaleControl(), "bottom-left");
 
     m.once("load", () => {
-      // Force recompute canvas size — prevents blank map when CSS settles after MapLibre init
+      // Force recompute canvas size: prevents blank map when CSS settles after MapLibre init
       m.resize();
 
       // ── Priority click handler ─────────────────────────────────────────
       // Order: points (social/huayco/infra) → flood polygon → hazard polygon
       //        → district (select only, no popup) → empty (dismiss popup)
       m.on("click", (e) => {
-        // 0a. Alert pins — operator-synthesized events, always check first
+        // 0a. Alert pins, operator-synthesized events, always check first
         if (m.getLayer("alerts-circle")) {
           const feats = m.queryRenderedFeatures(e.point, { layers: ["alerts-circle"] });
           if (feats.length) {
@@ -207,7 +207,7 @@ export default function MapView() {
           }
         }
 
-        // 0b. Hydro stations — smallest clickable target
+        // 0b. Hydro stations, smallest clickable target
         if (m.getLayer("stations-circle")) {
           const feats = m.queryRenderedFeatures(e.point, { layers: ["stations-circle"] });
           if (feats.length) {
@@ -215,7 +215,7 @@ export default function MapView() {
             const lvl = p.level_m != null ? Number(p.level_m) : null;
             const thr = p.alert_threshold_m != null ? Number(p.alert_threshold_m) : null;
             const overThr = lvl != null && thr != null && lvl >= thr;
-            openPopup(m, e.lngLat, popupHtml(`Estación ${String(p.name ?? "—")}`, [
+            openPopup(m, e.lngLat, popupHtml(`Estación ${String(p.name ?? "-")}`, [
               ["Río",     p.river ? String(p.river) : null],
               ["Fuente",  p.source ? String(p.source).toUpperCase() : null],
               ["Nivel",   lvl != null ? `${lvl.toFixed(2)} m${overThr ? " ⚠ ALERTA" : ""}` : null, overThr ? "cr-val-alert" : undefined],
@@ -227,7 +227,7 @@ export default function MapView() {
           }
         }
 
-        // 1a. Social clusters — click to zoom in
+        // 1a. Social clusters, click to zoom in
         if (m.getLayer("social-clusters")) {
           const clusterFeats = m.queryRenderedFeatures(e.point, { layers: ["social-clusters"] });
           if (clusterFeats.length) {
@@ -243,7 +243,7 @@ export default function MapView() {
           }
         }
 
-        // 1. Point layers — small targets, highest priority
+        // 1. Point layers, small targets, highest priority
         const POINT_LAYERS = ["social-circle", "huayco-circle", "infra-circle"] as const;
         for (const lid of POINT_LAYERS) {
           if (!m.getLayer(lid)) continue;
@@ -276,13 +276,13 @@ export default function MapView() {
             const RISK: Record<string, string> = {
               low: "Bajo", moderate: "Moderado", high: "Alto", very_high: "Muy alto",
             };
-            html = popupHtml(`Quebrada: ${p.name ?? "—"}`, [
+            html = popupHtml(`Quebrada: ${p.name ?? "-"}`, [
               ["Nivel de riesgo", p.risk_level ? (RISK[String(p.risk_level)] ?? String(p.risk_level)) : null],
               ["Probabilidad",    p.probability != null ? `${(Number(p.probability) * 100).toFixed(0)}%` : null],
               ["Lluvia detonante 24h", p.trigger_rain_24h_mm != null ? `${p.trigger_rain_24h_mm} mm` : null],
             ]);
           } else if (lid === "infra-circle") {
-            // ASCII tag prefix instead of emoji — renders consistently across
+            // ASCII tag prefix instead of emoji: renders consistently across
             // OS/browser combos and matches the SINAGERD-style chrome elsewhere.
             const TYPES: Record<string, string> = {
               hospital: "[H] Hospital",       school:       "[E] Colegio",
@@ -333,7 +333,7 @@ export default function MapView() {
               ["Pob. en riesgo", popLabel, popLabel ? "cr-val-alert" : undefined],
               ["Escena SAR", trunc(p.scene_id ? String(p.scene_id) : null)],
               ["Modelo",     modelVersion],
-              ["Origen",     isSynthetic ? "Datos de demostración — no es una detección real" : null,
+              ["Origen",     isSynthetic ? "Datos de demostración, no es una detección real" : null,
                              isSynthetic ? "cr-val-alert" : undefined],
             ], "cr-title-flood"), activePopup);
             return;
@@ -360,7 +360,7 @@ export default function MapView() {
           }
         }
 
-        // 4. District — select/deselect + auto-open dashboard
+        // 4. District, select/deselect + auto-open dashboard
         if (m.getLayer("districts-fill")) {
           const feats = m.queryRenderedFeatures(e.point, { layers: ["districts-fill"] });
           if (feats.length) {
@@ -377,7 +377,7 @@ export default function MapView() {
           }
         }
 
-        // 5. Empty space — dismiss popup
+        // 5. Empty space, dismiss popup
         activePopup.current?.remove();
         activePopup.current = null;
       });
@@ -410,7 +410,7 @@ export default function MapView() {
     };
   }, []);
 
-  // ─── 3D mode — terrain + sky + fog + extrusions for every active layer ──────
+  // ─── 3D mode: terrain + sky + fog + extrusions for every active layer ──────
   useEffect(() => {
     const m = map.current;
     if (!m) return;
@@ -433,7 +433,7 @@ export default function MapView() {
       const EASE_MS = 2000;
       m.easeTo({ pitch: 62, duration: EASE_MS, easing: (t) => 1 - (1 - t) ** 3 });
 
-      // Defer rotation start until the easeTo finishes — otherwise setBearing()
+      // Defer rotation start until the easeTo finishes, otherwise setBearing()
       // on the first RAF tick cancels the in-flight camera ease, leaving pitch at 0.
       if (_rotStartTimer.current != null) window.clearTimeout(_rotStartTimer.current);
       _rotStartTimer.current = window.setTimeout(() => {
@@ -468,7 +468,7 @@ export default function MapView() {
         _rotRaf.current = requestAnimationFrame(rotate);
       }, EASE_MS + 100);
 
-      // All 3D layer setup (sky + extrusions) — requires style to be loaded
+      // All 3D layer setup (sky + extrusions): requires style to be loaded
       const setup3DLayers = () => {
         // Sky atmosphere (navy night sky, slight halo at horizon)
         if (!m.getLayer("sky")) {
@@ -487,7 +487,7 @@ export default function MapView() {
 
         const { activeLayers: al, scenario: sc } = useUIStore.getState();
 
-        // District risk towers — height = population at risk, lit by risk level color
+        // District risk towers: height = population at risk, lit by risk level color
         if (m.getSource("risk-src") && !m.getLayer("risk-extrusion")) {
           m.addLayer({
             id: "risk-extrusion",
@@ -510,7 +510,7 @@ export default function MapView() {
           });
         }
 
-        // Flood water extrusion — animated opacity wave
+        // Flood water extrusion: animated opacity wave
         if (m.getSource("flood-src") && !m.getLayer("flood-extrusion")) {
           m.addLayer({
             id: "flood-extrusion",
@@ -543,7 +543,7 @@ export default function MapView() {
           _waterRaf.current = requestAnimationFrame(animWater);
         }
 
-        // IMERG precipitation columns — height + color scaled by rainfall mm
+        // IMERG precipitation columns: height + color scaled by rainfall mm
         if (m.getSource("imerg-src") && !m.getLayer("imerg-extrusion")) {
           const prop = accProp(sc.timeWindowHours);
           m.addLayer({
@@ -568,7 +568,7 @@ export default function MapView() {
           });
         }
 
-        // Hazard zone platforms — height indicates danger level
+        // Hazard zone platforms: height indicates danger level
         if (m.getSource("hazard-src") && !m.getLayer("hazard-extrusion")) {
           m.addLayer({
             id: "hazard-extrusion",
@@ -847,12 +847,12 @@ export default function MapView() {
     if (!m || !socialData) return;
     const labelColor: maplibregl.ExpressionSpecification = [
       "match", ["get", "triage_label"],
-      "needs_help",            "#ef4444",   // red — urgent help
-      "infrastructure_damage", "#f97316",   // orange — infra
-      "road_blocked",          "#f59e0b",   // amber — road
-      "huayco_observation",    "#dc2626",   // dark red — huayco sighting (high priority)
-      "flood_observation",     "#ef4444",   // red — flood sighting (danger, matches SocialFeedPanel priority=1)
-      "weather_observation",   "#38bdf8",   // light blue — meteo
+      "needs_help",            "#ef4444",   // red, urgent help
+      "infrastructure_damage", "#f97316",   // orange, infra
+      "road_blocked",          "#f59e0b",   // amber, road
+      "huayco_observation",    "#dc2626",   // dark red, huayco sighting (high priority)
+      "flood_observation",     "#ef4444",   // red, flood sighting (danger, matches SocialFeedPanel priority=1)
+      "weather_observation",   "#38bdf8",   // light blue, meteo
       "#94a3b8",                            // default grey
     ];
     const v = vis("social");
@@ -948,7 +948,7 @@ export default function MapView() {
         layout: { visibility: vis("shelters") },
         paint: {
           "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 5, 13, 9],
-          "circle-color": "#34d399",   // sage green — safe zone semantic
+          "circle-color": "#34d399",   // sage green, safe zone semantic
           "circle-opacity": 0.9,
           "circle-stroke-color": "#0f172a",
           "circle-stroke-width": 1.5,
@@ -969,9 +969,9 @@ export default function MapView() {
       m.on("click", "shelters-circle", (e) => {
         const p = e.features?.[0]?.properties as Record<string, unknown> | undefined;
         if (!p) return;
-        const cap = p.capacity ? `${Number(p.capacity).toLocaleString("es-PE")} pers.` : "—";
+        const cap = p.capacity ? `${Number(p.capacity).toLocaleString("es-PE")} pers.` : "-";
         const html = popupHtml(`[A] ${String(p.name ?? "Albergue")}`, [
-          ["Tipo",       String(p.shelter_type ?? "—").replace("_", " ")],
+          ["Tipo",       String(p.shelter_type ?? "-").replace("_", " ")],
           ["Capacidad",  cap],
           ["Distrito",   p.district_name ? String(p.district_name) : null],
           ["Código INDECI", p.indeci_code ? String(p.indeci_code) : null],
@@ -1084,7 +1084,7 @@ export default function MapView() {
           try {
             if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", v);
           } catch {
-            // Layer not ready yet — will pick up correct visibility when added
+            // Layer not ready yet: will pick up correct visibility when added
           }
         }
       }

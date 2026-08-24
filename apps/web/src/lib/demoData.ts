@@ -1,5 +1,5 @@
 /**
- * Realistic demo data for Costa Resiliente — Lima El Niño Costero 2017 scenario.
+ * Realistic demo data for Costa Resiliente: Lima El Niño Costero 2017 scenario.
  * Used as fallback when the API is unreachable or returns empty results.
  * Mirrors the auto_seed.py data so the UI looks live even without a backend.
  */
@@ -84,7 +84,7 @@ export const DEMO_IMERG: ImergCollection = {
 
 export const DEMO_FLOOD: FloodCollection = {
   type: "FeatureCollection",
-  source: "Sentinel-1 SAR (demo — El Niño Costero 2017)",
+  source: "Sentinel-1 SAR (demo: El Niño Costero 2017)",
   retrieved_at: new Date(NOW).toISOString(),
   data_updated_at: hoursAgo(3),
   features: [
@@ -132,7 +132,7 @@ export const DEMO_HUAYCO: HuaycoCollection = {
   ],
 };
 
-// age_seconds = hours_ago * 3600 — pre-computed so demo SlaChip uses server-side age (no clock skew)
+// age_seconds = hours_ago * 3600: pre-computed so demo SlaChip uses server-side age (no clock skew)
 const secsAgo = (h: number) => Math.round(h * 3600);
 
 export const DEMO_ALERTS: Alert[] = [
@@ -141,7 +141,7 @@ export const DEMO_ALERTS: Alert[] = [
     type: "huayco",
     severity: "critical",
     status: "active",
-    title: "Riesgo crítico de huayco — Quebrada Jicamarca",
+    title: "Riesgo crítico de huayco: Quebrada Jicamarca",
     description: "Precipitación acumulada 72h supera umbral CRÍTICO ANA (>50 mm/72h). Modelo XGBoost: probabilidad 0.91.",
     district_id: 1,
     lat: -11.955,
@@ -155,7 +155,7 @@ export const DEMO_ALERTS: Alert[] = [
     type: "flood",
     severity: "high",
     status: "active",
-    title: "Inundación activa — Sector Huachipa",
+    title: "Inundación activa: Sector Huachipa",
     description: "Desborde del río Rímac detectado por Sentinel-1 (SAR). Área afectada: ~1.8 km².",
     district_id: 2,
     lat: -11.982,
@@ -169,7 +169,7 @@ export const DEMO_ALERTS: Alert[] = [
     type: "flood",
     severity: "high",
     status: "active",
-    title: "Inundación — Carabayllo sector norte",
+    title: "Inundación: Carabayllo sector norte",
     description: "Río Chillón sobre umbral de alerta. Nivel: 3.1 m (alerta: 2.5 m). 3 asentamientos afectados.",
     district_id: 3,
     lat: -11.878,
@@ -183,8 +183,8 @@ export const DEMO_ALERTS: Alert[] = [
     type: "flood",
     severity: "medium",
     status: "active",
-    title: "Nivel del río Rímac elevado — Estación Chosica",
-    description: "Nivel actual: 2.4 m (umbral SENAMHI: 2.5 m — ⚠ acercándose). Tendencia ascendente.",
+    title: "Nivel del río Rímac elevado: Estación Chosica",
+    description: "Nivel actual: 2.4 m (umbral SENAMHI: 2.5 m, ⚠ acercándose). Tendencia ascendente.",
     district_id: 4,
     lat: -11.970,
     lng: -76.790,
@@ -197,7 +197,7 @@ export const DEMO_ALERTS: Alert[] = [
     type: "social_cluster",
     severity: "medium",
     status: "active",
-    title: "Cluster social — reportes de bloqueo vial en La Molina",
+    title: "Cluster social: reportes de bloqueo vial en La Molina",
     description: "8 publicaciones geolocalizadas en 15 min. Triage: 6 × road_blocked.",
     district_id: null,
     lat: -12.090,
@@ -211,7 +211,7 @@ export const DEMO_ALERTS: Alert[] = [
     type: "huayco",
     severity: "low",
     status: "active",
-    title: "Alerta temprana — Quebrada Canto Grande",
+    title: "Alerta temprana: Quebrada Canto Grande",
     description: "Precipitación 24h: 18 mm (umbral: 35 mm). Susceptibilidad moderada.",
     district_id: 5,
     lat: -11.938,
@@ -225,7 +225,7 @@ export const DEMO_ALERTS: Alert[] = [
     type: "flood",
     severity: "high",
     status: "acknowledged",
-    title: "Inundación contenida — Sector Ñaña",
+    title: "Inundación contenida: Sector Ñaña",
     description: "Desborde menor controlado por defensa ribereña. Monitoreo continuo activo.",
     district_id: 6,
     lat: -11.958,
@@ -286,7 +286,7 @@ export interface CopilotDemoResponse {
 
 export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
   "¿Cuáles son los distritos en mayor riesgo ahora?": {
-    answer: "Actualmente los distritos con mayor riesgo son:\n\n1. **Lurigancho-Chosica** — riesgo ALTO: 3 polígonos de inundación SAR activos (4.2 km²), alerta crítica de huayco en quebrada Jicamarca (probabilidad 0.91).\n2. **Carabayllo** — riesgo ALTO: desborde del río Chillón sector norte, nivel 3.1 m (umbral: 2.5 m), 2 polígonos activos.\n3. **Ate** — riesgo ALTO: inundación activa en Huachipa 1.8 km², tendencia ascendente en estación Puente Los Ángeles.\n\nTotal: 4 alertas activas, ~84,572 personas en zona de riesgo.",
+    answer: "Actualmente los distritos con mayor riesgo son:\n\n1. **Lurigancho-Chosica**, riesgo ALTO: 3 polígonos de inundación SAR activos (4.2 km²), alerta crítica de huayco en quebrada Jicamarca (probabilidad 0.91).\n2. **Carabayllo**, riesgo ALTO: desborde del río Chillón sector norte, nivel 3.1 m (umbral: 2.5 m), 2 polígonos activos.\n3. **Ate**, riesgo ALTO: inundación activa en Huachipa 1.8 km², tendencia ascendente en estación Puente Los Ángeles.\n\nTotal: 4 alertas activas, ~84,572 personas en zona de riesgo.",
     intent: "flood_status",
     confidence: 0.92,
     query_plan: "flood_status_by_district",
@@ -297,7 +297,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Qué quebradas tienen riesgo alto de huayco?": {
-    answer: "Las quebradas con riesgo alto de huayco en las últimas 24 horas:\n\n• **Quebrada Jicamarca** (Lurigancho): probabilidad 0.91 — precipitación 24h superó umbral ANA (28.2 mm > 15 mm/24h). EVACUACIÓN PREVENTIVA recomendada.\n• **Quebrada Pedregal** (Carabayllo): probabilidad 0.74 — suelo saturado, slope 28°.\n• **Quebrada Quirio** (Ate): probabilidad 0.61 — señales sociales de bloqueo vial confirmadas.\n\nFuente: Modelo XGBoost entrenado en SINPAD 2003–2020 + IMERG NASA.",
+    answer: "Las quebradas con riesgo alto de huayco en las últimas 24 horas:\n\n• **Quebrada Jicamarca** (Lurigancho): probabilidad 0.91, precipitación 24h superó umbral ANA (28.2 mm > 15 mm/24h). EVACUACIÓN PREVENTIVA recomendada.\n• **Quebrada Pedregal** (Carabayllo): probabilidad 0.74, suelo saturado, slope 28°.\n• **Quebrada Quirio** (Ate): probabilidad 0.61, señales sociales de bloqueo vial confirmadas.\n\nFuente: Modelo XGBoost entrenado en SINPAD 2003-2020 + IMERG NASA.",
     intent: "huayco_risk",
     confidence: 0.89,
     query_plan: "huayco_high_risk_quebradas",
@@ -308,7 +308,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuánta lluvia acumulada hubo en el Rímac en las últimas 72h?": {
-    answer: "Lluvia acumulada en la cuenca del Rímac (últimas 72 horas, fuente NASA IMERG Late Run V07B):\n\n• **Total cuenca**: 63.4 mm — ⚠ EMERGENCIA, supera umbral CRÍTICO ANA (>50 mm/72h).\n• **Pico**: 28.2 mm en la madrugada del 15 de marzo (03:00–06:00 Lima).\n• **Estación Chosica (ANA)**: nivel del río 2.4 m, caudal 185 m³/s.\n• **Estación Chaclacayo**: nivel 1.8 m, tendencia ascendente.\n\nEstado: EMERGENCIA HIDROLÓGICA activa para cuenca Rímac.",
+    answer: "Lluvia acumulada en la cuenca del Rímac (últimas 72 horas, fuente NASA IMERG Late Run V07B):\n\n• **Total cuenca**: 63.4 mm, ⚠ EMERGENCIA, supera umbral CRÍTICO ANA (>50 mm/72h).\n• **Pico**: 28.2 mm en la madrugada del 15 de marzo (03:00-06:00 Lima).\n• **Estación Chosica (ANA)**: nivel del río 2.4 m, caudal 185 m³/s.\n• **Estación Chaclacayo**: nivel 1.8 m, tendencia ascendente.\n\nEstado: EMERGENCIA HIDROLÓGICA activa para cuenca Rímac.",
     intent: "rainfall_accumulation",
     confidence: 0.94,
     query_plan: "imerg_72h_watershed",
@@ -340,7 +340,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuál es el nivel del río Rímac en Chosica?": {
-    answer: "Estación Chosica (ANA, cuenca Rímac):\n\n• **Nivel actual**: 2.4 m — ⚠ acercándose al umbral SENAMHI (2.5 m, a 0.1 m del umbral de ALERTA).\n• **Caudal**: 185 m³/s — tendencia ascendente en las últimas 3 horas.\n• **Última lectura**: hace 15 minutos.\n• **Umbral de activación SENAMHI**: 2.5 m (aún no alcanzado — monitorear de cerca).\n• **Registro histórico El Niño 2017**: máximo 4.2 m el 22 de marzo de 2017.\n\nFuente: ANA Observatorio Chirilu (scraper hidrometría).",
+    answer: "Estación Chosica (ANA, cuenca Rímac):\n\n• **Nivel actual**: 2.4 m, ⚠ acercándose al umbral SENAMHI (2.5 m, a 0.1 m del umbral de ALERTA).\n• **Caudal**: 185 m³/s, tendencia ascendente en las últimas 3 horas.\n• **Última lectura**: hace 15 minutos.\n• **Umbral de activación SENAMHI**: 2.5 m (aún no alcanzado: monitorear de cerca).\n• **Registro histórico El Niño 2017**: máximo 4.2 m el 22 de marzo de 2017.\n\nFuente: ANA Observatorio Chirilu (scraper hidrometría).",
     intent: "river_level",
     confidence: 0.96,
     query_plan: "station_latest_reading",
@@ -349,7 +349,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuáles son las alertas activas ahora?": {
-    answer: "Alertas activas en Lima Metropolitana (4 alertas, estado EMERGENCIA):\n\n1. 🔴 **CRÍTICO** — Riesgo huayco Quebrada Jicamarca (Lurigancho): prob. 0.91, precipitación 24h sobre umbral.\n2. 🟠 **ALTO** — Inundación activa Sector Huachipa (Ate): 1.8 km² SAR detectado.\n3. 🟠 **ALTO** — Inundación Carabayllo sector norte: Río Chillón nivel 3.1 m (umbral 2.5 m).\n4. 🟡 **MEDIO** — Río Rímac elevado en Chosica: nivel 2.4 m (⚠ acercándose al umbral SENAMHI 2.5 m).\n\nAcción recomendada: activar protocolo EDAN para quebrada Jicamarca.",
+    answer: "Alertas activas en Lima Metropolitana (4 alertas, estado EMERGENCIA):\n\n1. 🔴 **CRÍTICO**. Riesgo huayco Quebrada Jicamarca (Lurigancho): prob. 0.91, precipitación 24h sobre umbral.\n2. 🟠 **ALTO**. Inundación activa Sector Huachipa (Ate): 1.8 km² SAR detectado.\n3. 🟠 **ALTO**. Inundación Carabayllo sector norte: Río Chillón nivel 3.1 m (umbral 2.5 m).\n4. 🟡 **MEDIO**. Río Rímac elevado en Chosica: nivel 2.4 m (⚠ acercándose al umbral SENAMHI 2.5 m).\n\nAcción recomendada: activar protocolo EDAN para quebrada Jicamarca.",
     intent: "flood_status",
     confidence: 0.97,
     query_plan: "active_alerts_summary",
@@ -360,7 +360,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Qué distritos debo evacuar primero?": {
-    answer: "Prioridad de evacuación basada en riesgo compuesto (SAR × IMERG × huayco × señales sociales):\n\n1. **Lurigancho-Chosica** — PRIORIDAD 1: quebrada Jicamarca con prob. huayco 0.91, 3 polígonos SAR activos, señales sociales urgentes.\n2. **Carabayllo norte** — PRIORIDAD 2: río Chillón sobre umbral, 2 asentamientos afectados.\n3. **Ate (sector Huachipa)** — PRIORIDAD 3: inundación contenida pero infraestructura vial comprometida.\n\nTotal estimado: ~52,000 personas en zonas de evacuación preventiva.\n\nFuente: Modelo de fusión Costa Resiliente + SINPAD 2003–2020.",
+    answer: "Prioridad de evacuación basada en riesgo compuesto (SAR × IMERG × huayco × señales sociales):\n\n1. **Lurigancho-Chosica**. PRIORIDAD 1: quebrada Jicamarca con prob. huayco 0.91, 3 polígonos SAR activos, señales sociales urgentes.\n2. **Carabayllo norte**. PRIORIDAD 2: río Chillón sobre umbral, 2 asentamientos afectados.\n3. **Ate (sector Huachipa)**. PRIORIDAD 3: inundación contenida pero infraestructura vial comprometida.\n\nTotal estimado: ~52,000 personas en zonas de evacuación preventiva.\n\nFuente: Modelo de fusión Costa Resiliente + SINPAD 2003-2020.",
     intent: "evacuation_priority",
     confidence: 0.88,
     query_plan: "evacuation_priority_composite_risk",
@@ -371,7 +371,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuánta precipitación es necesaria para activar un huayco en Jicamarca?": {
-    answer: "Umbral de activación de huayco — Quebrada Jicamarca:\n\n• **Umbral ANA alerta 24h**: 15 mm/24h. **Umbral ANA crítico 72h**: 50 mm/72h.\n• **Precipitación actual**: 63.4 mm/72h en cuenca alta del Rímac — ⚠ EMERGENCIA.\n• **Última 24h**: 28.2 mm (188% del umbral de alerta 24h — superado).\n• **Probabilidad modelo XGBoost**: 0.91 — RIESGO CRÍTICO.\n• **Variables adicionales**: suelo saturado (3 días consecutivos de lluvia), pendiente 35°, litología friable.\n\nEl umbral fue superado a las 03:00 Lima del 15 de marzo.\n\nFuente: Modelo XGBoost entrenado en SINPAD × IMERG NASA × DEM SRTM.",
+    answer: "Umbral de activación de huayco. Quebrada Jicamarca:\n\n• **Umbral ANA alerta 24h**: 15 mm/24h. **Umbral ANA crítico 72h**: 50 mm/72h.\n• **Precipitación actual**: 63.4 mm/72h en cuenca alta del Rímac, ⚠ EMERGENCIA.\n• **Última 24h**: 28.2 mm (188% del umbral de alerta 24h, superado).\n• **Probabilidad modelo XGBoost**: 0.91, RIESGO CRÍTICO.\n• **Variables adicionales**: suelo saturado (3 días consecutivos de lluvia), pendiente 35°, litología friable.\n\nEl umbral fue superado a las 03:00 Lima del 15 de marzo.\n\nFuente: Modelo XGBoost entrenado en SINPAD × IMERG NASA × DEM SRTM.",
     intent: "huayco_risk",
     confidence: 0.93,
     query_plan: "huayco_threshold_analysis",
@@ -380,7 +380,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuál es el pronóstico para las próximas 24 horas?": {
-    answer: "Pronóstico hidrometeorológico — Lima Metropolitana (próximas 24 h):\n\n• **Cuenca Rímac**: 18–24 mm adicionales previstos. Nivel Chosica podría alcanzar 2.9–3.1 m hacia las 20:00.\n• **Cuenca Chillón**: 12–16 mm. Carabayllo norte mantiene riesgo ALTO.\n• **Viento**: Brisa marina sin anomalías. Sin riesgo de lluvias costeras intensas.\n• **Temperatura**: Mínima 14 °C en cuencas altas, favorece saturación del suelo nocturna.\n\nVentana crítica: 02:00–08:00 Lima del 16 de marzo.\n\nFuente: SENAMHI pronóstico operacional + IMERG Late Run V07B extrapolación.",
+    answer: "Pronóstico hidrometeorológico. Lima Metropolitana (próximas 24 h):\n\n• **Cuenca Rímac**: 18-24 mm adicionales previstos. Nivel Chosica podría alcanzar 2.9-3.1 m hacia las 20:00.\n• **Cuenca Chillón**: 12-16 mm. Carabayllo norte mantiene riesgo ALTO.\n• **Viento**: Brisa marina sin anomalías. Sin riesgo de lluvias costeras intensas.\n• **Temperatura**: Mínima 14 °C en cuencas altas, favorece saturación del suelo nocturna.\n\nVentana crítica: 02:00-08:00 Lima del 16 de marzo.\n\nFuente: SENAMHI pronóstico operacional + IMERG Late Run V07B extrapolación.",
     intent: "weather_forecast",
     confidence: 0.85,
     query_plan: "forecast_24h_watershed",
@@ -391,7 +391,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuál es el estado del río Chillón?": {
-    answer: "Río Chillón — estado actual (estación Puente Carabayllo, ANA):\n\n• **Nivel**: 3.1 m — **sobre umbral de alerta** (2.5 m).\n• **Caudal**: 142 m³/s — 2.3× la media histórica para la fecha.\n• **Tendencia**: Descendente en las últimas 2 horas (pico fue 3.4 m a las 04:30).\n• **Desborde**: Sector norte Carabayllo afectado, AA.HH. El Progreso y 14 de Febrero.\n• **Umbral evacuación**: 4.0 m (no alcanzado).\n\nFuente: ANA Observatorio Chirilu + señales sociales Telegram/Reddit.",
+    answer: "Río Chillón, estado actual (estación Puente Carabayllo, ANA):\n\n• **Nivel**: 3.1 m, **sobre umbral de alerta** (2.5 m).\n• **Caudal**: 142 m³/s, 2.3× la media histórica para la fecha.\n• **Tendencia**: Descendente en las últimas 2 horas (pico fue 3.4 m a las 04:30).\n• **Desborde**: Sector norte Carabayllo afectado, AA.HH. El Progreso y 14 de Febrero.\n• **Umbral evacuación**: 4.0 m (no alcanzado).\n\nFuente: ANA Observatorio Chirilu + señales sociales Telegram/Reddit.",
     intent: "river_level",
     confidence: 0.94,
     query_plan: "station_latest_reading",
@@ -401,7 +401,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Dónde están los albergues más cercanos?": {
-    answer: "Albergues habilitados — Lima Metropolitana (actualizados por INDECI/PCM):\n\n• **Coliseo Lurigancho** — cap. 800 personas, abierto, sin cupo crítico. (Lurigancho-Chosica)\n• **IE San Luis Gonzaga** — cap. 400 personas, habilitado. (Carabayllo)\n• **Loza deportiva Huachipa** — cap. 250 personas. Solo techo; alimentos en coordinación. (Ate)\n• **Cuartel Barbones** — cap. 1,200 personas (FFAA). En alerta, disponible si se activa EDAN.\n\nTotal capacidad disponible: ~2,650 personas.\nDemanda estimada actual: ~1,100 desplazados registrados.\n\nFuente: INDECI SIT / SINPAD reporte 15-Mar-2017.",
+    answer: "Albergues habilitados. Lima Metropolitana (actualizados por INDECI/PCM):\n\n• **Coliseo Lurigancho**, cap. 800 personas, abierto, sin cupo crítico. (Lurigancho-Chosica)\n• **IE San Luis Gonzaga**, cap. 400 personas, habilitado. (Carabayllo)\n• **Loza deportiva Huachipa**: cap. 250 personas. Solo techo; alimentos en coordinación. (Ate)\n• **Cuartel Barbones**: cap. 1,200 personas (FFAA). En alerta, disponible si se activa EDAN.\n\nTotal capacidad disponible: ~2,650 personas.\nDemanda estimada actual: ~1,100 desplazados registrados.\n\nFuente: INDECI SIT / SINPAD reporte 15-Mar-2017.",
     intent: "evacuation_priority",
     confidence: 0.82,
     query_plan: "shelter_locations_capacity",
@@ -412,7 +412,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cómo se compara con El Niño de 1998?": {
-    answer: "Comparación El Niño Costero 2017 vs. El Niño 1997–1998 (Lima Metropolitana):\n\n• **Temperatura mar (TSM)**: 2017 +2.8 °C anomalía costera vs. 1998 +3.1 °C en cuenca de Perú. Fenómeno local más focalizado.\n• **Lluvia acumulada Rímac (marzo)**: 2017 → 180 mm; 1998 → 142 mm. **2017 superó** a 1998 en cuenca baja.\n• **Eventos SINPAD**: 2017 registró 4,200 eventos en Lima vs. 1,800 en 1998 — mayor densidad de afectación urbana.\n• **Víctimas Lima**: 2017: 85 fallecidos; 1998: 61 fallecidos.\n• **Desborde Rímac 2017**: Pico 4.2 m (22-Mar). Estimado actual si tendencia continúa: 3.4–3.8 m el 16-Mar.\n\nFuente: SENAMHI datos históricos × SINPAD 2003–2020.",
+    answer: "Comparación El Niño Costero 2017 vs. El Niño 1997-1998 (Lima Metropolitana):\n\n• **Temperatura mar (TSM)**: 2017 +2.8 °C anomalía costera vs. 1998 +3.1 °C en cuenca de Perú. Fenómeno local más focalizado.\n• **Lluvia acumulada Rímac (marzo)**: 2017 → 180 mm; 1998 → 142 mm. **2017 superó** a 1998 en cuenca baja.\n• **Eventos SINPAD**: 2017 registró 4,200 eventos en Lima vs. 1,800 en 1998, mayor densidad de afectación urbana.\n• **Víctimas Lima**: 2017: 85 fallecidos; 1998: 61 fallecidos.\n• **Desborde Rímac 2017**: Pico 4.2 m (22-Mar). Estimado actual si tendencia continúa: 3.4-3.8 m el 16-Mar.\n\nFuente: SENAMHI datos históricos × SINPAD 2003-2020.",
     intent: "historical_comparison",
     confidence: 0.86,
     query_plan: "historical_event_comparison",
@@ -422,7 +422,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuántas señales sociales urgentes hay ahora?": {
-    answer: "Señales sociales urgentes — ventana 3 horas (triaje IA + Presidio PII):\n\n• **huayco_observation** (Avistamiento huayco): 4 señales — Lurigancho (3), Carabayllo (1). ⚠ UMBRAL CRÍTICO SUPERADO — activar protocolo quebradas.\n• **needs_help** (Ayuda urgente): 6 señales — Lurigancho (3), SJL (2), Ate (1).\n• **flood_observation** (Avistamiento inundación): 3 señales — La Molina (2), Ate (1).\n• **road_blocked** (Vía bloqueada): 5 señales — La Molina (2), Carabayllo (2), Lurigancho (1).\n• Total urgentes: **18 de 32 señales** en ventana de 48 h.\n\nFuentes activas: Bluesky (14), Reddit (8), Telegram (7), RSS (3).\nConfianza media de triaje: 0.83.\nPII detectado y anonimizado: 3 registros en 48 h.\n\nFuente: Costa Resiliente social pipeline + Presidio anonymizer.",
+    answer: "Señales sociales urgentes, ventana 3 horas (triaje IA + Presidio PII):\n\n• **huayco_observation** (Avistamiento huayco): 4 señales. Lurigancho (3), Carabayllo (1). ⚠ UMBRAL CRÍTICO SUPERADO, activar protocolo quebradas.\n• **needs_help** (Ayuda urgente): 6 señales. Lurigancho (3), SJL (2), Ate (1).\n• **flood_observation** (Avistamiento inundación): 3 señales. La Molina (2), Ate (1).\n• **road_blocked** (Vía bloqueada): 5 señales. La Molina (2), Carabayllo (2), Lurigancho (1).\n• Total urgentes: **18 de 32 señales** en ventana de 48 h.\n\nFuentes activas: Bluesky (14), Reddit (8), Telegram (7), RSS (3).\nConfianza media de triaje: 0.83.\nPII detectado y anonimizado: 3 registros en 48 h.\n\nFuente: Costa Resiliente social pipeline + Presidio anonymizer.",
     intent: "social_signals",
     confidence: 0.88,
     query_plan: "social_urgent_count_3h",
@@ -435,18 +435,18 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Qué rutas de evacuación están bloqueadas?": {
-    answer: "Rutas de evacuación con bloqueo confirmado o sospechoso:\n\n🔴 **Bloqueadas** (señales sociales + análisis SAR):\n• Av. La Molina altura km 12 — huayco activo.\n• Carretera Central km 20 (Ñaña) — desborde cuneta, tráfico detenido.\n• Jr. Chosica–Lurigancho altura Puente Huachipa — agua sobre calzada.\n\n🟡 **Restricción parcial**:\n• Av. Independencia (Carabayllo) — un carril.\n• Autopista Ramiro Prialé km 8 — barro lateral.\n\nRuta alternativa recomendada: Autopista Ramiro Prialé → Evitamiento → Panamericana Sur.\n\nFuente: Señales Reddit/Telegram × OSM × análisis SAR Sentinel-1.",
+    answer: "Rutas de evacuación con bloqueo confirmado o sospechoso:\n\n🔴 **Bloqueadas** (señales sociales + análisis SAR):\n• Av. La Molina altura km 12, huayco activo.\n• Carretera Central km 20 (Ñaña), desborde cuneta, tráfico detenido.\n• Jr. Chosica. Lurigancho altura Puente Huachipa, agua sobre calzada.\n\n🟡 **Restricción parcial**:\n• Av. Independencia (Carabayllo): un carril.\n• Autopista Ramiro Prialé km 8, barro lateral.\n\nRuta alternativa recomendada: Autopista Ramiro Prialé → Evitamiento → Panamericana Sur.\n\nFuente: Señales Reddit/Telegram × OSM × análisis SAR Sentinel-1.",
     intent: "road_status",
     confidence: 0.79,
     query_plan: "road_blockage_social_sar",
     sources: [
       { road: "Carretera Central km 20", status: "blocked", source: "social+SAR" },
       { road: "Av. La Molina km 12", status: "blocked", source: "huayco" },
-      { road: "Jr. Chosica–Lurigancho", status: "restricted", source: "SAR" },
+      { road: "Jr. Chosica. Lurigancho", status: "restricted", source: "SAR" },
     ],
   },
   "¿Qué estaciones hidrológicas están en alerta?": {
-    answer: "Estaciones hidrológicas ANA/SENAMHI en nivel de alerta (Lima):\n\n⚠️ **Acercándose al umbral** (monitorear):\n• Estación Chosica (Rímac): 2.4 m / umbral SENAMHI 2.5 m — ⚠ a 0.1 m del umbral, tendencia subiendo.\n\n🟠 **Sobre umbral**:\n• Puente Carabayllo (Chillón): 3.1 m / umbral 2.5 m — tendencia descendente.\n• Puente Los Ángeles (Rímac, Ate): 1.9 m / umbral 1.6 m.\n\n🟢 **Normal**:\n• Lurín (Manchay): 0.4 m / umbral 1.2 m.\n• Rímac en Santa Eulalia: 0.8 m — bajo, sin riesgo.\n\nFuente: ANA Observatorio Chirilu scraper en tiempo real.",
+    answer: "Estaciones hidrológicas ANA/SENAMHI en nivel de alerta (Lima):\n\n⚠️ **Acercándose al umbral** (monitorear):\n• Estación Chosica (Rímac): 2.4 m / umbral SENAMHI 2.5 m, ⚠ a 0.1 m del umbral, tendencia subiendo.\n\n🟠 **Sobre umbral**:\n• Puente Carabayllo (Chillón): 3.1 m / umbral 2.5 m, tendencia descendente.\n• Puente Los Ángeles (Rímac, Ate): 1.9 m / umbral 1.6 m.\n\n🟢 **Normal**:\n• Lurín (Manchay): 0.4 m / umbral 1.2 m.\n• Rímac en Santa Eulalia: 0.8 m, bajo, sin riesgo.\n\nFuente: ANA Observatorio Chirilu scraper en tiempo real.",
     intent: "river_level",
     confidence: 0.95,
     query_plan: "all_stations_status",
@@ -457,7 +457,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuál es el riesgo en San Juan de Lurigancho?": {
-    answer: "Evaluación de riesgo — San Juan de Lurigancho (ubigeo 150132):\n\n• **Nivel de riesgo**: MODERADO.\n• **Inundación SAR**: 0.8 km² en sector Zárate–Las Flores.\n• **Huayco**: Sin quebradas en zona crítica. Histórico SINPAD: 12 eventos 2003–2020.\n• **Señales sociales**: 5 en 3 h, 2 urgentes (needs_help sector Canto Rey).\n• **Población en riesgo**: ~11,772 hab. en zona SAR.\n• **Infraestructura**: 2 colegios en zona inundada, 0 hospitales afectados.\n\nAcción recomendada: vigilancia y preposicionamiento de recursos. Sin evacuación masiva por ahora.\n\nFuente: Costa Resiliente fusión multicapa.",
+    answer: "Evaluación de riesgo. San Juan de Lurigancho (ubigeo 150132):\n\n• **Nivel de riesgo**: MODERADO.\n• **Inundación SAR**: 0.8 km² en sector Zárate. Las Flores.\n• **Huayco**: Sin quebradas en zona crítica. Histórico SINPAD: 12 eventos 2003-2020.\n• **Señales sociales**: 5 en 3 h, 2 urgentes (needs_help sector Canto Rey).\n• **Población en riesgo**: ~11,772 hab. en zona SAR.\n• **Infraestructura**: 2 colegios en zona inundada, 0 hospitales afectados.\n\nAcción recomendada: vigilancia y preposicionamiento de recursos. Sin evacuación masiva por ahora.\n\nFuente: Costa Resiliente fusión multicapa.",
     intent: "flood_status",
     confidence: 0.87,
     query_plan: "district_risk_composite",
@@ -467,7 +467,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Qué pasó en el evento El Niño Costero 2017?": {
-    answer: "El Niño Costero 2017 — Lima Metropolitana (resumen ejecutivo):\n\n• **Período crítico**: 15 de enero al 30 de abril de 2017.\n• **Lluvia Rímac cuenca baja (marzo)**: 180 mm — récord histórico para el mes.\n• **Eventos SINPAD solo Lima**: 4,218 registros (huaycos, inundaciones, derrumbes).\n• **Afectados**: 330,000 personas en Lima Metropolitana.\n• **Pérdidas**: 85 fallecidos, 18,000 viviendas colapsadas o inhabitables.\n• **Pico Rímac**: 4.2 m en Chosica (22-Mar-2017, 04:15 Lima).\n• **Distritos más afectados**: Lurigancho-Chosica, Carabayllo, SJL, Chaclacayo, Ate.\n\nCosta Resiliente replica esta escenografía con datos reales IMERG + SINPAD para entrenamiento.\n\nFuente: SENAMHI × INDECI × SINPAD.",
+    answer: "El Niño Costero 2017. Lima Metropolitana (resumen ejecutivo):\n\n• **Período crítico**: 15 de enero al 30 de abril de 2017.\n• **Lluvia Rímac cuenca baja (marzo)**: 180 mm, récord histórico para el mes.\n• **Eventos SINPAD solo Lima**: 4,218 registros (huaycos, inundaciones, derrumbes).\n• **Afectados**: 330,000 personas en Lima Metropolitana.\n• **Pérdidas**: 85 fallecidos, 18,000 viviendas colapsadas o inhabitables.\n• **Pico Rímac**: 4.2 m en Chosica (22-Mar-2017, 04:15 Lima).\n• **Distritos más afectados**: Lurigancho-Chosica, Carabayllo, SJL, Chaclacayo, Ate.\n\nCosta Resiliente replica esta escenografía con datos reales IMERG + SINPAD para entrenamiento.\n\nFuente: SENAMHI × INDECI × SINPAD.",
     intent: "historical_comparison",
     confidence: 0.98,
     query_plan: "el_nino_2017_summary",
@@ -477,7 +477,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Cuántos recursos de respuesta están desplegados?": {
-    answer: "Recursos de respuesta activos — Lima Metropolitana (15-Mar-2017):\n\n• **Personal INDECI**: 240 efectivos en campo (Lurigancho: 80, Carabayllo: 60, Ate: 60, SJL: 40).\n• **Vehículos**: 18 camiones cisterna, 12 volquetes, 6 ambulancias, 3 helicópteros SAR.\n• **Equipos de búsqueda y rescate**: 4 equipos USAR, 1 equipo con perros de búsqueda.\n• **Alimentos**: 3,200 raciones distribuidas. Déficit estimado 800 raciones.\n• **Agua potable**: 12 cisternas operando en Lurigancho y Carabayllo.\n\nBrecha crítica: Déficit de 400 carpas de emergencia en Lurigancho.\n\nFuente: INDECI COEN reporte de turno 14:00.",
+    answer: "Recursos de respuesta activos. Lima Metropolitana (15-Mar-2017):\n\n• **Personal INDECI**: 240 efectivos en campo (Lurigancho: 80, Carabayllo: 60, Ate: 60, SJL: 40).\n• **Vehículos**: 18 camiones cisterna, 12 volquetes, 6 ambulancias, 3 helicópteros SAR.\n• **Equipos de búsqueda y rescate**: 4 equipos USAR, 1 equipo con perros de búsqueda.\n• **Alimentos**: 3,200 raciones distribuidas. Déficit estimado 800 raciones.\n• **Agua potable**: 12 cisternas operando en Lurigancho y Carabayllo.\n\nBrecha crítica: Déficit de 400 carpas de emergencia en Lurigancho.\n\nFuente: INDECI COEN reporte de turno 14:00.",
     intent: "resource_status",
     confidence: 0.83,
     query_plan: "resource_deployment_summary",
@@ -488,7 +488,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "¿Qué daños hay en infraestructura vial?": {
-    answer: "Daños en infraestructura vial — Lima Metropolitana:\n\n🔴 **Colapso** (requiere intervención inmediata):\n• Puente Peatonal Ñaña — socavamiento de base, cerrado al tránsito.\n• Carretera Central km 23 (Chosica) — derrumbe talud, corte total.\n\n🟠 **Daño mayor** (tránsito reducido):\n• Av. Lurigancho sector km 8–11 — baches y erosión.\n• Carretera Carabayllo–Canta km 4 — deslizamiento lateral.\n\n🟡 **Daño menor**:\n• 14 vías menores con lodo acumulado en Ate y SJL.\n\nCosto estimado de emergencia: S/ 8.2 millones (MVCS estimado preliminar).\n\nFuente: MTC reportes de campo + señales sociales.",
+    answer: "Daños en infraestructura vial. Lima Metropolitana:\n\n🔴 **Colapso** (requiere intervención inmediata):\n• Puente Peatonal Ñaña, socavamiento de base, cerrado al tránsito.\n• Carretera Central km 23 (Chosica): derrumbe talud, corte total.\n\n🟠 **Daño mayor** (tránsito reducido):\n• Av. Lurigancho sector km 8-11, baches y erosión.\n• Carretera Carabayllo. Canta km 4, deslizamiento lateral.\n\n🟡 **Daño menor**:\n• 14 vías menores con lodo acumulado en Ate y SJL.\n\nCosto estimado de emergencia: S/ 8.2 millones (MVCS estimado preliminar).\n\nFuente: MTC reportes de campo + señales sociales.",
     intent: "infrastructure_impact",
     confidence: 0.81,
     query_plan: "road_damage_assessment",
@@ -500,7 +500,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
   },
 
   "¿Qué acciones debo tomar en nivel EMERGENCIA?": {
-    answer: "**NIVEL EMERGENCIA — Acciones inmediatas SINAGERD:**\n\n1. **NOTIFICAR**: Escalar a COEN Nacional por radio. Solicitar Declaratoria de Emergencia.\n2. **EVACUAR**: Activar evacuación obligatoria de quebradas críticas (Jicamarca, Pedregal, Quirio). Código de sirenas: 3 tonos cortos = EVACUACIÓN INMEDIATA.\n3. **ALBERGUES**: Habilitar todos los albergues INDECI designados en Lima (Coliseo Eduardo Dibós, UNMSM, estadios).\n4. **RECURSOS**: Solicitar apoyo FFAA (Ejército, Marina, FAP).\n5. **COMUNICACIÓN**: Comunicado cada hora + alerta SMS masivo (Claro/Entel/Movistar/Bitel).\n6. **EDAN**: Completar ficha EDAN-Perú para COEN (formato A4).\n7. **EOC**: Activar EOC conjunto COER-COEL en zonas afectadas.\n\nContactos: COEN (01) 225-9898 · COER Lima (01) 748-0080 · ANA Chirilu (01) 224-3298 ext. 3710\n\nFuente: SINAGERD Guía de Acciones Rápidas COER Lima + INDECI.",
+    answer: "**NIVEL EMERGENCIA. Acciones inmediatas SINAGERD:**\n\n1. **NOTIFICAR**: Escalar a COEN Nacional por radio. Solicitar Declaratoria de Emergencia.\n2. **EVACUAR**: Activar evacuación obligatoria de quebradas críticas (Jicamarca, Pedregal, Quirio). Código de sirenas: 3 tonos cortos = EVACUACIÓN INMEDIATA.\n3. **ALBERGUES**: Habilitar todos los albergues INDECI designados en Lima (Coliseo Eduardo Dibós, UNMSM, estadios).\n4. **RECURSOS**: Solicitar apoyo FFAA (Ejército, Marina, FAP).\n5. **COMUNICACIÓN**: Comunicado cada hora + alerta SMS masivo (Claro/Entel/Movistar/Bitel).\n6. **EDAN**: Completar ficha EDAN-Perú para COEN (formato A4).\n7. **EOC**: Activar EOC conjunto COER-COEL en zonas afectadas.\n\nContactos: COEN (01) 225-9898 · COER Lima (01) 748-0080 · ANA Chirilu (01) 224-3298 ext. 3710\n\nFuente: SINAGERD Guía de Acciones Rápidas COER Lima + INDECI.",
     intent: "evacuation_priority",
     confidence: 0.97,
     query_plan: "sinagerd_emergency_protocol",
@@ -513,7 +513,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
   // ─── English-locale responses (matched by suggestion click) ──────────────────
 
   "What are the active alerts right now?": {
-    answer: "Currently active alerts — Lima Metropolitan Area:\n\n1. **[CRITICAL] Huayco — Quebrada Jicamarca** (Lurigancho): XGBoost probability 0.91, 63 mm rain in 72h exceeds ANA EMERGENCIA threshold (50 mm/72h). Preventive evacuation recommended.\n2. **[HIGH] SAR Flood — Huachipa** (Ate): 1.8 km² active flood polygon, 24,600 people in flood zone.\n3. **[HIGH] Chillón River Overflow** (Carabayllo): Level 3.1 m at Carabayllo station (threshold: 2.5 m).\n4. **[HIGH] Social Cluster — SJL sector 3**: 12 urgent help signals in 3h, geo-clustered, PII redacted.\n\n**SINAGERD Level: EMERGENCY** — 1 critical alert active.\n\nSource: SAR Sentinel-1 + ANA stations + Bluesky/Reddit triage.",
+    answer: "Currently active alerts, Lima Metropolitan Area:\n\n1. **[CRITICAL] Huayco, Quebrada Jicamarca** (Lurigancho): XGBoost probability 0.91, 63 mm rain in 72h exceeds ANA EMERGENCIA threshold (50 mm/72h). Preventive evacuation recommended.\n2. **[HIGH] SAR Flood. Huachipa** (Ate): 1.8 km² active flood polygon, 24,600 people in flood zone.\n3. **[HIGH] Chillón River Overflow** (Carabayllo): Level 3.1 m at Carabayllo station (threshold: 2.5 m).\n4. **[HIGH] Social Cluster. SJL sector 3**: 12 urgent help signals in 3h, geo-clustered, PII redacted.\n\n**SINAGERD Level: EMERGENCY**, 1 critical alert active.\n\nSource: SAR Sentinel-1 + ANA stations + Bluesky/Reddit triage.",
     intent: "flood_status",
     confidence: 0.92,
     query_plan: "active_alerts_summary",
@@ -524,7 +524,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "Which districts should I evacuate first?": {
-    answer: "Evacuation priority order — Lima Metropolitan Area (current risk × population density):\n\n1. **Lurigancho-Chosica** — CRITICAL. Quebrada Jicamarca activation imminent. 28,400 people in SAR flood zone. Recommend immediate evacuation of Canto Grande and Jicamarca sectors.\n2. **Carabayllo** — HIGH. Chillón at 3.1 m (threshold 2.5 m). 19,800 affected. Pre-position in Av. Túpac Amaru shelters.\n3. **Ate** — HIGH. Huachipa 1.8 km² flooded. 24,600 affected. Carretera Central closure forces alternative routes.\n\n**Recommendation**: Deploy INDECI USAR teams to Jicamarca now. Alert shelters: Colegio Los Pinos (Lurigancho, cap. 400), Estadio Carabayllo (cap. 800).\n\nSource: SINPAD 2003–2020 + SAR polygons + INEI 2017 population grid.",
+    answer: "Evacuation priority order. Lima Metropolitan Area (current risk × population density):\n\n1. **Lurigancho-Chosica**. CRITICAL. Quebrada Jicamarca activation imminent. 28,400 people in SAR flood zone. Recommend immediate evacuation of Canto Grande and Jicamarca sectors.\n2. **Carabayllo**. HIGH. Chillón at 3.1 m (threshold 2.5 m). 19,800 affected. Pre-position in Av. Túpac Amaru shelters.\n3. **Ate**. HIGH. Huachipa 1.8 km² flooded. 24,600 affected. Carretera Central closure forces alternative routes.\n\n**Recommendation**: Deploy INDECI USAR teams to Jicamarca now. Alert shelters: Colegio Los Pinos (Lurigancho, cap. 400), Estadio Carabayllo (cap. 800).\n\nSource: SINPAD 2003-2020 + SAR polygons + INEI 2017 population grid.",
     intent: "evacuation_priority",
     confidence: 0.95,
     query_plan: "evacuation_priority_by_risk_density",
@@ -535,7 +535,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "Which districts have the highest risk right now?": {
-    answer: "Highest-risk districts — Lima Metropolitan Area:\n\n1. **Lurigancho** — ALTO: 3 active SAR flood polygons (4.2 km²), critical huayco alert in Quebrada Jicamarca (prob. 0.91).\n2. **Carabayllo** — ALTO: Chillón river overflow, north sector, level 3.1 m (threshold: 2.5 m), 2 active polygons.\n3. **Ate** — ALTO: Active flood in Huachipa 1.8 km², rising trend at Puente Los Ángeles station.\n\nTotal: 4 active alerts, ~84,572 people in risk zones.\n\nSource: SAR Sentinel-1 × ANA stations × INEI population.",
+    answer: "Highest-risk districts, Lima Metropolitan Area:\n\n1. **Lurigancho**, ALTO: 3 active SAR flood polygons (4.2 km²), critical huayco alert in Quebrada Jicamarca (prob. 0.91).\n2. **Carabayllo**. ALTO: Chillón river overflow, north sector, level 3.1 m (threshold: 2.5 m), 2 active polygons.\n3. **Ate**. ALTO: Active flood in Huachipa 1.8 km², rising trend at Puente Los Ángeles station.\n\nTotal: 4 active alerts, ~84,572 people in risk zones.\n\nSource: SAR Sentinel-1 × ANA stations × INEI population.",
     intent: "flood_status",
     confidence: 0.92,
     query_plan: "flood_status_by_district",
@@ -546,7 +546,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "What is the forecast for the next 24 hours?": {
-    answer: "72-hour rainfall forecast — Lima watersheds (SENAMHI WRF model):\n\n• **+6h**: Rímac 8.5 mm — LOW risk\n• **+12h**: Rímac 15.8 mm — MODERATE risk, huayco prob. 28%\n• **+24h**: Rímac 31.2 mm — **ALERTA** (>25 mm/72h ANA), huayco prob. 52%\n• **+48h**: Rímac 48.5 mm — **ALERTA**, prob. 71%\n• **+72h**: Rímac 64.2 mm — **EMERGENCIA** ⚠️ exceeds 50 mm/72h critical threshold, prob. 82%\n\n**PRE-ALERT**: ANA ALERTA threshold (25 mm/72h) crossed at +24h mark; EMERGENCIA (50 mm/72h) projected at +72h.\n\n**Recommendation**: Pre-position USAR teams in Jicamarca and activate shelter protocols in Lurigancho and Carabayllo sectors.\n\nSource: SENAMHI WRF model + NASA IMERG Late Run V07B.",
+    answer: "72-hour rainfall forecast. Lima watersheds (SENAMHI WRF model):\n\n• **+6h**: Rímac 8.5 mm. LOW risk\n• **+12h**: Rímac 15.8 mm (MODERATE risk, huayco prob. 28%\n• **+24h**: Rímac 31.2 mm)**ALERTA** (>25 mm/72h ANA), huayco prob. 52%\n• **+48h**: Rímac 48.5 mm (**ALERTA**, prob. 71%\n• **+72h**: Rímac 64.2 mm)**EMERGENCIA** ⚠️ exceeds 50 mm/72h critical threshold, prob. 82%\n\n**PRE-ALERT**: ANA ALERTA threshold (25 mm/72h) crossed at +24h mark; EMERGENCIA (50 mm/72h) projected at +72h.\n\n**Recommendation**: Pre-position USAR teams in Jicamarca and activate shelter protocols in Lurigancho and Carabayllo sectors.\n\nSource: SENAMHI WRF model + NASA IMERG Late Run V07B.",
     intent: "rainfall_forecast",
     confidence: 0.88,
     query_plan: "rainfall_forecast_72h",
@@ -556,7 +556,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "Which evacuation routes are blocked?": {
-    answer: "Blocked and compromised evacuation routes — Lima Metropolitan Area:\n\n🔴 **Collapsed / Impassable**:\n• Ñaña Pedestrian Bridge — undermined foundation, closed to all traffic.\n• Carretera Central km 23 (Chosica) — landslide, total road cut.\n\n🟠 **Reduced capacity** (use with caution):\n• Av. Lurigancho km 8–11 — potholes and erosion, no heavy vehicles.\n• Carabayllo–Canta Road km 4 — lateral landslide, single lane.\n\n**Active alternative routes**:\n• Central Highway → Ramiro Prialé (avoid km 23).\n• Lurigancho: use Av. Las Torres + Canto Grande connector.\n• Carabayllo: route through Av. Universitaria Norte.\n\nSource: MTC field reports + social signals (road_blocked label).",
+    answer: "Blocked and compromised evacuation routes. Lima Metropolitan Area:\n\n🔴 **Collapsed / Impassable**:\n• Ñaña Pedestrian Bridge, undermined foundation, closed to all traffic.\n• Carretera Central km 23 (Chosica): landslide, total road cut.\n\n🟠 **Reduced capacity** (use with caution):\n• Av. Lurigancho km 8-11, potholes and erosion, no heavy vehicles.\n• Carabayllo. Canta Road km 4, lateral landslide, single lane.\n\n**Active alternative routes**:\n• Central Highway → Ramiro Prialé (avoid km 23).\n• Lurigancho: use Av. Las Torres + Canto Grande connector.\n• Carabayllo: route through Av. Universitaria Norte.\n\nSource: MTC field reports + social signals (road_blocked label).",
     intent: "infrastructure_impact",
     confidence: 0.85,
     query_plan: "road_damage_assessment",
@@ -567,7 +567,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "How many urgent social signals are there now?": {
-    answer: "Social signals — last 24 hours (AI-triaged, PII redacted via Presidio):\n\n• **Total signals**: 87 across 15 districts.\n• **Urgent (needs_help)**: 23 — concentrated in Lurigancho (8), Ate (6), Carabayllo (5).\n• **Road blocked**: 14 — 7 confirmed by infrastructure report.\n• **Infrastructure damage**: 12 — bridges, schools, water mains.\n• **Weather observation**: 38 — consistent with IMERG rainfall data.\n\n**Sources**: Bluesky (42), Reddit r/Peru + r/Lima (28), Telegram Senamhi_Peru (17).\n**Average triage confidence**: 0.82 (XGBoost classifier).\n\nAll signals geolocated within ±500m accuracy.",
+    answer: "Social signals, last 24 hours (AI-triaged, PII redacted via Presidio):\n\n• **Total signals**: 87 across 15 districts.\n• **Urgent (needs_help)**: 23, concentrated in Lurigancho (8), Ate (6), Carabayllo (5).\n• **Road blocked**: 14, 7 confirmed by infrastructure report.\n• **Infrastructure damage**: 12, bridges, schools, water mains.\n• **Weather observation**: 38, consistent with IMERG rainfall data.\n\n**Sources**: Bluesky (42), Reddit r/Peru + r/Lima (28), Telegram Senamhi_Peru (17).\n**Average triage confidence**: 0.82 (XGBoost classifier).\n\nAll signals geolocated within ±500m accuracy.",
     intent: "social_signals",
     confidence: 0.87,
     query_plan: "social_signals_summary_24h",
@@ -578,7 +578,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "Which hydrological stations are on alert?": {
-    answer: "ANA hydrological station status — Lima watersheds:\n\n⚠️ **Near threshold** (monitor closely):\n• **ANA-Chosica** (Rímac): 2.4 m — ⚠ 0.1 m below SENAMHI threshold (2.5 m), flow 185 m³/s, rising trend.\n\n🟠 **Threshold exceeded**:\n• **ANA-Carabayllo** (Chillón): 3.1 m — threshold 2.5 m ⚠️, flow 148 m³/s.\n\n🟡 **Warning** (near threshold):\n• **ANA-Chaclacayo** (Rímac): 1.8 m — threshold 1.5 m, flow 121 m³/s.\n• **ANA-Huachipa** (Rímac): 1.9 m — threshold 1.8 m, flow 89 m³/s.\n\n🟢 **Normal**:\n• **ANA-Lurín** (Lurín): 0.6 m — threshold 1.2 m, flow 12 m³/s.\n\nSource: ANA Observatorio Chirilu (scraper, 15 min interval) + SENAMHI.",
+    answer: "ANA hydrological station status. Lima watersheds:\n\n⚠️ **Near threshold** (monitor closely):\n• **ANA-Chosica** (Rímac): 2.4 m, ⚠ 0.1 m below SENAMHI threshold (2.5 m), flow 185 m³/s, rising trend.\n\n🟠 **Threshold exceeded**:\n• **ANA-Carabayllo** (Chillón): 3.1 m, threshold 2.5 m ⚠️, flow 148 m³/s.\n\n🟡 **Warning** (near threshold):\n• **ANA-Chaclacayo** (Rímac): 1.8 m, threshold 1.5 m, flow 121 m³/s.\n• **ANA-Huachipa** (Rímac): 1.9 m, threshold 1.8 m, flow 89 m³/s.\n\n🟢 **Normal**:\n• **ANA-Lurín** (Lurín): 0.6 m, threshold 1.2 m, flow 12 m³/s.\n\nSource: ANA Observatorio Chirilu (scraper, 15 min interval) + SENAMHI.",
     intent: "station_status",
     confidence: 0.91,
     query_plan: "station_alert_status",
@@ -589,7 +589,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "How many people are in active flood zones?": {
-    answer: "Population exposure estimate — active SAR flood zones (PostGIS cross-reference):\n\n• **Total affected**: ~84,572 people across 4 districts.\n• **Lurigancho-Chosica**: ~28,400 pop. in SAR zone (4.2 km²).\n• **Carabayllo**: ~19,800 pop. in SAR zone (2.8 km²).\n• **Ate**: ~24,600 pop. in SAR zone (1.9 km²).\n• **San Juan de Lurigancho**: ~11,772 pop. in SAR zone (0.8 km²).\n\n**Methodology**: SAR Sentinel-1 flood polygons × district boundaries × INEI 2017 population grid (100m resolution).\n\nNote: Figure represents people within flood polygon extent — actual evacuees may be lower depending on elevation within zone.",
+    answer: "Population exposure estimate, active SAR flood zones (PostGIS cross-reference):\n\n• **Total affected**: ~84,572 people across 4 districts.\n• **Lurigancho-Chosica**: ~28,400 pop. in SAR zone (4.2 km²).\n• **Carabayllo**: ~19,800 pop. in SAR zone (2.8 km²).\n• **Ate**: ~24,600 pop. in SAR zone (1.9 km²).\n• **San Juan de Lurigancho**: ~11,772 pop. in SAR zone (0.8 km²).\n\n**Methodology**: SAR Sentinel-1 flood polygons × district boundaries × INEI 2017 population grid (100m resolution).\n\nNote: Figure represents people within flood polygon extent, actual evacuees may be lower depending on elevation within zone.",
     intent: "flood_status",
     confidence: 0.91,
     query_plan: "flood_exposure_population",
@@ -600,7 +600,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "Dame el resumen completo de la situación": {
-    answer: "**SITREP — Lima Metropolitana (15-Mar-2017, 08:00 Lima)**\n\n**ALERTAS (4 activas):** 1 crítica (Huayco Jicamarca, prob. 0.91), 2 altas (Inundación Ate y Carabayllo), 1 media (Rímac elevado). Nivel SINAGERD: **EMERGENCIA**.\n\n**LLUVIA 72h:** Cuenca Rímac 63.4 mm — ⚠ EMERGENCIA (>50 mm ANA). Chillón 48.2 mm — ALERTA.\n\n**RÍOS:** Chosica 2.4 m (umbral 2.0 m, tendencia ↑ ascendente). Carabayllo 3.1 m (umbral 2.5 m, tendencia ↓ descendente).\n\n**INUNDACIÓN SAR:** 9.7 km² totales en 4 distritos. ~84,572 personas en zona de riesgo.\n\n**SEÑALES SOCIALES (3h):** 12 reportes ciudadanos · 7 urgentes (ayuda/huayco/inundación) — zona: Lurigancho, Ate.\n\nAcción inmediata recomendada: activar evacuación preventiva Quebrada Jicamarca + preposicionar recursos en Carabayllo norte.",
+    answer: "**SITREP. Lima Metropolitana (15-Mar-2017, 08:00 Lima)**\n\n**ALERTAS (4 activas):** 1 crítica (Huayco Jicamarca, prob. 0.91), 2 altas (Inundación Ate y Carabayllo), 1 media (Rímac elevado). Nivel SINAGERD: **EMERGENCIA**.\n\n**LLUVIA 72h:** Cuenca Rímac 63.4 mm, ⚠ EMERGENCIA (>50 mm ANA). Chillón 48.2 mm. ALERTA.\n\n**RÍOS:** Chosica 2.4 m (umbral 2.0 m, tendencia ↑ ascendente). Carabayllo 3.1 m (umbral 2.5 m, tendencia ↓ descendente).\n\n**INUNDACIÓN SAR:** 9.7 km² totales en 4 distritos. ~84,572 personas en zona de riesgo.\n\n**SEÑALES SOCIALES (3h):** 12 reportes ciudadanos · 7 urgentes (ayuda/huayco/inundación), zona: Lurigancho, Ate.\n\nAcción inmediata recomendada: activar evacuación preventiva Quebrada Jicamarca + preposicionar recursos en Carabayllo norte.",
     intent: "flood_status",
     confidence: 0.96,
     query_plan: "sitrep_6tools_sequential",
@@ -612,7 +612,7 @@ export const DEMO_COPILOT_RESPONSES: Record<string, CopilotDemoResponse> = {
     ],
   },
   "Situation report please": {
-    answer: "**SITREP — Lima Metropolitan Area (15-Mar-2017, 08:00 Lima)**\n\n**ACTIVE ALERTS (4):** 1 critical (Huayco Quebrada Jicamarca, prob. 0.91), 2 high (Flood Ate + Carabayllo), 1 medium (Rímac elevated). SINAGERD Level: **EMERGENCY**.\n\n**72h RAINFALL:** Rímac 63.4 mm — ⚠ EMERGENCY (>50 mm ANA threshold). Chillón 48.2 mm — ALERT.\n\n**RIVERS:** Chosica 2.4 m (threshold 2.0 m, ↑ rising). Carabayllo 3.1 m (threshold 2.5 m, ↓ falling).\n\n**SAR FLOOD:** 9.7 km² total across 4 districts. ~84,572 people in risk zones.\n\n**SOCIAL SIGNALS (3h):** 12 citizen reports · 7 urgent (help/huayco/flood) — zones: Lurigancho, Ate.\n\nImmediate action: preventive evacuation Quebrada Jicamarca + pre-position resources Carabayllo norte.",
+    answer: "**SITREP. Lima Metropolitan Area (15-Mar-2017, 08:00 Lima)**\n\n**ACTIVE ALERTS (4):** 1 critical (Huayco Quebrada Jicamarca, prob. 0.91), 2 high (Flood Ate + Carabayllo), 1 medium (Rímac elevated). SINAGERD Level: **EMERGENCY**.\n\n**72h RAINFALL:** Rímac 63.4 mm, ⚠ EMERGENCY (>50 mm ANA threshold). Chillón 48.2 mm. ALERT.\n\n**RIVERS:** Chosica 2.4 m (threshold 2.0 m, ↑ rising). Carabayllo 3.1 m (threshold 2.5 m, ↓ falling).\n\n**SAR FLOOD:** 9.7 km² total across 4 districts. ~84,572 people in risk zones.\n\n**SOCIAL SIGNALS (3h):** 12 citizen reports · 7 urgent (help/huayco/flood), zones: Lurigancho, Ate.\n\nImmediate action: preventive evacuation Quebrada Jicamarca + pre-position resources Carabayllo norte.",
     intent: "flood_status",
     confidence: 0.96,
     query_plan: "sitrep_6tools_sequential",
@@ -654,7 +654,7 @@ export const DEMO_INFRASTRUCTURE: InfraCollection = {
 
 export const DEMO_HAZARD: HazardCollection = {
   type: "FeatureCollection",
-  source: "SINPAD 2003-2020 (demo — densidad histórica eventos)",
+  source: "SINPAD 2003-2020 (demo: densidad histórica eventos)",
   retrieved_at: new Date(NOW).toISOString(),
   features: [
     {
@@ -766,9 +766,9 @@ export const DEMO_DASHBOARDS: Record<string, DistrictDashboard> = {
     retrieved_at: new Date(NOW).toISOString(),
     district: { ubigeo: "150118", name: "Lurigancho", population: 213_386, area_km2: 236.47 },
     active_alerts: [
-      { id: 1, type: "huayco",  severity: "critical", status: "active", title: "Riesgo crítico de huayco — Quebrada Jicamarca", created_at: hoursAgo(1) },
-      { id: 2, type: "flood",   severity: "high",     status: "active", title: "Inundación activa — Sector Huachipa",            created_at: hoursAgo(2.5) },
-      { id: 7, type: "flood",   severity: "high",     status: "acknowledged", title: "Inundación contenida — Sector Ñaña",       created_at: hoursAgo(8) },
+      { id: 1, type: "huayco",  severity: "critical", status: "active", title: "Riesgo crítico de huayco. Quebrada Jicamarca", created_at: hoursAgo(1) },
+      { id: 2, type: "flood",   severity: "high",     status: "active", title: "Inundación activa. Sector Huachipa",            created_at: hoursAgo(2.5) },
+      { id: 7, type: "flood",   severity: "high",     status: "acknowledged", title: "Inundación contenida. Sector Ñaña",       created_at: hoursAgo(8) },
     ],
     alerts_trend_7d: makeTrend7d(),
     social_24h: [
@@ -790,7 +790,7 @@ export const DEMO_DASHBOARDS: Record<string, DistrictDashboard> = {
     retrieved_at: new Date(NOW).toISOString(),
     district: { ubigeo: "150103", name: "Ate", population: 630_086, area_km2: 77.72 },
     active_alerts: [
-      { id: 2, type: "flood", severity: "high", status: "active", title: "Inundación activa — Sector Huachipa", created_at: hoursAgo(2.5) },
+      { id: 2, type: "flood", severity: "high", status: "active", title: "Inundación activa. Sector Huachipa", created_at: hoursAgo(2.5) },
     ],
     alerts_trend_7d: makeTrend7d().map(d => ({ ...d, count: Math.max(0, d.count - 1) })),
     social_24h: [
@@ -812,8 +812,8 @@ export const DEMO_FUSIONS: Record<string, DistrictFusion> = {
     retrieved_at: new Date(NOW).toISOString(),
     district: { ubigeo: "150118", name: "Lurigancho", population: 213_386 },
     risk_level: "alto",
-    prose_es: "Lurigancho-Chosica presenta riesgo ALTO. Tres polígonos de inundación SAR activos cubren 4.2 km². Alerta crítica de huayco en quebrada Jicamarca (probabilidad 0.91). ⚠ 4 avistamientos de huayco en campo — clúster activo en quebrada Huaycoloro. Doce señales sociales en las últimas 3 horas, 6 urgentes (huayco_observation, needs_help, road_blocked). Nivel del río Rímac en Chosica: 2.4 m, ⚠ acercándose al umbral SENAMHI (2.5 m).",
-    prose_en: "Lurigancho-Chosica is at HIGH risk. Three active SAR flood polygons cover 4.2 km². Critical huayco alert on Quebrada Jicamarca (probability 0.91). ⚠ 4 huayco sightings in the field — active cluster on Quebrada Huaycoloro. Twelve social signals in the last 3 hours, 6 urgent (huayco_observation, needs_help, road_blocked). Rímac river at Chosica: 2.4 m, ⚠ approaching SENAMHI threshold (2.5 m).",
+    prose_es: "Lurigancho-Chosica presenta riesgo ALTO. Tres polígonos de inundación SAR activos cubren 4.2 km². Alerta crítica de huayco en quebrada Jicamarca (probabilidad 0.91). ⚠ 4 avistamientos de huayco en campo, clúster activo en quebrada Huaycoloro. Doce señales sociales en las últimas 3 horas, 6 urgentes (huayco_observation, needs_help, road_blocked). Nivel del río Rímac en Chosica: 2.4 m, ⚠ acercándose al umbral SENAMHI (2.5 m).",
+    prose_en: "Lurigancho-Chosica is at HIGH risk. Three active SAR flood polygons cover 4.2 km². Critical huayco alert on Quebrada Jicamarca (probability 0.91). ⚠ 4 huayco sightings in the field, active cluster on Quebrada Huaycoloro. Twelve social signals in the last 3 hours, 6 urgent (huayco_observation, needs_help, road_blocked). Rímac river at Chosica: 2.4 m, ⚠ approaching SENAMHI threshold (2.5 m).",
     flood:  { active_polygon_count: 3, overlap_km2: 4.2, latest_scene_at: hoursAgo(3) },
     huayco: { highest_risk_level: "alto", highest_probability: 0.91, quebrada_name: "Jicamarca", trigger_rain_24h_mm: 12, computed_at: hoursAgo(2), data_status: "available" as const },
     social: { total_signals_3h: 8, urgent_signals_3h: 6 },
@@ -973,7 +973,7 @@ export const DEMO_DECISION_LOG: DecisionLogEntry[] = [
     operator_id: "operador-coer-lima",
     action_type: "alert_escalate",
     alert_id: 1,
-    payload: { note: "Prob. huayco 91% — activar evacuación preventiva Quebrada Jicamarca. Notificar INDECI COEN." },
+    payload: { note: "Prob. huayco 91%, activar evacuación preventiva Quebrada Jicamarca. Notificar INDECI COEN." },
     session_id: "demo",
   },
   {
@@ -1092,7 +1092,7 @@ export const DEMO_DECISION_LOG: DecisionLogEntry[] = [
     alert_id: 1,
     payload: {
       district: "Lurigancho",
-      text: "Equipo INDECI confirma evacuación en curso — 280 personas en albergue Colegio Anexo Los Laureles. Quebrada Huaycoloro sin flujo visible, cauce bajo vigilancia. 63mm lluvia 72h confirmada.",
+      text: "Equipo INDECI confirma evacuación en curso: 280 personas en albergue Colegio Anexo Los Laureles. Quebrada Huaycoloro sin flujo visible, cauce bajo vigilancia. 63mm lluvia 72h confirmada.",
       source: "radio",
       confidence: "operator_assertion",
     },
@@ -1131,7 +1131,7 @@ export type ForecastStep = {
   chilion_mm: number;
   lurin_mm: number;
   risk: "bajo" | "moderado" | "alto";
-  huayco_prob: number;  // 0–1
+  huayco_prob: number;  // 0-1
 };
 
 /** Threshold above which huayco activation risk is significant (mm / step window). */

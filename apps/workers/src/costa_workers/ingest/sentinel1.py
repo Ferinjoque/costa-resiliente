@@ -105,7 +105,7 @@ def download_scene_to_minio(scene_dict: dict) -> str:
     # Check if already downloaded (idempotent)
     try:
         s3.head_object(Bucket=MINIO_BUCKET, Key=f"{prefix}metadata.json")
-        log.info("Scene %s already in MinIO — skipping download", scene_id)
+        log.info("Scene %s already in MinIO: skipping download", scene_id)
         return f"s3://{MINIO_BUCKET}/{prefix}"
     except ClientError:
         pass

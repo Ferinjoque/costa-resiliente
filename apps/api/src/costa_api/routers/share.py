@@ -1,4 +1,4 @@
-"""Share tokens — mint + resolve read-only scenario snapshots for judges/public."""
+"""Share tokens: mint + resolve read-only scenario snapshots for judges/public."""
 
 from __future__ import annotations
 
@@ -85,7 +85,7 @@ async def mint_share_token(
         ),
         {"token": token, "scenario": json.dumps(scenario_dict), "expires_at": expires_at},
     )
-    # Prune expired tokens opportunistically — avoids unbounded table growth
+    # Prune expired tokens opportunistically: avoids unbounded table growth
     # without needing a dedicated cron job.
     await db.execute(text("DELETE FROM ops.share_tokens WHERE expires_at < NOW()"))
     await db.commit()

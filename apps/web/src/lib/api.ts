@@ -1,5 +1,5 @@
 /**
- * Typed API client — wraps fetch calls to the FastAPI backend.
+ * Typed API client: wraps fetch calls to the FastAPI backend.
  * All paths relative to NEXT_PUBLIC_API_URL (default: http://localhost:8000).
  */
 
@@ -16,7 +16,7 @@ export function register401Handler(cb: () => void) {
 }
 
 /**
- * Session generation. Requests issued before a login can land after it — the
+ * Session generation. Requests issued before a login can land after it, the
  * dashboard fires several authenticated queries the moment it mounts, and an
  * unauthenticated visitor gets 401s back while they are still typing their
  * password. Without this guard those late 401s ran the global handler and
@@ -38,7 +38,7 @@ function handle401(generation: number) {
 export class RateLimitError extends Error {
   retryAfter: number;
   constructor(retryAfterSecs = 60) {
-    super(`Rate limited — retry in ${retryAfterSecs}s`);
+    super(`Rate limited: retry in ${retryAfterSecs}s`);
     this.retryAfter = retryAfterSecs;
     this.name = "RateLimitError";
   }
@@ -398,12 +398,12 @@ export async function logDecision(entry: {
       body: JSON.stringify(entry),
     });
   } catch (err) {
-    // Network / timeout — best-effort, do not block the operator action
+    // Network / timeout: best-effort, do not block the operator action
     console.warn("[logDecision] network error (best-effort):", err);
     return;
   }
   if (!res.ok) {
-    // Server rejected the write (4xx / 5xx) — throw so callers can surface this
+    // Server rejected the write (4xx / 5xx): throw so callers can surface this
     throw new Error(`Decision log write failed: HTTP ${res.status}`);
   }
 }

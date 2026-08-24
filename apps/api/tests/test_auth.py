@@ -1,4 +1,4 @@
-"""Auth endpoint tests — JWT issuance, /me, /operators, and unauthorized access."""
+"""Auth endpoint tests: JWT issuance, /me, /operators, and unauthorized access."""
 
 from __future__ import annotations
 
@@ -190,7 +190,7 @@ async def test_rate_limiter_allows_up_to_limit():
 
 @pytest.mark.asyncio
 async def test_rate_limiter_fails_open_when_redis_unavailable():
-    """Redis outage must not block logins — fail-open."""
+    """Redis outage must not block logins: fail-open."""
     from costa_api.routers.auth import _check_rate_limit
 
     mock_request = MagicMock(spec=Request)

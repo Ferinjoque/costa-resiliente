@@ -5,7 +5,7 @@ import { useAlerts } from "@/lib/queries";
 import { clsx } from "clsx";
 
 /**
- * Signature interaction — a low-key radar sweep anchored bottom-left of the
+ * Signature interaction: a low-key radar sweep anchored bottom-left of the
  * map surface. Suggests "data scanning Lima Metropolitana" without shouting.
  *
  * Design rules:
@@ -56,7 +56,7 @@ export function MapRadar() {
         <line x1="50" y1="2"  x2="50" y2="98" stroke={tint} strokeOpacity="0.10" strokeWidth="0.5" />
         <line x1="2"  y1="50" x2="98" y2="50" stroke={tint} strokeOpacity="0.10" strokeWidth="0.5" />
 
-        {/* Sweep beam — rotates via tailwind `animate-radar` keyframe */}
+        {/* Sweep beam: rotates via tailwind `animate-radar` keyframe */}
         <g
           className="origin-center"
           style={{

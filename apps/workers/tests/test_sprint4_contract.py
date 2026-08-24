@@ -313,7 +313,7 @@ class TestRedactPii:
     def test_returns_original_on_exception(self):
         from unittest.mock import patch
         from costa_workers.ingest.social import redact_pii
-        # Force the analyzer to raise — fallback must return original text
+        # Force the analyzer to raise: fallback must return original text
         with patch("presidio_analyzer.AnalyzerEngine") as mock_ae:
             mock_ae.return_value.analyze.side_effect = RuntimeError("analyzer error")
             result = redact_pii("Llamar a Juan al 987654321")

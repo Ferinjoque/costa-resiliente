@@ -1,4 +1,4 @@
--- AI backend migration — run once against existing DB
+-- AI backend migration: run once against existing DB
 -- Safe to re-run (all statements are idempotent).
 --
 --   docker exec -i costa-postgres psql -U costa -d costa_resiliente < infra/postgres/ai_migration.sql

@@ -1,5 +1,5 @@
 #!/bin/sh
-# MinIO bucket setup — called by the minio-init container in docker-compose.yml
+# MinIO bucket setup: called by the minio-init container in docker-compose.yml
 # Creates required buckets and sets public read on pmtiles bucket.
 
 set -e
@@ -17,7 +17,7 @@ mc mb --ignore-existing "${MC_ALIAS}/rasters"
 # ML model weights (Sen1Floods11, XGBoost artifacts)
 mc mb --ignore-existing "${MC_ALIAS}/models"
 
-# Self-hosted PMTiles basemap — public read for MapLibre
+# Self-hosted PMTiles basemap: public read for MapLibre
 mc mb --ignore-existing "${MC_ALIAS}/pmtiles"
 mc policy set download "${MC_ALIAS}/pmtiles"
 

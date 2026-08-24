@@ -1,8 +1,8 @@
 """
-load_sinpad.py — Load INDECI SINPAD historical emergency records into PostGIS.
+load_sinpad.py: Load INDECI SINPAD historical emergency records into PostGIS.
 
 Source: BD-EMER-Y-DAÑOS-INTEGRADA-2003-2020-validada.xlsx
-        (docs/ directory — 96,531 records, 2003–2020)
+        (docs/ directory: 96,531 records, 2003-2020)
 
 Usage:
     # Load all Lima events (default):
@@ -46,7 +46,7 @@ DB_URL = os.getenv(
     "postgresql://costa:costa_dev_password@localhost:5432/costa_resiliente",
 )
 
-# Path relative to repo root — adjust if running from inside Docker
+# Path relative to repo root: adjust if running from inside Docker
 EXCEL_PATHS = [
     "docs/BD-EMER-Y-DAÑOS-INTEGRADA-2003-2020-validada.xlsx",
     "/app/docs/BD-EMER-Y-DAÑOS-INTEGRADA-2003-2020-validada.xlsx",
@@ -169,7 +169,7 @@ def load_excel(path: str, lima_only: bool, year_filter: int | None) -> pd.DataFr
         "AFECTADOS": "afectados",
         "COSTO DE LA AYUDA": "costo_ayuda",
     }
-    # Viviendas destroyed / affected — column names vary in SINPAD versions
+    # Viviendas destroyed / affected: column names vary in SINPAD versions
     for col in df.columns:
         if "VIVIENDA" in col and "DESTRUI" in col:
             col_map[col] = "viviendas_dest"
@@ -193,7 +193,7 @@ def load_excel(path: str, lima_only: bool, year_filter: int | None) -> pd.DataFr
         df = df[df["year_int"] == year_filter]
         log.info("After year=%d filter: %d rows", year_filter, len(df))
 
-    # Event type filter — flood/huayco types only for disaster scenario
+    # Event type filter: flood/huayco types only for disaster scenario
     df = df[df["event_type"].apply(
         lambda t: any(ft in t for ft in FLOOD_HUAYCO_TYPES)
     )]
@@ -291,7 +291,7 @@ def main() -> None:
     df = load_excel(excel_path, lima_only=not args.all_depts, year_filter=args.year)
 
     if df.empty:
-        log.warning("No rows matched filters — nothing to load")
+        log.warning("No rows matched filters: nothing to load")
         sys.exit(0)
 
     rows = df_to_rows(df)
@@ -310,7 +310,7 @@ def main() -> None:
     log.info("Total afectados: %d | Fallecidos: %d", total_afectados, total_fallecidos)
 
     if args.dry_run:
-        log.info("Dry-run — no DB writes")
+        log.info("Dry-run: no DB writes")
         return
 
     inserted = upsert_rows(rows, replace=args.replace)

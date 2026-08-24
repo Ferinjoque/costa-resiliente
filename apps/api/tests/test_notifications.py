@@ -15,7 +15,7 @@ AUTH = {"X-Testing-Operator": "1:test_op:coer"}
 
 @pytest.mark.asyncio
 async def test_list_subscribers_unauthenticated_returns_401():
-    """Subscriber list is operator-only — no auth → 401."""
+    """Subscriber list is operator-only: no auth → 401."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         resp = await c.get("/api/v1/notifications")
     assert resp.status_code == 401
@@ -133,7 +133,7 @@ async def test_email_channel_valid_target_accepted():
             "label": "Valid COER email",
             "severity_min": "high",
         }, headers=AUTH)
-    # Email is a stub channel — should succeed (200 or 201)
+    # Email is a stub channel: should succeed (200 or 201)
     assert resp.status_code in (200, 201), f"Valid email should be accepted, got {resp.status_code}: {resp.text}"
 
 
@@ -182,7 +182,7 @@ async def test_delete_nonexistent_subscriber_returns_404():
 
 @pytest.mark.asyncio
 async def test_deliveries_unauthenticated_returns_401():
-    """Delivery log is operator-only — no auth → 401."""
+    """Delivery log is operator-only: no auth → 401."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
         resp = await c.get("/api/v1/notifications/deliveries")
     assert resp.status_code == 401
@@ -271,7 +271,7 @@ def test_reject_private_host_blocks_link_local_resolved():
 
 
 def test_reject_private_host_blocks_unresolvable_hostname():
-    """Unresolvable hostname must be blocked (conservative — unknown target = deny)."""
+    """Unresolvable hostname must be blocked (conservative: unknown target = deny)."""
     from unittest.mock import patch
     import socket as _socket
     from costa_api.routers.notifications import _reject_private_host
@@ -284,7 +284,7 @@ def test_reject_private_host_blocks_unresolvable_hostname():
 def test_reject_private_host_allows_public_ip():
     """Public IP must pass the guard without raising."""
     from costa_api.routers.notifications import _reject_private_host
-    _reject_private_host("1.1.1.1")  # Cloudflare public DNS — must not raise
+    _reject_private_host("1.1.1.1")  # Cloudflare public DNS: must not raise
 
 
 def test_reject_private_host_blocks_ipv6_link_local():

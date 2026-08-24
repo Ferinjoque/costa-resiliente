@@ -1,4 +1,4 @@
-"""Share token tests — mint + resolve scenario snapshots.
+"""Share token tests: mint + resolve scenario snapshots.
 
 Covers: valid mint, invalid layer, invalid timeWindow, resolve by token,
 404 for unknown token, 404 for malformed token.

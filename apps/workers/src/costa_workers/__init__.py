@@ -1,1 +1,1 @@
-"""Costa Resiliente — Prefect ingestion flows and ML workers."""
+"""Costa Resiliente: Prefect ingestion flows and ML workers."""

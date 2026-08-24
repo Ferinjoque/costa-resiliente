@@ -106,14 +106,14 @@ export function FusionCallout() {
 
         {data && (
           <>
-            {/* Data rows — section 1: population */}
+            {/* Data rows, section 1: population */}
             {data.district.population != null && (
               <FRow label={t.population} value={t.people(data.district.population)} />
             )}
 
             <Divider className="my-2" />
 
-            {/* Data rows — section 2: hazards */}
+            {/* Data rows, section 2: hazards */}
             <FRow
               label={t.flood}
               value={

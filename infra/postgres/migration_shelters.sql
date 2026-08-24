@@ -37,7 +37,7 @@ INSERT INTO geo.shelters (name, ubigeo, shelter_type, capacity, lat, lng, addres
 ('Estadio Canto Grande',         '150132', 'estadio',       2500,  -12.0050, -77.0000, 'Av. El Sol, SJL',                         'SJL-002', NULL),
 ('Colegio Julio César Tello',    '150132', 'colegio',        800,  -12.0150, -77.0150, 'Av. Gran Chimú, SJL',                     'SJL-003', NULL),
 
--- Lurigancho-Chosica (quebrada zone — highest huayco risk)
+-- Lurigancho-Chosica (quebrada zone: highest huayco risk)
 ('Coliseo de Chosica',           '150120', 'coliseo',       1500,  -11.9350, -76.6850, 'Jr. Dos de Mayo, Chosica',                'CHO-001', 'Zona quebrada Huaycoloro / Pedregal'),
 ('Estadio Municipal de Chosica', '150120', 'estadio',       1200,  -11.9380, -76.6890, 'Av. Centenario, Chosica',                 'CHO-002', NULL),
 ('Colegio Augusto B. Leguía',    '150120', 'colegio',        600,  -11.9420, -76.6900, 'Jr. Loreto, Chosica',                     'CHO-003', NULL),
@@ -51,7 +51,7 @@ INSERT INTO geo.shelters (name, ubigeo, shelter_type, capacity, lat, lng, addres
 ('Parque Zonal Lloque Yupanqui', '150121', 'parque_zonal',  3500,  -11.9600, -77.0800, 'Av. Universitaria, Los Olivos',           'OLI-001', NULL),
 ('Parque Zonal Santa Rosa',      '150131', 'parque_zonal',  3000,  -11.9880, -77.0750, 'Av. Canta Callao, San Martín de Porres',  'SMP-001', NULL),
 
--- Carabayllo (Chillón — northern flank)
+-- Carabayllo (Chillón: northern flank)
 ('Estadio Iván Elías Morales',   '150107', 'estadio',       2000,  -11.9000, -77.0400, 'Av. Universitaria Norte, Carabayllo',     'CAR-001', NULL),
 ('Coliseo Municipal Carabayllo', '150107', 'coliseo',       1000,  -11.8950, -77.0350, 'Av. San Pedro, Carabayllo',               'CAR-002', NULL),
 

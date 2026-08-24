@@ -1,4 +1,4 @@
--- pgstac bootstrap — runs after init.sql
+-- pgstac bootstrap: runs after init.sql
 -- pgstac creates its own internal schema; we just need to enable the extension
 -- and set the search_path so stac-fastapi can connect.
 
@@ -13,4 +13,4 @@
 -- The stac-fastapi pgstac container will run migrations automatically on startup.
 -- No manual intervention needed for local dev.
 
-SELECT 'pgstac bootstrap placeholder — migrations run via stac-fastapi container' AS status;
+SELECT 'pgstac bootstrap placeholder: migrations run via stac-fastapi container' AS status;

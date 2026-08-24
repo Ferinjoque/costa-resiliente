@@ -10,7 +10,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-# lib/ and lib64/ are Python venv directories — do not ignore web src/lib/
+# lib/ and lib64/ are Python venv directories: do not ignore web src/lib/
 .venv/lib/
 .venv/lib64/
 parts/
@@ -81,7 +81,7 @@ secrets/
 # Geospatial data (rasters, large files)
 data/raw/
 data/processed/
-# Large source data files in docs/ (Excel, shapefiles — download separately)
+# Large source data files in docs/ (Excel, shapefiles, download separately)
 docs/*.xlsx
 docs/*.xls
 docs/*.zip
@@ -125,7 +125,7 @@ Thumbs.db
 *.whl
 *.tar.gz
 
-# Session 6 — generated/transient artifacts
+# Session 6: generated/transient artifacts
 lighthouse-report.json
 lighthouse-full.json
 docs/lighthouse-report.json

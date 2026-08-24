@@ -148,8 +148,8 @@ export function ProposalsPanel() {
           : "";
         addToast({
           message: locale === "es"
-            ? `Propuesta aprobada — publicada como alerta${subNote}`
-            : `Proposal approved — published as alert${subNote}`,
+            ? `Propuesta aprobada: publicada como alerta${subNote}`
+            : `Proposal approved: published as alert${subNote}`,
           variant: "success",
         } as Omit<LiveToast, "id" | "at">);
         qc.invalidateQueries({ queryKey: ["alerts"] });
@@ -240,8 +240,8 @@ export function ProposalsPanel() {
         <div className="px-4 py-2 bg-surface-sunken border-b border-border-subtle">
           <p className="text-[10px] text-ink-subtle uppercase tracking-widest font-bold">
             {locale === "es"
-              ? `${critical} EMERGENCIA · ${high} ALERTA — revisión humana`
-              : `${critical} EMERGENCY · ${high} ALERT — human review`}
+              ? `${critical} EMERGENCIA · ${high} ALERTA: revisión humana`
+              : `${critical} EMERGENCY · ${high} ALERT: human review`}
           </p>
         </div>
       )}

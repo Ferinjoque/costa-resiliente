@@ -1,9 +1,9 @@
-"""Layers router tests — all GeoJSON map-layer endpoints.
+"""Layers router tests: all GeoJSON map-layer endpoints.
 
 Each endpoint returns either a GeoJSON FeatureCollection or a plain dict.
 Tests verify: 200 status, correct content-type/shape, key GeoJSON fields,
 and query-param filters where applicable. The DB may have zero features
-(e.g. no IMERG data in CI) — tests handle empty FeatureCollections gracefully.
+(e.g. no IMERG data in CI), tests handle empty FeatureCollections gracefully.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ class TestImergLatest:
 
     @pytest.mark.asyncio
     async def test_source_label_is_late_run(self):
-        """IMERG source must say 'Late Run' not 'Early Run' — regression guard."""
+        """IMERG source must say 'Late Run' not 'Early Run', regression guard."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
             resp = await c.get("/api/v1/layers/imerg/latest")
         source = resp.json().get("source", "")
@@ -296,7 +296,7 @@ class TestFloodExposure:
     async def test_flood_exposure_has_time_filter(self):
         """Regression: flood_exposure must filter to recent polygons only (7 days).
 
-        Prior bug: no acquired_at filter — accumulated all historical flood polygons
+        Prior bug: no acquired_at filter, accumulated all historical flood polygons
         into total_affected_population, vastly overstating current exposure.
         """
         from inspect import getsource
@@ -322,7 +322,7 @@ class TestFloodExposure:
         """total_affected_population MUST be present in response (strict field check).
 
         Regression guard: `.get("total_affected_population", -1)` in previous test
-        would mask a missing field. OperationalHUD relies on this field — silent absence
+        would mask a missing field. OperationalHUD relies on this field, silent absence
         would show 0 population at risk when data is actually unavailable.
         """
         async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE) as c:
@@ -330,7 +330,7 @@ class TestFloodExposure:
         assert resp.status_code == 200
         body = resp.json()
         assert "total_affected_population" in body, (
-            "flood/exposure must always include total_affected_population field — "
+            "flood/exposure must always include total_affected_population field, "
             "OperationalHUD depends on it for population-at-risk display"
         )
         assert body["total_affected_population"] is not None
@@ -362,13 +362,13 @@ class TestParseReplayTime:
     def test_explicit_midnight_not_promoted(self):
         """T00:00:00 (explicit midnight) must NOT be bumped to 23:59.
 
-        Prior bug: condition was `if dt.hour == 0 and ... == 0` — this
+        Prior bug: condition was `if dt.hour == 0 and ... == 0`, this
         incorrectly bumped an explicit T00:00:00Z query to end-of-day,
         hiding data published before midnight.
         """
         result = self._parse("2026-05-31T00:00:00Z")
         assert result.hour == 0, (
-            "Explicit midnight should stay at 00:00:00, not be bumped to 23:59 — "
+            "Explicit midnight should stay at 00:00:00, not be bumped to 23:59, "
             "only bare date inputs (no time component) should be promoted"
         )
 

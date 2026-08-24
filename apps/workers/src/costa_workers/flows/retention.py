@@ -1,14 +1,14 @@
-"""Data retention flow — prune expired rows to keep storage bounded.
+"""Data retention flow: prune expired rows to keep storage bounded.
 
 Scheduled daily via Prefect (see schedules.py).  All operations are
 idempotent and safe to re-run.  Nothing is deleted that the schema did
 not already mark as expired.
 
 Targets:
-  social.signals      — rows where expires_at < NOW()  (7-day TTL set at ingest)
-  ops.alerts          — closed / false_positive rows older than 90 days
-  ops.share_tokens    — rows where expires_at < NOW()  (30-day TTL)
-  ops.security_events — rows older than 180 days (audit window)
+  social.signals: rows where expires_at < NOW()  (7-day TTL set at ingest)
+  ops.alerts: closed / false_positive rows older than 90 days
+  ops.share_tokens: rows where expires_at < NOW()  (30-day TTL)
+  ops.security_events: rows older than 180 days (audit window)
 """
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ def _dsn() -> str:
 
 
 def _parse_count(status: str) -> int:
-    """asyncpg execute() returns e.g. 'DELETE 42' — parse the row count."""
+    """asyncpg execute() returns e.g. 'DELETE 42', parse the row count."""
     try:
         return int(status.split()[-1])
     except (IndexError, ValueError):

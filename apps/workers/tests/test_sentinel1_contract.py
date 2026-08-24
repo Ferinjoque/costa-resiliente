@@ -1,7 +1,7 @@
 """
 Ingest contract tests for Sentinel-1 flow.
 These tests verify the data contract without hitting external APIs.
-No real PC STAC or MinIO calls — all mocked.
+No real PC STAC or MinIO calls: all mocked.
 """
 import json
 from datetime import datetime, timezone, timedelta

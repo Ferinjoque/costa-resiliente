@@ -93,7 +93,7 @@ export function LiveTicker() {
       const meta  = SOCIAL_META[label];
       const tag   = meta ? meta[locale] : "SEÑAL";
       const color = meta?.color ?? "text-ink-muted";
-      const where = f.properties.district_name ?? "—";
+      const where = f.properties.district_name ?? "-";
       const snippet = f.properties.text
         ? ` · "${f.properties.text.slice(0, 40).trimEnd()}${f.properties.text.length > 40 ? "…" : ""}"`
         : "";
@@ -116,16 +116,16 @@ export function LiveTicker() {
       rainfallItems.push({
         id: "rain-emerg",
         text: locale === "es"
-          ? `[EMERG·LLUVIA] ${maxRain.toFixed(0)} mm/72h cuenca ${maxWs} — ⚠ EMERGENCIA ANA`
-          : `[EMERG·RAIN] ${maxRain.toFixed(0)} mm/72h ${maxWs} watershed — ⚠ ANA EMERGENCY`,
+          ? `[EMERG·LLUVIA] ${maxRain.toFixed(0)} mm/72h cuenca ${maxWs}: ⚠ EMERGENCIA ANA`
+          : `[EMERG·RAIN] ${maxRain.toFixed(0)} mm/72h ${maxWs} watershed: ⚠ ANA EMERGENCY`,
         color: "text-danger",
       });
     } else if (maxRain >= 25) {
       rainfallItems.push({
         id: "rain-alert",
         text: locale === "es"
-          ? `[ALERT·LLUVIA] ${maxRain.toFixed(0)} mm/72h cuenca ${maxWs} — ALERTA ANA`
-          : `[ALERT·RAIN] ${maxRain.toFixed(0)} mm/72h ${maxWs} watershed — ANA ALERT`,
+          ? `[ALERT·LLUVIA] ${maxRain.toFixed(0)} mm/72h cuenca ${maxWs}: ALERTA ANA`
+          : `[ALERT·RAIN] ${maxRain.toFixed(0)} mm/72h ${maxWs} watershed: ANA ALERT`,
         color: "text-warn-muted",
       });
     }

@@ -1,5 +1,5 @@
 """
-Districts endpoint contract tests — no real DB.
+Districts endpoint contract tests: no real DB.
 Validates GeoJSON shape, property schema, and error cases.
 """
 import pytest
@@ -251,7 +251,7 @@ async def test_district_dashboard_rainfall_alerts_included(app):
 async def test_sinpad_uses_exact_match_not_substring(app):
     """SINPAD historical event count uses exact ubigeo or exact name match.
 
-    Regression guard: prior ILIKE '%name%' substring match overcounted events —
+    Regression guard: prior ILIKE '%name%' substring match overcounted events: 
     e.g. 'Lurigancho' returned 50 events (includes 'Lurigancho-Chosica' and others).
     Fix: exact ubigeo match + exact case-insensitive name fallback = 27 events.
     """
@@ -268,7 +268,7 @@ async def test_sinpad_uses_exact_match_not_substring(app):
     )
     # Substring match must NOT be present
     assert "ILIKE '%' || :name || '%'" not in src, (
-        "SINPAD query must not use substring ILIKE match — it overcounts events "
+        "SINPAD query must not use substring ILIKE match, it overcounts events "
         "from adjacent/similarly-named districts"
     )
 
@@ -280,7 +280,7 @@ def test_seed_districts_use_official_inei_ubigeos():
 
     'Pueblo Libre' and 'Magdalena Vieja' are the same district (INEI 150121).
     Listing both shifted every code from 150125 onward by +1 and put San Juan de
-    Lurigancho — the demo COEL district — on 150133, which is San Juan de
+    Lurigancho, the demo COEL district, on 150133, which is San Juan de
     Miraflores. Codes are surfaced to operators and written into EDAN-Perú
     exports, so they have to match INEI exactly.
 

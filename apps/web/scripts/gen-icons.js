@@ -95,7 +95,7 @@ function drawIcon(size) {
   // Fill background
   fillRect(0, 0, s - 1, s - 1, BG);
 
-  // Rounded corners (erase to transparent) — approx with circle corners
+  // Rounded corners (erase to transparent): approx with circle corners
   const r = Math.floor(s * 0.15);
   function eraseCorner(cx, cy) {
     for (let dy = 0; dy < r; dy++)
@@ -104,9 +104,9 @@ function drawIcon(size) {
         if (dist > r) setPixel(cx + dx, cy + dy, [0, 0, 0, 0]);
       }
   }
-  eraseCorner(0, 0); // TL — mirror to quadrant
+  eraseCorner(0, 0); // TL, mirror to quadrant
   // Simple: just erase exact squares at corners, skip complex rounded calc
-  // (SVG already has rounded corners — PNG can be square for install purposes)
+  // (SVG already has rounded corners: PNG can be square for install purposes)
 
   // Wave band at bottom third
   const waveY = Math.floor(s * 0.58);
@@ -141,7 +141,7 @@ function drawIcon(size) {
   fillRect(barX, dotCy - Math.floor(dotR * 0.55), barX + barW - 1, dotCy + Math.floor(dotR * 0.1), [255, 255, 255, 255]);
   fillCircle(dotCx, dotCy + Math.floor(dotR * 0.38), Math.max(1, Math.floor(dotR * 0.15)), [255, 255, 255, 255]);
 
-  // Bottom accent bar "CR" — just a colored rect (no font rendering)
+  // Bottom accent bar "CR", just a colored rect (no font rendering)
   fillRect(Math.floor(s * 0.3), Math.floor(s * 0.88), Math.floor(s * 0.7), Math.floor(s * 0.92), GRAY);
 
   return pixels;
@@ -191,7 +191,7 @@ for (const [name, size] of sizes) {
   console.log(`Generated ${name} (${png.length} bytes)`);
 }
 
-// Also write a minimal favicon.ico (16x16 BMP wrapped in ICO — or just copy 192 as fallback)
+// Also write a minimal favicon.ico (16x16 BMP wrapped in ICO: or just copy 192 as fallback)
 // Simplest: create a 16x16 PNG as favicon
 const fav = buildPNG(32);
 fs.writeFileSync(path.join(outDir, "favicon.ico"), fav);

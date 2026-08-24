@@ -22,7 +22,7 @@ const strings = {
     title:        { es: "Alertas",                   en: "Alerts" },
     noAlerts:     { es: "No hay alertas activas",    en: "No active alerts" },
     loading:      { es: "Cargando alertas…",         en: "Loading alerts…" },
-    error:        { es: "Error al cargar alertas — mostrando datos de demostración", en: "Failed to load alerts — showing demo data" },
+    error:        { es: "Error al cargar alertas, mostrando datos de demostración", en: "Failed to load alerts, showing demo data" },
     acknowledge:  { es: "Reconocer alerta",          en: "Acknowledge alert" },
     personsAtRisk:{ es: "personas en zona inundada", en: "people in flood zone" },
     updated:      { es: "Actualizado",               en: "Updated" },
@@ -48,17 +48,17 @@ const strings = {
     activeAlerts:      { es: "Alertas activas",       en: "Active alerts" },
     floodArea:         { es: "Área inundada",         en: "Flood area" },
     inhabitants:       { es: "hab.",                  en: "pop." },
-    priorityDistricts: { es: "Distritos con alertas activas — selecciona uno",
-                         en: "Districts with active alerts — select one" },
+    priorityDistricts: { es: "Distritos con alertas activas: selecciona uno",
+                         en: "Districts with active alerts: select one" },
     people:            { es: "Población INEI",        en: "INEI Population" },
     rain24h:           { es: "Lluvia 24h (IMERG)",    en: "Rainfall 24h (IMERG)" },
     maxLast30d:        { es: "Máx. 30d:",             en: "Max 30d:" },
     noRecentData:      { es: "Sin datos recientes",   en: "No recent data" },
     historical:        { es: "Eventos históricos",    en: "Historical events" },
-    sinpad:            { es: "SINPAD 2003–2020",      en: "SINPAD 2003–2020" },
-    rain30d:           { es: "Lluvia diaria — últimos 30 días", en: "Daily rainfall — last 30 days" },
-    alerts7d:          { es: "Alertas — últimos 7 días", en: "Alerts — last 7 days" },
-    social24h:         { es: "Señales sociales — últimas 24h", en: "Social signals — last 24h" },
+    sinpad:            { es: "SINPAD 2003-2020",      en: "SINPAD 2003-2020" },
+    rain30d:           { es: "Lluvia diaria (últimos 30 días", en: "Daily rainfall)last 30 days" },
+    alerts7d:          { es: "Alertas (últimos 7 días", en: "Alerts)last 7 days" },
+    social24h:         { es: "Señales sociales (últimas 24h", en: "Social signals)last 24h" },
     nearbyStations:    { es: "Estaciones hidrométricas cercanas", en: "Nearby hydro stations" },
     noData:            { es: "Sin datos",             en: "No data" },
     loading:           { es: "Cargando datos…",       en: "Loading data…" },
@@ -132,7 +132,7 @@ export function t<K extends StringKey>(
   return entry[locale];
 }
 
-/** Convenience hook — returns a bound translator for the given locale. */
+/** Convenience hook: returns a bound translator for the given locale. */
 export function useT(locale: Locale) {
   return <K extends StringKey>(section: K, key: keyof (typeof strings)[K]): string =>
     t(section, key, locale);

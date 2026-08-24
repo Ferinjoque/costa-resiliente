@@ -12,14 +12,14 @@ Costa Resiliente requires three distinct ML components with different latency, a
 
 ---
 
-## Decision 1: SAR Flood Segmentation — Sen1Floods11 U-Net
+## Decision 1: SAR Flood Segmentation. Sen1Floods11 U-Net
 
 **Choice**: 4-level U-Net with skip connections trained on Sen1Floods11 dataset.
 
-**Why**: Sen1Floods11 (Bonafilia et al. 2020) provides labeled Sentinel-1 GRD flood events including the 2017 Peru El Niño event — a directly relevant training set. The U-Net architecture is the established baseline for semantic segmentation of SAR imagery and has strong transfer learning properties.
+**Why**: Sen1Floods11 (Bonafilia et al. 2020) provides labeled Sentinel-1 GRD flood events including the 2017 Peru El Niño event, a directly relevant training set. The U-Net architecture is the established baseline for semantic segmentation of SAR imagery and has strong transfer learning properties.
 
 **Key constraints**:
-- Lima's informal urban fabric requires pixel-level resolution — object detection baselines insufficient
+- Lima's informal urban fabric requires pixel-level resolution, object detection baselines insufficient
 - Must run on CPU (8 GB RAM) in under 5 minutes per scene
 - Patch inference (512×512, 64px overlap) bounds VRAM to ~2 GB when GPU available
 
@@ -27,19 +27,19 @@ Costa Resiliente requires three distinct ML components with different latency, a
 
 ---
 
-## Decision 2: Huayco Susceptibility — XGBoost following Castro-Cabrera (2024)
+## Decision 2: Huayco Susceptibility. XGBoost following Castro-Cabrera (2024)
 
 **Choice**: XGBoost binary classifier with 9 features from Castro-Cabrera et al. (2024) "A Comparative Study of Susceptibility and Hazard for Mass Movements in Northern Lima Commonwealth" (Geosciences 14(6):168).
 
 **Why**: Castro-Cabrera directly covers Lima Norte watersheds (Rímac, Chillón, Lurín) and provides feature importance rankings from real Peruvian geology. Their model achieved AUC >0.92 on CENEPRED SIGRID historical events. Replication with dynamic IMERG rainfall features extends the static susceptibility map to near-real-time hazard estimation.
 
-**Risk thresholds**: Castro-Cabrera Table 5 equivalent — <0.2 very_low / <0.4 low / <0.6 medium / <0.8 high / ≥0.8 very_high.
+**Risk thresholds**: Castro-Cabrera Table 5 equivalent, <0.2 very_low / <0.4 low / <0.6 medium / <0.8 high / ≥0.8 very_high.
 
-**Fallback**: Slope+rainfall heuristic (0.6×slope_norm + 0.4×rain_norm) when trained weights absent. Not calibrated — development only.
+**Fallback**: Slope+rainfall heuristic (0.6×slope_norm + 0.4×rain_norm) when trained weights absent. Not calibrated, development only.
 
 ---
 
-## Decision 3: Social Signal Triage — Gemma 3 12B-IT
+## Decision 3: Social Signal Triage. Gemma 3 12B-IT
 
 **Choice**: Gemma 3 12B-IT (Q4_K_M quantization) served via Ollama, structured JSON output via Ollama's `format: "json"` parameter.
 
@@ -49,9 +49,9 @@ Costa Resiliente requires three distinct ML components with different latency, a
 
 ---
 
-## Decision 4: Operator Copilot — Intent-Classified RAG with Whitelisted Queries
+## Decision 4: Operator Copilot. Intent-Classified RAG with Whitelisted Queries
 
-**Choice**: Two-call LLM pipeline — (1) classify intent and extract slots, (2) execute whitelisted parameterized query, (3) summarize results in Spanish.
+**Choice**: Two-call LLM pipeline, (1) classify intent and extract slots, (2) execute whitelisted parameterized query, (3) summarize results in Spanish.
 
 **Why**: Direct SQL generation from NL carries injection risk and produces unauditable queries. A whitelist of 6 parameterized templates covers the operator's actual information needs (flood status, huayco risk, river levels, social clusters, infrastructure impact, rainfall) while remaining transparent and safe. The "LLM never fabricates" invariant is enforced by design: the LLM can only summarize rows returned from the DB, not invent numbers.
 

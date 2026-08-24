@@ -7,7 +7,7 @@ const STATE = "e2e/.auth/coer.json";
  *
  * The API rate-limits login to 10 attempts per IP per 60 s (auth.py), which is
  * correct for a public emergency console and which a suite that logs in per test
- * trips immediately — the form then silently resets and every downstream
+ * trips immediately: the form then silently resets and every downstream
  * assertion fails for the wrong reason.
  */
 setup("authenticate as COER Lima", async ({ page }) => {

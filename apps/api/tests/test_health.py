@@ -194,7 +194,7 @@ async def test_health_rainfall_uses_per_watershed_query():
     """Regression: /health rainfall must use per-watershed DISTINCT ON, not global MAX(time).
 
     Prior bug: WHERE time = (SELECT MAX(time) FROM hydro.imerg_accumulations) retrieved
-    only watersheds with the single latest timestamp — if one watershed ingested later
+    only watersheds with the single latest timestamp, if one watershed ingested later
     than another, the others were excluded from the max_rain_72h_mm computation.
     Fix: per-watershed DISTINCT ON picks each watershed's own latest reading.
     """
@@ -206,7 +206,7 @@ async def test_health_rainfall_uses_per_watershed_query():
         "to pick each watershed's latest reading independently"
     )
     assert "SELECT MAX(time) FROM hydro.imerg_accumulations" not in src, (
-        "health_check must not use global MAX(time) for rainfall — "
+        "health_check must not use global MAX(time) for rainfall: "
         "it excludes watersheds that ingested earlier than the most recent"
     )
 
@@ -227,7 +227,7 @@ async def test_health_rain_level_consistent_with_max_rain():
         elif mm >= 15:
             assert level in ("aviso", "alerta", "emergencia"), f"{mm}mm should be aviso+, got {level}"
         else:
-            # Below all thresholds — should be normal (unless something else elevated it)
+            # Below all thresholds: should be normal (unless something else elevated it)
             assert level in ("normal", "aviso", "alerta", "emergencia"), f"Invalid level: {level}"
 
 
@@ -238,8 +238,8 @@ async def test_seed_gate_counts_only_active_demo_alerts():
     """The seed pass must key off ACTIVE demo alerts, not every alert row.
 
     Regression guard: the gate used to be `SELECT COUNT(*) FROM ops.alerts`, so
-    once the demo alerts had been acknowledged or closed — by a demo run, by this
-    test suite (which acts on real rows), or by auto-resolution — the table still
+    once the demo alerts had been acknowledged or closed, by a demo run, by this
+    test suite (which acts on real rows), or by auto-resolution, the table still
     looked populated and the seed returned early. POST /health/seed could then
     never restore the scenario, which is the only reason it exists.
     """

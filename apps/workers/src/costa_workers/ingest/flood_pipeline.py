@@ -44,7 +44,7 @@ DB_DSN = os.getenv("DATABASE_URL", "postgresql://costa:costa@localhost:5432/cost
 FLOOD_CONFIDENCE_THRESHOLD = float(os.getenv("FLOOD_CONFIDENCE_THRESHOLD", "0.5"))
 FLOOD_MIN_PIXELS = int(os.getenv("FLOOD_MIN_PIXELS", "9"))
 
-# Max scenes per run — avoid OOM on first run after backfill
+# Max scenes per run: avoid OOM on first run after backfill
 MAX_SCENES_PER_RUN = int(os.getenv("FLOOD_MAX_SCENES_PER_RUN", "5"))
 
 # ─── Tasks ─────────────────────────────────────────────────────────────────────
@@ -198,7 +198,7 @@ async def store_flood_polygons(scene_id: str, polygons: list[dict], acquired_at:
 
     async with asyncpg.create_pool(DB_DSN, min_size=1, max_size=3) as pool:
         if not polygons:
-            # No flood pixels detected — insert a dry-scene sentinel with an empty
+            # No flood pixels detected: insert a dry-scene sentinel with an empty
             # geometry so list_unprocessed_scenes() skips this scene on future runs.
             # MULTIPOLYGON EMPTY is a valid PostGIS geometry that satisfies the NOT NULL
             # constraint while signalling zero flood extent to downstream queries.
@@ -214,16 +214,16 @@ async def store_flood_polygons(scene_id: str, polygons: list[dict], acquired_at:
                 acquired_at,
                 "sen1floods11-unet-v1",
             )
-            logger.info("Scene %s: no flood detected — dry-scene sentinel inserted", scene_id)
+            logger.info("Scene %s: no flood detected, dry-scene sentinel inserted", scene_id)
             return 0
 
-        # Schema has GEOMETRY(MULTIPOLYGON) + UNIQUE(scene_id) — one row per scene.
+        # Schema has GEOMETRY(MULTIPOLYGON) + UNIQUE(scene_id): one row per scene.
         # Build a MULTIPOLYGON GeoJSON in Python and pass as a single parameter so
         # all detected polygons are captured; looping with ON CONFLICT DO NOTHING
         # would silently discard all but the first.
         valid_polys = [p for p in polygons if p.get("geometry") and p["geometry"].get("coordinates")]
         if not valid_polys:
-            logger.warning("All polygons lacked geometry for scene %s — skipping", scene_id)
+            logger.warning("All polygons lacked geometry for scene %s: skipping", scene_id)
             return 0
 
         multi_geom = {
@@ -269,7 +269,7 @@ async def flood_segmentation_flow() -> dict:
     """
     scene_ids = await list_unprocessed_scenes()
     if not scene_ids:
-        logger.info("No unprocessed scenes — nothing to do")
+        logger.info("No unprocessed scenes: nothing to do")
         return {"processed": 0, "total_polygons": 0}
 
     total_polygons = 0
@@ -287,7 +287,7 @@ async def flood_segmentation_flow() -> dict:
             total_polygons += count
             processed += 1
         except Exception as exc:
-            logger.error("Scene %s failed: %s — continuing", scene_id, exc)
+            logger.error("Scene %s failed: %s, continuing", scene_id, exc)
             continue
 
     logger.info(

@@ -85,7 +85,7 @@ async def _auto_notify(
 ) -> None:
     """
     Fan out to notification_subscribers for newly generated alerts.
-    Only fires for critical/high — medium/low visible in dashboard only.
+    Only fires for critical/high: medium/low visible in dashboard only.
     Mirrors the logic in api/notifications.py but runs in-process in the worker.
     Subscribers are delivered in parallel via asyncio.gather to avoid blocking
     the alert flow (worst case sequential: 100 subs × 3 retries × 5s ≈ 35 min).
@@ -171,7 +171,7 @@ SOCIAL_CLUSTER_MIN = 5          # minimum signal count to trigger alert
 SOCIAL_CLUSTER_WINDOW_H = 1     # hours to look back for social clusters
 
 # IMERG rainfall thresholds (ANA/SENAMHI-aligned for Lima El Niño events)
-RAIN_CRITICAL_72H_MM = 50.0    # EMERGENCIA-level — corresponds to ~2017 El Niño peaks
+RAIN_CRITICAL_72H_MM = 50.0    # EMERGENCIA-level, corresponds to ~2017 El Niño peaks
 RAIN_HIGH_72H_MM = 25.0        # ALERTA level
 RAIN_HIGH_24H_MM = 15.0        # 24h spike threshold
 
@@ -237,7 +237,7 @@ async def generate_flood_alerts(db_dsn: str = DB_DSN) -> int:
                 "flood_polygon_id": str(row["id"]),
                 "scene_acquired_at": str(row["acquired_at"]),
             })
-            title = f"Inundación detectada — {area:.1f} km² afectados"
+            title = f"Inundación detectada, {area:.1f} km² afectados"
             desc = (
                 f"Polígono SAR adquirido {row['acquired_at'].strftime('%d/%m %H:%M')} UTC. "
                 f"Confianza: {float(row['confidence'] or 0):.0%}."
@@ -314,7 +314,7 @@ async def generate_huayco_alerts(db_dsn: str = DB_DSN) -> int:
                 "computed_at": str(row["computed_at"]),
             })
             rain = row["trigger_rain_24h_mm"]
-            title = f"Riesgo de huayco — {row['quebrada_name']}"
+            title = f"Riesgo de huayco: {row['quebrada_name']}"
             desc = (
                 f"Susceptibilidad: {float(row['probability']):.0%} ({row['risk_level']}). "
                 + (f"Lluvia 24h: {float(rain):.1f} mm." if rain is not None else "")
@@ -337,7 +337,7 @@ async def generate_huayco_alerts(db_dsn: str = DB_DSN) -> int:
     return inserted
 
 
-HUAYCO_CLUSTER_MIN = 3          # huaycos are immediately life-threatening — lower threshold
+HUAYCO_CLUSTER_MIN = 3          # huaycos are immediately life-threatening, lower threshold
 
 # Per-label cluster config: (min_signals, alert_type_suffix, severity_fn, title_template, desc_template)
 _SOCIAL_CLUSTER_CONFIGS = [
@@ -345,7 +345,7 @@ _SOCIAL_CLUSTER_CONFIGS = [
         "labels":    ["needs_help"],
         "min":       SOCIAL_CLUSTER_MIN,
         "alert_type": "social_cluster",
-        "title_fn":  lambda count, name, _lbl: f"{count} señales de ayuda — {name}",
+        "title_fn":  lambda count, name, _lbl: f"{count} señales de ayuda: {name}",
         "desc_fn":   lambda count, _name, _lbl: f"Clúster de {count} señales 'needs_help' en la última hora.",
         "severity_fn": _social_severity,
     },
@@ -353,7 +353,7 @@ _SOCIAL_CLUSTER_CONFIGS = [
         "labels":    ["huayco_observation"],
         "min":       HUAYCO_CLUSTER_MIN,
         "alert_type": "social_cluster",
-        "title_fn":  lambda count, name, _lbl: f"{count} avistamientos de huayco — {name}",
+        "title_fn":  lambda count, name, _lbl: f"{count} avistamientos de huayco: {name}",
         "desc_fn":   lambda count, _name, _lbl: f"{count} reportes de campo 'huayco_observation' en la última hora. Activar protocolo de evacuación de quebradas.",
         "severity_fn": lambda count: "critical" if count >= 3 else "high",
     },
@@ -361,7 +361,7 @@ _SOCIAL_CLUSTER_CONFIGS = [
         "labels":    ["flood_observation"],
         "min":       SOCIAL_CLUSTER_MIN,
         "alert_type": "social_cluster",
-        "title_fn":  lambda count, name, _lbl: f"{count} avistamientos de inundación — {name}",
+        "title_fn":  lambda count, name, _lbl: f"{count} avistamientos de inundación: {name}",
         "desc_fn":   lambda count, _name, _lbl: f"{count} reportes de campo 'flood_observation' en la última hora.",
         "severity_fn": _social_severity,
     },
@@ -491,12 +491,12 @@ async def generate_rainfall_alerts(db_dsn: str = DB_DSN) -> int:
                 severity = "medium"
                 threshold_label = f"Acumulación 24h: {acc_24h:.1f} mm (>{RAIN_HIGH_24H_MM:.0f} mm/día)"
             else:
-                continue  # Below all thresholds — no alert needed
+                continue  # Below all thresholds: no alert needed
 
             # Skip if recent rainfall alert already exists AT THE SAME OR HIGHER severity.
             # Bug fix: previously ANY active rainfall alert blocked new alerts, so a
             # "high" alert (25mm) would block a "critical" alert (50mm) within the 6h
-            # dedup window — operators would miss the escalation.
+            # dedup window: operators would miss the escalation.
             # Now: only deduplicate when existing severity >= new severity.
             _SEV_RANK = {"critical": 3, "high": 2, "medium": 1, "low": 0}
             existing_sev = await pool.fetchval(
@@ -512,7 +512,7 @@ async def generate_rainfall_alerts(db_dsn: str = DB_DSN) -> int:
                 str(row["watershed_id"]), dedup_window,
             )
             if existing_sev and _SEV_RANK.get(existing_sev, 0) >= _SEV_RANK.get(severity, 0):
-                # Same or higher severity alert already exists — skip
+                # Same or higher severity alert already exists, skip
                 continue
             # If existing alert is lower severity (e.g. high→critical escalation),
             # auto-resolve it so the new critical one is the sole active rainfall alert.
@@ -542,7 +542,7 @@ async def generate_rainfall_alerts(db_dsn: str = DB_DSN) -> int:
                 "acc_72h_mm": acc_72h,
                 "acc_24h_mm": acc_24h,
             })
-            title = f"Lluvia intensa — cuenca {row['watershed_name']}"
+            title = f"Lluvia intensa: cuenca {row['watershed_name']}"
             desc = threshold_label + f". Observado a las {row['time'].strftime('%d/%m %H:%M')} UTC (IMERG)."
 
             new_id = await pool.fetchval(
@@ -576,7 +576,7 @@ async def resolve_stale_alerts(db_dsn: str = DB_DSN) -> int:
     import asyncpg
 
     async with asyncpg.create_pool(db_dsn, min_size=1, max_size=2) as pool:
-        # Flood — SAR revisit cadence, keep alert alive for 7 days
+        # Flood: SAR revisit cadence, keep alert alive for 7 days
         flood_rows = await pool.fetch(
             """
             UPDATE ops.alerts SET status = 'closed', updated_at = NOW()
@@ -587,7 +587,7 @@ async def resolve_stale_alerts(db_dsn: str = DB_DSN) -> int:
             """,
             FLOOD_ALERT_TTL_DAYS,
         )
-        # Huayco — susceptibility recalculated daily, 48h window
+        # Huayco: susceptibility recalculated daily, 48h window
         huayco_rows = await pool.fetch(
             """
             UPDATE ops.alerts SET status = 'closed', updated_at = NOW()
@@ -598,7 +598,7 @@ async def resolve_stale_alerts(db_dsn: str = DB_DSN) -> int:
             """,
             HUAYCO_ALERT_TTL_H,
         )
-        # Social cluster — dissipates quickly, 4h window
+        # Social cluster: dissipates quickly, 4h window
         social_rows = await pool.fetch(
             """
             UPDATE ops.alerts SET status = 'closed', updated_at = NOW()
@@ -609,7 +609,7 @@ async def resolve_stale_alerts(db_dsn: str = DB_DSN) -> int:
             """,
             SOCIAL_ALERT_TTL_H,
         )
-        # Rainfall — IMERG refreshes every 30min; close old alerts after 6h
+        # Rainfall: IMERG refreshes every 30min; close old alerts after 6h
         rain_rows = await pool.fetch(
             """
             UPDATE ops.alerts SET status = 'closed', updated_at = NOW()
@@ -645,7 +645,7 @@ async def generate_alerts_flow() -> dict:
     total = flood + huayco + social + rainfall
     logger.info("Alert generation complete: %d new, %d auto-resolved", total, resolved)
 
-    # Heartbeat for health endpoint — flow ran, not just "was an alert created"
+    # Heartbeat for health endpoint: flow ran, not just "was an alert created"
     try:
         import redis.asyncio as aioredis
         redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -654,7 +654,7 @@ async def generate_alerts_flow() -> dict:
             await r.set(
                 "costa:scraper:last_run:alerts",
                 datetime.now(timezone.utc).isoformat(),
-                ex=600,  # 10min — expire if flow stops running so stale flag fires naturally
+                ex=600,  # 10min, expire if flow stops running so stale flag fires naturally
             )
         finally:
             await r.aclose()

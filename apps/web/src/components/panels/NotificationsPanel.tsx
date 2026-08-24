@@ -204,7 +204,7 @@ export function NotificationsPanel() {
       await deleteNotificationSubscriber(id);
       addToast({ message: locale === "es" ? "Suscriptor desactivado" : "Subscriber disabled", variant: "info" });
     } catch {
-      addToast({ message: locale === "es" ? "Error al desactivar — reintenta" : "Error disabling — retry", variant: "warn" });
+      addToast({ message: locale === "es" ? "Error al desactivar, reintenta" : "Error disabling, retry", variant: "warn" });
     } finally {
       setDeletingIds((s) => { const n = new Set(s); n.delete(id); return n; });
       // Always refetch to ensure UI reflects actual server state

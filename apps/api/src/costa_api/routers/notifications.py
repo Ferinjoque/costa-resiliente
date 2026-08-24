@@ -1,15 +1,15 @@
-"""Notification subscribers — CRUD + async webhook + SMS fan-out.
+"""Notification subscribers: CRUD + async webhook + SMS fan-out.
 
 Fan-out fires (background task) when:
   - A new alert is created with severity in (critical, high)
   - An alert is escalated via /alerts/{id}/action
 
 Channels:
-  webhook  — POST JSON payload to target URL (httpx, 5s timeout, 3 retries)
-  sms      — Twilio SMS; active only when TWILIO_ACCOUNT_SID/AUTH_TOKEN/FROM_NUMBER set in .env
+  webhook: POST JSON payload to target URL (httpx, 5s timeout, 3 retries)
+  sms: Twilio SMS; active only when TWILIO_ACCOUNT_SID/AUTH_TOKEN/FROM_NUMBER set in .env
              Gracefully degrades to stub behavior when credentials absent ($0 until configured)
-  sms_stub — legacy stub: logs intent, no provider call (kept for backwards compat)
-  email    — stub: logs intent, no SMTP
+  sms_stub, legacy stub: logs intent, no provider call (kept for backwards compat)
+  email, stub: logs intent, no SMTP
 """
 
 from __future__ import annotations
@@ -90,7 +90,7 @@ _PRIVATE_NETS = [
     ipaddress.ip_network(cidr) for cidr in (
         "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16",
         "127.0.0.0/8", "169.254.0.0/16", "::1/128", "fc00::/7",
-        "fe80::/10",  # IPv6 link-local — prevents SSRF via link-local targeting
+        "fe80::/10",  # IPv6 link-local, prevents SSRF via link-local targeting
     )
 ]
 
@@ -118,19 +118,19 @@ def _reject_private_host(host: str) -> None:
     except ValueError as exc:
         if "webhook target" in str(exc):
             raise
-        # Not a literal IP — fall through to DNS resolution
+        # Not a literal IP: fall through to DNS resolution
 
     # DNS resolution path: resolve and check each returned address
     try:
         infos = socket.getaddrinfo(host, None)
     except OSError:
-        # DNS failure — conservatively block rather than allow unknown targets
+        # DNS failure: conservatively block rather than allow unknown targets
         raise ValueError(f"webhook hostname could not be resolved: {host}")
     for info in infos:
         addr_str = info[4][0]
         if _is_private_addr(addr_str):
             raise ValueError(
-                f"webhook target resolves to a private IP ({addr_str}) — blocked to prevent SSRF"
+                f"webhook target resolves to a private IP ({addr_str}): blocked to prevent SSRF"
             )
 
 
@@ -343,7 +343,7 @@ async def _send_webhook(target: str, payload: dict, timeout: float = 5.0, retrie
             except Exception as exc:
                 last_err = str(exc)
             if attempt < retries:
-                # Short fixed delays — this is emergency alert fan-out, not a background job.
+                # Short fixed delays: this is emergency alert fan-out, not a background job.
                 await asyncio.sleep(0.5 * attempt)
     return False, last_err, retries
 
@@ -351,10 +351,10 @@ async def _send_webhook(target: str, payload: dict, timeout: float = 5.0, retrie
 async def _send_sms(to_number: str, body: str) -> tuple[bool, str]:
     """Send SMS via Twilio. Returns (success, error). No-ops if credentials absent."""
     if not settings.twilio_enabled:
-        logger.info("[notifications] Twilio not configured — SMS stub for %s", to_number)
+        logger.info("[notifications] Twilio not configured: SMS stub for %s", to_number)
         return False, "twilio_not_configured"
     try:
-        from twilio.rest import Client  # lazy import — optional dep
+        from twilio.rest import Client  # lazy import: optional dep
         client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
         msg = client.messages.create(
             body=body,
@@ -400,9 +400,9 @@ async def _dispatch_to_subscriber(
                 status = "delivered" if success else "failed"
             await _record_delivery(sub["id"], alert_id, trigger_event, status, 1, err or None)
         else:
-            # sms_stub / email — log intent, no provider call
+            # sms_stub / email: log intent, no provider call
             logger.info("[notifications] stub %s → %s: alert_id=%s event=%s", channel, sub["label"], alert_id, trigger_event)
-            await _record_delivery(sub["id"], alert_id, trigger_event, "skipped", 0, f"{channel} stub — not wired")
+            await _record_delivery(sub["id"], alert_id, trigger_event, "skipped", 0, f"{channel} stub: not wired")
 
 
 async def fan_out_notifications(

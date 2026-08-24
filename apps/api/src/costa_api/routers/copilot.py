@@ -1,4 +1,4 @@
-"""Operator Copilot — agentic NL query → multi-tool → Spanish answer.
+"""Operator Copilot: agentic NL query → multi-tool → Spanish answer.
 
 Pipeline (see ai/agent.py for details):
   1. Input guardrail: regex prompt-injection filter
@@ -108,7 +108,7 @@ class CopilotResponse(BaseModel):
     blocked: bool = False
     redacted: bool = False
     quick_mode: bool = False  # True when LLM was bypassed (keyword → template, ~2s)
-    mode: str = "full"  # "sitrep" | "quick" | "full" — differentiates query paths
+    mode: str = "full"  # "sitrep" | "quick" | "full", differentiates query paths
 
 
 # ─── Backward-compat exports (referenced by sprint5 contract tests) ───────────
@@ -221,7 +221,7 @@ async def ask(
         logger.error("copilot/ask: agent_run timed out (>90s) for operator=%s", operator_id)
         # Decrement rate-limit counter on timeout so retry doesn't double-count.
         # Without this, a timed-out SITREP (rare but possible under load) would consume
-        # 2 of 6 quota slots — making the rate limiter more punishing than intended.
+        # 2 of 6 quota slots: making the rate limiter more punishing than intended.
         try:
             rl_client = _get_copilot_rl_client()
             if rl_client:

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "costa-workers"
 version = "0.1.0"
-description = "Costa Resiliente — Prefect ingestion flows + ML workers"
+description = "Costa Resiliente: Prefect ingestion flows + ML workers"
 requires-python = ">=3.12"
 dependencies = [
     # Orchestration

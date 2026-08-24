@@ -1,4 +1,4 @@
-# Production overrides — use alongside docker-compose.yml:
+# Production overrides, use alongside docker-compose.yml:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 #
 # What this file does:
@@ -75,7 +75,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # ── Prefect server (no port exposed — internal only) ──────────────────────
+  # ── Prefect server (no port exposed: internal only) ──────────────────────
   prefect-server:
     ports: []
     restart: unless-stopped
@@ -93,10 +93,10 @@ services:
   # ── MinIO (no management console exposed) ─────────────────────────────────
   minio:
     ports:
-      - "9000:9000"    # S3 API — keep for Prefect workers; block at firewall if needed
+      - "9000:9000"    # S3 API: keep for Prefect workers; block at firewall if needed
     restart: unless-stopped
 
-  # ── Ollama (no port exposed — internal only) ──────────────────────────────
+  # ── Ollama (no port exposed: internal only) ──────────────────────────────
   ollama:
     ports: []
     restart: unless-stopped

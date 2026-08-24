@@ -203,7 +203,7 @@ async def test_flood_hours_back_clamped():
 
 @pytest.mark.asyncio
 async def test_huayco_risk_unknown_min_risk_does_not_crash():
-    """Unknown min_risk defaults to rank 2 (high) — must not raise or inject SQL."""
+    """Unknown min_risk defaults to rank 2 (high): must not raise or inject SQL."""
     db = AsyncMock()
     db.execute = AsyncMock(return_value=MagicMock(__iter__=MagicMock(return_value=iter([]))))
 
@@ -255,7 +255,7 @@ async def test_cache_write_read_round_trip():
 
     # Read back
     result = await get_cached(key, args)
-    # Cache may be unavailable in some envs — that's OK (returns None)
+    # Cache may be unavailable in some envs: that's OK (returns None)
     if result is not None:
         assert result["count"] == 1
         assert result["rows"][0]["id"] == 99
@@ -426,11 +426,11 @@ def test_build_answer_rainfall_multi_watershed_shows_secondary():
     # Primary: Rímac is highest, should be EMERGENCIA
     assert "EMERGENCIA" in answer
     assert "Rímac" in answer or "Rimac" in answer
-    # Secondary: Chillón above ALERTA threshold — must appear
+    # Secondary: Chillón above ALERTA threshold, must appear
     assert "Chillón" in answer or "Chillon" in answer, (
         "When Chillón exceeds 25mm, it must appear in the multi-watershed rainfall answer"
     )
-    # Lurín is below threshold — should not appear as elevated
+    # Lurín is below threshold: should not appear as elevated
     assert "Lurín" not in answer or "debajo" in answer.lower() or answer.count("sobre umbral") == 1
 
 
@@ -572,7 +572,7 @@ def test_build_answer_river_levels_near_threshold():
     """Level within 90% of SENAMHI threshold → near-threshold warning shown.
 
     Regression guard: prior code showed only "bajo umbral" even when a station was
-    2.41m vs 2.5m threshold — the operator had no advance warning of imminent breach.
+    2.41m vs 2.5m threshold: the operator had no advance warning of imminent breach.
     Fix: within 90% (≥ threshold * 0.9) shows "⚠ acercándose al umbral".
     """
     from costa_api.ai.agent import _build_answer
@@ -589,7 +589,7 @@ def test_build_answer_active_alerts_with_critical():
     from costa_api.ai.agent import _build_answer
     rows = [
         {"id": 1, "severity": "critical", "alert_type": "rainfall",
-         "title": "Lluvia intensa — cuenca Rímac", "district_name": None,
+         "title": "Lluvia intensa, cuenca Rímac", "district_name": None,
          "source_refs": {"acc_72h_mm": 63.2, "watershed_id": "1"},
          "_total_active": 4},
         {"id": 2, "severity": "high",     "title": "Inundación Ate", "district_name": "Ate",
@@ -614,7 +614,7 @@ def test_build_answer_active_alerts_shows_sla_breach_age():
     """
     from datetime import datetime as _dt, timezone as _tz, timedelta
     from costa_api.ai.agent import _build_answer
-    # Alert created 30 minutes ago — well past 5-minute critical SLA
+    # Alert created 30 minutes ago: well past 5-minute critical SLA
     old_created_at = (_dt.now(_tz.utc) - timedelta(minutes=30)).isoformat()
     rows = [
         {"id": 1, "severity": "critical", "title": "Lluvia crítica",
@@ -683,7 +683,7 @@ def test_build_answer_social_signals_breakdown():
     assert "señal" in answer.lower()
     assert "ayuda" in answer.lower() or "huayco" in answer.lower()
     # Regression: weather_observation was excluded from breakdown before Session 22.
-    # Total showed 13 but breakdown showed only 11 — confusing discrepancy.
+    # Total showed 13 but breakdown showed only 11, confusing discrepancy.
     assert "meteo" in answer.lower() or "observ" in answer.lower(), (
         "weather_observation signals must appear in breakdown, not just in total count"
     )
@@ -795,7 +795,7 @@ def test_detect_quick_same_tool_two_patterns_still_routes():
     (falls to full LLM, 15-30s). With dedup, seen_tools={get_active_alerts} → quick-mode.
     """
     from costa_api.ai.agent import _detect_quick
-    # "alertas" + "sin reconocer" — matches both SLA and general alerts patterns
+    # "alertas" + "sin reconocer", matches both SLA and general alerts patterns
     result = _detect_quick("alertas criticas sin reconocer en el sistema")
     assert result == "get_active_alerts", (
         f"When 2 patterns match same tool, should still route to quick-mode, got {result!r}"
@@ -972,7 +972,7 @@ async def test_quick_mode_dispatch_raises_falls_through_to_llm():
             db=db,
         )
 
-    # dispatch raised at the agent level — fell through to LLM — quick_mode=False
+    # dispatch raised at the agent level, fell through to LLM, quick_mode=False
     assert result.quick_mode is False
     assert not result.blocked
 
@@ -1194,9 +1194,9 @@ def test_detect_quick_subestaciones():
     flood keyword for single-tool quick-mode test.
     """
     from costa_api.ai.agent import _detect_quick, _detect_multi_quick
-    # Without flood keyword — single match
+    # Without flood keyword: single match
     assert _detect_quick("¿Qué subestaciones están activas en Lima?") == "get_infrastructure_impact"
-    # With flood keyword — multi-quick returns both tools
+    # With flood keyword: multi-quick returns both tools
     multi = _detect_multi_quick("¿Cuántas subestaciones están en zona inundada?")
     assert "get_infrastructure_impact" in multi, "subestaci + inundada → infra + flood multi-quick"
     assert "get_flood_polygons" in multi
@@ -1268,7 +1268,7 @@ def test_is_sitrep_query_matches():
     from costa_api.ai.agent import _is_sitrep_query
     assert _is_sitrep_query("Dame el resumen completo de la situación")
     assert _is_sitrep_query("Necesito el sitrep de la guardia")
-    assert _is_sitrep_query("Inicio de guardia — ¿cómo está todo?")
+    assert _is_sitrep_query("Inicio de guardia: ¿cómo está todo?")
     assert _is_sitrep_query("Dame un resumen general de la emergencia")
     assert _is_sitrep_query("Situación general de Lima Metropolitana")
     # Session 21 additions
@@ -1344,7 +1344,7 @@ def test_build_sitrep_answer_all_tools():
     from costa_api.ai.agent import _build_sitrep_answer
     per_tool_rows = [
         ("get_active_alerts", [{"id": 1, "severity": "critical", "alert_type": "rainfall",
-                                "title": "Lluvia intensa — cuenca Rímac",
+                                "title": "Lluvia intensa: cuenca Rímac",
                                 "source_refs": {"acc_72h_mm": 63.2},
                                 "_total_active": 3}]),
         ("get_rainfall_accumulation", [{"watershed": "Rímac", "acc_72h_mm": 63.2, "acc_24h_mm": 20.1}]),
@@ -1369,7 +1369,7 @@ def test_build_sitrep_answer_all_tools():
     assert "Acción" in answer or "acción" in answer   # action recommended
     assert "Rímac" in answer           # critical alert title
     assert "Jicamarca" in answer       # huayco quebrada
-    # Session 23: 6th tool — social signals section with counts
+    # Session 23: 6th tool, social signals section with counts
     assert "social" in answer.lower() or "reportes" in answer.lower() or "señal" in answer.lower(), (
         "SITREP must include social signals section (6th tool)"
     )
@@ -1457,7 +1457,7 @@ def test_build_sitrep_multiple_rising_rivers_all_shown():
     )
     assert "Carapongo" in answer, "Third rising station must appear when all 3 are rising"
     assert "en ascenso" in answer, "Rising trend indicator must be present"
-    # Chosica at 2.41m is near its 2.5m threshold — should show threshold context
+    # Chosica at 2.41m is near its 2.5m threshold: should show threshold context
     assert "umbral" in answer.lower() or "2.5" in answer, (
         "Chosica near-threshold warning must appear (2.41m vs 2.5m SENAMHI threshold)"
     )
@@ -1538,7 +1538,7 @@ async def test_get_active_alerts_severity_high_includes_critical():
     """severity='high' must include BOTH 'critical' and 'high' (minimum-severity filter).
 
     Prior bug: used exact-match severity=:sev, so severity='high' silently excluded
-    critical alerts — the most dangerous ones.
+    critical alerts: the most dangerous ones.
     """
     db = AsyncMock()
     captured_params: list[dict] = []
@@ -1641,7 +1641,7 @@ async def test_get_river_levels_prev1h_anchored_to_latest():
     """prev_1h CTE must join to `latest` CTE (not use absolute NOW() window).
 
     Prior bug: used `NOW() - :hours` as the floor of prev_1h, so for hours_back=168
-    the window was ~168.5h–45m, grabbing an old reading unrelated to the latest.
+    the window was ~168.5h: 45m, grabbing an old reading unrelated to the latest.
     Fix: join prev_1h to latest.time so window is ±90min around latest.time - 1h.
     """
     db = AsyncMock()
@@ -1711,9 +1711,9 @@ async def test_sitrep_less_than_quorum_tools_falls_through_to_llm():
             db=db,
         )
 
-    # Must NOT be sitrep mode (quorum not met) — fell through to LLM
+    # Must NOT be sitrep mode (quorum not met): fell through to LLM
     assert result.mode != "sitrep", (
-        f"With only 2/5 tools succeeding, must NOT assert NORMAL — mode={result.mode!r}"
+        f"With only 2/5 tools succeeding, must NOT assert NORMAL, mode={result.mode!r}"
     )
     # The NORMAL message must not appear in the answer
     assert "NORMAL" not in result.answer or "no active" not in result.answer.lower(), (
@@ -1726,7 +1726,7 @@ async def test_sitrep_less_than_quorum_tools_falls_through_to_llm():
 @pytest.mark.asyncio
 async def test_full_agent_tool_error_dict_produces_degraded_not_empty():
     """When a DB tool returns an error dict (rows: []), final answer must
-    say "no se encontraron" or similar — never an empty string.
+    say "no se encontraron" or similar: never an empty string.
 
     dispatch() catches all DB exceptions and returns {"rows": [], "error": str(exc)}.
     The LLM sees this as a tool result with no data.  _build_answer must produce
@@ -1790,8 +1790,8 @@ def test_build_sitrep_answer_includes_utc_timestamp():
 def test_build_sitrep_answer_warns_when_all_river_trends_null():
     """When river_rows have no trend data, SITREP must warn about stale sensors.
 
-    Regression guard: Session 23 fix — before, null-trend rivers silently showed
-    first station with '—' trend. Operators could misread this as stable.
+    Regression guard: Session 23 fix, before, null-trend rivers silently showed
+    first station with '-' trend. Operators could misread this as stable.
     """
     from costa_api.ai.agent import _build_sitrep_answer
     per_tool_rows = [
@@ -1809,7 +1809,7 @@ def test_build_sitrep_answer_warns_when_all_river_trends_null():
 def test_build_answer_flood_polygon_total_count_shown_when_truncated():
     """When flood polygons are truncated (total > sample size), answer must show total.
 
-    Regression guard: Session 23 — get_flood_polygons now injects _total_flood_count
+    Regression guard: Session 23, get_flood_polygons now injects _total_flood_count
     into first row when more results exist than the LIMIT 10 sample.
     """
     from costa_api.ai.agent import _build_answer
@@ -1830,7 +1830,7 @@ def test_extract_tool_calls_recovers_call_emitted_as_text():
     """qwen2.5 sometimes writes the tool call into content instead of tool_calls.
 
     Regression guard: when that happened the agent loop saw 'no tool calls',
-    stopped, and handed the raw content to the operator — producing answers like
+    stopped, and handed the raw content to the operator, producing answers like
     `Ronaldo\n{"name": "get_active_alerts", "arguments": {"severity": "high"}}`.
     """
     from costa_api.ai.providers.ollama import extract_tool_calls

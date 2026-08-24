@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _seed_with_retry(max_attempts: int = 5, delay: float = 5.0) -> None:
-    """Retry auto_seed up to max_attempts times — Postgres may need a moment after healthcheck passes."""
+    """Retry auto_seed up to max_attempts times: Postgres may need a moment after healthcheck passes."""
     for attempt in range(1, max_attempts + 1):
         try:
             await maybe_seed(engine)
@@ -24,7 +24,7 @@ async def _seed_with_retry(max_attempts: int = 5, delay: float = 5.0) -> None:
         except Exception as exc:
             if attempt < max_attempts:
                 logger.warning(
-                    "auto_seed attempt %d/%d failed (%s) — retrying in %.0fs",
+                    "auto_seed attempt %d/%d failed (%s): retrying in %.0fs",
                     attempt, max_attempts, exc, delay,
                 )
                 await asyncio.sleep(delay)
@@ -53,10 +53,10 @@ def _warn_default_secrets() -> None:
         if value in _DEFAULT_SECRETS:
             if settings.app_env == "production":
                 raise RuntimeError(
-                    f"{name} is still set to a default placeholder value — "
+                    f"{name} is still set to a default placeholder value, "
                     "refusing to start in production with insecure credentials."
                 )
-            logger.warning("SECURITY: %s uses a default placeholder value — change before production deploy", name)
+            logger.warning("SECURITY: %s uses a default placeholder value, change before production deploy", name)
 
 
 async def _sync_ai_role_password() -> None:
@@ -74,7 +74,7 @@ async def _sync_ai_role_password() -> None:
 
     try:
         async with engine.connect() as conn:
-            # Use text() with a literal value — ALTER ROLE does not support
+            # Use text() with a literal value: ALTER ROLE does not support
             # parameterized placeholders in PostgreSQL for the PASSWORD clause.
             safe_pwd = pwd.replace("'", "''")  # rudimentary escaping; pwd from env, not user input
             await conn.execute(text(f"ALTER ROLE costa_ai_ro PASSWORD '{safe_pwd}'"))

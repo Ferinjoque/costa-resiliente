@@ -27,7 +27,7 @@ describe("next-intl message catalogues", () => {
     );
 
   it("es and en define exactly the same keys", () => {
-    // A key present in one catalogue only renders as a raw key path in the UI —
+    // A key present in one catalogue only renders as a raw key path in the UI, 
     // a Spanish-first emergency console must not show `alerts.title` to a duty
     // officer who toggled to English mid-shift.
     const es = flatten(load("es.json")).sort();
