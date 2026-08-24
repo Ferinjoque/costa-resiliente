@@ -18,6 +18,7 @@ import asyncio
 import json
 import re
 import logging
+import time as _time
 from dataclasses import dataclass, field
 from datetime import datetime as _dt, timezone as _tz  # module-level; used in multiple _build_* functions
 
@@ -483,13 +484,31 @@ async def run(
     selected_schemas = _select_tools(query)
 
     # 2. Agentic loop
+    #
+    # Wall-clock budget on top of max_iters. On CPU inference each iteration can
+    # consume the full per-call timeout, so a 4-iteration query could keep a duty
+    # officer waiting ~45s before the keyword fallback produced the same answer
+    # the first tool call already supported. Once the budget is spent we stop
+    # asking the model and summarise the rows already retrieved.
     llm_failed = False
+    loop_started = _time.monotonic()
     for iteration in range(max_iters):
+        if iteration > 0 and _time.monotonic() - loop_started > settings.llm_agent_budget_s:
+            logger.info(
+                "Agent budget %.0fs spent after %d iteration(s) — answering from %d row(s) already retrieved",
+                settings.llm_agent_budget_s, iteration, len(all_tool_results),
+            )
+            break
+        # Bound every call by whatever is left of the budget, the first one
+        # included — otherwise a single CPU inference that never returns burns the
+        # whole per-call timeout before the fallback can answer.
+        remaining = settings.llm_agent_budget_s - (_time.monotonic() - loop_started)
         try:
             response = await gateway.chat(
                 messages=messages,
                 tools=selected_schemas,
                 temperature=0.1,
+                timeout=max(5.0, min(settings.llm_timeout_chat, remaining)),
             )
         except Exception as exc:
             logger.warning("LLM call failed (iter %d): %s — falling back to keyword dispatch", iteration, exc)

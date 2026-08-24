@@ -41,6 +41,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/geojson": "^7946.0.14",
     "@types/node": "^20.14.2",
     "@types/react": "^18.3.3",

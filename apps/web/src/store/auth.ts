@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { loginOperator, register401Handler } from "@/lib/api";
+import { bumpAuthGeneration, loginOperator, register401Handler } from "@/lib/api";
 
 export interface Operator {
   id: number;
@@ -63,10 +63,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.setItem(LS_TOKEN, resp.access_token);
       localStorage.setItem(LS_OPERATOR, JSON.stringify(operator));
     }
+    // Start a new session generation so 401s from requests issued before this
+    // login cannot sign the operator straight back out.
+    bumpAuthGeneration();
     set({ token: resp.access_token, operator });
   },
 
   logout: () => {
+    bumpAuthGeneration();
     if (typeof window !== "undefined") {
       localStorage.removeItem(LS_TOKEN);
       localStorage.removeItem(LS_OPERATOR);
