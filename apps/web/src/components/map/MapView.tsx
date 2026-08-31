@@ -231,6 +231,9 @@ export default function MapView() {
               ["Umbral",  thr != null ? `${thr.toFixed(1)} m` : null],
               ["Caudal",  p.flow_m3s != null ? `${Number(p.flow_m3s).toFixed(1)} m³/s` : null],
               ["Lluvia",  p.rain_mm != null ? `${Number(p.rain_mm).toFixed(1)} mm/h` : null],
+              // A gauge the scraper has not reached shows a gap, not a zero.
+              ["Estado",  String(p.has_reading) === "false" ? "Sin lectura reciente" : null, "cr-val-alert"],
+              ["Origen",  String(p.is_demo_data) === "true" ? "Estación de escenario, no es una lectura real" : null, "cr-val-alert"],
             ], "cr-title-station"), activePopup);
             return;
           }
@@ -285,10 +288,19 @@ export default function MapView() {
             const RISK: Record<string, string> = {
               low: "Bajo", moderate: "Moderado", high: "Alto", very_high: "Muy alto",
             };
+            // Same rule as the SAR polygons below: a susceptibility score an
+            // operator may evacuate against has to say where it came from. The
+            // API sets is_demo_data, and treats an unstamped row as demo.
+            // MapLibre flattens feature properties, so a JSON boolean can arrive
+            // as the string "true". Compare on the stringified value.
+            const huaycoIsDemo = String(p.is_demo_data) === "true";
             html = popupHtml(`Quebrada: ${p.name ?? "-"}`, [
               ["Nivel de riesgo", p.risk_level ? (RISK[String(p.risk_level)] ?? String(p.risk_level)) : null],
               ["Probabilidad",    p.probability != null ? `${(Number(p.probability) * 100).toFixed(0)}%` : null],
               ["Lluvia detonante 24h", p.trigger_rain_24h_mm != null ? `${p.trigger_rain_24h_mm} mm` : null],
+              ["Modelo", p.model_version ? String(p.model_version) : null],
+              ["Origen", huaycoIsDemo ? "Valor de demostración, no es salida del modelo" : null,
+                         huaycoIsDemo ? "cr-val-alert" : undefined],
             ]);
           } else if (lid === "infra-circle") {
             // ASCII tag prefix instead of emoji: renders consistently across

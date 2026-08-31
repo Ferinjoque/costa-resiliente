@@ -195,6 +195,9 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     flood = await _source_stat(
         "SELECT COUNT(*) as count, MAX(processed_at) as last_seen_at FROM ml.flood_polygons"
     )
+    weather = await _source_stat(
+        "SELECT COUNT(*) as count, MAX(time) as last_seen_at FROM hydro.weather_observations"
+    )
     alerts = await _source_stat(
         "SELECT COUNT(*) as count, MAX(created_at) as last_seen_at FROM ops.alerts"
     )
@@ -208,6 +211,7 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     alerts_run: dict = {}
     imerg_run: dict = {}
     stations_run: dict = {}
+    weather_run: dict = {}
     redis_ok = False
 
     try:
@@ -231,9 +235,11 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
                 pipe.get("costa:scraper:last_run:alerts")
                 pipe.get("costa:scraper:last_run:imerg")
                 pipe.get("costa:scraper:last_run:stations")
+                pipe.get("costa:scraper:last_run:weather")
                 results = await pipe.execute()
 
-            raw_ana, raw_senamhi, raw_bluesky, raw_rss, raw_alerts, raw_imerg, raw_stations = results
+            (raw_ana, raw_senamhi, raw_bluesky, raw_rss, raw_alerts,
+             raw_imerg, raw_stations, raw_weather) = results
 
             def _parse_scraper_status(raw: str | None) -> dict:
                 if not raw:
@@ -268,6 +274,7 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
             alerts_run = _parse_last_run(raw_alerts, stale_min=8)
             imerg_run = _parse_last_run(raw_imerg, stale_min=70)
             stations_run = _parse_last_run(raw_stations, stale_min=70)
+            weather_run = _parse_last_run(raw_weather, stale_min=35)
 
         finally:
             await r.aclose()
@@ -284,6 +291,7 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
         "telegram": {"label": "Telegram (SENAMHI)", "schedule": "15min", **telegram},
         "imerg": {"label": "NASA IMERG Late Run V07B", "schedule": "30min", **imerg, **imerg_run},
         "stations": {"label": "ANA/SENAMHI Stations", "schedule": "15min", **stations, **ana_scraper, **stations_run},
+        "weather": {"label": "Open-Meteo current conditions", "schedule": "15min", **weather, **weather_run},
         "flood": {"label": "SAR Flood Polygons", "schedule": "daily", **flood},
         "alerts": {"label": "Auto-generated Alerts", "schedule": "5min", **alerts, **alerts_run},
     }

@@ -136,7 +136,14 @@ async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str,
             text("""
                 SELECT d.ubigeo, w.id AS watershed_id
                 FROM geo.watersheds w
-                JOIN geo.districts d ON ST_Intersects(ST_MakeValid(w.geom), ST_MakeValid(d.geom))
+                JOIN geo.districts d
+                  -- Bounding-box operator first: it is the only part of this
+                  -- predicate the GiST index can serve. Wrapping both geometries
+                  -- in ST_MakeValid made every pair a function call, forcing a
+                  -- 168x3 nested loop and ~1.7 s on the endpoint that colours
+                  -- the whole map. Same 61 rows, ~160 ms.
+                  ON w.geom && d.geom
+                 AND ST_Intersects(ST_MakeValid(w.geom), ST_MakeValid(d.geom))
                 WHERE w.id = ANY(:wids)
             """),
             {"wids": wids},

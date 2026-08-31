@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { useUIStore } from "@/store/ui";
-import { useAlerts, useFloodExposure, useApiHealth, useSocialSignals, useScraperHealth, useImerg } from "@/lib/queries";
+import { useAlerts, useFloodExposure, useApiHealth, useSocialSignals, useScraperHealth, useImerg, useWeather } from "@/lib/queries";
 import { URGENT_SOCIAL_LABELS } from "@/lib/constants";
 import { clsx } from "clsx";
 
@@ -36,6 +36,32 @@ export function OperationalHUD() {
   const { data: socialData } = useSocialSignals(48);
   const { data: scraperHealth } = useScraperHealth();
   const { data: imergData, isError: imergError } = useImerg(72);
+  const { data: weatherData } = useWeather();
+
+  // Lima Centro is the reference reading for the HUD; the per-point detail sits
+  // in the Fuentes de datos panel. Warnings are collection-wide because fog on
+  // the Carretera Central matters even when it is clear downtown.
+  const weatherNow =
+    weatherData?.features.find((f) => f.properties.observed_at != null)?.properties ?? null;
+  const weatherWarnings = weatherData?.warnings ?? [];
+  const weatherSeverity = weatherData?.max_severity ?? null;
+  const weatherTitle = weatherNow
+    ? [
+        locale === "es" ? weatherNow.condition.es : weatherNow.condition.en,
+        weatherNow.temperature_c != null
+          ? `${weatherNow.temperature_c.toFixed(0)} °C`
+          : null,
+        weatherNow.humidity_pct != null
+          ? `${locale === "es" ? "humedad" : "humidity"} ${weatherNow.humidity_pct.toFixed(0)}%`
+          : null,
+        weatherNow.wind_speed_kmh != null
+          ? `${locale === "es" ? "viento" : "wind"} ${weatherNow.wind_speed_kmh.toFixed(0)} km/h`
+          : null,
+        ...weatherWarnings.map((w) => (locale === "es" ? w.detail_es : w.detail_en)),
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
 
   const [clock, setClock] = useState("");
   useEffect(() => {
@@ -147,6 +173,35 @@ export function OperationalHUD() {
         )}
         {urgentSocial > 0 && (
           <HudMetric value={String(urgentSocial)} label={locale === "es" ? "señales" : "signals"} border />
+        )}
+        {/* Current conditions. Temperature and wind are what decide whether
+            brigades can actually work a quebrada right now, so they sit in the
+            HUD next to rainfall rather than behind a panel. Warning kinds
+            (heat/cold/wind/fog/thunderstorm) colour the chip when they fire. */}
+        {weatherNow && (
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1.5 border-r border-border-subtle"
+            title={weatherTitle}
+          >
+            <span className="text-xs font-mono tabular-nums font-semibold text-ink">
+              {weatherNow.temperature_c != null ? `${weatherNow.temperature_c.toFixed(0)}°` : "--"}
+            </span>
+            <span className="text-2xs uppercase tracking-widest text-ink-subtle">
+              {locale === "es" ? "temp" : "temp"}
+            </span>
+            {weatherSeverity && (
+              <span
+                className={clsx(
+                  "text-2xs font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full",
+                  weatherSeverity === "danger"
+                    ? "text-danger bg-danger-soft"
+                    : "text-warn-muted bg-warn-soft",
+                )}
+              >
+                {locale === "es" ? weatherWarnings[0].label_es : weatherWarnings[0].label_en}
+              </span>
+            )}
+          </div>
         )}
         {/* Rainfall data-gap chip: shown when IMERG fetch failed so operator knows data is missing */}
         {imergError && (

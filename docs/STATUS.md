@@ -1,43 +1,51 @@
 # Costa Resiliente: Project Status
 
-> **This is the single source of truth for what's built, what's pending, and the current rubric score.**
-> Last updated: 2026-06-01 (Session 23)
+> **This is the single source of truth for what's built and what's pending.**
+> Last updated: 2026-08-30
 > Branch: `develop`
 
 For competition context, see [`COMPETITION.md`](COMPETITION.md).
+For an adversarial, evidence-based gap analysis, see [`READINESS-AUDIT.md`](READINESS-AUDIT.md).
 For frontend design system, see [`../apps/web/DESIGN.md`](../apps/web/DESIGN.md).
 
 ---
 
-## Score: IEEE Response Quest 2026 rubric
+## Rubric position
 
-Out of 25 total (5 criteria × 5.0). See [`COMPETITION.md`](COMPETITION.md) for criterion definitions.
+**This document no longer carries a self-assigned rubric score.** It previously claimed
+~25.0/25, which was not defensible and, on a submission judged partly on honest self-assessment,
+did more harm than an admitted gap would. Scoring is the judges' job.
 
-| # | Criterion | Score | Gap |
-|---|-----------|-------|-----|
-| C1 | Timeliness & Real-Time Responsiveness | **5.0** ✅ | ANA scraper fragility closed (Redis stale cache + auto-notify) |
-| C2 | Comprehensiveness & Novel Data Discovery | **5.0** ✅ |, |
-| C3 | Integration & Synthesis | **5.0** ✅ |, |
-| C4 | Usability & Operational Readiness | **5.0** ✅ | Lighthouse pass confirmed on VPS deploy |
-| C5 | Scenario Fit & Innovation | **5.0** ✅ | r.avaflow simulation (post-submission) |
-| | **Total** | **~25.0 / 25** | Sole gap: public VPS deployment |
+[`READINESS-AUDIT.md`](READINESS-AUDIT.md) holds a conservative self-assessment with evidence
+for every claim, plus the open gap list. Read that before making any claim about readiness.
 
-**Sole remaining gap: public VPS deployment with HTTPS.** All code, compose files, Caddy config, and deploy scripts are ready.
+**Known open items** (detail and effort estimates in the audit):
+
+| Item | State |
+|------|-------|
+| 2-5 min demo video (required by Rules §7) | ❌ Not started |
+| Huayco XGBoost fitted on labelled Lima inventory | ❌ Served values are scenario fixtures, labelled as such |
+| Publishable Sen1Floods11 SAR checkpoint | ❌ None exists; inference path implemented and disclosed |
+| Sentinel-1 ingest running on schedule | ❌ Last ran 2026-05-18; pgstac catalogue empty |
+| Public VPS deployment | ⚪ Optional. Not required by the rules; useful insurance for a finalist presentation |
 
 ---
 
 ## Tests
 
-- **API**: **707 passed, 0 errors** (Session 23 ongoing, 120 commits). Up from 671 (+36). Workers: 148 passed, 8 skipped.
-- **Build:** Next.js production build green; first-load JS `/` = 187 kB (Session 23: stable, +1kB from 186kB Session 22)
-- **Workers**: **240 passed, 16 skipped, 0 errors** (Session 14). Skips = costa_api cross-package tests guarded with `importlib.util.find_spec`.
-- **TypeScript**: 0 errors (`npx tsc --noEmit`)
-- **Build**: Next.js production build green; first-load JS `/` = 186 kB (Session 22: +2 kB from sitrep loading steps, IMERG threshold sparkline, checklist sessionStorage)
+Last verified 2026-08-30 against the running stack:
 
-Test command (in container):
-```bash
-docker exec costa-api python -m pytest --asyncio-mode=auto -q
-```
+| Suite | Result | Command |
+|-------|--------|---------|
+| API | **768 passed** | `docker exec costa-api python -m pytest --asyncio-mode=auto -q` |
+| Workers | **182 passed, 8 skipped** | `docker exec costa-prefect-worker python -m pytest -q` |
+| Web unit | **21 passed** | `cd apps/web && npm test` |
+| TypeScript | **0 errors** | `cd apps/web && npx tsc --noEmit` |
+| Browser (Playwright) | **25 passed** (1 setup + 20 desktop + 4 mobile) | `cd apps/web && npx playwright test` |
+
+Worker skips are `costa_api` cross-package tests guarded with `importlib.util.find_spec`.
+
+The browser suite drives the running stack and needs a seeded scenario; it takes ~4 min.
 
 ---
 

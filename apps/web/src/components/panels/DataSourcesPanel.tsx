@@ -49,6 +49,17 @@ const SOURCES: Source[] = [
     status: "ok",
   },
   {
+    id: "open-meteo",
+    name: "Open-Meteo (condiciones actuales)",
+    provider: "Open-Meteo, CC BY 4.0",
+    coverage: "Temperatura, humedad, viento y ráfagas en 5 puntos de Lima y Callao",
+    latency: "~15 min",
+    url: "https://open-meteo.com/",
+    notes: "Sin API key ni cuenta. Alimenta los avisos de calor, frío, viento, niebla y tormenta.",
+    status: "ok",
+    healthKey: "weather",
+  },
+  {
     id: "imerg",
     name: "NASA IMERG Late Run V07B",
     provider: "NASA GES DISC",
@@ -93,7 +104,7 @@ const SOURCES: Source[] = [
     id: "osm",
     name: "OpenStreetMap",
     provider: "OpenStreetMap Contributors / Overpass API",
-    coverage: "Hospitales, escuelas, puentes, subestaciones, bomberos",
+    coverage: "Hospitales, escuelas, puentes, subestaciones, bomberos (43k+ puntos)",
     latency: "Actualización manual",
     url: "https://overpass-api.de",
     status: "ok",
@@ -142,6 +153,7 @@ const SOURCES: Source[] = [
 
 const GROUPS: { labelEs: string; labelEn: string; ids: string[] }[] = [
   { labelEs: "Teledetección",              labelEn: "Remote sensing",       ids: ["sentinel1", "imerg"] },
+  { labelEs: "Meteorología",               labelEn: "Weather",              ids: ["open-meteo"] },
   { labelEs: "Estaciones e institucional", labelEn: "Stations & institutional", ids: ["ana", "senamhi", "sinpad"] },
   { labelEs: "Infraestructura",            labelEn: "Infrastructure",       ids: ["osm"] },
   { labelEs: "Señales sociales",           labelEn: "Social signals",       ids: ["bluesky", "rss", "reddit", "telegram"] },
@@ -365,6 +377,9 @@ export function DataSourcesPanel() {
             </div>
           );
         })}
+
+        <Divider />
+        <KnownLimitations locale={locale} />
       </div>
 
       {/* Footer: status summary + privacy */}
@@ -420,6 +435,67 @@ export function DataSourcesPanel() {
         )}
       </div>
     </aside>
+  );
+}
+
+/**
+ * What the system does not know.
+ *
+ * The repository documentation was already explicit about these gaps, but none
+ * of it reached the operator, who sees only the map. An emergency console that
+ * hides its own limitations is worse than one with fewer features: someone can
+ * evacuate a quebrada on a number this text exists to qualify.
+ */
+const LIMITATIONS: { es: string; en: string }[] = [
+  {
+    es: "Susceptibilidad de huayco: valores de escenario de demostración, no salida del modelo. El XGBoost no está ajustado sobre un inventario de deslizamientos de Lima etiquetado.",
+    en: "Huayco susceptibility: demonstration scenario values, not model output. The XGBoost is not fitted on a labelled Lima landslide inventory.",
+  },
+  {
+    es: "Inundación SAR: los polígonos en el mapa son sintéticos y están rotulados como tales. No existe un checkpoint Sen1Floods11 publicable para SAR; la ruta de inferencia está implementada y probada, a la espera de pesos.",
+    en: "SAR flood: the polygons on the map are synthetic and labelled as such. No publishable Sen1Floods11 SAR checkpoint exists; the inference path is implemented and tested, awaiting weights.",
+  },
+  {
+    es: "Lluvia IMERG: producto Late Run, con ~12 h de latencia. No es tiempo real; los 30 min son la resolución temporal, no la disponibilidad.",
+    en: "IMERG rainfall: Late Run product, ~12 h latency. Not real time; the 30 min figure is temporal resolution, not availability.",
+  },
+  {
+    es: "Peligro histórico: derivado de densidad de eventos SINPAD 2003-2020, no de los polígonos SIGRID de CENEPRED, cuyo portal exige SSO.",
+    en: "Historical hazard: derived from SINPAD 2003-2020 event density, not CENEPRED's SIGRID polygons, whose portal requires SSO.",
+  },
+  {
+    es: "Reddit y Telegram operan en modo best-effort y pueden quedar sin datos recientes sin que ello indique una falla del sistema.",
+    en: "Reddit and Telegram run best-effort and may go without recent data without that indicating a system failure.",
+  },
+];
+
+function KnownLimitations({ locale }: { locale: "es" | "en" }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2 px-4 py-3 hover:bg-surface-hover transition-colors text-left"
+      >
+        <AlertTriangle size={13} strokeWidth={1.75} className="text-warn-muted shrink-0" aria-hidden="true" />
+        <span className="text-xs font-semibold text-ink flex-1">
+          {locale === "es" ? "Limitaciones conocidas" : "Known limitations"}
+        </span>
+        <span className="text-2xs text-ink-subtle tabular-nums">{LIMITATIONS.length}</span>
+      </button>
+      {open && (
+        <ul className="px-4 pb-3 flex flex-col gap-2">
+          {LIMITATIONS.map((item, i) => (
+            <li key={i} className="text-[11px] leading-snug text-ink-muted flex gap-2">
+              <span className="text-warn-muted shrink-0" aria-hidden="true">•</span>
+              <span>{locale === "es" ? item.es : item.en}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

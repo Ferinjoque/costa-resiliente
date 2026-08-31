@@ -56,8 +56,11 @@ TOOL_SCHEMAS: list[dict] = [
         "function": {
             "name": "get_huayco_risk",
             "description": (
-                "Obtiene las quebradas con mayor riesgo de huayco según el modelo ML. "
-                "Úsalo cuando pregunten sobre deslizamientos, flujos de lodo, quebradas peligrosas."
+                "Obtiene las quebradas con mayor susceptibilidad a huayco. "
+                "Úsalo cuando pregunten sobre deslizamientos, flujos de lodo, quebradas peligrosas. "
+                "El campo model_version indica el origen del valor: si contiene 'fixture', 'demo' o "
+                "'scenario', son valores de demostración y NO salida del modelo. En ese caso debes "
+                "decirlo explícitamente al operador y nunca atribuirlos a XGBoost ni a un modelo entrenado."
             ),
             "parameters": {
                 "type": "object",
@@ -275,10 +278,11 @@ async def get_huayco_risk(db: AsyncSession, min_risk: str = "high") -> list[dict
     # ANY(:levels) resolves correctly without relying on driver-side type inference.
     sql = text("""
         SELECT q.name, q.priority, hs.probability, hs.risk_level,
-               hs.computed_at, hs.trigger_rain_24h_mm
+               hs.computed_at, hs.trigger_rain_24h_mm, hs.model_version
         FROM (
             SELECT DISTINCT ON (quebrada_id)
-                   quebrada_id, probability, risk_level, computed_at, trigger_rain_24h_mm
+                   quebrada_id, probability, risk_level, computed_at,
+                   trigger_rain_24h_mm, model_version
             FROM ml.huayco_susceptibility
             ORDER BY quebrada_id, computed_at DESC
         ) hs

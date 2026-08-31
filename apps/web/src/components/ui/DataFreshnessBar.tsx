@@ -20,15 +20,19 @@ const LEVEL_COLORS: Record<string, { label: string; time: string; dot: string }>
 
 // Compact freshness strip on the map canvas: dark surface, minimal.
 export function DataFreshnessBar() {
-  const { data: imerg }  = useImerg();
-  const { data: flood }  = useFlood();
-  const { data: huayco } = useHuayco();
+  const { data: imerg,  isPending: imergPending }  = useImerg();
+  const { data: flood,  isPending: floodPending }  = useFlood();
+  const { data: huayco, isPending: huaycoPending } = useHuayco();
   const { locale }       = useUIStore();
 
+  // "sin datos" is a claim about the feed, not about this component. Before the
+  // queries resolve there is nothing to claim yet, and the first paint used to
+  // assert that all three primary layers had received nothing — the worst
+  // possible opening frame for a console judged on timeliness.
   const items = [
-    { label: "IMERG",  at: imerg?.data_updated_at  ?? imerg?.retrieved_at  },
-    { label: "SAR",    at: flood?.data_updated_at  ?? flood?.retrieved_at  },
-    { label: "Huayco", at: huayco?.data_updated_at ?? huayco?.retrieved_at },
+    { label: "IMERG",  at: imerg?.data_updated_at  ?? imerg?.retrieved_at,  pending: imergPending  },
+    { label: "SAR",    at: flood?.data_updated_at  ?? flood?.retrieved_at,  pending: floodPending  },
+    { label: "Huayco", at: huayco?.data_updated_at ?? huayco?.retrieved_at, pending: huaycoPending },
   ];
 
   return (
@@ -37,11 +41,17 @@ export function DataFreshnessBar() {
       aria-label={locale === "en" ? "Data freshness" : "Frescura de datos"}
       role="status"
     >
-      {items.map(({ label, at }, i) => {
-        const level = stalenessLevel(at, STALE_THRESHOLDS[label] ?? 60);
+      {items.map(({ label, at, pending }, i) => {
+        // While a query is in flight the layer is neither fresh nor empty, so it
+        // reports neither: an ellipsis holds the space until the answer lands.
+        const level = pending ? "ok" : stalenessLevel(at, STALE_THRESHOLDS[label] ?? 60);
         const colors = LEVEL_COLORS[level];
-        const ageText = at ? timeAgo(at) : (locale === "en" ? "no data" : "sin datos");
-        const titleText = at
+        const ageText = pending
+          ? "…"
+          : at ? timeAgo(at) : (locale === "en" ? "no data" : "sin datos");
+        const titleText = pending
+          ? (locale === "en" ? `${label}: loading` : `${label}: cargando`)
+          : at
           ? (locale === "en" ? `${label}: last update ${ageText}` : `${label}: última actualización ${ageText}`)
           : (locale === "en" ? `${label}: no data received` : `${label}: sin datos recibidos`);
 

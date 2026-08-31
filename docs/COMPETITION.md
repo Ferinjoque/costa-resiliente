@@ -30,13 +30,28 @@ For frontend design system, see [`../apps/web/DESIGN.md`](../apps/web/DESIGN.md)
 
 How quickly does the platform reflect new data? Are alert pushes live? Is the architecture honest about its latency floor (satellite revisit, scraping cadence)?
 
-**Our position:** Sentinel-1 polygons ~3h post-acquisition + <5 min CPU inference. IMERG every 30 min. ANA + SENAMHI every 15 min. Social signals every 15 min. SSE push at the Next.js app shell so map district colors refresh on new events without any panel open. `DataFreshnessBar` shows last-updated per layer.
+**Our position:** Open-Meteo current conditions every 15 min (the genuinely near-real-time feed).
+ANA + SENAMHI every 15 min. Social signals every 15 min. Alert generation every 5 min. SSE push at
+the Next.js app shell so map district colors refresh on new events without any panel open.
+`DataFreshnessBar` shows last-updated per layer, and `/api/v1/health/scraper` reports every source's
+true liveness, including sources that are stale or offline.
+
+**Stated honestly:** IMERG is the **Late Run**, ~12h latency; its half-hourly figure is temporal
+resolution, not availability, and it is not a near-real-time feed. The Sentinel-1 pipeline is built
+and tested but has not run on schedule since 2026-05-18, so SAR polygons on the map are labelled
+fixtures. See [`READINESS-AUDIT.md`](READINESS-AUDIT.md).
 
 ### C2: Comprehensiveness & Novel Data Discovery
 
 How many distinct data sources? Any novel sources that competitors won't have?
 
-**Our position:** 10 data sources spanning satellite, hydromet, historical, social, and infrastructure (full list in [`data-sources.md`](data-sources.md)). Novel choices: Bluesky AT Protocol firehose (nearly absent from comparable platforms), INDECI SINPAD 18-year event density as a data-driven hazard proxy (reproducible, independent of SIGRID SSO-gated portal), local-only Ollama inference stack with zero cloud API dependency.
+**Our position:** 11 data sources spanning satellite, hydromet, weather, historical, social, and infrastructure (full list in [`data-sources.md`](data-sources.md)). Novel choices: Bluesky AT Protocol firehose (nearly absent from comparable platforms), INDECI SINPAD 18-year event density as a data-driven hazard proxy (reproducible, independent of SIGRID SSO-gated portal), local-only Ollama inference stack with zero cloud API dependency.
+
+**Limitations are stated in the product, not just the docs.** The Fuentes de datos panel carries a
+"Limitaciones conocidas" block naming the huayco fixture values, the missing SAR checkpoint, the
+IMERG Late latency, the SINPAD-derived hazard proxy, and the best-effort social sources. The rubric
+rewards entries that "clearly explain limitations"; hiding them from the operator would forfeit that
+while also being the wrong thing to ship.
 
 ### C3: Integration & Synthesis Quality + Responsible Data Handling
 
@@ -162,9 +177,9 @@ Implementation is code-level, not aspirational:
 | Artifact | Status |
 |----------|--------|
 | Phase 2 Concept text + 5 PlantUML diagrams | ✅ Submitted (see [Phase 2 archive](#phase-2-submitted-text) below) |
-| Public live URL with HTTPS | ❌ **Sole remaining gap**: Hetzner CX32 €11/mo or DigitalOcean $20/mo |
+| **2-5 minute demo video** | ❌ **The only hard blocker.** Required by Rules §7: "a two-to-five-minute video showing a real person using or interacting with the product". Does not depend on a deployment; it can be recorded against the local stack. |
+| Public live URL with HTTPS | ⚪ **Not required.** The words "host", "deploy" and "URL" appear nowhere in the Official Rules as requirements. Worth doing only as insurance for the finalist remote presentation, which *is* mandatory if requested (§7). Hetzner CX32 €11/mo or DigitalOcean $20/mo. |
 | `docker-compose.prod.yml` + Caddy + deploy script | ✅ Ready |
-| 2-5 minute demo video | ❌ Pending VPS deploy |
 | Open-source repository | ✅ Apache 2.0 |
 | Responsible data handling doc | ✅ [`responsible-data-handling.md`](responsible-data-handling.md) |
 | Operator runbook | ✅ [`operator-runbook.md`](operator-runbook.md) |
@@ -247,7 +262,7 @@ Costa Resiliente is an open-source near-real-time platform designed to give Lima
 
 **Architecture:** FastAPI (Python 3.12) with ~30 REST endpoints and an SSE stream for live alert delivery. PostgreSQL 16 combines PostGIS 3.4, TimescaleDB, pgstac, and pgvector in a single instance. Prefect 3 orchestrates all ingestion flows. Redis decouples ingest events from ML inference. A dedicated Ollama container serves three local models: qwen2.5:7b-instruct-q4_K_M for copilot + triage (4.7 GB), gemma2:2b for input + output guardrails (1.6 GB), nomic-embed-text for pgvector RAG (274 MB). Next.js 14 PWA frontend targeting WCAG AA.
 
-**Data Sources:** Ten sources planned. Sentinel-1 GRD via Planetary Computer, NASA IMERG Early Run V07B, ANA + SENAMHI station scrapers, INDECI SINPAD 2003-2020 (2,063 Lima records), INEI 2017 census for population exposure, OSM infrastructure (43,000+ points), Bluesky Jetstream v2 firehose, six Peruvian news RSS feeds, Reddit (r/Peru, r/Lima, r/Chosica), SENAMHI Telegram channel.
+**Data Sources:** Ten sources planned. Sentinel-1 GRD via Planetary Computer, NASA IMERG V07B (Late Run as built; the Phase 2 text said Early Run), ANA + SENAMHI station scrapers, INDECI SINPAD 2003-2020 (2,063 Lima records), INEI 2017 census for population exposure, OSM infrastructure (43,000+ points), Bluesky Jetstream v2 firehose, six Peruvian news RSS feeds, Reddit (r/Peru, r/Lima, r/Chosica), SENAMHI Telegram channel.
 
 **ML Components:** Three pipelines, fully local. SAR flood segmentation via U-Net from Sen1Floods11 weights (Bonafilia et al. 2020 CVPR). Huayco susceptibility via XGBoost following Castro-Cabrera et al. (Geosciences 14(6):168, 2024). Spanish signal triage via qwen2.5:7b with Pydantic-validated JSON output and XML sandboxing.
 
