@@ -33,6 +33,7 @@ import {
   fetchDistrictDashboard,
   fetchHealth,
   fetchStations,
+  fetchWeather,
   fetchShelters,
   type ShelterCollection,
   type DistrictCollection,
@@ -431,6 +432,19 @@ export function useStations(
     },
     staleTime: 2 * MIN,
     refetchInterval: 2 * MIN,
+    ...opts,
+  });
+}
+
+/** Current weather conditions. Refetches on the upstream 15-minute cadence. */
+export function useWeather(
+  opts?: Partial<UseQueryOptions<import("@/lib/api").WeatherCollection>>
+): UseQueryResult<import("@/lib/api").WeatherCollection> {
+  return useQuery({
+    queryKey: ["weather"],
+    queryFn: () => fetchWeather(),
+    staleTime: 5 * MIN,
+    refetchInterval: 5 * MIN,
     ...opts,
   });
 }

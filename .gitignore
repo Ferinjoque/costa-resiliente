@@ -133,3 +133,6 @@ scripts/smoke_results.json
 apps/web/tsconfig.tsbuildinfo
 apps/web/public/sw.js
 apps/web/public/workbox-*.js
+
+# Playwright output when the suite is run from the repo root
+test-results/

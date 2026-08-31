@@ -605,6 +605,27 @@ _STATION_THRESHOLDS: dict[str, float] = {
 }
 
 
+# Version markers that mean "this number did not come out of a trained model".
+# Kept in sync with costa_api.routers.layers._DEMO_VERSION_MARKERS.
+_DEMO_VERSION_MARKERS = ("demo", "fixture", "scenario", "synthetic", "legacy-unversioned")
+
+
+def _huayco_provenance_note(rows: list[dict]) -> str:
+    """Suffix disclosing that huayco scores are scenario values, when they are.
+
+    The copilot must never let an operator infer a trained model produced a
+    number that was hand-authored. An unstamped row counts as demonstration
+    data, matching the API's fail-closed rule.
+    """
+    if not rows:
+        return ""
+    for row in rows:
+        version = row.get("model_version")
+        if not version or any(m in str(version).lower() for m in _DEMO_VERSION_MARKERS):
+            return " · valores de demostración, no son salida del modelo"
+    return ""
+
+
 def _threshold_note_for_row(row: dict) -> str:
     """Return a threshold comparison note for a river station row (module-level helper).
 
@@ -690,7 +711,7 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
             vh_note = f" · {len(very_high)} quebrada{'s' if len(very_high) != 1 else ''} en umbral CRÍTICO: {vh_names}"
         else:
             vh_note = ""
-        # Model freshness: tell operators how old the XGBoost output is
+        # Score freshness: tell operators how old the susceptibility figure is
         computed_at = top.get("computed_at")
         age_note = ""
         if computed_at:
@@ -707,9 +728,10 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
                     age_note = f" · modelo: hace {age_min//1440} días"
             except Exception:
                 pass
+        demo_note = _huayco_provenance_note(rows)
         return (
             f"Se identificaron {n} quebrada{'s' if n != 1 else ''} con riesgo elevado. "
-            f"La más crítica: {top_name}: {level_es}{prob_str}{trigger_str}{vh_note}{age_note}."
+            f"La más crítica: {top_name}: {level_es}{prob_str}{trigger_str}{vh_note}{age_note}{demo_note}."
         )
     if "level_m" in first:
         r = rows[0]
@@ -1125,7 +1147,8 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
                 vh_note = f" · también: {', '.join(other_vh)}"
             else:
                 vh_note = ""
-            sections.append(f"**Huayco:** {top_name}: {level_es}{prob_str}{trigger_str}{vh_note}")
+            demo_note = _huayco_provenance_note(huayco_rows)
+            sections.append(f"**Huayco:** {top_name}: {level_es}{prob_str}{trigger_str}{vh_note}{demo_note}")
             if top_level == "very_high":
                 # Name critical quebradas in action directive regardless of what else is set
                 critical_qbr_names = [r.get("name", "?") for r in very_high_rows[:2]]

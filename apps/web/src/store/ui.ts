@@ -38,6 +38,7 @@ interface UIState {
 
   isScenarioPanelOpen: boolean;
   toggleScenarioPanel: () => void;
+  setScenarioPanelOpen: (open: boolean) => void;
 
   isTutorialOpen: boolean;
   setTutorialOpen: (open: boolean) => void;
@@ -78,7 +79,15 @@ export const useUIStore = create<UIState>((set) => ({
   setScenario: (s) =>
     set((state) => ({ scenario: { ...state.scenario, ...s } })),
 
-  activeLayers: new Set(["districts", "imerg", "flood", "huayco", "hazard", "social", "infrastructure", "stations"]),
+  // Opening with every layer lit produced a map a duty officer has to
+  // disassemble before it says anything: ~2,000 infrastructure points, hundreds
+  // of social pins, translucent IMERG grid cells and angular SINPAD hazard
+  // polygons all stacked over the district boundaries.
+  //
+  // The default is now the four layers that answer "where is it bad right now":
+  // district risk, SAR flood extents, huayco susceptibility, river gauges. The
+  // context layers stay one toggle away in the Escenario panel.
+  activeLayers: new Set(["districts", "flood", "huayco", "stations"]),
   toggleLayer: (layer) =>
     set((state) => {
       const next = new Set(state.activeLayers);
@@ -89,6 +98,7 @@ export const useUIStore = create<UIState>((set) => ({
   isScenarioPanelOpen: true,
   toggleScenarioPanel: () =>
     set((state) => ({ isScenarioPanelOpen: !state.isScenarioPanelOpen })),
+  setScenarioPanelOpen: (open) => set({ isScenarioPanelOpen: open }),
 
   isTutorialOpen: false,
   setTutorialOpen: (open) => set({ isTutorialOpen: open }),

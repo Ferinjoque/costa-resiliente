@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Waves, Users, ChevronRight, CloudRain } from "lucide-react";
 import { useUIStore } from "@/store/ui";
-import { useAlerts, useFloodExposure, useDistrictRiskSummary, useImerg } from "@/lib/queries";
+import { useAlerts, useFloodExposure, useDistrictRiskSummary, useImerg, useFlood } from "@/lib/queries";
 import { Button, Pill, Divider } from "@/components/ui/primitives";
 
 const LEVEL_CFG = {
@@ -30,6 +30,11 @@ export function SituationBrief() {
   const { activePanel, setActivePanel, scenario, locale } = useUIStore();
   const { data: alerts = [] } = useAlerts();
   const { data: exposure } = useFloodExposure();
+  const { data: floodLayer } = useFlood();
+  // The SAR extents behind this figure may be scenario fixtures. Naming
+  // Sentinel-1 without that caveat asserts a satellite detection that did not
+  // happen, on the one line a mobile operator reads first.
+  const floodIsDemo = floodLayer?.is_demo_data === true;
   const { data: summary } = useDistrictRiskSummary();
   const { data: imerg } = useImerg(72);
 
@@ -88,8 +93,8 @@ export function SituationBrief() {
       icon: <Waves size={10} className="text-accent shrink-0 mt-px" />,
       text:
         locale === "es"
-          ? `${floodKm2.toFixed(1)} km² inundados (SAR Sentinel-1)`
-          : `${floodKm2.toFixed(1)} km² flooded (SAR Sentinel-1)`,
+          ? `${floodKm2.toFixed(1)} km² inundados (${floodIsDemo ? "SAR de escenario" : "SAR Sentinel-1"})`
+          : `${floodKm2.toFixed(1)} km² flooded (${floodIsDemo ? "scenario SAR" : "SAR Sentinel-1"})`,
     });
   }
 

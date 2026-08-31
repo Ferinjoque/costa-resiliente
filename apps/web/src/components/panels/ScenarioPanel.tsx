@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import {
   ChevronDown, ChevronUp, Target, Loader2, X, Lock,
 } from "lucide-react";
@@ -30,13 +31,30 @@ const L = (locale: Locale, es: string, en: string) => locale === "es" ? es : en;
 
 export function ScenarioPanel() {
   const {
-    scenario, setScenario, isScenarioPanelOpen, toggleScenarioPanel,
+    scenario, setScenario, isScenarioPanelOpen, toggleScenarioPanel, setScenarioPanelOpen,
     isShareMode, locale,
   } = useUIStore();
   const { data: provinces } = useProvinces();
+  const allDistrictCount = (provinces?.provinces ?? []).reduce(
+    (total, p) => total + (p.district_count ?? 0), 0,
+  );
   const { data: districts, isLoading } = useDistrictList(
     scenario.provinceFilter || undefined
   );
+
+  // On a phone this panel is full-bleed, so landing with it expanded hid the
+  // map completely: the primary surface was unreachable until the operator
+  // found the collapse chevron. Start collapsed below the `sm` breakpoint and
+  // leave desktop untouched. Runs once, after hydration, so the server and
+  // client first paint still agree.
+  const didCollapseForMobile = useRef(false);
+  useEffect(() => {
+    if (didCollapseForMobile.current) return;
+    didCollapseForMobile.current = true;
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches) {
+      setScenarioPanelOpen(false);
+    }
+  }, [setScenarioPanelOpen]);
 
   return (
     <Panel
@@ -77,7 +95,9 @@ export function ScenarioPanel() {
       </button>
 
       {isScenarioPanelOpen && (
-        <div className="border-t border-border-subtle">
+        // Height cap is the belt to the collapse-on-mobile braces: even if an
+        // operator opens it on a phone, the map stays on screen underneath.
+        <div className="border-t border-border-subtle max-h-[45svh] overflow-y-auto sm:max-h-none sm:overflow-visible">
           {isShareMode && (
             <div className="mx-4 mt-3 px-3 py-2 bg-warn-soft border border-warn/30 rounded-xl text-xs text-warn-muted flex items-center gap-2">
               <Lock size={13} strokeWidth={1.75} className="shrink-0" aria-hidden="true" />
@@ -103,8 +123,18 @@ export function ScenarioPanel() {
                   <option value="Lima">
                     {L(locale, "Lima Metropolitana (43 dist.)", "Lima Metropolitan (43 dist.)")}
                   </option>
+                  {/* Empty value clears the province filter, so this option covers
+                      every district the API serves. The count is derived rather
+                      than hardcoded: it previously read "159" against 168 rows,
+                      inside a label with unbalanced parentheses in both locales. */}
                   <option value="">
-                    {L(locale, "Lima Región (todas (159 dist.)", "Lima Region)all (159 dist.)")}
+                    {allDistrictCount > 0
+                      ? L(
+                          locale,
+                          `Todas las provincias (${allDistrictCount} dist.)`,
+                          `All provinces (${allDistrictCount} dist.)`,
+                        )
+                      : L(locale, "Todas las provincias", "All provinces")}
                   </option>
                   {provinces?.provinces
                     .filter((p) => p.province !== "Lima" && p.province !== "Lima Región")

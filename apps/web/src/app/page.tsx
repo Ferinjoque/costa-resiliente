@@ -122,12 +122,9 @@ function FirstRunTrigger() {
 export default function Home() {
   return (
     <div className="flex h-screen w-screen overflow-hidden">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-surface focus:text-ink focus:px-4 focus:py-2 focus:rounded-xl focus:text-sm focus:font-medium focus:shadow-panel focus:outline-none"
-      >
-        Skip to main content
-      </a>
+      {/* The skip link lives in the root layout so it covers every route and so
+          only one "bypass blocks" target exists. A second copy here shipped an
+          untranslated English duplicate into a document declared lang="es". */}
 
       {/* Light sidebar */}
       <LeftRail />

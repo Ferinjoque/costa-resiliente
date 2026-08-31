@@ -204,7 +204,7 @@ _ALERTS_CURRENT = [
         "severity": "high",
         "status": "active",
         "title": "Inundación activa: Sector Huachipa",
-        "description": "Desborde del río Rímac detectado por Sentinel-1 (SAR). Área afectada: ~1.8 km².",
+        "description": "Desborde del río Rímac sobre extensión SAR de escenario. Área afectada: ~1.8 km² (dato de demostración, no es una detección Sentinel-1 real).",
         "lon": -76.8800, "lat": -11.9500,
         "offset_h": 2.5,
     },
@@ -213,7 +213,7 @@ _ALERTS_CURRENT = [
         "severity": "critical",
         "status": "active",
         "title": "Riesgo crítico de huayco: Quebrada Jicamarca",
-        "description": "Precipitación acumulada 24h supera umbral (42 mm). Modelo XGBoost: probabilidad 0.91.",
+        "description": "Precipitación acumulada 24h supera umbral (42 mm). Susceptibilidad de escenario: 0.91 (valor de demostración, no es salida del modelo).",
         "lon": -76.9200, "lat": -11.9100,
         "offset_h": 1.0,
     },
@@ -403,11 +403,11 @@ _SOCIAL_CURRENT = [
 
 # ─── Demo hydro stations ──────────────────────────────────────────────────────
 _STATIONS = [
-    {"code": "ANA-001-DEMO", "name": "Chosica",   "source": "ana",     "river": "Rímac",
+    {"code": "ANA-001-DEMO", "name": "Chosica (escenario)",   "source": "ana",     "river": "Rímac",
      "lon": -76.6950, "lat": -11.9380, "elev": 880.0},
-    {"code": "ANA-002-DEMO", "name": "Ñaña",       "source": "ana",     "river": "Rímac",
+    {"code": "ANA-002-DEMO", "name": "Ñaña (escenario)",       "source": "ana",     "river": "Rímac",
      "lon": -76.8180, "lat": -11.9830, "elev": 560.0},
-    {"code": "ANA-003-DEMO", "name": "Carapongo",  "source": "senamhi", "river": "Rímac",
+    {"code": "ANA-003-DEMO", "name": "Carapongo (escenario)",  "source": "senamhi", "river": "Rímac",
      "lon": -76.9100, "lat": -12.0200, "elev": 320.0},
 ]
 
@@ -513,6 +513,36 @@ _QUEBRADAS = [
 
 # Huayco susceptibility: El Niño scenario values for priority Lima quebradas.
 # Names match geo.quebradas (SINPAD short names without "Quebrada" prefix).
+# Alert prose written by earlier seeds that attributed scenario numbers to a
+# trained model or to a real satellite detection. Rewritten in place on seed so
+# an operator never reads a claim the system cannot support.
+_ALERT_DESCRIPTION_CORRECTIONS: list[tuple[str, str]] = [
+    (
+        "Precipitación acumulada 24h supera umbral (42 mm). Modelo XGBoost: probabilidad 0.91.",
+        "Precipitación acumulada 24h supera umbral (42 mm). Susceptibilidad de escenario: 0.91 "
+        "(valor de demostración, no es salida del modelo).",
+    ),
+    (
+        "Desborde del río Rímac detectado por Sentinel-1 (SAR). Área afectada: ~1.8 km².",
+        "Desborde del río Rímac sobre extensión SAR de escenario. Área afectada: ~1.8 km² "
+        "(dato de demostración, no es una detección Sentinel-1 real).",
+    ),
+]
+
+# Provenance stamp for the El Niño scenario values below.
+#
+# Named for what it is. The previous stamp was "xgboost-v0.1-demo-refresh",
+# which put the model's name on numbers the model never produced: the API's
+# layer source string, the alert text and the copilot all inherited that claim.
+# Anything matching costa_api.routers.layers._DEMO_VERSION_MARKERS is surfaced
+# to the operator as demonstration data, so this string must keep the word
+# "fixture" in it.
+_SCENARIO_HUAYCO_VERSION = "scenario-fixture-v1"
+
+# Hand-authored El Niño Costero scenario values. NOT model output: the huayco
+# XGBoost has no labelled Lima landslide inventory to fit against, so it scores a
+# near-constant ~0.53 everywhere. These give the demo scenario a realistic spread
+# across the ten priority quebradas, and are labelled everywhere they surface.
 _HUAYCO_SUSCEPTIBILITY = [
     # (quebrada_name, probability, risk_level, trigger_rain_24h_mm)
     ("Pedregal",    0.91, "very_high", 12.0),
@@ -742,8 +772,68 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                         logger.debug("auto_seed: skip geom update for %s: %s", qname, exc)
                 await conn.commit()
 
-        # Check if latest huayco data has high/very_high risk. ML pipeline can overwrite
-        # demo seed values with lower estimates. Refresh when that happens.
+        # Stamp provenance on huayco rows written before model_version existed.
+        # The API treats NULL as demonstration data (fail closed), so this is
+        # belt-and-braces, but an unlabelled row in the table is a trap for any
+        # future query that does not know to check.
+        _unstamped = (await conn.execute(text(
+            "SELECT COUNT(*) FROM ml.huayco_susceptibility WHERE model_version IS NULL"
+        ))).scalar_one()
+        if _unstamped > 0:
+            logger.info("auto_seed: stamping %d unlabelled huayco rows as legacy", _unstamped)
+            await conn.execute(text("""
+                UPDATE ml.huayco_susceptibility
+                SET model_version = 'legacy-unversioned-fixture'
+                WHERE model_version IS NULL
+            """))
+            await conn.commit()
+
+        # Retire stamps that put the model's name on hand-authored numbers.
+        # Rows written by earlier seeds claim "xgboost-...", which is the exact
+        # misattribution this labelling exists to prevent.
+        _mislabelled = (await conn.execute(text("""
+            SELECT COUNT(*) FROM ml.huayco_susceptibility
+            WHERE model_version IN ('xgboost-v0.1-demo-refresh', 'xgb-v0.1-demo')
+        """))).scalar_one()
+        if _mislabelled > 0:
+            logger.info(
+                "auto_seed: relabelling %d huayco rows from xgboost-* to %s",
+                _mislabelled, _SCENARIO_HUAYCO_VERSION,
+            )
+            await conn.execute(text("""
+                UPDATE ml.huayco_susceptibility
+                SET model_version = :version
+                WHERE model_version IN ('xgboost-v0.1-demo-refresh', 'xgb-v0.1-demo')
+            """), {"version": _SCENARIO_HUAYCO_VERSION})
+            await conn.commit()
+
+        # Same misattribution, baked into alert prose written by earlier seeds.
+        # Operators read the description, not the model_version column, so this
+        # is the copy that actually misleads.
+        for _stale, _fixed in _ALERT_DESCRIPTION_CORRECTIONS:
+            _hits = (await conn.execute(
+                text("SELECT COUNT(*) FROM ops.alerts WHERE description = :stale"),
+                {"stale": _stale},
+            )).scalar_one()
+            if _hits:
+                logger.info("auto_seed: correcting %d alert descriptions with stale provenance", _hits)
+                await conn.execute(
+                    text("UPDATE ops.alerts SET description = :fixed WHERE description = :stale"),
+                    {"stale": _stale, "fixed": _fixed},
+                )
+                await conn.commit()
+
+        # Check if latest huayco data has high/very_high risk.
+        #
+        # These are scenario values, NOT model output. The El Niño demo scenario
+        # needs quebradas at high risk for the operator flow to be worth walking
+        # through, and the unfitted XGBoost scores a near-constant ~0.53 for every
+        # quebrada, which shows nothing. So the scenario is restored here when the
+        # pipeline has flattened it.
+        #
+        # The overwrite is deliberate but must never be silent: rows written here
+        # carry _SCENARIO_HUAYCO_VERSION so the API, the map popup and the alert
+        # text can all tell an operator these are demonstration values.
         _high_huayco = (await conn.execute(text("""
             SELECT COUNT(*) FROM (
                 SELECT DISTINCT ON (quebrada_id) risk_level
@@ -754,7 +844,11 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         need_huayco_refresh = _qbr > 0 and _high_huayco == 0
 
         if need_huayco_refresh:
-            logger.info("auto_seed: refreshing huayco data. ML pipeline overwrote demo scenario with low-risk values")
+            logger.warning(
+                "auto_seed: overwriting ml.huayco_susceptibility with %d SCENARIO FIXTURE rows "
+                "(model_version=%s). These are demonstration values, not model output.",
+                len(_HUAYCO_SUSCEPTIBILITY), _SCENARIO_HUAYCO_VERSION,
+            )
             # Re-seed with El Niño scenario values at current timestamp
             for name, prob, risk, rain24 in _HUAYCO_SUSCEPTIBILITY:
                 qid = (await conn.execute(
@@ -767,9 +861,12 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                         INSERT INTO ml.huayco_susceptibility
                             (quebrada_id, probability, risk_level,
                              trigger_rain_24h_mm, model_version)
-                        VALUES (:qid, :prob, :risk, :rain, 'xgboost-v0.1-demo-refresh')
+                        VALUES (:qid, :prob, :risk, :rain, :version)
                         ON CONFLICT (quebrada_id, computed_at) DO NOTHING
-                    """), {"qid": qid, "prob": prob, "risk": risk, "rain": rain24})
+                    """), {
+                        "qid": qid, "prob": prob, "risk": risk, "rain": rain24,
+                        "version": _SCENARIO_HUAYCO_VERSION,
+                    })
                 except Exception as exc:
                     logger.debug("auto_seed: skip huayco refresh row %s: %s", name, exc)
             await conn.commit()
@@ -1184,9 +1281,19 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                     INSERT INTO ops.alerts
                         (type, severity, status, title, description,
                          geom, district_id, created_at, updated_at)
-                    VALUES (:type, :sev, :status, :title, :desc,
-                            ST_SetSRID(ST_MakePoint(:lon,:lat), 4326),
-                            :district_id, :ts, :ts)
+                    SELECT :type, :sev, :status, :title, :desc,
+                           ST_SetSRID(ST_MakePoint(:lon,:lat), 4326),
+                           :district_id, :ts, :ts
+                    -- Reseeding used to stack a second copy of every scenario
+                    -- alert on top of the ones still open, so the feed showed
+                    -- "Riesgo de huayco: Quirio" twice, days apart, until
+                    -- auto-resolution caught up. During a demo that window is
+                    -- exactly what a judge sees.
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM ops.alerts existing
+                        WHERE existing.title = :title
+                          AND existing.status IN ('active', 'acknowledged', 'escalated')
+                    )
                 """),
                 {
                     "type": a["type"],
@@ -1308,7 +1415,7 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                             (code, name, source, river, geom, elevation_m)
                         VALUES (:code, :name, :src, :river,
                                 ST_SetSRID(ST_MakePoint(:lon,:lat), 4326), :elev)
-                        ON CONFLICT (code) DO NOTHING
+                        ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
                         RETURNING id
                     """),
                     {

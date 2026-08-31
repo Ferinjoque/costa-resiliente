@@ -84,7 +84,8 @@ export const DEMO_IMERG: ImergCollection = {
 
 export const DEMO_FLOOD: FloodCollection = {
   type: "FeatureCollection",
-  source: "Sentinel-1 SAR (demo: El Niño Costero 2017)",
+  source: "Extensiones de demostración sin conexión, no son detecciones Sentinel-1 reales",
+  is_demo_data: true,
   retrieved_at: new Date(NOW).toISOString(),
   data_updated_at: hoursAgo(3),
   features: [
@@ -120,15 +121,16 @@ export const DEMO_FLOOD: FloodCollection = {
 
 export const DEMO_HUAYCO: HuaycoCollection = {
   type: "FeatureCollection",
-  source: "Modelo XGBoost + SINPAD (demo)",
+  source: "Valores de demostración sin conexión, no son salida del modelo",
+  is_demo_data: true,
   retrieved_at: new Date(NOW).toISOString(),
   data_updated_at: hoursAgo(2),
   features: [
-    { type: "Feature", geometry: { type: "Point", coordinates: [-76.845, -11.955] }, properties: { id: 1, name: "Jicamarca",    priority: 1, probability: 0.91, risk_level: "alto",     computed_at: hoursAgo(2), trigger_rain_24h_mm: 42 } },
-    { type: "Feature", geometry: { type: "Point", coordinates: [-77.048, -11.878] }, properties: { id: 2, name: "Pedregal",     priority: 2, probability: 0.74, risk_level: "alto",     computed_at: hoursAgo(2), trigger_rain_24h_mm: 35 } },
-    { type: "Feature", geometry: { type: "Point", coordinates: [-76.965, -12.038] }, properties: { id: 3, name: "Quirio",       priority: 3, probability: 0.61, risk_level: "moderado", computed_at: hoursAgo(2), trigger_rain_24h_mm: 30 } },
-    { type: "Feature", geometry: { type: "Point", coordinates: [-76.915, -11.938] }, properties: { id: 4, name: "Canto Grande", priority: 4, probability: 0.38, risk_level: "moderado", computed_at: hoursAgo(2), trigger_rain_24h_mm: 35 } },
-    { type: "Feature", geometry: { type: "Point", coordinates: [-77.028, -11.858] }, properties: { id: 5, name: "La Virgen",    priority: 5, probability: 0.25, risk_level: "bajo",     computed_at: hoursAgo(2), trigger_rain_24h_mm: 40 } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-76.845, -11.955] }, properties: { id: 1, name: "Jicamarca",    priority: 1, probability: 0.91, risk_level: "alto",     computed_at: hoursAgo(2), trigger_rain_24h_mm: 42, model_version: "offline-fallback-fixture", is_demo_data: true } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-77.048, -11.878] }, properties: { id: 2, name: "Pedregal",     priority: 2, probability: 0.74, risk_level: "alto",     computed_at: hoursAgo(2), trigger_rain_24h_mm: 35, model_version: "offline-fallback-fixture", is_demo_data: true } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-76.965, -12.038] }, properties: { id: 3, name: "Quirio",       priority: 3, probability: 0.61, risk_level: "moderado", computed_at: hoursAgo(2), trigger_rain_24h_mm: 30, model_version: "offline-fallback-fixture", is_demo_data: true } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-76.915, -11.938] }, properties: { id: 4, name: "Canto Grande", priority: 4, probability: 0.38, risk_level: "moderado", computed_at: hoursAgo(2), trigger_rain_24h_mm: 35, model_version: "offline-fallback-fixture", is_demo_data: true } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-77.028, -11.858] }, properties: { id: 5, name: "La Virgen",    priority: 5, probability: 0.25, risk_level: "bajo",     computed_at: hoursAgo(2), trigger_rain_24h_mm: 40, model_version: "offline-fallback-fixture", is_demo_data: true } },
   ],
 };
 

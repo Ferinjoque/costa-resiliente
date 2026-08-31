@@ -240,6 +240,8 @@ export interface FloodCollection {
   source_url?: string;
   retrieved_at?: string;
   data_updated_at?: string;
+  /** True when any served polygon is a scenario fixture, not a real detection. */
+  is_demo_data?: boolean;
   features: GeoJSON.Feature[];
 }
 
@@ -258,6 +260,9 @@ export interface HuaycoProperties {
   risk_level: string | null;
   computed_at: string | null;
   trigger_rain_24h_mm: number | null;
+  model_version: string | null;
+  /** True when this score is a scenario value rather than model output. */
+  is_demo_data: boolean;
 }
 
 export interface HuaycoFeature {
@@ -272,6 +277,7 @@ export interface HuaycoCollection {
   source_url?: string;
   retrieved_at?: string;
   data_updated_at?: string;
+  is_demo_data?: boolean;
   features: HuaycoFeature[];
 }
 
@@ -299,6 +305,9 @@ export interface InfraCollection {
   type: "FeatureCollection";
   source?: string;
   retrieved_at?: string;
+  /** Matching rows before the 2,000-row response cap, so callers can disclose it. */
+  total_available?: number;
+  truncated?: boolean;
   features: InfraFeature[];
 }
 
@@ -726,6 +735,10 @@ export interface StationProperties {
   rain_mm: number | null;
   latest_time: string | null;
   status: "normal" | "alert" | "warning" | "unknown";
+  /** True for seeded scenario gauges (their station code carries -DEMO). */
+  is_demo_data?: boolean;
+  /** False when the gauge has no reading at all: a gap, not a zero. */
+  has_reading?: boolean;
 }
 
 export interface StationCollection {
@@ -740,6 +753,55 @@ export interface StationCollection {
 
 export function fetchStations(): Promise<StationCollection> {
   return get<StationCollection>("/api/v1/layers/stations");
+}
+
+// ─── Current weather ──────────────────────────────────────────────────────────
+
+export interface WeatherWarning {
+  kind: "heat" | "cold" | "wind" | "fog" | "thunderstorm" | "heavy_rain";
+  severity: "warn" | "danger";
+  label_es: string;
+  label_en: string;
+  detail_es: string;
+  detail_en: string;
+}
+
+export interface WeatherProperties {
+  id: number;
+  name: string;
+  watershed_name: string | null;
+  observed_at: string | null;
+  temperature_c: number | null;
+  apparent_temperature_c: number | null;
+  humidity_pct: number | null;
+  precipitation_mm: number | null;
+  wind_speed_kmh: number | null;
+  wind_gusts_kmh: number | null;
+  wind_direction_deg: number | null;
+  weather_code: number | null;
+  condition: { es: string; en: string };
+  warnings: WeatherWarning[];
+  source: string | null;
+}
+
+export interface WeatherCollection {
+  type: "FeatureCollection";
+  source: string;
+  source_url: string;
+  attribution: string;
+  retrieved_at: string;
+  data_updated_at: string | null;
+  warnings: WeatherWarning[];
+  max_severity: "warn" | "danger" | null;
+  features: Array<{
+    type: "Feature";
+    geometry: { type: "Point"; coordinates: [number, number] } | null;
+    properties: WeatherProperties;
+  }>;
+}
+
+export function fetchWeather(): Promise<WeatherCollection> {
+  return get<WeatherCollection>("/api/v1/layers/weather");
 }
 
 // ─── Shelters ─────────────────────────────────────────────────────────────────

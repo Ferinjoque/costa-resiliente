@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useUIStore } from "@/store/ui";
 import {
   useDistrictDashboard, useDistrictRiskSummary, useAlerts,
-  useFloodExposure, useFusion, useDecisionLog, useSocialSignals, useImerg,
+  useFloodExposure, useFlood, useFusion, useDecisionLog, useSocialSignals, useImerg,
 } from "@/lib/queries";
 import { clsx } from "clsx";
 import type { Alert, AlertTrendDay, SocialBreakdown } from "@/lib/api";
@@ -201,7 +201,7 @@ function downloadBlob(content: string, filename: string, type: string) {
 interface ReportData {
   reportId: string; nowStr: string; level: string;
   active: Alert[]; critical: Alert[]; high: Alert[];
-  floodArea: number; popStr: string;
+  floodArea: number; floodIsDemo: boolean; popStr: string;
   highRiskDistricts: string[]; moderateDistricts: string[];
   maxRain72h?: number; maxRainWs?: string;
   locale: "es" | "en";
@@ -236,7 +236,9 @@ function buildMarkdown(d: ReportData): string {
     ...rows,
     d.active.length > 12 ? `\n*...y ${d.active.length-12} alertas más*` : ``,``,
     `## 3. Evaluación de Impacto`,``,
-    `- SAR Sentinel-1 detecta **${d.floodArea.toFixed(1)} km²** de área inundada`,
+    d.floodIsDemo
+      ? `- Extensión SAR de escenario: **${d.floodArea.toFixed(1)} km²** de área inundada *(valor de demostración, no es una detección Sentinel-1 real)*`
+      : `- SAR Sentinel-1 detecta **${d.floodArea.toFixed(1)} km²** de área inundada`,
     `- Población estimada en zona de riesgo: **${d.popStr} habitantes**`,
     `- Distritos con nivel de riesgo alto: **${d.highRiskDistricts.length}**`,
     ...(d.maxRain72h != null && d.maxRain72h >= 25 ? [
@@ -269,7 +271,9 @@ function buildMarkdown(d: ReportData): string {
     ...rows,
     d.active.length > 12 ? `\n*...and ${d.active.length-12} more alerts*` : ``,``,
     `## 3. Impact Assessment`,``,
-    `- SAR Sentinel-1 detects **${d.floodArea.toFixed(1)} km²** of flooded area`,
+    d.floodIsDemo
+      ? `- Scenario SAR extent: **${d.floodArea.toFixed(1)} km²** of flooded area *(demonstration value, not a real Sentinel-1 detection)*`
+      : `- SAR Sentinel-1 detects **${d.floodArea.toFixed(1)} km²** of flooded area`,
     `- Estimated population in risk zone: **${d.popStr} inhabitants**`,
     `- Districts with high risk level: **${d.highRiskDistricts.length}**`,
     ...(d.maxRain72h != null && d.maxRain72h >= 25 ? [
@@ -400,7 +404,7 @@ th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:10px;font-weigh
     <div class="sec-ttl">${es?"1. Resumen Ejecutivo":"1. Executive Summary"}</div>
     <div class="grid4">
       <div class="mcard"><div class="mval" style="color:${d.active.length>0?"#dc2626":"#111827"}">${d.active.length}</div><div class="mlbl">${es?"Alertas activas":"Active alerts"}</div><div class="msub">${d.critical.length} ${es?"críticas":"critical"} · ${d.high.length} ${es?"altas":"high"}</div></div>
-      <div class="mcard"><div class="mval" style="color:#2563eb">${d.floodArea.toFixed(1)}<span style="font-size:13px;font-weight:400"> km²</span></div><div class="mlbl">${es?"Área inundada":"Flooded area"}</div><div class="msub">Sentinel-1</div></div>
+      <div class="mcard"><div class="mval" style="color:#2563eb">${d.floodArea.toFixed(1)}<span style="font-size:13px;font-weight:400"> km²</span></div><div class="mlbl">${es?"Área inundada":"Flooded area"}</div><div class="msub">${d.floodIsDemo?(es?"SAR de escenario":"Scenario SAR"):"Sentinel-1"}</div></div>
       <div class="mcard"><div class="mval">${d.popStr}</div><div class="mlbl">${es?"Pob. en riesgo":"Pop. at risk"}</div><div class="msub">${es?"habitantes":"inhabitants"}</div></div>
       <div class="mcard"><div class="mval" style="color:${d.highRiskDistricts.length>0?"#dc2626":"#111827"}">${d.highRiskDistricts.length+d.moderateDistricts.length}</div><div class="mlbl">${es?"Distritos en alerta":"Districts on alert"}</div><div class="msub">${d.highRiskDistricts.length} ${es?"alto":"high"} · ${d.moderateDistricts.length} mod.</div></div>
       ${d.maxRain72h != null && d.maxRain72h >= 25 ? `<div class="mcard"><div class="mval" style="color:${d.maxRain72h>=50?"#dc2626":"#d97706"}">${d.maxRain72h.toFixed(0)}<span style="font-size:13px;font-weight:400"> mm</span></div><div class="mlbl">${es?"Lluvia máx. 72h":"Max 72h rain"}</div><div class="msub" style="color:${d.maxRain72h>=50?"#dc2626":"#d97706"}">${d.maxRain72h>=50?(es?"⚠ EMERGENCIA ANA":"⚠ ANA EMERGENCY"):(es?"ALERTA ANA":"ANA ALERT")}</div></div>` : ""}
@@ -418,7 +422,7 @@ th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:10px;font-weigh
   <div class="sec">
     <div class="sec-ttl">${es?"4. Evaluación de Impacto Hidrometeorológico":"4. Hydrometeorological Impact Assessment"}</div>
     <div class="impact-grid">
-      <div class="icard" style="background:#eff6ff;border:1px solid #bfdbfe"><div class="icard-ttl" style="color:#1d4ed8">SAR Sentinel-1</div><p style="color:#1e3a5f">${es?`Imágenes de radar de apertura sintética detectan <strong>${d.floodArea.toFixed(2)} km²</strong> de superficie inundada en la región de Lima. Cadencia de revisita ~6 días.`:`Synthetic aperture radar imagery detects <strong>${d.floodArea.toFixed(2)} km²</strong> of flooded surface in the Lima region. Revisit cadence ~6 days.`}</p></div>
+      <div class="icard" style="background:${d.floodIsDemo?"#fffbeb":"#eff6ff"};border:1px solid ${d.floodIsDemo?"#fde68a":"#bfdbfe"}"><div class="icard-ttl" style="color:${d.floodIsDemo?"#b45309":"#1d4ed8"}">${d.floodIsDemo?(es?"Extensión SAR de escenario":"Scenario SAR extent"):"SAR Sentinel-1"}</div><p style="color:#1e3a5f">${d.floodIsDemo?(es?`Extensión de <strong>${d.floodArea.toFixed(2)} km²</strong> tomada del escenario de demostración El Niño. <strong>No es una detección Sentinel-1 real:</strong> no existe un checkpoint Sen1Floods11 publicable para SAR, por lo que la ruta de inferencia está implementada pero sin pesos. Cadencia de revisita real ~6 días.`:`Extent of <strong>${d.floodArea.toFixed(2)} km²</strong> taken from the El Niño demonstration scenario. <strong>Not a real Sentinel-1 detection:</strong> no publishable Sen1Floods11 SAR checkpoint exists, so the inference path is implemented but unweighted. Real revisit cadence ~6 days.`):(es?`Imágenes de radar de apertura sintética detectan <strong>${d.floodArea.toFixed(2)} km²</strong> de superficie inundada en la región de Lima. Cadencia de revisita ~6 días.`:`Synthetic aperture radar imagery detects <strong>${d.floodArea.toFixed(2)} km²</strong> of flooded surface in the Lima region. Revisit cadence ~6 days.`)}</p></div>
       <div class="icard" style="background:#f0fdf4;border:1px solid #bbf7d0"><div class="icard-ttl" style="color:#15803d">NASA IMERG Late Run V07B</div><p style="color:#14532d">${es?`Precipitación acumulada basada en estimaciones satelitales IMERG Late Run V07B (GPM). Granularidad de 30 min. ${d.maxRain72h != null ? `<strong>${d.maxRain72h.toFixed(0)} mm/72h${d.maxRainWs ? ` (${d.maxRainWs})` : ''}</strong>, ${d.maxRain72h >= 50 ? '⚠ UMBRAL EMERGENCIA ANA superado' : d.maxRain72h >= 25 ? 'Umbral ALERTA ANA superado' : 'Bajo umbral de alerta'}.` : 'Sin datos recientes.'}` : `Accumulated precipitation from NASA IMERG Late Run V07B (GPM). 30-min granularity. ${d.maxRain72h != null ? `<strong>${d.maxRain72h.toFixed(0)} mm/72h${d.maxRainWs ? ` (${d.maxRainWs})` : ''}</strong>, ${d.maxRain72h >= 50 ? '⚠ ANA EMERGENCY threshold exceeded' : d.maxRain72h >= 25 ? 'ANA ALERT threshold exceeded' : 'Below alert threshold'}.` : 'No recent data.'}`}</p></div>
     </div>
   </div>
@@ -446,6 +450,7 @@ function EDANReportButton() {
   const [copied, setCopied] = useState(false);
   const { data: alerts = [] } = useAlerts();
   const { data: exposure } = useFloodExposure();
+  const { data: floodLayerData } = useFlood();
   const { data: summary } = useDistrictRiskSummary();
   const { data: imergEdan } = useImerg(72);
 
@@ -455,6 +460,7 @@ function EDANReportButton() {
   const critical = active.filter((a) => a.severity === "critical");
   const high = active.filter((a) => a.severity === "high");
   const floodArea = exposure?.districts.reduce((s, d) => s + d.overlap_km2, 0) ?? 0;
+  const floodIsDemo = floodLayerData?.is_demo_data === true;
   const affectedPop = exposure?.total_affected_population ?? 0;
   const highRiskDistricts = summary?.features.filter((f) => f.properties.risk_level === "alto").map((f) => f.properties.name) ?? [];
   const moderateDistricts = summary?.features.filter((f) => f.properties.risk_level === "moderado").map((f) => f.properties.name) ?? [];
@@ -480,7 +486,7 @@ function EDANReportButton() {
 
   const reportData: ReportData = {
     reportId, nowStr, level, active, critical, high,
-    floodArea, popStr, highRiskDistricts, moderateDistricts,
+    floodArea, floodIsDemo, popStr, highRiskDistricts, moderateDistricts,
     maxRain72h: maxRain72h && maxRain72h > 0 ? maxRain72h : undefined,
     maxRainWs,
     locale,

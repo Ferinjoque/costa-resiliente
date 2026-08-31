@@ -13,18 +13,22 @@ const STATE = "e2e/.auth/coer.json";
 setup("authenticate as COER Lima", async ({ page }) => {
   await page.goto("/");
 
-  // The app raises the login modal by itself for an unauthenticated visitor.
-  // Its backdrop covers the rail, so clicking "Iniciar sesión" underneath just
-  // times out on an intercepted pointer event.
+  // The modal no longer opens by itself: it is raised from the rail's login
+  // button. On a cold Next.js dev server that button is server-rendered and
+  // clickable a beat before React attaches its handler, so a single click can
+  // land on inert markup, silently do nothing, and fail the whole suite at
+  // setup. Click until the modal actually appears rather than assuming the
+  // first one took.
   const user = page.locator("#cr-username");
-  const autoOpened = await user
-    .waitFor({ state: "visible", timeout: 8_000 })
-    .then(() => true)
-    .catch(() => false);
-  if (!autoOpened) {
-    await page.getByRole("button", { name: /^(Iniciar sesión|Log in)$/ }).first().click();
-    await expect(user).toBeVisible();
-  }
+  const trigger = page.getByRole("button", { name: /^(Iniciar sesión|Log in)$/ }).first();
+  await expect(trigger).toBeVisible();
+
+  await expect(async () => {
+    if (!(await user.isVisible())) {
+      await trigger.click();
+    }
+    await expect(user).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
 
   await page.locator("#cr-username").fill("coer_lima");
   await page.locator("#cr-password").fill("demo1234");

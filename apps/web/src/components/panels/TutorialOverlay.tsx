@@ -62,7 +62,7 @@ function buildSteps(locale: "es" | "en"): DriveStep[] {
           </div>
         </div>
         <hr class="cr-tour-divider"/>
-        <p class="cr-tour-body">La plataforma replica el evento en tiempo real. Cada capa, alerta y decisión que ves aquí se basa en datos reales del SENAMHI, INDECI y observaciones SAR Sentinel-1.</p>
+        <p class="cr-tour-body">La plataforma replica el evento de 2017 sobre la arquitectura real: las mismas capas, alertas y decisiones que usarías en una emergencia viva. Las fuentes institucionales (SENAMHI, ANA, INDECI, IMERG, Open-Meteo) están integradas y en vivo donde el recorrido lo indica; los polígonos SAR y la susceptibilidad de huayco de este escenario son valores de demostración y se rotulan como tales en el mapa. Revisa "Limitaciones conocidas" en Fuentes de datos.</p>
         <div class="cr-tour-badges">
           <span class="cr-tour-badge cr-tour-badge--crit">SINAGERD Nivel 3</span>
           <span class="cr-tour-badge cr-tour-badge--warn">COEN Activado</span>

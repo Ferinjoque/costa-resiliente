@@ -60,6 +60,7 @@ if __name__ == "__main__":
     from costa_workers.ingest.imerg import ingest_imerg_flow
     from costa_workers.ingest.social import ingest_social_flow
     from costa_workers.ingest.ana_scraper import ingest_hydro_stations_flow
+    from costa_workers.ingest.weather import ingest_weather_flow
     from costa_workers.ingest.flood_pipeline import flood_segmentation_flow
     from costa_workers.ml.alert_generator import generate_alerts_flow
 
@@ -83,6 +84,13 @@ if __name__ == "__main__":
             name="hydro-stations-30min",
             interval=1800,
             tags=["ingest", "hydro"],
+        ),
+        # Current weather (Open-Meteo): every 15 minutes, matching the upstream
+        # refresh interval. Keyless and free, so this cadence costs nothing.
+        ingest_weather_flow.to_deployment(
+            name="weather-15min",
+            interval=900,
+            tags=["ingest", "weather"],
         ),
         # Social signals (Bluesky + RSS + Reddit + Telegram): every 15 minutes
         ingest_social_flow.to_deployment(

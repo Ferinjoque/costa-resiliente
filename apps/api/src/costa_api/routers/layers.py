@@ -7,6 +7,7 @@ from sqlalchemy import ARRAY, String, bindparam, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.db import get_db
+from costa_api.weather import derive_warnings, describe_weather_code, worst_severity
 
 router = APIRouter(prefix="/layers", tags=["layers"])
 
@@ -25,6 +26,24 @@ def _iso(dt: Any) -> str | None:
     if dt is None:
         return None
     return dt.isoformat() if hasattr(dt, "isoformat") else str(dt)
+
+
+# Version strings that denote scenario data rather than genuine model output.
+_DEMO_VERSION_MARKERS = ("demo", "fixture", "scenario", "synthetic")
+
+
+def _is_demo_version(version: Any) -> bool:
+    """True when a model_version does not denote real model output.
+
+    An unstamped row (NULL) counts as demonstration data on purpose: a row that
+    cannot prove where it came from must never be presented to an operator as a
+    real detection. Failing closed here is what keeps the map honest when a
+    refresh job dies halfway.
+    """
+    if not version:
+        return True
+    lowered = str(version).lower()
+    return any(marker in lowered for marker in _DEMO_VERSION_MARKERS)
 
 
 def _parse_replay_time(at: Optional[str]) -> datetime:
@@ -164,12 +183,19 @@ async def flood_latest(
         {"limit": limit, "ref_time": ref_time},
     )
     rows = result.mappings().all()
+    served_versions = {r["model_version"] for r in rows}
+    flood_is_demo = any(_is_demo_version(v) for v in served_versions) if rows else False
     return {
         "type": "FeatureCollection",
-        "source": "ESA Sentinel-1 SAR (flood-seg-v0.1)",
+        "source": (
+            "Polígonos de demostración, no son detecciones Sentinel-1 reales"
+            if flood_is_demo
+            else "ESA Sentinel-1 SAR (flood-seg-v0.1)"
+        ),
         "source_url": "https://planetarycomputer.microsoft.com/dataset/sentinel-1-grd",
         "retrieved_at": _now_iso(),
         "data_updated_at": data_updated_at,
+        "is_demo_data": flood_is_demo,
         "features": [
             {
                 "type": "Feature",
@@ -180,6 +206,7 @@ async def flood_latest(
                     "model_version": r["model_version"],
                     "confidence": r["confidence"],
                     "area_km2": r["area_km2"],
+                    "is_demo_data": _is_demo_version(r["model_version"]),
                 },
                 "geometry": r["geometry"],
             }
@@ -207,6 +234,7 @@ async def huayco_susceptibility(db: AsyncSession = Depends(get_db)) -> dict[str,
                 hs.risk_level,
                 hs.computed_at,
                 hs.trigger_rain_24h_mm,
+                hs.model_version,
                 ST_AsGeoJSON(ST_PointOnSurface(q.geom))::json AS geometry
             FROM geo.quebradas q
             LEFT JOIN ml.huayco_susceptibility hs ON hs.quebrada_id = q.id
@@ -215,12 +243,26 @@ async def huayco_susceptibility(db: AsyncSession = Depends(get_db)) -> dict[str,
         """)
     )
     rows = result.mappings().all()
+
+    # Provenance is not cosmetic on a layer an operator may evacuate against.
+    # The served rows decide what this layer may claim: only genuine model
+    # output earns the "XGBoost" name. Scenario fixtures, and rows predating
+    # version stamping, must announce themselves instead.
+    served_versions = {r["model_version"] for r in rows if r["model_version"]}
+    is_fixture = any(_is_demo_version(v) for v in served_versions) or not served_versions
+    source_label = (
+        "Valores de escenario de demostración, no son salida del modelo"
+        if is_fixture
+        else "XGBoost huayco model v0.1 + IMERG trigger"
+    )
+
     return {
         "type": "FeatureCollection",
-        "source": "XGBoost huayco model v0.1 + IMERG trigger",
+        "source": source_label,
         "source_url": "https://www.ingemmet.gob.pe/mapas-de-peligros",
         "retrieved_at": _now_iso(),
         "data_updated_at": data_updated_at,
+        "is_demo_data": is_fixture,
         "features": [
             {
                 "type": "Feature",
@@ -232,6 +274,8 @@ async def huayco_susceptibility(db: AsyncSession = Depends(get_db)) -> dict[str,
                     "risk_level": r["risk_level"],
                     "computed_at": _iso(r["computed_at"]),
                     "trigger_rain_24h_mm": r["trigger_rain_24h_mm"],
+                    "model_version": r["model_version"],
+                    "is_demo_data": _is_demo_version(r["model_version"]),
                 },
                 "geometry": r["geometry"],
             }
@@ -336,6 +380,19 @@ async def infrastructure(
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
     await db.execute(text("SET LOCAL statement_timeout = '10000'"))
+
+    # How many match before the cap, so the response can admit to truncating.
+    count_sql = text(f"SELECT COUNT(*) FROM geo.infrastructure i {where}")
+    if type:
+        count_sql = count_sql.bindparams(bindparam("types", type_=ARRAY(String)))
+    total_available = (await db.execute(count_sql, params)).scalar_one()
+
+    # Ordering decides what survives LIMIT, and it used to be alphabetical by
+    # type. With 43k points loaded, "bridge" and "fire_station" alone filled
+    # 992 of the 2000 slots and hospitals took the rest, so schools (16k),
+    # substations (24k), comisarias and INDECI warehouses never reached the map
+    # at all unless the operator filtered for them by name. Rank by operational
+    # criticality instead: what a duty officer needs first survives the cap.
     sql = text(f"""
             SELECT
                 i.id, i.osm_id, i.type, i.name,
@@ -345,7 +402,17 @@ async def infrastructure(
             FROM geo.infrastructure i
             LEFT JOIN geo.districts d ON d.id = i.district_id
             {where}
-            ORDER BY i.type, i.name
+            ORDER BY CASE i.type
+                         WHEN 'hospital'         THEN 1
+                         WHEN 'relief_warehouse' THEN 2
+                         WHEN 'fire_station'     THEN 3
+                         WHEN 'police_station'   THEN 4
+                         WHEN 'bridge'           THEN 5
+                         WHEN 'school'           THEN 6
+                         WHEN 'substation'       THEN 7
+                         ELSE 8
+                     END,
+                     i.name
             LIMIT 2000
         """)
     if type:
@@ -353,6 +420,8 @@ async def infrastructure(
     result = await db.execute(sql, params)
     rows = result.mappings().all()
     return {
+        "total_available": total_available,
+        "truncated": total_available > len(rows),
         "type": "FeatureCollection",
         # OSM covers hospitals/schools/bridges/substations/fire stations; INDECI
         # relief warehouses and PNP comisarías come from the CENEPRED COEN FEN
@@ -437,11 +506,100 @@ async def stations(
                     "level_m": r["level_m"],
                     "flow_m3s": r["flow_m3s"],
                     "rain_mm": r["rain_mm"],
+                    # Scenario gauges carry a -DEMO station code. Without this
+                    # the map showed a seeded "Chosica" beside the real ANA
+                    # Chosica, which reads as a duplicate rather than a fixture.
+                    "is_demo_data": "DEMO" in (r["code"] or "").upper(),
+                    # A gauge with no reading is reporting a gap, not a zero.
+                    "has_reading": r["level_m"] is not None or r["flow_m3s"] is not None,
                 },
                 "geometry": r["geometry"],
             }
             for r in rows
         ],
+    }
+
+
+@router.get("/weather")
+async def weather_current(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
+    """Current weather conditions per observation point, with responder warnings.
+
+    Precipitation and river level were already covered by IMERG and the gauges;
+    this is what the console was missing to answer "can crews work right now".
+    """
+    await db.execute(text("SET LOCAL statement_timeout = '10000'"))
+    result = await db.execute(
+        text("""
+            SELECT DISTINCT ON (p.id)
+                p.id, p.name, p.watershed_id, w.name AS watershed_name,
+                o.time, o.temperature_c, o.apparent_temperature_c, o.humidity_pct,
+                o.precipitation_mm, o.wind_speed_kmh, o.wind_gusts_kmh,
+                o.wind_direction_deg, o.weather_code, o.source,
+                ST_AsGeoJSON(p.geom)::json AS geometry
+            FROM hydro.weather_points p
+            LEFT JOIN hydro.weather_observations o ON o.point_id = p.id
+            LEFT JOIN geo.watersheds w ON w.id = p.watershed_id
+            WHERE p.active
+            ORDER BY p.id, o.time DESC
+        """)
+    )
+    rows = result.mappings().all()
+
+    features: list[dict[str, Any]] = []
+    all_warnings: list[dict[str, Any]] = []
+    latest_observed: Any = None
+
+    for r in rows:
+        observation = {
+            "temperature_c": r["temperature_c"],
+            "wind_speed_kmh": r["wind_speed_kmh"],
+            "wind_gusts_kmh": r["wind_gusts_kmh"],
+            "weather_code": r["weather_code"],
+        }
+        warnings = derive_warnings(observation) if r["time"] is not None else []
+        all_warnings.extend(warnings)
+        if r["time"] is not None and (latest_observed is None or r["time"] > latest_observed):
+            latest_observed = r["time"]
+
+        features.append({
+            "type": "Feature",
+            "properties": {
+                "id": r["id"],
+                "name": r["name"],
+                "watershed_name": r["watershed_name"],
+                "observed_at": _iso(r["time"]),
+                "temperature_c": r["temperature_c"],
+                "apparent_temperature_c": r["apparent_temperature_c"],
+                "humidity_pct": r["humidity_pct"],
+                "precipitation_mm": r["precipitation_mm"],
+                "wind_speed_kmh": r["wind_speed_kmh"],
+                "wind_gusts_kmh": r["wind_gusts_kmh"],
+                "wind_direction_deg": r["wind_direction_deg"],
+                "weather_code": r["weather_code"],
+                "condition": describe_weather_code(r["weather_code"]),
+                "warnings": warnings,
+                "source": r["source"],
+            },
+            "geometry": r["geometry"],
+        })
+
+    # Deduplicate warnings by kind for the at-a-glance summary: five points in
+    # one metropolitan area routinely raise the same fog or wind warning, and an
+    # operator needs the condition once, not five times.
+    summary: dict[str, dict[str, Any]] = {}
+    for warning in all_warnings:
+        summary.setdefault(warning["kind"], warning)
+
+    return {
+        "type": "FeatureCollection",
+        "source": "Open-Meteo current conditions",
+        "source_url": "https://open-meteo.com/",
+        "attribution": "Weather data by Open-Meteo.com (CC BY 4.0)",
+        "retrieved_at": _now_iso(),
+        "data_updated_at": _iso(latest_observed),
+        "warnings": list(summary.values()),
+        "max_severity": worst_severity(list(summary.values())),
+        "features": features,
     }
 
 

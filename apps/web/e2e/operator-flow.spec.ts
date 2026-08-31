@@ -144,8 +144,32 @@ test("the login modal can be dismissed with its close button", async ({ page }) 
 });
 
 test("hovering a rail item does not shift the alert badge", async ({ page }) => {
+  // The badge width tracks the live active-alert count, so a count that ticks
+  // from 9 to 10 mid-test widens it by a digit and reads as a hover shift. The
+  // count is pinned here so the assertion measures layout and nothing else.
+  // Match on the exact pathname: a "**/api/v1/alerts?**" glob misses the
+  // no-query-string call the app actually makes, and a looser "alerts**" glob
+  // would swallow /alerts/stream and /alerts/decision-log too.
+  await page.route(
+    (url) => url.pathname.replace(/\/$/, "").endsWith("/api/v1/alerts"),
+    async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      const rows = Array.isArray(body) ? body : (body?.items ?? []);
+      const pinned = rows.slice(0, 9).map((row: Record<string, unknown>) => ({
+        ...row, status: "active",
+      }));
+      await route.fulfill({
+        response,
+        body: JSON.stringify(Array.isArray(body) ? pinned : { ...body, items: pinned }),
+      });
+    },
+  );
+  await page.reload();
+
   const badge = page.locator("#driver-nav-alerts span").filter({ hasText: /^\d+$/ }).first();
   await expect(badge).toBeVisible();
+  await expect(badge).toHaveText("9");
   const before = await badge.boundingBox();
 
   await page.locator("#driver-nav-map").hover();
@@ -153,6 +177,8 @@ test("hovering a rail item does not shift the alert badge", async ({ page }) => 
   await page.locator("#driver-nav-alerts").hover();
   await page.waitForTimeout(300);
 
+  // Guard the premise: if the count changed anyway the box comparison is void.
+  await expect(badge).toHaveText("9");
   const after = await badge.boundingBox();
   expect(before, "badge should have a box before hover").not.toBeNull();
   expect(after, "badge should have a box after hover").not.toBeNull();

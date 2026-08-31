@@ -22,16 +22,44 @@
 - **Credentials**: `EARTHDATA_USERNAME` / `EARTHDATA_PASSWORD` (set in `.env`)
 - **Resolution**: 0.1° (~11km), half-hourly granules
 - **Latency**: ~12h after observation (higher accuracy than Early Run)
+- **Timeliness caveat, stated plainly**: the half-hourly figure is the product's *temporal
+  resolution*, not its availability. IMERG Late is **not** a near-real-time feed, and nothing in
+  this project should describe it as one. Open-Meteo (below) is the near-real-time source;
+  Early Run would cut IMERG latency to ~4h and is the obvious upgrade if rainfall needs to be
+  operationally live.
 - **Accumulations stored**: 1h, 3h, 6h, 12h, 24h, 72h, 168h per Lima watershed
 - **Implementation**: `apps/workers/src/costa_workers/ingest/imerg.py`
 - **Storage**: `hydro.imerg_accumulations` (TimescaleDB hypertable)
 - **Status**: ✅ Implemented and running
 
+### Open-Meteo: current weather conditions
+- **Endpoint**: `https://api.open-meteo.com/v1/forecast` (`current=` block)
+- **Credentials**: none. No API key, no account, no quota to manage; free at any volume this
+  project reaches, which keeps the zero-paid-API guarantee intact.
+- **Variables**: temperature, apparent temperature, relative humidity, precipitation, WMO
+  present-weather code, wind speed, wind gusts, wind direction
+- **Points**: 5 (Lima Centro, Chosica/Rímac, Carabayllo/Chillón, Pachacámac/Lurín, Callao)
+- **Latency**: ~15 min. This is the platform's genuinely near-real-time feed.
+- **Derived warnings**: heat, cold, wind, fog, thunderstorm and heavy rain, thresholded for
+  Lima's coastal desert climate rather than a temperate default. Logic and thresholds live in
+  `apps/api/src/costa_api/weather.py` (single source of truth, covered by `tests/test_weather.py`).
+- **Implementation**: `apps/workers/src/costa_workers/ingest/weather.py`, every 15 min
+- **Storage**: `hydro.weather_observations` (TimescaleDB hypertable) + `hydro.weather_points`
+- **Serving**: `/api/v1/layers/weather`; HUD temperature chip; `/health/scraper` source `weather`
+- **Licence**: CC BY 4.0. Attribution is carried in the API payload and the Fuentes de datos panel.
+- **Status**: ✅ Live
+
 ### Lima Geodata (OSM + INEI)
 - **Districts**: 43 Lima province distritos as MultiPolygon, WGS84
 - **Watersheds**: Rímac, Chillón, Lurín (3 watersheds)
 - **Quebradas**: 10 priority quebradas with IMERG rainfall thresholds
-- **Infrastructure**: hospitals, schools, fire stations, substations, bridges from Overpass API
+- **Infrastructure**: hospitals, schools, fire stations, substations, bridges from Overpass API.
+  **43,216 points loaded** (substation 24,368; school 16,044; hospital 1,668; bridge 768;
+  fire_station 224; police_station 141; relief_warehouse 3). `/api/v1/layers/infrastructure`
+  caps a response at 2,000 to keep the browser responsive and returns `total_available` plus
+  `truncated` so the truncation is visible; rows are ordered by operational criticality
+  (hospitals, INDECI warehouses, fire, police, bridges, schools, substations) so the points a
+  duty officer needs first survive the cap. Use `?type=` to request a specific class.
 - **Population**: INEI 2017 census at district level (`geo.districts.population`)
 - **Load script**: `scripts/load_lima_geodata.py`
 - **Status**: ✅ Loaded into PostGIS
@@ -40,7 +68,7 @@
 - **Backend**: pgstac schema inside the primary Postgres instance
 - **Collections**: sentinel-1-grd, imerg-v07b, flood-polygons
 - **Access**: `http://localhost:8082` (STAC API, pgstac-fastapi)
-- **Status**: ✅ Running; scenes registered on ingest
+- **Status**: ⚠️ Schema bootstrapped and reachable, but **the catalogue is currently empty** (0 collections, 0 items). No Sentinel-1 scene has been registered since the ingest flow last ran (2026-05-18), so nothing downstream is reading from it today.
 
 ---
 
@@ -132,14 +160,14 @@
 - **Access**: Public JSON API (`/r/{sub}/new.json`): no OAuth required. `REDDIT_CLIENT_ID/SECRET` optional (higher rate limit if set)
 - **Filter**: Disaster keywords; last 48h
 - **Implementation**: `apps/workers/src/costa_workers/ingest/social.py::ingest_reddit()`
-- **Status**: ✅ Active (public API, no credentials needed)
+- **Status**: ⚠️ Best-effort. Implemented and credential-free, but not currently producing a steady feed; `/health/scraper` reports the live state and the console shows it as stale rather than pretending otherwise.
 
 ### Telegram
 - **Channel**: `Senamhi_Peru`. SENAMHI official weather and hydro alerts
 - **Access**: Telethon library, read-only. Credentials: `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_SESSION_STRING` (all set in `.env`)
 - **Filter**: Disaster keywords; last 48h
 - **Implementation**: `apps/workers/src/costa_workers/ingest/social.py::ingest_telegram()`
-- **Status**: ✅ Session configured and active (Senamhi_Peru channel)
+- **Status**: ⚠️ Best-effort. Session configured, but delivery is intermittent; `/health/scraper` reports the live state.
 
 ---
 
@@ -170,11 +198,21 @@
 - **Model**: XGBoost, methodology from Castro-Cabrera et al. (Geosciences 14(6):168, 2024)
 - **Features**: slope, aspect, lithology, distance-to-stream, NDVI, soil_moisture, IMERG 24h/72h
 - **Output**: `ml.huayco_susceptibility` (probability + risk_level per quebrada)
-- **Current model_version**: `xgboost-v0.1-demo-refresh`, the feature pipeline and scoring run
-  on live IMERG accumulations, but the tree ensemble itself is not yet fitted on a labelled
-  Lima landslide inventory, so probabilities are calibrated demonstration values.
-- **Status**: ⚠️ Implemented and scoring live rainfall; model fitting on SINPAD-derived labels
-  is the remaining step
+- **Current model_version**: `scenario-fixture-v1`. **The probabilities currently on the map are
+  hand-authored scenario values, not model output.** The feature pipeline and the scoring code
+  are implemented and run against live IMERG accumulations, but the tree ensemble is not fitted
+  on a labelled Lima landslide inventory, so it emits a near-constant ~0.53 for every quebrada.
+  The El Niño demo scenario therefore ships fixed values with a realistic spread, and the seeder
+  restores them when the pipeline flattens the scenario.
+- **Where this is disclosed**: the layer payload carries `is_demo_data` per feature and for the
+  collection; the collection `source` string refuses to name XGBoost while fixtures are served;
+  the map popup prints *"Valor de demostración, no es salida del modelo"*; the copilot appends
+  the same qualifier to every huayco answer; and the "Limitaciones conocidas" block in the
+  Fuentes de datos panel states it in the product. An unstamped row is treated as demonstration
+  data, so the labelling fails closed.
+- **Status**: ⚠️ Pipeline implemented and unit-tested; **served values are scenario fixtures**.
+  Fitting on SINPAD-derived labels is the remaining step before any figure here can be
+  attributed to the model.
 
 ### Hazard Zone Classification (SINPAD-derived)
 - **Method**: District-level event frequency + severity score from SINPAD 2003-2020; quartile classification → muy_alto / alto / medio / bajo per hazard type (flood, landslide)
