@@ -29,14 +29,22 @@ async def triage_flow() -> dict:
 
 @flow(name="run-huayco-susceptibility", log_prints=True)
 async def huayco_flow() -> dict:
-    """Run XGBoost susceptibility for all quebradas."""
-    from costa_workers.ml.huayco_model import HuaycoModel, run_huayco_susceptibility
+    """Score today and tomorrow with the trained mass-movement model.
 
-    db_dsn = os.getenv("DATABASE_URL", f"postgresql://{os.getenv('POSTGRES_USER','costa')}:{os.getenv('POSTGRES_PASSWORD','change_me_in_production')}@{os.getenv('POSTGRES_HOST','postgres')}:{os.getenv('POSTGRES_PORT','5432')}/{os.getenv('POSTGRES_DB','costa_resiliente')}")
-    model = HuaycoModel()
-    model.load()
-    results = await run_huayco_susceptibility(db_dsn=db_dsn, model=model)
-    return {"quebradas_updated": len(results)}
+    This used to run the quebrada-level XGBoost, which has no training data and
+    wrote the same 0.5344 for every quebrada each hour, overwriting the demo
+    scenario until the seeder put it back. The district model below is trained
+    on the SINPAD inventory and validated on 2017-2020; it writes to
+    ml.mass_movement_risk and leaves the labelled scenario layer alone.
+    """
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+
+    from costa_workers.ml.mass_movement import score
+
+    today = datetime.now(ZoneInfo("America/Lima")).date()
+    rows = await score([today, today + timedelta(days=1)], "live", "open-meteo")
+    return {"district_days_scored": rows}
 
 
 @flow(name="index-protocols-rag", log_prints=True)
@@ -72,11 +80,12 @@ if __name__ == "__main__":
             parameters={"lookback_days": 3},
             tags=["ingest", "satellite"],
         ),
-        # Rainfall: every hour, 169h lookback ensures accurate 168h (7d) accumulations
+        # Real IMERG Early Run: every hour. Only granules not yet cached are
+        # downloaded (~8 MB each); the first run backfills 72 h, ~1.2 GB.
         ingest_imerg_flow.to_deployment(
             name="imerg-hourly",
             interval=3600,
-            parameters={"lookback_hours": 169},
+            parameters={"lookback_hours": 72},
             tags=["ingest", "rainfall"],
         ),
         # Hydro stations (ANA + SENAMHI): every 30 minutes
@@ -104,7 +113,8 @@ if __name__ == "__main__":
             interval=3600,
             tags=["ml", "flood"],
         ),
-        # Huayco susceptibility: every hour
+        # Trained mass-movement model, live scoring: every hour (one Open-Meteo
+        # call for 21 grid cells; the forecast itself refreshes hourly at best)
         huayco_flow.to_deployment(
             name="huayco-hourly",
             interval=3600,

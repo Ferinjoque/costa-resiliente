@@ -262,6 +262,9 @@ async def generate_flood_alerts(db_dsn: str = DB_DSN) -> int:
     return inserted
 
 
+_RISK_ES = {"very_high": "muy alto", "high": "alto", "medium": "medio", "low": "bajo"}
+
+
 @task(retries=2, retry_delay_seconds=30, log_prints=True)
 async def generate_huayco_alerts(db_dsn: str = DB_DSN) -> int:
     """
@@ -274,13 +277,17 @@ async def generate_huayco_alerts(db_dsn: str = DB_DSN) -> int:
         rows = await pool.fetch(
             """
             SELECT hs.id, hs.quebrada_id, hs.probability, hs.risk_level,
-                   hs.computed_at, hs.trigger_rain_24h_mm,
+                   hs.computed_at, hs.trigger_rain_24h_mm, hs.model_version,
                    q.name AS quebrada_name,
+                   -- A point ON the quebrada line (a line's centroid can fall off
+                   -- it), stored on the alert so the feed can fly the map there.
+                   ST_X(ST_PointOnSurface(q.geom::geometry)) AS lon,
+                   ST_Y(ST_PointOnSurface(q.geom::geometry)) AS lat,
                    (SELECT d.id FROM geo.districts d
-                    WHERE ST_Intersects(d.geom, ST_Centroid(q.geom::geometry))
+                    WHERE ST_Intersects(d.geom, ST_PointOnSurface(q.geom::geometry))
                     LIMIT 1) AS district_id,
                    (SELECT d.ubigeo FROM geo.districts d
-                    WHERE ST_Intersects(d.geom, ST_Centroid(q.geom::geometry))
+                    WHERE ST_Intersects(d.geom, ST_PointOnSurface(q.geom::geometry))
                     LIMIT 1) AS district_ubigeo
             FROM ml.huayco_susceptibility hs
             JOIN geo.quebradas q ON q.id = hs.quebrada_id
@@ -316,18 +323,26 @@ async def generate_huayco_alerts(db_dsn: str = DB_DSN) -> int:
             rain = row["trigger_rain_24h_mm"]
             title = f"Riesgo de huayco: {row['quebrada_name']}"
             desc = (
-                f"Susceptibilidad: {float(row['probability']):.0%} ({row['risk_level']}). "
+                f"Susceptibilidad: {float(row['probability']):.0%} "
+                f"({_RISK_ES.get(row['risk_level'], row['risk_level'])}). "
                 + (f"Lluvia 24h: {float(rain):.1f} mm." if rain is not None else "")
             )
+            # Same fail-closed provenance rule as the map layer: an unstamped or
+            # demo/fixture/scenario-stamped value is disclosed in the alert text.
+            version = str(row["model_version"] or "").lower()
+            if not version or any(m in version for m in ("demo", "fixture", "scenario", "synthetic")):
+                desc += " Valor de escenario, no es salida de un modelo entrenado."
             new_id = await pool.fetchval(
                 """
                 INSERT INTO ops.alerts
                     (type, severity, status, title, description,
-                     district_id, source_refs)
-                VALUES ('huayco', $1, 'active', $2, $3, $4, $5::jsonb)
+                     district_id, source_refs, geom)
+                VALUES ('huayco', $1, 'active', $2, $3, $4, $5::jsonb,
+                        ST_SetSRID(ST_MakePoint($6, $7), 4326))
                 RETURNING id
                 """,
                 severity, title, desc, row["district_id"], source_refs,
+                row["lon"], row["lat"],
             )
             inserted += 1
             await _auto_notify(pool, new_id, severity, title, "huayco",
