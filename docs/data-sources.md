@@ -17,20 +17,36 @@
 - **Storage**: MinIO (raw GRD) + pgstac catalog + `ml.flood_polygons` (derived)
 - **Status**: ✅ Implemented and running
 
-### NASA IMERG Late Run V07B (GPM)
-- **Endpoint**: NASA GES DISC OPeNDAP
-- **Credentials**: `EARTHDATA_USERNAME` / `EARTHDATA_PASSWORD` (set in `.env`)
-- **Resolution**: 0.1° (~11km), half-hourly granules
-- **Latency**: ~12h after observation (higher accuracy than Early Run)
-- **Timeliness caveat, stated plainly**: the half-hourly figure is the product's *temporal
-  resolution*, not its availability. IMERG Late is **not** a near-real-time feed, and nothing in
-  this project should describe it as one. Open-Meteo (below) is the near-real-time source;
-  Early Run would cut IMERG latency to ~4h and is the obvious upgrade if rainfall needs to be
-  operationally live.
-- **Accumulations stored**: 1h, 3h, 6h, 12h, 24h, 72h, 168h per Lima watershed
+### NASA IMERG Early Run V07B (GPM)
+- **Endpoint**: NASA GES DISC archive, `https://gpm1.gesdisc.eosdis.nasa.gov/data/GPM_L3/GPM_3IMERGHHE.07/<YYYY>/<DOY>/`
+- **Credentials**: `EARTHDATA_TOKEN` (Earthdata user token, sent as a bearer header; expires
+  after 60 days) or `EARTHDATA_USERNAME` / `EARTHDATA_PASSWORD`.
+- **Resolution**: 0.1° (~11 km), half-hourly granules. **Latency**: ~4 h (Early Run).
+- **Accumulations**: 1h to 168h, basin mean over the HydroBASINS Rímac, Chillón and Lurín basins.
+- **Status**: ✅ **Live since 2026-09-28.** Hourly; only uncached granules are downloaded
+  (8 MB each); per-granule basin means in `hydro.imerg_granule_means`, 1-72 h accumulations in
+  `hydro.imerg_observed`, served at `/api/v1/layers/imerg/observed`, the freshness bar and the
+  SITREP. Observations are kept apart from `hydro.imerg_accumulations`, which holds the demo
+  scenario, so neither can overwrite or be mistaken for the other.
+- **History**: until
+  2026-09-28 the ingest pointed at `gpm.nasa.gov` (a web page) with a month/day path, read the
+  pre-V07 variable name, summed pixels instead of averaging them, and on failure re-inserted the
+  last scenario accumulation with a fresh timestamp, which kept the source "ok". All four are
+  fixed; a run that reads no granule now writes nothing. The rainfall map layer still shows the
+  scenario rows and labels them as such.
 - **Implementation**: `apps/workers/src/costa_workers/ingest/imerg.py`
 - **Storage**: `hydro.imerg_accumulations` (TimescaleDB hypertable)
-- **Status**: ✅ Implemented and running
+
+### Open-Meteo: 72 h rainfall forecast per basin
+- **Endpoint**: `https://api.open-meteo.com/v1/forecast` (`hourly=precipitation,precipitation_probability`)
+- **Points**: 3 per basin along the middle and upper course (Rímac: Chosica, Matucana, San Mateo;
+  Chillón: Santa Rosa de Quives, Canta; Lurín: Cieneguilla, Antioquía, Langa).
+- **Output**: cumulative basin-mean rain at +6/12/24/48/72 h, ANA 72 h level, max precipitation
+  probability. Cached 15 min in the API. `/api/v1/layers/rain-forecast`; district dashboard;
+  SITREP line "Pronóstico 72h (Open-Meteo, real)".
+- **Why**: the dashboard used to show a hard-coded table labelled "SENAMHI · WRF". It was
+  invented data attributed to a real agency, and it is gone.
+- **Status**: ✅ Live
 
 ### Open-Meteo: current weather conditions
 - **Endpoint**: `https://api.open-meteo.com/v1/forecast` (`current=` block)
@@ -49,10 +65,23 @@
 - **Licence**: CC BY 4.0. Attribution is carried in the API payload and the Fuentes de datos panel.
 - **Status**: ✅ Live
 
-### Lima Geodata (OSM + INEI)
-- **Districts**: 43 Lima province distritos as MultiPolygon, WGS84
-- **Watersheds**: Rímac, Chillón, Lurín (3 watersheds)
-- **Quebradas**: 10 priority quebradas with IMERG rainfall thresholds
+### Lima Geodata (INEI via CENEPRED, HydroBASINS, OSM)
+- **Districts**: 178 districts of the Lima department and Callao, official INEI UBIGEO and
+  boundaries, from the CENEPRED ArcGIS service (below). Loaded by
+  `scripts/load_cenepred_districts.py`, which updates rows in place so every foreign key survives.
+  Before 2026-09-28 the boundaries came from OSM with each boundary way closed as its own ring
+  (Villa El Salvador 3.3 km² against a real 34), San Juan de Lurigancho and all of Callao were
+  bounding boxes, and 118 Lima Región districts carried invented codes. Six rows with invented
+  codes remain in the table and are filtered out of every endpoint by UBIGEO shape.
+- **Watersheds**: Rímac (3,290 km²), Chillón (2,189) and Lurín (1,577), each the full upstream
+  catchment derived from HydroBASINS level 10 (Lehner & Grill 2013) by following `NEXT_DOWN` to
+  the sea outlet; within 10% of ANA's published areas. `scripts/load_watersheds_hydrobasins.py`.
+  They replace six-vertex hexagons that put all of central Lima, Miraflores included, inside the
+  Rímac basin.
+- **Quebradas**: 10 priority quebradas. Pedregal and Huaycoloro follow the OSM waterway; the
+  others are anchored on OSM place nodes (Quirio, Yanacoto, Carapongo, Ñaña) or documented
+  Chosica locations (Corrales, Carossio). They used to sit within 5 km of each other in northern
+  San Juan de Lurigancho.
 - **Infrastructure**: hospitals, schools, fire stations, substations, bridges from Overpass API.
   **43,216 points loaded** (substation 24,368; school 16,044; hospital 1,668; bridge 768;
   fire_station 224; police_station 141; relief_warehouse 3). `/api/v1/layers/infrastructure`
@@ -108,6 +137,17 @@
 - **Use**: Hazard zone classification (SINPAD event density → flood/landslide levels per district)
 - **Note**: SINPAD v2.0 live feed requires authorized INDECI account, documented as Phase 3 partnership ask; not used here
 - **Status**: ✅ Historical data loaded (2,063 Lima records); hazard zones derived and in `geo.hazard_zones`
+
+### CENEPRED: escenario de riesgo por lluvias intensas asociadas a El Niño
+- **Endpoint**: `https://sig.cenepred.gob.pe/arcgis_server/rest/services/FEN/ER_NINO2027_BD/MapServer`,
+  layers 4 (inundación) and 5 (movimientos en masa). Anonymous; no token.
+- **Content**: one polygon per district with the official INEI UBIGEO, 2017 census population,
+  and CENEPRED's susceptibility, vulnerability and risk levels, plus exposed homes, schools and
+  health facilities. Scenario built on the rainfall of the 1983, 1998, 2017 and 2023 seasons.
+- **Use**: authoritative district boundaries; layers "Riesgo oficial: huaycos / inundación";
+  `official_risk` block in `/fusion` and the district dashboard; a feature of the trained model.
+- **Storage**: `geo.cenepred_risk`, `geo.districts`. Loader: `scripts/load_cenepred_districts.py`.
+- **Status**: ✅ Loaded (178 districts x 2 hazards)
 
 ### CENEPRED SIGRID
 - **URL**: `sigrid.cenepred.gob.pe` / `sig.cenepred.gob.pe/arcgis_server/`
@@ -194,25 +234,21 @@
 - **Status**: ⚠️ Inference path implemented and unit-tested; awaiting publishable weights or a
   locally trained checkpoint before it can produce real detections
 
-### Huayco Susceptibility
-- **Model**: XGBoost, methodology from Castro-Cabrera et al. (Geosciences 14(6):168, 2024)
-- **Features**: slope, aspect, lithology, distance-to-stream, NDVI, soil_moisture, IMERG 24h/72h
-- **Output**: `ml.huayco_susceptibility` (probability + risk_level per quebrada)
-- **Current model_version**: `scenario-fixture-v1`. **The probabilities currently on the map are
-  hand-authored scenario values, not model output.** The feature pipeline and the scoring code
-  are implemented and run against live IMERG accumulations, but the tree ensemble is not fitted
-  on a labelled Lima landslide inventory, so it emits a near-constant ~0.53 for every quebrada.
-  The El Niño demo scenario therefore ships fixed values with a realistic spread, and the seeder
-  restores them when the pipeline flattens the scenario.
-- **Where this is disclosed**: the layer payload carries `is_demo_data` per feature and for the
-  collection; the collection `source` string refuses to name XGBoost while fixtures are served;
-  the map popup prints *"Valor de demostración, no es salida del modelo"*; the copilot appends
-  the same qualifier to every huayco answer; and the "Limitaciones conocidas" block in the
-  Fuentes de datos panel states it in the product. An unstamped row is treated as demonstration
-  data, so the labelling fails closed.
-- **Status**: ⚠️ Pipeline implemented and unit-tested; **served values are scenario fixtures**.
-  Fitting on SINPAD-derived labels is the remaining step before any figure here can be
-  attributed to the model.
+### Huayco: trained district model
+- **Model**: XGBoost, P(mass movement in the next 72 h) per district. **Trained on SINPAD
+  2003-2016, tested on 2017-2020 (never seen, includes El Niño 2017): ROC-AUC 0.76 vs 0.71 for a
+  rain-free baseline; PR-AUC 3.6x chance.** Full card: [`docs/models/mass-movement.md`](models/mass-movement.md).
+- **Output**: `ml.mass_movement_risk`, live (hourly) and replay (any past date from ERA5).
+  Layer "Huaycos: modelo entrenado"; SITREP line; model card in Fuentes de datos.
+- **Status**: ✅ Trained, validated, live.
+
+### Huayco points per quebrada (scenario)
+- **Output**: `ml.huayco_susceptibility`, model_version `scenario-fixture-v1`.
+- **These are hand-authored scenario values**, kept because the El Niño demo needs quebrada-level
+  points. The quebrada-level XGBoost (Castro-Cabrera et al. 2024 features) has no training data
+  and used to write a constant 0.5344 for every quebrada each hour; that flow now runs the
+  trained district model instead. Disclosure: `is_demo_data` per feature, popup, alert text
+  ("Valor de escenario, no es salida de un modelo entrenado"), SITREP ("Huayco (escenario)").
 
 ### Hazard Zone Classification (SINPAD-derived)
 - **Method**: District-level event frequency + severity score from SINPAD 2003-2020; quartile classification → muy_alto / alto / medio / bajo per hazard type (flood, landslide)
