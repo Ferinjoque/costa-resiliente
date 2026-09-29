@@ -58,7 +58,7 @@ export function DataFreshnessBar() {
         const ageText = pending
           ? "…"
           : demo ? (locale === "en" ? "scenario" : "escenario")
-          : at ? timeAgo(at) : (locale === "en" ? "no data" : "sin datos");
+          : at ? timeAgo(at, locale === "en" ? "en" : "es") : (locale === "en" ? "no data" : "sin datos");
         const titleText = pending
           ? (locale === "en" ? `${label}: loading` : `${label}: cargando`)
           : demo

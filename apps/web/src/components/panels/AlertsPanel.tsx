@@ -415,7 +415,7 @@ function AlertRow({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
             <Icon size={10} className="text-ink-subtle shrink-0" aria-hidden="true" />
             <span className="text-xs text-ink-subtle font-medium">{typeLabel}</span>
             <span className="text-ink-subtle" aria-hidden="true">·</span>
-            <span className="text-xs text-ink-subtle tabular-nums">{timeAgo(alert.created_at)}</span>
+            <span className="text-xs text-ink-subtle tabular-nums">{timeAgo(alert.created_at, locale)}</span>
             <SlaChip alert={alert} locale={locale} />
             {alert.district_name && (
               <>
@@ -1314,7 +1314,7 @@ export function AlertsPanel() {
       <Divider />
       <footer className="px-4 py-2.5 text-xs text-ink-subtle">
         {dataUpdatedAt
-          ? `${tr("alerts", "updated")} · ${timeAgo(new Date(dataUpdatedAt).toISOString())}`
+          ? `${tr("alerts", "updated")} · ${timeAgo(new Date(dataUpdatedAt).toISOString(), locale)}`
           : tr("alerts", "liveSSE")}
       </footer>
     </aside>

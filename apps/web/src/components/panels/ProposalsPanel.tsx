@@ -72,7 +72,7 @@ function ProposalRow({
           </span>
         )}
         <span className="ml-auto text-[10px] text-ink-subtle shrink-0">
-          {timeAgo(proposal.created_at)}
+          {timeAgo(proposal.created_at, locale)}
         </span>
       </div>
       <p className="text-sm font-semibold text-ink leading-snug">{proposal.title}</p>

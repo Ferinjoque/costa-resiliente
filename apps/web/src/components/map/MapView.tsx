@@ -96,11 +96,58 @@ function escHtml(s: string): string {
 }
 
 /** Build dark-theme popup HTML. */
+// Popup text is authored in Spanish (operators work in Spanish). In English
+// mode, labels and categorical values are translated here, in one place,
+// rather than at each of the popup call sites.
+const POPUP_EN: Record<string, string> = {
+  "Tipo": "Type", "Severidad": "Severity", "Estado": "Status", "Río": "River", "Fuente": "Source",
+  "Nivel": "Level", "Umbral": "Threshold", "Caudal": "Flow", "Lluvia": "Rain", "Origen": "Provenance",
+  "Confianza": "Confidence", "Distrito": "District", "Mensaje": "Message", "Nivel de riesgo": "Risk level",
+  "Probabilidad": "Probability", "Lluvia detonante 24h": "Trigger rain 24h", "Modelo": "Model",
+  "Área": "Area", "Pob. en riesgo": "Est. people at risk", "Escena SAR": "SAR scene",
+  "Tipo de peligro": "Hazard type", "Peligro": "Hazard", "Riesgo oficial": "Official risk",
+  "Susceptibilidad": "Susceptibility", "Vulnerabilidad": "Vulnerability",
+  "Viviendas expuestas": "Homes exposed", "Colegios expuestos": "Schools exposed",
+  "Establ. de salud": "Health facilities", "Riesgo (modelo)": "Risk (model)",
+  "Prob. evento 72 h": "Event prob. 72 h", "Veces la base": "Times base rate",
+  "Lluvia 3 / 7 días": "Rain 3 / 7 days",
+  "Muy alto": "Very high", "Alto": "High", "Medio": "Medium", "Moderado": "Moderate", "Bajo": "Low",
+  "Crítico": "Critical", "Inundación": "Flood", "Meteorológica": "Weather", "Señal social": "Social signal",
+  "Huayco / deslizamiento": "Debris flow / landslide", "Deslizamiento / huayco": "Landslide / debris flow",
+  "Movimientos en masa (huaycos)": "Mass movements (debris flows)",
+  "Solicitud de ayuda": "Request for help", "Daño de infraestructura": "Infrastructure damage",
+  "Vía bloqueada": "Road blocked", "Avistamiento de huayco": "Debris flow sighting",
+  "Avistamiento de inundación": "Flood sighting", "Observación meteorológica": "Weather observation",
+  "Falsa alarma": "False alarm", "Irrelevante": "Irrelevant", "Sin lectura reciente": "No recent reading",
+  "Estación de escenario, no es una lectura real": "Scenario station, not a real reading",
+  "Valor de demostración, no es salida del modelo": "Demo value, not model output",
+  "Datos de demostración, no es una detección real": "Demo data, not a real detection",
+  "CENEPRED, escenario de riesgo El Niño": "CENEPRED, El Niño risk scenario",
+  "XGBoost entrenado con SINPAD 2003-2016, validado 2017-2020": "XGBoost trained on SINPAD 2003-2016, tested on 2017-2020",
+  "Inundación de escenario": "Scenario flood extent", "Inundación detectada (SAR)": "Flood detected (SAR)",
+  "Señal social ": "Social signal", "Distrito ": "District", "Zona de peligro": "Hazard zone",
+  "Infraestructura crítica": "Critical infrastructure", "Alerta": "Alert",
+  "[H] Hospital": "[H] Hospital", "[E] Colegio": "[E] School", "[B] Puente": "[B] Bridge",
+  "[P] Subestación": "[P] Substation", "[F] Bomberos": "[F] Fire station", "[A] Albergue": "[A] Shelter",
+  "[N] Almacén INDECI": "[N] INDECI warehouse", "[C] Comisaría": "[C] Police station",
+};
+
+function popupText(text: string): string {
+  if (useUIStore.getState().locale !== "en") return text;
+  if (POPUP_EN[text]) return POPUP_EN[text];
+  return text
+    .replace(/^Estación /, "Station ")
+    .replace(/ personas$/, " people")
+    .replace(/ ⚠ ALERTA$/, " ⚠ ALERT");
+}
+
 function popupHtml(
   title: string,
   rows: Array<[string, string | number | null | undefined, string?]>,
   titleClass?: string,
 ): string {
+  title = popupText(title);
+  rows = rows.map(([k, v, c]) => [popupText(k), typeof v === "string" ? popupText(v) : v, c]);
   const body = rows
     .filter(([, v]) => v !== null && v !== undefined && v !== "")
     .map(([k, v, vc]) =>
