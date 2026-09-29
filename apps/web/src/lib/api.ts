@@ -222,6 +222,8 @@ export interface ImergCollection {
   source_url?: string;
   retrieved_at?: string;
   data_updated_at?: string;
+  /** True when the served accumulations are scenario rows, not ingested granules. */
+  is_demo_data?: boolean;
   features: ImergFeature[];
 }
 
@@ -345,6 +347,105 @@ export interface HazardCollection {
 export function fetchHazard(hazardType?: string): Promise<HazardCollection> {
   const q = hazardType ? `?hazard_type=${encodeURIComponent(hazardType)}` : "";
   return get<HazardCollection>(`/api/v1/layers/hazard${q}`);
+}
+
+// ─── CENEPRED official El Niño risk (per district) ───────────────────────────
+
+export type CenepredHazard = "flood" | "mass_movement";
+export type CenepredLevel = "muy_alto" | "alto" | "medio" | "bajo";
+
+export interface CenepredRiskProperties {
+  ubigeo: string;
+  name: string;
+  province: string;
+  risk_level: CenepredLevel;
+  vulnerability: string | null;
+  susceptibility: string | null;
+  risk_value: number | null;
+  exposed_homes: number | null;
+  exposed_schools: number | null;
+  exposed_health: number | null;
+  population_2017: number | null;
+}
+
+export interface CenepredRiskCollection {
+  type: "FeatureCollection";
+  hazard: CenepredHazard;
+  source: string;
+  source_url: string;
+  retrieved_at?: string;
+  data_updated_at?: string | null;
+  is_demo_data: boolean;
+  features: Array<{ type: "Feature"; geometry: GeoJSON.Geometry; properties: CenepredRiskProperties }>;
+}
+
+export interface OfficialRiskEntry {
+  risk_level: CenepredLevel;
+  vulnerability: string | null;
+  susceptibility: string | null;
+  exposed_homes: number | null;
+  exposed_schools: number | null;
+  exposed_health: number | null;
+}
+
+export interface OfficialRisk {
+  source: string;
+  source_url: string;
+  flood?: OfficialRiskEntry;
+  mass_movement?: OfficialRiskEntry;
+}
+
+// ─── Trained mass-movement model (per district, next 72 h) ────────────────────
+
+export type ModelRiskLevel = "low" | "medium" | "high" | "very_high";
+
+export interface HuaycoModelCollection {
+  type: "FeatureCollection";
+  model_version: string;
+  mode: "live" | "replay";
+  valid_date: string | null;
+  is_demo_data: false;
+  data_updated_at: string | null;
+  features: Array<{
+    type: "Feature";
+    geometry: GeoJSON.Geometry;
+    properties: {
+      ubigeo: string; name: string; probability: number; relative_risk: number;
+      risk_level: ModelRiskLevel; rain_3d_mm: number | null; rain_7d_mm: number | null;
+    };
+  }>;
+}
+
+export interface ModelMetricBlock {
+  n: number; events: number; roc_auc: number; pr_auc: number; pr_auc_random: number;
+  brier: number; events_in_top_decile: number; base_rate_train: number;
+}
+
+export interface HuaycoModelCard {
+  name: string;
+  version: string;
+  trained_at: string;
+  features: string[];
+  metrics: {
+    test_2017_2020: ModelMetricBlock;
+    baseline_no_rain_2017_2020: ModelMetricBlock;
+    test_2017_only: ModelMetricBlock;
+    train_seasons: string; test_seasons: string; target: string; labels: string; rain_source: string;
+    feature_gain: Record<string, number>;
+  };
+}
+
+export function fetchHuaycoModel(date?: string | null): Promise<HuaycoModelCollection> {
+  const q = date ? `?date=${encodeURIComponent(date)}` : "";
+  return get<HuaycoModelCollection>(`/api/v1/layers/huayco/model${q}`);
+}
+
+export function fetchHuaycoModelCard(): Promise<HuaycoModelCard> {
+  return get<HuaycoModelCard>("/api/v1/layers/huayco/model/card");
+}
+
+export function fetchCenepredRisk(hazard: CenepredHazard): Promise<CenepredRiskCollection> {
+  return get<CenepredRiskCollection>(`/api/v1/layers/cenepred-risk?hazard=${hazard}`);
 }
 
 // ─── Alerts ───────────────────────────────────────────────────────────────────
@@ -477,6 +578,8 @@ export interface ExposedDistrict {
   district_id: number;
   district_name: string;
   population: number | null;
+  /** District population x share of its area under water (areal weighting). */
+  estimated_affected_population?: number;
   flood_polygon_count: number;
   overlap_km2: number;
   latest_scene_at: string | null;
@@ -485,6 +588,9 @@ export interface ExposedDistrict {
 export interface FloodExposure {
   retrieved_at: string;
   source: string;
+  method?: "areal_weighting";
+  /** True when any contributing polygon is a scenario/demo extent. */
+  is_demo_data?: boolean;
   total_affected_population: number;
   districts: ExposedDistrict[];
 }
@@ -664,6 +770,7 @@ export interface DistrictDashboard {
   imerg_trend_30d: ImergTrendDay[];
   stations: DashboardStation[];
   sinpad_historical_events: number;
+  official_risk?: OfficialRisk | null;
 }
 
 export function fetchDistrictDashboard(ubigeo: string): Promise<DistrictDashboard> {
@@ -715,6 +822,7 @@ export interface DistrictFusion {
   huayco: FusionHuayco;
   social: FusionSocial;
   rainfall?: FusionRainfall;
+  official_risk?: OfficialRisk | null;
 }
 
 export function fetchDistrictFusion(ubigeo: string): Promise<DistrictFusion> {
@@ -802,6 +910,42 @@ export interface WeatherCollection {
 
 export function fetchWeather(): Promise<WeatherCollection> {
   return get<WeatherCollection>("/api/v1/layers/weather");
+}
+
+// ─── Rainfall forecast (Open-Meteo, per watershed) ────────────────────────────
+
+export type RainLevel = "normal" | "alerta" | "emergencia";
+
+export interface BasinForecast {
+  cumulative_mm: Record<string, number>; // keys "6" | "12" | "24" | "48" | "72"
+  level_72h: RainLevel;
+  max_precip_probability_pct: number;
+}
+
+export interface RainForecast {
+  source: string;
+  source_url: string;
+  issued_at: string;
+  horizons_h: number[];
+  thresholds_72h_mm: { alerta: number; emergencia: number };
+  basins: Record<string, BasinForecast>;
+}
+
+export interface ImergObserved {
+  source: string;
+  is_demo_data: false;
+  data_updated_at: string | null;
+  basins: Array<{ name: string; time: string; acc_24h_mm: number | null; acc_72h_mm: number | null;
+                  granules_72h: number; complete_72h: boolean }>;
+}
+
+/** Real NASA IMERG Early Run accumulations (not the demo scenario). */
+export function fetchImergObserved(): Promise<ImergObserved> {
+  return get<ImergObserved>("/api/v1/layers/imerg/observed");
+}
+
+export function fetchRainForecast(): Promise<RainForecast> {
+  return get<RainForecast>("/api/v1/layers/rain-forecast");
 }
 
 // ─── Shelters ─────────────────────────────────────────────────────────────────

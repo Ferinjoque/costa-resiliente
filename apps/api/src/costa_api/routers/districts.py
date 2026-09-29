@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from costa_api.cenepred import official_risk
 from costa_api.db import get_db
 
 logger = logging.getLogger(__name__)
@@ -16,6 +17,14 @@ router = APIRouter(prefix="/districts", tags=["geo"])
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+# A district is served only when its code has the INEI shape for the product's
+# scope: Lima department (15, provinces 01-10) or Callao (0701). An older load
+# invented codes like 154753 for rows it could not match, and six of those
+# still overlap their real counterparts; this keeps them off the map and out
+# of every count without deleting anything.
+_INEI_SCOPE = "ubigeo ~ '^(15(0[1-9]|10)|0701)[0-9]{2}$'"
 
 
 def _iso(dt: Any) -> str | None:
@@ -29,9 +38,10 @@ async def list_provinces(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """Return unique provinces with district counts. Default scope is Lima Metropolitana."""
     await db.execute(text("SET LOCAL statement_timeout = '5000'"))
     result = await db.execute(
-        text("""
+        text(f"""
             SELECT province, region, COUNT(*) AS district_count
             FROM geo.districts
+            WHERE {_INEI_SCOPE}
             GROUP BY province, region
             ORDER BY district_count DESC
         """)
@@ -48,15 +58,15 @@ async def list_provinces(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
 
 @router.get("")
 async def list_districts(
-    province: Optional[str] = Query(None, description="Filter by province name. 'Lima' = Lima Metropolitana (43 distritos). Omit for all 159."),
+    province: Optional[str] = Query(None, description="Filter by province name. 'Lima' = Lima Metropolitana (43 distritos). Omit for all 178 (Lima department + Callao)."),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """
     Return Lima districts as GeoJSON FeatureCollection.
-    Default (no param): all 159. province=Lima → 43 Lima Metropolitana only.
+    Default (no param): all 178. province=Lima → 43 Lima Metropolitana only.
     Properties: ubigeo, name, province, region, area_km2, population.
     """
-    where_clause = "WHERE province = :province" if province else ""
+    where_clause = f"WHERE {_INEI_SCOPE}" + (" AND province = :province" if province else "")
     params = {"province": province} if province else {}
     await db.execute(text("SET LOCAL statement_timeout = '10000'"))
     result = await db.execute(
@@ -68,7 +78,7 @@ async def list_districts(
                 region,
                 area_km2,
                 population,
-                ST_AsGeoJSON(geom)::json AS geometry
+                ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.0002), 5)::json AS geometry
             FROM geo.districts
             {where_clause}
             ORDER BY name
@@ -143,8 +153,11 @@ async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str,
                   -- 168x3 nested loop and ~1.7 s on the endpoint that colours
                   -- the whole map. Same 61 rows, ~160 ms.
                   ON w.geom && d.geom
-                 AND ST_Intersects(ST_MakeValid(w.geom), ST_MakeValid(d.geom))
+                 AND ST_Intersects(w.geom, d.geom)
                 WHERE w.id = ANY(:wids)
+                  -- A district belongs to a basin when at least a tenth of it
+                  -- drains there; a shared boundary sliver is not exposure.
+                  AND ST_Area(ST_Intersection(w.geom, ST_MakeValid(d.geom))) >= 0.1 * ST_Area(d.geom)
             """),
             {"wids": wids},
         )
@@ -154,12 +167,12 @@ async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str,
             rainfall_district_sev[ubigeo] = max(rainfall_district_sev.get(ubigeo, 0), sev)
 
     result = await db.execute(
-        text("""
+        text(f"""
             SELECT
                 d.ubigeo,
                 d.name,
                 d.population,
-                ST_AsGeoJSON(d.geom)::json AS geometry,
+                ST_AsGeoJSON(ST_SimplifyPreserveTopology(d.geom, 0.0002), 5)::json AS geometry,
                 -- Active alerts: severity-weighted (district-specific)
                 COALESCE((
                     SELECT COUNT(*) FROM ops.alerts a
@@ -187,6 +200,7 @@ async def district_risk_summary(db: AsyncSession = Depends(get_db)) -> dict[str,
                       AND s.triage_label IN ('needs_help','infrastructure_damage','road_blocked','huayco_observation','flood_observation')
                 ), 0) AS urgent_social_3h
             FROM geo.districts d
+            WHERE d.{_INEI_SCOPE}
             ORDER BY d.name
         """)
     )
@@ -447,6 +461,8 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
         logger.debug("SINPAD table not available (run load_sinpad.py to enable): %s", exc)
         historical_count = 0
 
+    official = await official_risk(db, ubigeo)
+
     return {
         "retrieved_at": _now_iso(),
         "district": {
@@ -461,6 +477,7 @@ async def district_dashboard(ubigeo: str, db: AsyncSession = Depends(get_db)) ->
         "imerg_trend_30d": imerg_trend,
         "stations": stations,
         "sinpad_historical_events": historical_count,
+        "official_risk": official,
     }
 
 

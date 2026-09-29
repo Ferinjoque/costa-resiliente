@@ -427,3 +427,176 @@ CREATE OR REPLACE FUNCTION geo.lima_bbox()
 RETURNS GEOMETRY AS $$
     SELECT ST_MakeEnvelope(-77.2, -12.5, -76.7, -11.7, 4326)
 $$ LANGUAGE SQL IMMUTABLE;
+
+-- ─── CENEPRED official district risk (migration_cenepred_risk.sql) ───────────
+-- CENEPRED "Escenario de riesgo por lluvias intensas asociadas a El Niño"
+-- district-level risk, loaded by scripts/load_cenepred_districts.py.
+--
+-- Source: https://sig.cenepred.gob.pe/arcgis_server/rest/services/FEN/ER_NINO2027_BD/MapServer
+--   layer 4  Riesgos a inundación
+--   layer 5  Riesgos a movimientos en masa
+-- Both answer anonymously. One row per (ubigeo, hazard).
+
+CREATE TABLE IF NOT EXISTS geo.cenepred_risk (
+    ubigeo           CHAR(6)  NOT NULL,
+    hazard           TEXT     NOT NULL CHECK (hazard IN ('flood', 'mass_movement')),
+    risk_level       TEXT     NOT NULL,   -- muy_alto | alto | medio | bajo
+    vulnerability    TEXT,                -- muy_alta | alta | media | baja
+    risk_value       DOUBLE PRECISION,
+    susceptibility   TEXT,                -- muy_alto | alto | medio | bajo
+    exposed_homes    INTEGER,             -- homes inside the susceptible zone
+    exposed_schools  INTEGER,
+    exposed_health   INTEGER,
+    population_2017  INTEGER,
+    source           TEXT     NOT NULL,
+    source_url       TEXT     NOT NULL,
+    raw              JSONB,
+    loaded_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (ubigeo, hazard)
+);
+CREATE INDEX IF NOT EXISTS cenepred_risk_level_idx ON geo.cenepred_risk (hazard, risk_level);
+
+-- ─── Trained mass-movement model (migration_mass_movement.sql) ──────────────
+-- Trained mass-movement (huayco / landslide / rockfall) model: inputs, artefact, outputs.
+-- Written by costa_workers.ml.mass_movement (train + live + replay).
+
+-- Daily rainfall on a 0.5-degree cell grid covering Lima and Callao.
+-- source: 'era5' (Open-Meteo archive, training and replay) or
+--         'open-meteo' (forecast API: recent past + forecast, live inference).
+CREATE TABLE IF NOT EXISTS hydro.rain_cells_daily (
+    cell_id    TEXT             NOT NULL,   -- "<lon>_<lat>" of the cell centre
+    lon        DOUBLE PRECISION NOT NULL,
+    lat        DOUBLE PRECISION NOT NULL,
+    day        DATE             NOT NULL,
+    precip_mm  DOUBLE PRECISION,
+    source     TEXT             NOT NULL,
+    PRIMARY KEY (cell_id, day, source)
+);
+
+-- Model registry: artefact (XGBoost JSON), features, and held-out metrics.
+CREATE TABLE IF NOT EXISTS ml.models (
+    name          TEXT        NOT NULL,
+    version       TEXT        NOT NULL,
+    trained_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    feature_names JSONB       NOT NULL,
+    metrics       JSONB       NOT NULL,
+    thresholds    JSONB       NOT NULL,
+    artifact      TEXT        NOT NULL,
+    PRIMARY KEY (name, version)
+);
+
+-- Per-district daily probability of a mass-movement event.
+-- mode: 'live' (today / tomorrow from the forecast) or 'replay' (a past date).
+CREATE TABLE IF NOT EXISTS ml.mass_movement_risk (
+    ubigeo        CHAR(6)          NOT NULL,
+    valid_date    DATE             NOT NULL,
+    mode          TEXT             NOT NULL CHECK (mode IN ('live', 'replay')),
+    probability   DOUBLE PRECISION NOT NULL,
+    relative_risk DOUBLE PRECISION NOT NULL,   -- probability / training base rate
+    risk_level    TEXT             NOT NULL,   -- low | medium | high | very_high
+    model_version TEXT             NOT NULL,
+    features      JSONB            NOT NULL,
+    computed_at   TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (ubigeo, valid_date, mode, model_version)
+);
+CREATE INDEX IF NOT EXISTS mass_movement_risk_date_idx ON ml.mass_movement_risk (valid_date, mode);
+
+-- ─── Current weather (migration_weather.sql) ─────────────────────────────────
+-- Migration: current weather conditions for Lima Metropolitana
+--
+-- Closes the organiser deliverable "Must be able to display current weather
+-- conditions and precipitation", including responder-relevant warnings (heat,
+-- cold, fog, wind, thunderstorm). The platform already carried precipitation
+-- (IMERG) and river level, but no temperature, humidity or wind.
+--
+-- Apply:
+--   docker exec -i costa-postgres psql -U costa -d costa_resiliente \
+--     < infra/postgres/migration_weather.sql
+
+
+-- Fixed observation points. Kept small and named so the layer stays legible:
+-- one per watershed plus the metropolitan centre and the Chosica/quebrada
+-- corridor, which is where huayco decisions get made.
+CREATE TABLE IF NOT EXISTS hydro.weather_points (
+    id           SERIAL PRIMARY KEY,
+    name         TEXT NOT NULL UNIQUE,
+    watershed_id INTEGER REFERENCES geo.watersheds(id),
+    lat          DOUBLE PRECISION NOT NULL,
+    lon          DOUBLE PRECISION NOT NULL,
+    geom         GEOMETRY(POINT, 4326)
+                 GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(lon, lat), 4326)) STORED,
+    active       BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS weather_points_geom_idx ON hydro.weather_points USING GIST (geom);
+
+CREATE TABLE IF NOT EXISTS hydro.weather_observations (
+    time                   TIMESTAMPTZ NOT NULL,
+    point_id               INTEGER NOT NULL REFERENCES hydro.weather_points(id),
+    temperature_c          DOUBLE PRECISION,
+    apparent_temperature_c DOUBLE PRECISION,
+    humidity_pct           DOUBLE PRECISION,
+    precipitation_mm       DOUBLE PRECISION,
+    wind_speed_kmh         DOUBLE PRECISION,
+    wind_gusts_kmh         DOUBLE PRECISION,
+    wind_direction_deg     DOUBLE PRECISION,
+    weather_code           INTEGER,          -- WMO 4677 present-weather code
+    source                 TEXT NOT NULL DEFAULT 'open-meteo',
+    raw                    JSONB,
+    PRIMARY KEY (time, point_id)
+);
+
+SELECT create_hypertable(
+    'hydro.weather_observations',
+    'time',
+    if_not_exists => TRUE
+);
+
+CREATE INDEX IF NOT EXISTS weather_obs_point_time_idx
+    ON hydro.weather_observations (point_id, time DESC);
+
+-- ─── Observation points ───────────────────────────────────────────────────────
+-- Watershed link is resolved by name where the watershed exists; NULL is fine
+-- for the metropolitan centre, which is not tied to one basin.
+INSERT INTO hydro.weather_points (name, watershed_id, lat, lon)
+VALUES
+    ('Lima Centro',        NULL,                                                    -12.0464, -77.0428),
+    ('Chosica / Rímac',    (SELECT id FROM geo.watersheds WHERE name = 'Rímac'),    -11.9400, -76.7000),
+    ('Carabayllo / Chillón',(SELECT id FROM geo.watersheds WHERE name = 'Chillón'), -11.8960, -77.0330),
+    ('Pachacámac / Lurín', (SELECT id FROM geo.watersheds WHERE name = 'Lurín'),    -12.2280, -76.8700),
+    ('Callao',             NULL,                                                    -12.0566, -77.1181)
+ON CONFLICT (name) DO NOTHING;
+
+-- ─── Real IMERG observations (migration_imerg_observed.sql) ─────────────────
+-- Real NASA IMERG observations, kept apart from hydro.imerg_accumulations.
+--
+-- hydro.imerg_accumulations carries the El Niño demo scenario. Writing real
+-- dry-season observations into it would make them the "latest" rows and erase
+-- the scenario mid-demo, or worse, blend the two. Observations live here.
+
+-- One row per half-hourly granule and basin: basin-mean rain depth (mm).
+-- Cached so each run downloads only the granules it has not seen.
+CREATE TABLE IF NOT EXISTS hydro.imerg_granule_means (
+    granule_start TIMESTAMPTZ      NOT NULL,
+    watershed_id  INTEGER          NOT NULL REFERENCES geo.watersheds(id),
+    depth_mm      DOUBLE PRECISION NOT NULL,
+    granule       TEXT             NOT NULL,
+    PRIMARY KEY (granule_start, watershed_id)
+);
+
+-- Accumulations ending at the newest granule available, per basin.
+CREATE TABLE IF NOT EXISTS hydro.imerg_observed (
+    time          TIMESTAMPTZ      NOT NULL,   -- end of the newest granule used
+    watershed_id  INTEGER          NOT NULL REFERENCES geo.watersheds(id),
+    acc_1h_mm     DOUBLE PRECISION,
+    acc_3h_mm     DOUBLE PRECISION,
+    acc_6h_mm     DOUBLE PRECISION,
+    acc_12h_mm    DOUBLE PRECISION,
+    acc_24h_mm    DOUBLE PRECISION,
+    acc_72h_mm    DOUBLE PRECISION,
+    granules_72h  INTEGER          NOT NULL,   -- how many of the 144 were available
+    last_granule  TEXT             NOT NULL,
+    computed_at   TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (time, watershed_id)
+);

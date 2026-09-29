@@ -25,6 +25,11 @@ import {
   fetchHuayco,
   fetchInfrastructure,
   fetchHazard,
+  fetchCenepredRisk,
+  fetchHuaycoModel,
+  fetchHuaycoModelCard,
+  type CenepredHazard,
+  type CenepredRiskCollection,
   fetchAlerts,
   fetchDecisionLog,
   fetchFloodExposure,
@@ -34,6 +39,8 @@ import {
   fetchHealth,
   fetchStations,
   fetchWeather,
+  fetchRainForecast,
+  fetchImergObserved,
   fetchShelters,
   type ShelterCollection,
   type DistrictCollection,
@@ -66,8 +73,6 @@ import {
   DEMO_DISTRICTS,
   DEMO_SOCIAL_SIGNALS,
   DEMO_DISTRICT_RISK_SUMMARY,
-  DEMO_DASHBOARDS,
-  DEMO_FUSIONS,
   DEMO_IMERG,
   DEMO_FLOOD,
   DEMO_HUAYCO,
@@ -76,9 +81,27 @@ import {
   DEMO_STATIONS,
 } from "./demoData";
 
-/** When real API returns empty array, fall back to demo data so UI is never blank. */
-function withDemoFallback<T>(real: T[], demo: T[]): T[] {
-  return real.length > 0 ? real : demo;
+/**
+ * Offline demo mode: the frontend running with no backend at all (a static
+ * preview). Off by default. Set NEXT_PUBLIC_OFFLINE_DEMO=1 to enable.
+ */
+const OFFLINE_DEMO = process.env.NEXT_PUBLIC_OFFLINE_DEMO === "1";
+
+/**
+ * Real data always wins, and that includes an empty result. The console used
+ * to substitute demo data whenever the API answered with nothing, so a quiet
+ * day showed invented flood polygons and a severity filter with no matches
+ * listed fabricated alerts. In an emergency console that is the worst failure
+ * mode there is. Demo data now appears only in offline demo mode, and only
+ * when the API cannot be reached.
+ */
+async function realOrOfflineDemo<T>(fetcher: () => Promise<T>, demo: T): Promise<T> {
+  try {
+    return await fetcher();
+  } catch (err) {
+    if (OFFLINE_DEMO) return demo;
+    throw err;
+  }
 }
 
 const MIN = 1000 * 60;
@@ -89,12 +112,7 @@ export function useDistricts(
   return useQuery({
     queryKey: ["districts", "geojson"],
     queryFn: async () => {
-      try {
-        const data = await fetchDistricts();
-        return data.features.length > 0 ? data : DEMO_DISTRICTS;
-      } catch {
-        return DEMO_DISTRICTS;
-      }
+      return realOrOfflineDemo(() => fetchDistricts(), DEMO_DISTRICTS);
     },
     staleTime: 60 * MIN,
     ...opts,
@@ -108,18 +126,10 @@ export function useDistrictList(
   return useQuery({
     queryKey: ["districts", "list", province ?? "all"],
     queryFn: async () => {
-      try {
-        const data = await fetchDistrictList(province);
-        return data.length > 0 ? data : DEMO_DISTRICTS.features.map((f) => ({
+      return realOrOfflineDemo(() => fetchDistrictList(province), DEMO_DISTRICTS.features.map((f) => ({
           ubigeo: f.properties.ubigeo,
           name: f.properties.name,
-        }));
-      } catch {
-        return DEMO_DISTRICTS.features.map((f) => ({
-          ubigeo: f.properties.ubigeo,
-          name: f.properties.name,
-        }));
-      }
+        })));
     },
     staleTime: 60 * MIN,
     ...opts,
@@ -130,17 +140,13 @@ export function useProvinces(): UseQueryResult<{ provinces: Array<{province: str
   return useQuery({
     queryKey: ["provinces"],
     queryFn: async () => {
-      try {
-        return await fetchProvinces();
-      } catch {
-        return {
+      return realOrOfflineDemo(fetchProvinces, {
           provinces: [
             { province: "Lima", region: "Lima", district_count: 41 },
             { province: "Lima Región", region: "Lima", district_count: 118 },
           ],
           default_province: "Lima",
-        };
-      }
+        });
     },
     staleTime: 60 * MIN,
   });
@@ -154,12 +160,7 @@ export function useImerg(
   return useQuery({
     queryKey: ["imerg", hours, replayDate ?? null],
     queryFn: async () => {
-      try {
-        const data = await fetchImerg(hours, replayDate);
-        return data.features.length > 0 ? data : DEMO_IMERG;
-      } catch {
-        return DEMO_IMERG;
-      }
+      return realOrOfflineDemo(() => fetchImerg(hours, replayDate), DEMO_IMERG);
     },
     staleTime: replayDate ? 60 * MIN : 2 * MIN,
     refetchInterval: replayDate ? false : 2 * MIN,
@@ -174,12 +175,7 @@ export function useFlood(
   return useQuery({
     queryKey: ["flood", replayDate ?? null],
     queryFn: async () => {
-      try {
-        const data = await fetchFlood(replayDate);
-        return data.features.length > 0 ? data : DEMO_FLOOD;
-      } catch {
-        return DEMO_FLOOD;
-      }
+      return realOrOfflineDemo(() => fetchFlood(replayDate), DEMO_FLOOD);
     },
     staleTime: replayDate ? 60 * MIN : 10 * MIN,
     refetchInterval: replayDate ? false : 10 * MIN,
@@ -194,12 +190,7 @@ export function useHuayco(
   return useQuery({
     queryKey: ["huayco"],
     queryFn: async () => {
-      try {
-        const data = await fetchHuayco();
-        return data.features.length > 0 ? data : DEMO_HUAYCO;
-      } catch {
-        return DEMO_HUAYCO;
-      }
+      return realOrOfflineDemo(() => fetchHuayco(), DEMO_HUAYCO);
     },
     staleTime: 10 * MIN,
     refetchInterval: 10 * MIN,
@@ -215,13 +206,7 @@ export function useInfrastructure(
   return useQuery({
     queryKey: ["infrastructure", type],
     queryFn: async () => {
-      try {
-        const data = await fetchInfrastructure(type);
-        const filtered = type ? data.features.filter((f) => f.properties.type === type) : data.features;
-        return filtered.length > 0 ? data : DEMO_INFRASTRUCTURE;
-      } catch {
-        return DEMO_INFRASTRUCTURE;
-      }
+      return realOrOfflineDemo(() => fetchInfrastructure(type), DEMO_INFRASTRUCTURE);
     },
     staleTime: 60 * MIN,
     ...opts,
@@ -235,15 +220,51 @@ export function useHazard(
   return useQuery({
     queryKey: ["hazard", hazardType],
     queryFn: async () => {
-      try {
-        const data = await fetchHazard(hazardType);
-        return data.features.length > 0 ? data : DEMO_HAZARD;
-      } catch {
-        return DEMO_HAZARD;
-      }
+      return realOrOfflineDemo(() => fetchHazard(hazardType), DEMO_HAZARD);
     },
     staleTime: 60 * MIN,
     ...opts,
+  });
+}
+
+/**
+ * CENEPRED's official per-district El Niño risk. No demo fallback on purpose:
+ * this layer's whole value is that it is the government's classification, so
+ * when the API cannot serve it the layer stays empty rather than invented.
+ * Fetched only once the operator turns the layer on.
+ */
+export function useCenepredRisk(
+  hazard: CenepredHazard,
+  enabled: boolean,
+): UseQueryResult<CenepredRiskCollection> {
+  return useQuery({
+    queryKey: ["cenepred-risk", hazard],
+    queryFn: () => fetchCenepredRisk(hazard),
+    enabled,
+    staleTime: 24 * 60 * MIN,
+  });
+}
+
+/** Trained model output per district. `date` set = replay of that day (ERA5). */
+export function useHuaycoModel(
+  date: string | null,
+  enabled: boolean,
+): UseQueryResult<import("./api").HuaycoModelCollection> {
+  return useQuery({
+    queryKey: ["huayco-model", date],
+    queryFn: () => fetchHuaycoModel(date),
+    enabled,
+    staleTime: date ? 24 * 60 * MIN : 15 * MIN,
+    refetchInterval: date ? false : 15 * MIN,
+  });
+}
+
+export function useHuaycoModelCard(): UseQueryResult<import("./api").HuaycoModelCard> {
+  return useQuery({
+    queryKey: ["huayco-model-card"],
+    queryFn: () => fetchHuaycoModelCard(),
+    staleTime: 60 * MIN,
+    retry: 1,
   });
 }
 
@@ -255,14 +276,12 @@ export function useAlerts(
   const demoFallback = status ? DEMO_ALERTS.filter((a) => a.status === status) : DEMO_ALERTS;
   return useQuery({
     queryKey: ["alerts", filters],
-    queryFn: async () => {
-      const data = await fetchAlerts(filters);
-      return withDemoFallback(data, demoFallback);
-    },
+    queryFn: () => realOrOfflineDemo(() => fetchAlerts(filters), demoFallback),
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
-    // Keep showing previous/demo data when refetch errors, never blank the alert list
-    placeholderData: (prev) => prev ?? demoFallback,
+    // Keep the previous list while a refetch is in flight. Never a demo list:
+    // a fabricated alert in this feed is one an operator could act on.
+    placeholderData: (prev) => prev,
     ...opts,
   });
 }
@@ -287,13 +306,10 @@ export function useDecisionLog(
   return useQuery({
     queryKey: ["decision-log", limit],
     enabled: hasSession,
-    queryFn: async () => {
-      const data = await fetchDecisionLog(limit);
-      return withDemoFallback(data, DEMO_DECISION_LOG);
-    },
+    queryFn: () => realOrOfflineDemo(() => fetchDecisionLog(limit), DEMO_DECISION_LOG),
     staleTime: 15 * 1000,
     refetchInterval: 30 * 1000,
-    placeholderData: (prev) => prev ?? DEMO_DECISION_LOG,
+    placeholderData: (prev) => prev,
     ...opts,
   });
 }
@@ -304,12 +320,7 @@ export function useFloodExposure(
   return useQuery({
     queryKey: ["flood-exposure"],
     queryFn: async () => {
-      try {
-        const data = await fetchFloodExposure();
-        return data.districts.length > 0 ? data : DEMO_EXPOSURE;
-      } catch {
-        return DEMO_EXPOSURE;
-      }
+      return realOrOfflineDemo(() => fetchFloodExposure(), DEMO_EXPOSURE);
     },
     staleTime: 10 * MIN,
     // Keep showing previous data while refetching, prevents banner flash.
@@ -326,12 +337,7 @@ export function useSocialSignals(
   return useQuery({
     queryKey: ["social-signals", hours, label],
     queryFn: async () => {
-      try {
-        const data = await fetchSocialSignals(hours, label);
-        return data.features.length > 0 ? data : DEMO_SOCIAL_SIGNALS;
-      } catch {
-        return DEMO_SOCIAL_SIGNALS;
-      }
+      return realOrOfflineDemo(() => fetchSocialSignals(hours, label), DEMO_SOCIAL_SIGNALS);
     },
     staleTime: 90 * 1000,
     refetchInterval: 90 * 1000,
@@ -370,14 +376,12 @@ export function useDistrictRiskSummary(
 ): UseQueryResult<DistrictRiskSummary> {
   return useQuery({
     queryKey: ["district-risk-summary"],
-    queryFn: async () => {
-      const data = await fetchDistrictRiskSummary();
-      return data.features.length > 0 ? data : DEMO_DISTRICT_RISK_SUMMARY;
-    },
+    queryFn: () => realOrOfflineDemo(fetchDistrictRiskSummary, DEMO_DISTRICT_RISK_SUMMARY),
     staleTime: 2 * MIN,
     refetchInterval: 2 * MIN,
-    // Keep showing previous risk colors (never blank the map)
-    placeholderData: (prev) => prev ?? DEMO_DISTRICT_RISK_SUMMARY,
+    // Keep showing previous risk colours during a refetch. Not demo shapes: the
+    // demo districts are rectangles, and they painted the map before real data.
+    placeholderData: (prev) => prev,
     ...opts,
   });
 }
@@ -423,12 +427,7 @@ export function useStations(
   return useQuery({
     queryKey: ["stations"],
     queryFn: async () => {
-      try {
-        const data = await fetchStations();
-        return data.features.length > 0 ? data : DEMO_STATIONS;
-      } catch {
-        return DEMO_STATIONS;
-      }
+      return realOrOfflineDemo(() => fetchStations(), DEMO_STATIONS);
     },
     staleTime: 2 * MIN,
     refetchInterval: 2 * MIN,
@@ -446,6 +445,28 @@ export function useWeather(
     staleTime: 5 * MIN,
     refetchInterval: 5 * MIN,
     ...opts,
+  });
+}
+
+/** Real IMERG observations per basin; refreshed on the hourly ingest cadence. */
+export function useImergObserved(): UseQueryResult<import("@/lib/api").ImergObserved> {
+  return useQuery({
+    queryKey: ["imerg-observed"],
+    queryFn: () => fetchImergObserved(),
+    staleTime: 10 * MIN,
+    refetchInterval: 10 * MIN,
+    retry: 1,
+  });
+}
+
+/** 72 h rainfall forecast per watershed. No demo fallback: a forecast is never invented. */
+export function useRainForecast(): UseQueryResult<import("@/lib/api").RainForecast> {
+  return useQuery({
+    queryKey: ["rain-forecast"],
+    queryFn: () => fetchRainForecast(),
+    staleTime: 15 * MIN,
+    refetchInterval: 15 * MIN,
+    retry: 1,
   });
 }
 

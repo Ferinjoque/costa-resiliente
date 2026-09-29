@@ -147,8 +147,10 @@ def load_excel(path: str, lima_only: bool, year_filter: int | None) -> pd.DataFr
     df = pd.read_excel(path, sheet_name=0, header=2, dtype=str, engine="openpyxl")
     log.info("Raw rows: %d, columns: %d", len(df), len(df.columns))
 
-    # Normalise column names: strip whitespace, upper
-    df.columns = [str(c).strip().upper() for c in df.columns]
+    # Normalise column names: collapse internal whitespace, upper. The source
+    # header is "FECHA  DE LA EMER" with two spaces; stripping only the ends
+    # left it unmatched, and every event_date loaded as NULL.
+    df.columns = [" ".join(str(c).split()).upper() for c in df.columns]
 
     # Map expected columns (handles minor name variations)
     col_map = {

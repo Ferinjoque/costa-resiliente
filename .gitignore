@@ -136,3 +136,7 @@ apps/web/public/workbox-*.js
 
 # Playwright output when the suite is run from the repo root
 test-results/
+data/backups/
+
+# Model cards are documentation, not weights
+!docs/models/

@@ -186,8 +186,11 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     telegram = await _source_stat(
         "SELECT COUNT(*) as count, MAX(published_at) as last_seen_at FROM social.signals WHERE source = 'telegram'"
     )
+    # Real observations only (hydro.imerg_observed). Scenario rows in
+    # hydro.imerg_accumulations carry fresh timestamps from the seeder and used
+    # to keep this source "ok" although no NASA granule had ever been read.
     imerg = await _source_stat(
-        "SELECT COUNT(*) as count, MAX(time) as last_seen_at FROM hydro.imerg_accumulations"
+        "SELECT COUNT(*) as count, MAX(time) as last_seen_at FROM hydro.imerg_observed"
     )
     stations = await _source_stat(
         "SELECT COUNT(*) as count, MAX(time) as last_seen_at FROM hydro.station_observations"
@@ -289,7 +292,10 @@ async def scraper_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
         "rss": {"label": "RSS (RPP/Andina/Canal N…)", "schedule": "15min", **rss, **rss_run},
         "reddit": {"label": "Reddit (r/Peru, r/Lima)", "schedule": "15min", **reddit},
         "telegram": {"label": "Telegram (SENAMHI)", "schedule": "15min", **telegram},
-        "imerg": {"label": "NASA IMERG Late Run V07B", "schedule": "30min", **imerg, **imerg_run},
+        # The Redis heartbeat is merged only when real rows exist: a run that read
+        # no granule proves the scheduler is alive, not that data is fresh.
+        "imerg": {"label": "NASA IMERG Early Run (real)", "schedule": "1h", **imerg,
+                  **(imerg_run if imerg["count"] else {})},
         "stations": {"label": "ANA/SENAMHI Stations", "schedule": "15min", **stations, **ana_scraper, **stations_run},
         "weather": {"label": "Open-Meteo current conditions", "schedule": "15min", **weather, **weather_run},
         "flood": {"label": "SAR Flood Polygons", "schedule": "daily", **flood},
@@ -356,7 +362,7 @@ async def trigger_seed(
             detail="Solo operadores COEN/COER pueden ejecutar el seed.",
         )
     try:
-        await maybe_seed(engine)
+        await maybe_seed(engine, force=True)
         return {"status": "ok", "message": "Seed pass completed", "triggered_by": operator.username}
     except Exception as exc:
         return {"status": "error", "message": str(exc)}

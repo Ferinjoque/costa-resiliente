@@ -18,6 +18,8 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import ARRAY, String, bindparam, text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from costa_api.scenario_geometry import SCENARIO_FLOOD_GEOMETRY
+
 logger = logging.getLogger(__name__)
 
 def _ts(offset_hours: float = 0) -> datetime:
@@ -172,28 +174,18 @@ _IMERG_CURRENT = [
 # ─── Current flood polygons ───────────────────────────────────────────────────
 _FLOOD_CURRENT = [
     {
-        # Chillón river corridor: inside Puente Piedra district (362k pop)
+        # Rímac corridor at Huachipa (Lurigancho / Ate). Geometry and area in scenario_geometry.
         "scene_id": "S1A_IW_SLC__1SDV_DEMO-RIMAC-HUACHIPA",
         "offset_h": 2.5,
         "model_version": "flood-seg-v0.1-demo",
         "confidence": 0.87,
-        "area_km2": 9.2,
-        "geom_wkt": (
-            "MULTIPOLYGON(((-77.1070 -11.8920,-77.0870 -11.8920,"
-            "-77.0870 -11.9120,-77.1070 -11.9120,-77.1070 -11.8920)))"
-        ),
     },
     {
-        # Rímac river corridor: inside Lurigancho district (213k pop)
+        # Rímac corridor at Ñaña (Lurigancho). Geometry and area in scenario_geometry.
         "scene_id": "S1B_IW_SLC__1SDV_DEMO-RIMAC-NANA",
         "offset_h": 8.0,
         "model_version": "flood-seg-v0.1-demo",
         "confidence": 0.79,
-        "area_km2": 6.5,
-        "geom_wkt": (
-            "MULTIPOLYGON(((-76.9500 -11.9500,-76.9200 -11.9500,"
-            "-76.9200 -11.9700,-76.9500 -11.9700,-76.9500 -11.9500)))"
-        ),
     },
 ]
 
@@ -204,8 +196,8 @@ _ALERTS_CURRENT = [
         "severity": "high",
         "status": "active",
         "title": "Inundación activa: Sector Huachipa",
-        "description": "Desborde del río Rímac sobre extensión SAR de escenario. Área afectada: ~1.8 km² (dato de demostración, no es una detección Sentinel-1 real).",
-        "lon": -76.8800, "lat": -11.9500,
+        "description": "Desborde del río Rímac sobre extensión SAR de escenario. Área afectada: ~2.0 km² (dato de demostración, no es una detección Sentinel-1 real).",
+        "lon": -76.9400, "lat": -12.0150,
         "offset_h": 2.5,
     },
     {
@@ -214,7 +206,7 @@ _ALERTS_CURRENT = [
         "status": "active",
         "title": "Riesgo crítico de huayco: Quebrada Jicamarca",
         "description": "Precipitación acumulada 24h supera umbral (42 mm). Susceptibilidad de escenario: 0.91 (valor de demostración, no es salida del modelo).",
-        "lon": -76.9200, "lat": -11.9100,
+        "lon": -76.9430, "lat": -11.9810,
         "offset_h": 1.0,
     },
     {
@@ -324,7 +316,7 @@ _SOCIAL_CURRENT = [
         "content": "Rímac desbordado en Huachipa, varias familias evacuadas. Necesitamos ayuda urgente.",
         "label": "needs_help",
         "confidence": 0.94,
-        "lon": -76.8780, "lat": -11.9510,
+        "lon": -76.9410, "lat": -12.0160,
         "offset_h": 0.3,
     },
     {
@@ -340,7 +332,7 @@ _SOCIAL_CURRENT = [
         "content": "Puente Huachipa colapsó parcialmente. Autos varados en ambos lados.",
         "label": "infrastructure_damage",
         "confidence": 0.88,
-        "lon": -76.8820, "lat": -11.9490,
+        "lon": -76.9395, "lat": -12.0215,
         "offset_h": 1.2,
     },
     {
@@ -356,7 +348,7 @@ _SOCIAL_CURRENT = [
         "content": "Avistamos flujo de lodo en quebrada de Huaycoloro bajando hacia Lurigancho. Evacúen ya.",
         "label": "huayco_observation",
         "confidence": 0.95,
-        "lon": -76.9750, "lat": -11.9800,
+        "lon": -76.9050, "lat": -11.9920,
         "offset_h": 1.1,
     },
     {
@@ -372,7 +364,7 @@ _SOCIAL_CURRENT = [
         "content": "Huayco en Jicamarca bloqueó acceso principal. Vecinos atrapados. SOS.",
         "label": "needs_help",
         "confidence": 0.97,
-        "lon": -76.9180, "lat": -11.9050,
+        "lon": -76.9420, "lat": -11.9790,
         "offset_h": 0.9,
     },
     {
@@ -396,7 +388,7 @@ _SOCIAL_CURRENT = [
         "content": "Desborde del Rímac en zona de Carapongo. Casas del primer piso bajo el agua. Familias en azoteas.",
         "label": "flood_observation",
         "confidence": 0.95,
-        "lon": -76.9100, "lat": -12.0150,
+        "lon": -76.8620, "lat": -12.0000,
         "offset_h": 1.2,
     },
 ]
@@ -408,7 +400,7 @@ _STATIONS = [
     {"code": "ANA-002-DEMO", "name": "Ñaña (escenario)",       "source": "ana",     "river": "Rímac",
      "lon": -76.8180, "lat": -11.9830, "elev": 560.0},
     {"code": "ANA-003-DEMO", "name": "Carapongo (escenario)",  "source": "senamhi", "river": "Rímac",
-     "lon": -76.9100, "lat": -12.0200, "elev": 320.0},
+     "lon": -76.8660, "lat": -12.0040, "elev": 320.0},
 ]
 
 _STATION_OBS = [
@@ -430,39 +422,34 @@ _ELNINO_FLOODS = [
     {
         "scene_id": "elnino2017-s1a-20170315-rimac",
         "acquired_at": datetime(2017, 3, 15, 6, 0, tzinfo=timezone.utc),
-        "area_km2": 4.2,
         "confidence": 0.87,
-        "geom_wkt": "MULTIPOLYGON(((-76.85 -11.92,-76.83 -11.92,-76.83 -11.94,-76.85 -11.94,-76.85 -11.92)))",
     },
     {
         "scene_id": "elnino2017-s1a-20170318-chilln",
         "acquired_at": datetime(2017, 3, 18, 6, 0, tzinfo=timezone.utc),
-        "area_km2": 2.8,
         "confidence": 0.83,
-        "geom_wkt": "MULTIPOLYGON(((-77.02 -11.88,-77.00 -11.88,-77.00 -11.90,-77.02 -11.90,-77.02 -11.88)))",
     },
     {
         "scene_id": "elnino2017-s1a-20170322-ate",
         "acquired_at": datetime(2017, 3, 22, 6, 0, tzinfo=timezone.utc),
-        "area_km2": 1.9,
         "confidence": 0.79,
-        "geom_wkt": "MULTIPOLYGON(((-76.92 -12.01,-76.90 -12.01,-76.90 -12.03,-76.92 -12.03,-76.92 -12.01)))",
     },
     {
         "scene_id": "elnino2017-s1a-20170327-vjm",
         "acquired_at": datetime(2017, 3, 27, 6, 0, tzinfo=timezone.utc),
-        "area_km2": 3.1,
         "confidence": 0.81,
-        "geom_wkt": "MULTIPOLYGON(((-76.94 -12.15,-76.92 -12.15,-76.92 -12.17,-76.94 -12.17,-76.94 -12.15)))",
     },
     {
         "scene_id": "elnino2017-s1a-20170402-chaclacayo",
         "acquired_at": datetime(2017, 4, 2, 6, 0, tzinfo=timezone.utc),
-        "area_km2": 5.6,
         "confidence": 0.91,
-        "geom_wkt": "MULTIPOLYGON(((-76.78 -11.98,-76.76 -11.98,-76.76 -12.00,-76.78 -12.00,-76.78 -11.98)))",
     },
 ]
+
+# Geometry and area live in scenario_geometry: river-corridor extents built from
+# the real channel, not the rectangles these fixtures used to carry.
+for _f in _FLOOD_CURRENT + _ELNINO_FLOODS:
+    _f["area_km2"], _f["geom_wkt"] = SCENARIO_FLOOD_GEOMETRY[_f["scene_id"]]
 
 # ─── Demo quebradas (huayco-prone gullies: MULTILINESTRING centerlines) ─────
 # ws_idx: 0=Rímac, 1=Chillón, 2=Lurín
@@ -557,19 +544,29 @@ _HUAYCO_SUSCEPTIBILITY = [
     ("Ñaña",        0.42, "medium",    22.0),
 ]
 
-# Approximate geometries for priority Lima quebradas (MultiLineString, EPSG:4326).
-# These are simplified centerlines near the correct districts for spatial joins.
+# Centerlines for the priority Lima quebradas (MultiLineString, EPSG:4326).
+# The map places each huayco point on its line, and alerts resolve their
+# district from it, so the location has to be real.
+#   Pedregal, Huaycoloro: OpenStreetMap waterway geometry ("Quebrada El Pedregal",
+#     "Quebrada Huaycoloro", lower reach), simplified. © OSM contributors, ODbL.
+#   Quirio, Yanacoto, Carapongo, Ñaña: short lines anchored on the OSM place node
+#     of the same name, running downslope to the Rímac.
+#   Corrales, Carossio: documented Chosica quebradas (2015 event) with no OSM
+#     feature; approximate lines inside Chosica, Lurigancho district.
+#   Cashahuacra: Santa Eulalia (Huarochirí). Cieneguilla: Cieneguilla district.
+# An earlier version clustered all ten within 5 km of each other in northern
+# San Juan de Lurigancho, which put every Chosica alert in the wrong district.
 _QUEBRADA_GEOMETRIES: dict[str, str] = {
-    "Pedregal":    "MULTILINESTRING((-76.960 -11.930,-76.955 -11.935,-76.950 -11.940))",
-    "Huaycoloro":  "MULTILINESTRING((-76.975 -11.960,-76.970 -11.965,-76.965 -11.970))",
-    "Quirio":      "MULTILINESTRING((-76.945 -11.925,-76.940 -11.930,-76.935 -11.935))",
-    "Carapongo":   "MULTILINESTRING((-76.880 -11.960,-76.875 -11.965,-76.870 -11.970))",
-    "Corrales":    "MULTILINESTRING((-76.940 -11.930,-76.935 -11.935,-76.930 -11.940))",
-    "Cashahuacra": "MULTILINESTRING((-76.935 -11.930,-76.930 -11.935,-76.925 -11.940))",
-    "Carossio":    "MULTILINESTRING((-76.930 -11.928,-76.925 -11.933,-76.920 -11.938))",
-    "Yanacoto":    "MULTILINESTRING((-76.936 -11.926,-76.931 -11.931,-76.926 -11.936))",
-    "Cieneguilla": "MULTILINESTRING((-76.870 -12.175,-76.865 -12.180,-76.860 -12.185))",
-    "Ñaña":        "MULTILINESTRING((-76.938 -11.927,-76.933 -11.932,-76.928 -11.937))",
+    "Pedregal":    "MULTILINESTRING((-76.7046 -11.9157,-76.7048 -11.9179,-76.7035 -11.9206,-76.7023 -11.9221,-76.7015 -11.9243,-76.7012 -11.9292,-76.7022 -11.9322,-76.7026 -11.9369,-76.7037 -11.9399,-76.7025 -11.9419))",
+    "Huaycoloro":  "MULTILINESTRING((-76.8815 -11.9466,-76.8893 -11.9587,-76.8948 -11.9695,-76.8950 -11.9767,-76.8994 -11.9849,-76.9040 -11.9913,-76.9096 -11.9948,-76.9160 -11.9992,-76.9171 -12.0012))",
+    "Quirio":      "MULTILINESTRING((-76.7170 -11.9280,-76.7150 -11.9380,-76.7130 -11.9450))",
+    "Carapongo":   "MULTILINESTRING((-76.8620 -11.9850,-76.8640 -11.9950,-76.8660 -12.0030))",
+    "Corrales":    "MULTILINESTRING((-76.6900 -11.9250,-76.6920 -11.9320,-76.6940 -11.9370))",
+    "Cashahuacra": "MULTILINESTRING((-76.6720 -11.9000,-76.6670 -11.9060,-76.6640 -11.9120))",
+    "Carossio":    "MULTILINESTRING((-76.7080 -11.9250,-76.7090 -11.9320,-76.7100 -11.9380))",
+    "Yanacoto":    "MULTILINESTRING((-76.7310 -11.9380,-76.7290 -11.9470,-76.7280 -11.9530))",
+    "Cieneguilla": "MULTILINESTRING((-76.7850 -12.0600,-76.7810 -12.0700,-76.7780 -12.0800))",
+    "Ñaña":        "MULTILINESTRING((-76.8380 -11.9750,-76.8400 -11.9830,-76.8420 -11.9900))",
 }
 
 # ─── Demo critical infrastructure ─────────────────────────────────────────────
@@ -581,10 +578,10 @@ _INFRASTRUCTURE = [
     {"type": "school",      "name": "I.E. José María Arguedas",           "osm_id": 124001, "lon": -76.9200, "lat": -11.9400},
     {"type": "school",      "name": "Gran Unidad Escolar Ricardo Palma",   "osm_id": 124002, "lon": -77.0420, "lat": -12.0500},
     {"type": "school",      "name": "I.E. 142 Virgen de Fátima",         "osm_id": 124003, "lon": -76.9850, "lat": -11.9280},
-    {"type": "bridge",      "name": "Puente Huachipa",                     "osm_id": 125001, "lon": -76.8830, "lat": -11.9480},
+    {"type": "bridge",      "name": "Puente Huachipa",                     "osm_id": 125001, "lon": -76.9395, "lat": -12.0215},
     {"type": "bridge",      "name": "Puente Chosica",                      "osm_id": 125002, "lon": -76.6930, "lat": -11.9370},
     {"type": "bridge",      "name": "Puente Santa Anita",                  "osm_id": 125003, "lon": -76.9800, "lat": -12.0320},
-    {"type": "substation",  "name": "SE Huachipa",                         "osm_id": 126001, "lon": -76.8750, "lat": -11.9500},
+    {"type": "substation",  "name": "SE Huachipa",                         "osm_id": 126001, "lon": -76.9350, "lat": -12.0120},
     {"type": "shelter",     "name": "Centro de Albergue San Juan",         "osm_id": 127001, "lon": -76.9100, "lat": -11.9600},
     {"type": "shelter",     "name": "Estadio Municipal de Ate",            "osm_id": 127002, "lon": -76.8900, "lat": -12.0100},
     {"type": "fire_station","name": "Cía. Bomberos Lurigancho",            "osm_id": 128001, "lon": -76.8200, "lat": -11.9700},
@@ -684,8 +681,13 @@ _ELNINO_IMERG = [
 ]
 
 
-async def maybe_seed(engine: AsyncEngine) -> None:
-    """Seed all demo data if flood_polygons is empty. Safe to call every boot."""
+async def maybe_seed(engine: AsyncEngine, force: bool = False) -> None:
+    """Seed all demo data if anything is missing or stale. Safe to call every boot.
+
+    force=True (POST /health/seed) always runs the full pass, so the button
+    genuinely restores the scenario instead of returning early on a table that
+    merely has rows in it.
+    """
     async with engine.connect() as conn:
         flood_count = (
             await conn.execute(text("SELECT COUNT(*) FROM ml.flood_polygons"))
@@ -708,10 +710,13 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         # bring the scenario back, which is the one thing it exists to do.
         # Real ingested alerts are ignored here on purpose: this is the demo
         # bootstrap, and it should key off demo rows only.
+        # Only alerts created within the last day count: a scenario seeded weeks
+        # ago still has its alerts "active", and the feed then reads "hace 695 h".
         _alerts = (await conn.execute(
             text("""
-                SELECT COUNT(*) FROM ops.alerts
+                SELECT COUNT(DISTINCT title) FROM ops.alerts
                 WHERE status = 'active' AND title = ANY(:titles)
+                  AND created_at > NOW() - INTERVAL '24 hours'
             """).bindparams(bindparam("titles", type_=ARRAY(String))),
             {"titles": [a["title"] for a in _ALERTS_CURRENT]},
         )).scalar_one()
@@ -747,30 +752,48 @@ async def maybe_seed(engine: AsyncEngine) -> None:
         # Require the FULL demo alert set, not just one: a partially consumed
         # scenario (some alerts acknowledged or closed) still needs restoring.
         operational_ok = (
-            _alerts >= len(_ALERTS_CURRENT)
+            _alerts >= sum(1 for a in _ALERTS_CURRENT if a["status"] == "active")
             and _social > 0
             and _imerg > 0
             and _stobs > 0
             and _dlog_seeded
         )
 
-        # Ensure quebradas have geometries (needed for district spatial join in alert generator)
+        # Keep quebrada geometries in step with _QUEBRADA_GEOMETRIES (needed for
+        # the alert generator's district join). Updates only rows that differ, so
+        # a corrected centerline reaches databases seeded with an older one.
         if _qbr > 0:
-            _geom_missing = (await conn.execute(text(
-                "SELECT COUNT(*) FROM geo.quebradas WHERE geom IS NULL"
-            ))).scalar_one()
-            if _geom_missing > 0:
-                logger.info("auto_seed: adding geometries to %d quebradas", _geom_missing)
-                for qname, wkt in _QUEBRADA_GEOMETRIES.items():
-                    try:
-                        await conn.execute(text("""
-                            UPDATE geo.quebradas
-                            SET geom = ST_SetSRID(ST_GeomFromText(:wkt), 4326)
-                            WHERE name = :name AND geom IS NULL
-                        """), {"name": qname, "wkt": wkt})
-                    except Exception as exc:
-                        logger.debug("auto_seed: skip geom update for %s: %s", qname, exc)
-                await conn.commit()
+            _moved = 0
+            for qname, wkt in _QUEBRADA_GEOMETRIES.items():
+                try:
+                    res = await conn.execute(text("""
+                        UPDATE geo.quebradas
+                        SET geom = ST_SetSRID(ST_GeomFromText(:wkt), 4326)
+                        WHERE name = :name
+                          AND (geom IS NULL
+                               OR NOT ST_Equals(geom, ST_SetSRID(ST_GeomFromText(:wkt), 4326)))
+                    """), {"name": qname, "wkt": wkt})
+                    _moved += res.rowcount or 0
+                except Exception as exc:
+                    logger.debug("auto_seed: skip geom update for %s: %s", qname, exc)
+            if _moved:
+                logger.info("auto_seed: updated geometry of %d quebradas", _moved)
+            await conn.commit()
+
+        # Same for the scenario flood extents: databases seeded before they became
+        # river corridors still hold the old rectangles.
+        _reshaped = 0
+        for flood in _FLOOD_CURRENT + _ELNINO_FLOODS:
+            res = await conn.execute(text("""
+                UPDATE ml.flood_polygons
+                SET geom = ST_Multi(ST_SetSRID(ST_GeomFromText(:wkt), 4326)), area_km2 = :area
+                WHERE scene_id = :sid
+                  AND NOT ST_Equals(geom, ST_Multi(ST_SetSRID(ST_GeomFromText(:wkt), 4326)))
+            """), {"wkt": flood["geom_wkt"], "area": flood["area_km2"], "sid": flood["scene_id"]})
+            _reshaped += res.rowcount or 0
+        if _reshaped:
+            logger.info("auto_seed: reshaped %d scenario flood polygons", _reshaped)
+        await conn.commit()
 
         # Stamp provenance on huayco rows written before model_version existed.
         # The API treats NULL as demonstration data (fail closed), so this is
@@ -1065,7 +1088,8 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                 logger.debug("auto_seed: skip demo district %s: %s", d["ubigeo"], exc)
         await conn.commit()
 
-        if flood_count > 0 and _qbr > 0 and _infra > 0 and _hazard > 0 and _elnino >= len(_ELNINO_FLOODS) and operational_ok:
+        if (not force and flood_count > 0 and _qbr > 0 and _infra > 0 and _hazard > 0
+                and _elnino >= len(_ELNINO_FLOODS) and operational_ok):
             logger.info(
                 "auto_seed: all tables populated (flood=%d elnino=%d alerts=%d social=%d): skipping",
                 flood_count, _elnino, _alerts, _social,
@@ -1254,26 +1278,46 @@ async def maybe_seed(engine: AsyncEngine) -> None:
 
             existing = (
                 await conn.execute(
-                    text("SELECT id, status FROM ops.alerts WHERE title = :title LIMIT 1"),
+                    text("""
+                        SELECT id FROM ops.alerts WHERE title = :title
+                        ORDER BY created_at DESC, id DESC LIMIT 1
+                    """),
                     {"title": a["title"]},
                 )
             ).mappings().first()
             if existing:
                 # Restore the demo alert instead of skipping it. Demoing (or the
                 # test suite, which acts on real rows) leaves these acknowledged,
-                # escalated or closed, and a title match used to mean the seed
-                # pass could never bring the scenario back. Auto-resolution also
-                # closes them on its own schedule. Reset status and timestamps so
-                # POST /health/seed is a genuine "restore the demo" button.
-                if existing["status"] != a["status"]:
-                    await conn.execute(
-                        text("""
-                            UPDATE ops.alerts
-                            SET status = :status, created_at = :ts, updated_at = :ts
-                            WHERE id = :id
-                        """),
-                        {"status": a["status"], "ts": _ts(a["offset_h"]), "id": existing["id"]},
-                    )
+                # escalated or closed, and auto-resolution closes them on its own
+                # schedule. Always reset status, timestamps and location: resetting
+                # only on a status change left a month-old alert "active", and the
+                # feed then read "hace 695 h" on camera.
+                await conn.execute(
+                    text("""
+                        UPDATE ops.alerts
+                        SET status = :status, description = :desc,
+                            created_at = :ts, updated_at = :ts,
+                            geom = ST_SetSRID(ST_MakePoint(:lon, :lat), 4326),
+                            district_id = :district_id
+                        WHERE id = :id
+                    """),
+                    {
+                        "status": a["status"], "desc": a["description"],
+                        "ts": _ts(a["offset_h"]), "id": existing["id"],
+                        "lon": a["lon"], "lat": a["lat"], "district_id": district_id,
+                    },
+                )
+                # Older copies of the same scenario alert (earlier demo runs) must
+                # not stay open beside the restored one: the feed would list
+                # "Riesgo de huayco: Pedregal" twice.
+                await conn.execute(
+                    text("""
+                        UPDATE ops.alerts SET status = 'closed', updated_at = NOW()
+                        WHERE title = :title AND id <> :id
+                          AND status IN ('active', 'acknowledged', 'escalated')
+                    """),
+                    {"title": a["title"], "id": existing["id"]},
+                )
                 continue
 
             await conn.execute(
@@ -1307,6 +1351,20 @@ async def maybe_seed(engine: AsyncEngine) -> None:
                     "ts": _ts(a["offset_h"]),
                 },
             )
+
+        # ── 4a. Scenario reset (POST /health/seed only) ───────────────────────
+        # The worker's auto-resolution closes stale *active* alerts, but an alert
+        # an operator acknowledged or escalated stays open until someone closes
+        # it. After weeks of demo runs and test passes the feed carried 29 such
+        # rows, some from May. The restore button closes them, it does not delete.
+        if force:
+            res = await conn.execute(text("""
+                UPDATE ops.alerts SET status = 'closed', updated_at = NOW()
+                WHERE status IN ('acknowledged', 'escalated')
+                  AND created_at < NOW() - INTERVAL '72 hours'
+            """))
+            if res.rowcount:
+                logger.info("auto_seed: scenario reset closed %d stale open alerts", res.rowcount)
 
         # ── 4b. Decision log ──────────────────────────────────────────────────
         # A fresh install opened the Bitácora panel on an empty table, and the

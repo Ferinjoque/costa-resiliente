@@ -39,6 +39,24 @@ export const HUAYCO_COLOR = {
   low:       SEVERITY_LOW,
 } as const;
 
+// CENEPRED official district risk, keyed by CENEPRED's own four-level
+// vocabulary. Hex rather than OKLCH: MapLibre 4 paints these as fill colours,
+// and the legend imports the same values so swatch and map always agree.
+export const OFFICIAL_RISK_COLOR = {
+  muy_alto: "#b91c1c",
+  alto:     "#ea580c",
+  medio:    "#eab308",
+  bajo:     "#65a30d",
+} as const;
+
+// Trained mass-movement model, same ramp keyed by the model's own levels.
+export const MODEL_RISK_COLOR = {
+  very_high: OFFICIAL_RISK_COLOR.muy_alto,
+  high:      OFFICIAL_RISK_COLOR.alto,
+  medium:    OFFICIAL_RISK_COLOR.medio,
+  low:       OFFICIAL_RISK_COLOR.bajo,
+} as const;
+
 export const SEVERITY_COLOR = {
   critical: SEVERITY_CRITICAL,
   high:     SEVERITY_HIGH,

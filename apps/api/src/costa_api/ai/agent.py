@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import re
 import logging
 import time as _time
@@ -25,6 +26,8 @@ from datetime import datetime as _dt, timezone as _tz  # module-level; used in m
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.config import settings
+from costa_api.forecast import rain_forecast
+from costa_api.provenance import is_demo_version as _is_demo_version
 from costa_api.ai.gateway import gateway
 from costa_api.ai.guardrails.input_filter import check_input, GuardResult
 from costa_api.ai.guardrails.output_filter import sanitise
@@ -358,7 +361,11 @@ async def run(
             sitrep_failed = [t for t, r in zip(sitrep_tools, sitrep_results)
                              if isinstance(r, Exception) or (isinstance(r, dict) and r.get("error"))]
             if all_rows:
-                combined = _build_sitrep_answer(per_tool_rows)
+                forecast = await _sitrep_forecast()
+                model_rows = await _sitrep_model(db)
+                observed = await _sitrep_imerg_observed(db)
+                combined = _build_sitrep_answer(per_tool_rows, forecast=forecast,
+                                                model_rows=model_rows, observed=observed)
                 if combined:
                     if sitrep_failed:
                         combined += f"\n\n⚠ Fuente(s) no disponible(s) en este SITREP: {', '.join(sitrep_failed)}. Datos parciales, verifique con fuentes oficiales."
@@ -979,7 +986,95 @@ def _build_answer(messages: list[dict], rows: list[dict], original_query: str) -
     return f"Se recuperaron {n} registros. Revise los datos adjuntos."
 
 
-def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
+async def _sitrep_forecast() -> dict | None:
+    """Live 72 h rainfall forecast for the SITREP, or None.
+
+    Bounded to 4 s so a slow upstream never holds the briefing, and skipped
+    under TESTING so the suite never reaches the network.
+    """
+    if os.getenv("TESTING") == "1":
+        return None
+    try:
+        return await asyncio.wait_for(rain_forecast(), timeout=4.0)
+    except Exception as exc:  # the SITREP stands without it
+        logger.info("sitrep: forecast unavailable (%s)", type(exc).__name__)
+        return None
+
+
+async def _sitrep_model(db: AsyncSession) -> list[dict]:
+    """Today's live output of the trained mass-movement model, top districts first."""
+    from sqlalchemy import text as _text
+    try:
+        result = await db.execute(_text("""
+            SELECT d.name, r.probability, r.relative_risk, r.risk_level
+            FROM ml.mass_movement_risk r JOIN geo.districts d USING (ubigeo)
+            WHERE r.mode = 'live'
+              AND (r.ubigeo LIKE '1501%' OR r.ubigeo LIKE '0701%')
+              AND r.valid_date = (SELECT MAX(valid_date) FROM ml.mass_movement_risk
+                                  WHERE mode = 'live'
+                                    AND valid_date <= (NOW() AT TIME ZONE 'America/Lima')::date)
+            ORDER BY r.probability DESC LIMIT 3
+        """))
+        return [dict(r._mapping) for r in result]
+    except Exception as exc:  # table absent or empty: the SITREP stands without it
+        logger.info("sitrep: model output unavailable (%s)", type(exc).__name__)
+        return []
+
+
+async def _sitrep_imerg_observed(db: AsyncSession) -> list[dict]:
+    """Latest real IMERG accumulation per basin (hydro.imerg_observed), not the scenario."""
+    from sqlalchemy import text as _text
+    try:
+        result = await db.execute(_text("""
+            SELECT DISTINCT ON (o.watershed_id) w.name, o.time, o.acc_24h_mm, o.acc_72h_mm, o.granules_72h
+            FROM hydro.imerg_observed o JOIN geo.watersheds w ON w.id = o.watershed_id
+            ORDER BY o.watershed_id, o.time DESC
+        """))
+        return [dict(r._mapping) for r in result]
+    except Exception as exc:
+        logger.info("sitrep: IMERG observations unavailable (%s)", type(exc).__name__)
+        return []
+
+
+def _observed_section(rows: list[dict]) -> str:
+    newest = max(r["time"] for r in rows)
+    age_h = max(0, int((_dt.now(_tz.utc) - newest).total_seconds() // 3600))
+    parts = [f"{r['name']} 72h {float(r['acc_72h_mm'] or 0):.1f} mm" for r in rows]
+    partial = "" if all((r["granules_72h"] or 0) >= 144 for r in rows) else " (ventana 72h incompleta)"
+    return (f"**Lluvia observada (NASA IMERG, real):** {' · '.join(parts)}{partial}"
+            f" · último dato hace {age_h} h")
+
+
+def _model_section(rows: list[dict]) -> str:
+    level_es = {"very_high": "muy alto", "high": "alto", "medium": "medio", "low": "bajo"}
+    top = rows[0]
+    elevated = [r for r in rows if r["risk_level"] in ("high", "very_high")]
+    head = (f"{top['name']} {level_es.get(top['risk_level'], top['risk_level'])} "
+            f"({top['probability'] * 100:.1f}%, {top['relative_risk']:.1f}× la base)")
+    tail = (f" · riesgo alto en {', '.join(r['name'] for r in elevated)}" if elevated
+            else " · ningún distrito sobre riesgo medio")
+    return f"**Modelo de huaycos (entrenado, próximas 72 h):** máx. {head}{tail}"
+
+
+def _forecast_section(forecast: dict) -> tuple[str, str | None]:
+    """(SITREP line, optional action) from a rain_forecast() payload."""
+    basins = forecast.get("basins", {})
+    parts = [f"{name} {b['cumulative_mm']['72']:.1f} mm" for name, b in basins.items()]
+    over = [name for name, b in basins.items() if b.get("level_72h") in ("alerta", "emergencia")]
+    tail = (f" · ⚠ supera umbral ANA en {', '.join(over)}" if over
+            else " · ninguna cuenca alcanza umbral ANA")
+    line = f"**Pronóstico 72h (Open-Meteo, real):** {' · '.join(parts)}{tail}"
+    action = (f"Pronóstico sobre umbral en {', '.join(over)}: preposicionar brigadas antes del pico."
+              if over else None)
+    return line, action
+
+
+def _build_sitrep_answer(
+    per_tool_rows: list[tuple[str, list[dict]]],
+    forecast: dict | None = None,
+    model_rows: list[dict] | None = None,
+    observed: list[dict] | None = None,
+) -> str:
     """Synthesise a cohesive SITREP narrative from 5 sequential tool results.
 
     Format:  ALERTAS · LLUVIA · RÍOS · INUNDACIÓN · HUAYCO → ordered bullets → acción.
@@ -1035,6 +1130,8 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
     # 2. Rainfall
     rain_rows = tool_rows.get("get_rainfall_accumulation", [])
     if rain_rows:
+        # Seeded scenario accumulations are not NASA observations.
+        rain_label = "Lluvia (escenario)" if any(r.get("is_scenario") for r in rain_rows) else "Lluvia"
         mx = max((r.get("acc_72h_mm") or 0) for r in rain_rows)
         mx_row = next((r for r in rain_rows if (r.get("acc_72h_mm") or 0) == mx), rain_rows[0])
         ws = mx_row.get("watershed", "cuenca")
@@ -1054,23 +1151,23 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             other_note = f" · también {', '.join(other_parts)}"
 
         if mx >= 50.0:
-            sections.append(f"**Lluvia:** {ws}, 72h: {mx:.0f} mm{detail_24h} ⚠ EMERGENCIA (>50 mm ANA){other_note}")
+            sections.append(f"**{rain_label}:** {ws}, 72h: {mx:.0f} mm{detail_24h} ⚠ EMERGENCIA (>50 mm ANA){other_note}")
             if not action:
                 action = "Escalar a COEN. Activar evacuación preventiva quebradas cuenca " + ws + "."
             elif "EDAN" in action:
                 # Augment existing critical-alert action with specific evacuation directive
                 action = action.rstrip(".") + f". Activar evacuación preventiva quebradas cuenca {ws}."
         elif mx >= 25.0:
-            sections.append(f"**Lluvia:** {ws}, 72h: {mx:.0f} mm{detail_24h}, ALERTA (>25 mm ANA){other_note}")
+            sections.append(f"**{rain_label}:** {ws}, 72h: {mx:.0f} mm{detail_24h}, ALERTA (>25 mm ANA){other_note}")
             if not action:
                 action = "Activar brigadas de campo en quebradas cuenca " + ws + "."
             elif action and "brigadas" not in action:
                 # Augment existing action with ALERTA rain directive
                 action = action.rstrip(".") + f". Activar brigadas de campo en quebradas cuenca {ws}."
         elif acc_24h is not None and acc_24h >= 15:
-            sections.append(f"**Lluvia:** {ws}, 24h: {acc_24h:.0f} mm, AVISO (>15 mm/24h ANA)")
+            sections.append(f"**{rain_label}:** {ws}, 24h: {acc_24h:.0f} mm, AVISO (>15 mm/24h ANA)")
         elif mx > 0:
-            sections.append(f"**Lluvia:** {ws}, 72h: {mx:.0f} mm, bajo umbral")
+            sections.append(f"**{rain_label}:** {ws}, 72h: {mx:.0f} mm, bajo umbral")
 
     # 3. River levels
     river_rows = tool_rows.get("get_river_levels", [])
@@ -1091,11 +1188,14 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
                     lv = top_r.get("level_m")
                     if lv is not None:
                         lv_f = float(lv)
+                        # With one rising station the name is already in the
+                        # list; repeating it read "Chosica ⚠ Chosica: 2.41m".
+                        who = "" if len(rising) == 1 else f"{top_r.get('name')}: "
                         if lv_f >= threshold:
-                            top_threshold_note = f" ⚠ {top_r.get('name')}: {lv_f:.2f}m > umbral {threshold:.1f}m"
+                            top_threshold_note = f" ⚠ {who}{lv_f:.2f}m > umbral {threshold:.1f}m"
                         elif lv_f >= threshold * 0.9:
                             # Near-threshold (within 10%): flag as approaching
-                            top_threshold_note = f" ⚠ {top_r.get('name')}: {lv_f:.2f}m acercándose al umbral {threshold:.1f}m"
+                            top_threshold_note = f" ⚠ {who}{lv_f:.2f}m acercándose al umbral {threshold:.1f}m"
                     break
             sections.append(f"**Ríos:** {len(rising)} estación(es) en ascenso: {names}{top_threshold_note}")
             if not action:
@@ -1126,7 +1226,16 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
         # Use _total_flood_count if available (injected when tool truncated at LIMIT 10)
         total_flood = flood_rows[0].get("_total_flood_count", len(flood_rows)) if flood_rows else len(flood_rows)
         cap_note = f" (mostrando {len(flood_rows)} de {total_flood})" if total_flood > len(flood_rows) else ""
-        sections.append(f"**Inundación SAR:** {total_flood} polígono{'s' if total_flood != 1 else ''} · {total_km2:.1f} km² activos{district_note}{cap_note}")
+        plural = "s" if total_flood != 1 else ""
+        # Same fail-closed rule as the map: an extent that is not a genuine
+        # detection must not be reported under the SAR label.
+        if any(_is_demo_version(r.get("model_version")) for r in flood_rows):
+            sections.append(
+                f"**Inundación (escenario):** {total_flood} polígono{plural} · {total_km2:.1f} km²"
+                f"{district_note}{cap_note} · extensiones de demostración, no detección SAR"
+            )
+        else:
+            sections.append(f"**Inundación SAR:** {total_flood} polígono{plural} · {total_km2:.1f} km² activos{district_note}{cap_note}")
 
     # 5. Huayco risk (top quebrada)
     huayco_rows = tool_rows.get("get_huayco_risk", [])
@@ -1148,7 +1257,7 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
             else:
                 vh_note = ""
             demo_note = _huayco_provenance_note(huayco_rows)
-            sections.append(f"**Huayco:** {top_name}: {level_es}{prob_str}{trigger_str}{vh_note}{demo_note}")
+            sections.append(f"**{'Huayco (escenario)' if demo_note else 'Huayco'}:** {top_name}: {level_es}{prob_str}{trigger_str}{vh_note}{demo_note}")
             if top_level == "very_high":
                 # Name critical quebradas in action directive regardless of what else is set
                 critical_qbr_names = [r.get("name", "?") for r in very_high_rows[:2]]
@@ -1197,6 +1306,18 @@ def _build_sitrep_answer(per_tool_rows: list[tuple[str, list[dict]]]) -> str:
 
     if not sections:
         return "No se encontraron datos en ninguna fuente. Sistema posiblemente sin datos recientes."
+
+    # The forecast is the one live element in a scenario briefing, so it is
+    # labelled as real and kept apart from the scenario figures above.
+    if observed:
+        sections.append(_observed_section(observed))
+    if model_rows:
+        sections.append(_model_section(model_rows))
+    if forecast:
+        f_line, f_action = _forecast_section(forecast)
+        sections.append(f_line)
+        if f_action:
+            action = f"{action.rstrip('.')}. {f_action}" if action else f_action
 
     ts = _dt.now(_tz.utc).strftime("%Y-%m-%d %H:%M UTC")
     body = "\n".join(f"• {s}" for s in sections)

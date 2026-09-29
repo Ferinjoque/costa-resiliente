@@ -7,9 +7,10 @@ import { useUIStore } from "@/store/ui";
 import {
   useDistricts, useImerg, useFlood, useHuayco,
   useInfrastructure, useHazard, useSocialSignals, useDistrictRiskSummary,
-  useFloodExposure, useStations, useAlerts, useShelters,
+  useFloodExposure, useStations, useAlerts, useShelters, useCenepredRisk, useHuaycoModel,
 } from "@/lib/queries";
 import type { FloodExposure } from "@/lib/api";
+import { OFFICIAL_RISK_COLOR, MODEL_RISK_COLOR } from "@/lib/colors";
 
 const LIMA_CENTER: [number, number] = [-76.97, -12.05];
 const LIMA_ZOOM = 10;
@@ -150,6 +151,13 @@ export default function MapView() {
   const { data: sheltersData } = useShelters();
   const { data: exposureData } = useFloodExposure();
   const { data: alertsData = [] } = useAlerts();
+  const { data: officialMmData } = useCenepredRisk("mass_movement", activeLayers.has("official_mm"));
+  const { data: officialFloodData } = useCenepredRisk("flood", activeLayers.has("official_flood"));
+  // In replay the model is scored on that day's ERA5 rain; otherwise today's live run.
+  const { data: modelData } = useHuaycoModel(
+    scenario.isReplayMode ? (scenario.replayDate ?? null) : null,
+    activeLayers.has("mm_model"),
+  );
 
   // Keep ref in sync so click handler always has fresh exposure data
   useEffect(() => { exposureRef.current = exposureData ?? null; }, [exposureData]);
@@ -331,11 +339,8 @@ export default function MapView() {
             const expDistrict = districtId != null
               ? (exposureRef.current?.districts.find((d) => d.district_id === districtId) ?? null)
               : null;
-            const exp = exposureRef.current;
-            const totalOverlapKm2 = exp?.districts.reduce((s, d) => s + d.overlap_km2, 0) ?? 1;
-            const districtAtRisk = expDistrict && totalOverlapKm2 > 0
-              ? (expDistrict.overlap_km2 / totalOverlapKm2) * (exp?.total_affected_population ?? 0)
-              : 0;
+            // Areal-weighted estimate for the polygon's primary district, from the API.
+            const districtAtRisk = expDistrict?.estimated_affected_population ?? 0;
             const polyAtRisk = expDistrict && expDistrict.overlap_km2 > 0 && districtAtRisk > 0 && p.area_km2 != null
               ? Math.round((Number(p.area_km2) / expDistrict.overlap_km2) * districtAtRisk)
               : null;
@@ -347,9 +352,11 @@ export default function MapView() {
             const modelVersion = p.model_version ? String(p.model_version) : null;
             const isSynthetic = modelVersion != null
               && (modelVersion.includes("demo") || modelVersion.includes("fixture"));
-            openPopup(m, e.lngLat, popupHtml("Inundación detectada (SAR)", [
+            // "Detectada" only for a real detection; a scenario extent says what it is.
+            openPopup(m, e.lngLat, popupHtml(isSynthetic ? "Inundación de escenario" : "Inundación detectada (SAR)", [
               ["Distrito",   expDistrict?.district_name ?? null],
-              ["Confianza",  p.confidence != null ? `${(Number(p.confidence) * 100).toFixed(0)}%` : null],
+              // A confidence score on a hand-made extent would be a made-up number.
+              ["Confianza",  !isSynthetic && p.confidence != null ? `${(Number(p.confidence) * 100).toFixed(0)}%` : null],
               ["Área",       p.area_km2 != null ? `${Number(p.area_km2).toFixed(2)} km²` : null],
               ["Pob. en riesgo", popLabel, popLabel ? "cr-val-alert" : undefined],
               ["Escena SAR", trunc(p.scene_id ? String(p.scene_id) : null)],
@@ -359,6 +366,51 @@ export default function MapView() {
             ], "cr-title-flood"), activePopup);
             return;
           }
+        }
+
+        // 3a-0. Trained mass-movement model (probability in the next 72 h)
+        if (m.getLayer("mm_model-fill") && m.getLayoutProperty("mm_model-fill", "visibility") !== "none") {
+          const feats = m.queryRenderedFeatures(e.point, { layers: ["mm_model-fill"] });
+          if (feats.length) {
+            const p = feats[0].properties as Record<string, string | number | null>;
+            const LEVEL_ES: Record<string, string> = {
+              very_high: "Muy alto", high: "Alto", medium: "Medio", low: "Bajo",
+            };
+            const lvl = String(p.risk_level ?? "");
+            openPopup(m, e.lngLat, popupHtml(String(p.name ?? "Distrito"), [
+              ["Riesgo (modelo)", LEVEL_ES[lvl] ?? lvl, lvl === "very_high" || lvl === "high" ? "cr-val-alert" : undefined],
+              ["Prob. evento 72 h", p.probability != null ? `${(Number(p.probability) * 100).toFixed(1)}%` : null],
+              ["Veces la base",  p.relative_risk != null ? `${Number(p.relative_risk).toFixed(1)}×` : null],
+              ["Lluvia 3 / 7 días", p.rain_3d_mm != null ? `${Number(p.rain_3d_mm).toFixed(0)} / ${Number(p.rain_7d_mm ?? 0).toFixed(0)} mm` : null],
+              ["Modelo", "XGBoost entrenado con SINPAD 2003-2016, validado 2017-2020"],
+            ], "cr-title-flood"), activePopup);
+            return;
+          }
+        }
+
+        // 3a. CENEPRED official district risk (government classification)
+        for (const lid of ["official_mm-fill", "official_flood-fill"] as const) {
+          if (!m.getLayer(lid) || m.getLayoutProperty(lid, "visibility") === "none") continue;
+          const feats = m.queryRenderedFeatures(e.point, { layers: [lid] });
+          if (!feats.length) continue;
+          const p = feats[0].properties as Record<string, string | number | null>;
+          const LEVEL_ES: Record<string, string> = {
+            muy_alto: "Muy alto", alto: "Alto", medio: "Medio", bajo: "Bajo",
+          };
+          const lvl = (v: string | number | null) => (v == null ? null : LEVEL_ES[String(v)] ?? String(v));
+          const num = (v: string | number | null) => (v == null ? null : Number(v).toLocaleString("es-PE"));
+          const risk = String(p.risk_level ?? "");
+          openPopup(m, e.lngLat, popupHtml(String(p.name ?? "Distrito"), [
+            ["Peligro",         lid === "official_mm-fill" ? "Movimientos en masa (huaycos)" : "Inundación"],
+            ["Riesgo oficial",  lvl(p.risk_level), risk === "muy_alto" || risk === "alto" ? "cr-val-alert" : undefined],
+            ["Susceptibilidad", lvl(p.susceptibility)],
+            ["Vulnerabilidad",  lvl(p.vulnerability)],
+            ["Viviendas expuestas", num(p.exposed_homes)],
+            ["Colegios expuestos",  num(p.exposed_schools)],
+            ["Establ. de salud",    num(p.exposed_health)],
+            ["Fuente", "CENEPRED, escenario de riesgo El Niño"],
+          ], "cr-title-flood"), activePopup);
+          return;
         }
 
         // 3. Hazard polygon
@@ -407,8 +459,8 @@ export default function MapView() {
       m.on("mousemove", (e) => {
         const interactive = [
           "alerts-circle", "social-clusters", "social-circle", "huayco-circle", "infra-circle", "stations-circle",
-          "flood-fill", "hazard-fill", "districts-fill",
-        ].filter(l => m.getLayer(l));
+          "flood-fill", "mm_model-fill", "official_mm-fill", "official_flood-fill", "hazard-fill", "districts-fill",
+        ].filter(l => m.getLayer(l) && m.getLayoutProperty(l, "visibility") !== "none");
         if (!interactive.length) { m.getCanvas().style.cursor = ""; return; }
         const feats = m.queryRenderedFeatures(e.point, { layers: interactive });
         m.getCanvas().style.cursor = feats.length ? "pointer" : "";
@@ -736,7 +788,7 @@ export default function MapView() {
             id: "risk-fill",
             type: "fill",
             source: "risk-src",
-            layout: { visibility: "visible" },
+            layout: { visibility: vis("districts") },
             paint: { "fill-color": riskColor, "fill-opacity": 0.18 },
           },
           m.getLayer("districts-fill") ? "districts-fill" : undefined,
@@ -746,7 +798,7 @@ export default function MapView() {
           type: "line",
           source: "risk-src",
           filter: ["!=", ["get", "risk_level"], "bajo"],
-          layout: { visibility: "visible" },
+          layout: { visibility: vis("districts") },
           paint: {
             "line-color": riskColor,
             "line-width": ["match", ["get", "risk_level"], "alto", 2, 1],
@@ -937,6 +989,57 @@ export default function MapView() {
     if (m.loaded()) setup(); else m.once("load", setup);
   }, [hazardData, addOrUpdateSource]);
 
+  // ─── CENEPRED official district risk ─────────────────────────────────────
+  // Two choropleths over the same district polygons, one per hazard. Drawn
+  // below the district outlines so boundaries and labels stay readable.
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    const levelColor: maplibregl.ExpressionSpecification = [
+      "match", ["get", "risk_level"],
+      "muy_alto", OFFICIAL_RISK_COLOR.muy_alto, "alto", OFFICIAL_RISK_COLOR.alto,
+      "medio", OFFICIAL_RISK_COLOR.medio, "bajo", OFFICIAL_RISK_COLOR.bajo, "#94a3b8",
+    ];
+    const setup = () => {
+      for (const [key, data] of [["official_mm", officialMmData], ["official_flood", officialFloodData]] as const) {
+        if (!data) continue;
+        addOrUpdateSource(`${key}-src`, data as unknown as GeoJSON.FeatureCollection);
+        if (m.getLayer(`${key}-fill`)) continue;
+        const before = m.getLayer("districts-outline") ? "districts-outline" : undefined;
+        m.addLayer({ id: `${key}-fill`, type: "fill", source: `${key}-src`,
+          layout: { visibility: vis(key) },
+          paint: { "fill-color": levelColor, "fill-opacity": 0.5 } }, before);
+        m.addLayer({ id: `${key}-outline`, type: "line", source: `${key}-src`,
+          layout: { visibility: vis(key) },
+          paint: { "line-color": "#0f172a", "line-width": 0.6, "line-opacity": 0.6 } }, before);
+      }
+    };
+    if (m.loaded()) setup(); else m.once("load", setup);
+  }, [officialMmData, officialFloodData, addOrUpdateSource]);
+
+  // ─── Trained mass-movement model ─────────────────────────────────────────
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !modelData) return;
+    const levelColor: maplibregl.ExpressionSpecification = [
+      "match", ["get", "risk_level"],
+      "very_high", MODEL_RISK_COLOR.very_high, "high", MODEL_RISK_COLOR.high,
+      "medium", MODEL_RISK_COLOR.medium, "low", MODEL_RISK_COLOR.low, "#94a3b8",
+    ];
+    const setup = () => {
+      addOrUpdateSource("mm_model-src", modelData as unknown as GeoJSON.FeatureCollection);
+      if (m.getLayer("mm_model-fill")) return;
+      const before = m.getLayer("districts-outline") ? "districts-outline" : undefined;
+      m.addLayer({ id: "mm_model-fill", type: "fill", source: "mm_model-src",
+        layout: { visibility: vis("mm_model") },
+        paint: { "fill-color": levelColor, "fill-opacity": 0.55 } }, before);
+      m.addLayer({ id: "mm_model-outline", type: "line", source: "mm_model-src",
+        layout: { visibility: vis("mm_model") },
+        paint: { "line-color": "#0f172a", "line-width": 0.6, "line-opacity": 0.6 } }, before);
+    };
+    if (m.loaded()) setup(); else m.once("load", setup);
+  }, [modelData, addOrUpdateSource]);
+
   // ─── Hydro stations ───────────────────────────────────────────────────────
   useEffect(() => {
     const m = map.current;
@@ -1099,11 +1202,15 @@ export default function MapView() {
     const m = map.current;
     if (!m) return;
     const layerMap: Record<string, string[]> = {
-      districts:      ["districts-fill", "districts-outline", "districts-label"],
+      // The risk choropleth is the districts layer's colouring; it goes with it.
+      districts:      ["districts-fill", "districts-outline", "districts-label", "risk-fill", "risk-outline"],
       imerg:          ["imerg-fill", "imerg-extrusion"],
       flood:          ["flood-fill", "flood-outline", "flood-extrusion"],
       huayco:         ["huayco-circle"],
       hazard:         ["hazard-fill", "hazard-outline", "hazard-extrusion"],
+      official_mm:    ["official_mm-fill", "official_mm-outline"],
+      mm_model:       ["mm_model-fill", "mm_model-outline"],
+      official_flood: ["official_flood-fill", "official_flood-outline"],
       infrastructure: ["infra-circle"],
       social:         ["social-clusters", "social-cluster-count", "social-circle"],
       stations:       ["stations-circle", "stations-label"],

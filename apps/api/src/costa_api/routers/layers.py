@@ -7,6 +7,8 @@ from sqlalchemy import ARRAY, String, bindparam, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from costa_api.db import get_db
+from costa_api.forecast import rain_forecast
+from costa_api.provenance import is_demo_version
 from costa_api.weather import derive_warnings, describe_weather_code, worst_severity
 
 router = APIRouter(prefix="/layers", tags=["layers"])
@@ -28,22 +30,8 @@ def _iso(dt: Any) -> str | None:
     return dt.isoformat() if hasattr(dt, "isoformat") else str(dt)
 
 
-# Version strings that denote scenario data rather than genuine model output.
-_DEMO_VERSION_MARKERS = ("demo", "fixture", "scenario", "synthetic")
-
-
-def _is_demo_version(version: Any) -> bool:
-    """True when a model_version does not denote real model output.
-
-    An unstamped row (NULL) counts as demonstration data on purpose: a row that
-    cannot prove where it came from must never be presented to an operator as a
-    real detection. Failing closed here is what keeps the map honest when a
-    refresh job dies halfway.
-    """
-    if not version:
-        return True
-    lowered = str(version).lower()
-    return any(marker in lowered for marker in _DEMO_VERSION_MARKERS)
+# Kept under the old private name: tests and fusion import it from here.
+_is_demo_version = is_demo_version
 
 
 def _parse_replay_time(at: Optional[str]) -> datetime:
@@ -109,6 +97,7 @@ async def imerg_latest(
                 ia.acc_24h_mm,
                 ia.acc_72h_mm,
                 ia.acc_168h_mm,
+                ia.source_scenes,
                 ST_AsGeoJSON(w.geom)::json AS geometry
             FROM geo.watersheds w
             LEFT JOIN LATERAL (
@@ -126,12 +115,23 @@ async def imerg_latest(
         params,
     )
     rows = result.mappings().all()
+
+    # A row written by the real ingest carries the granule names it was
+    # computed from. Scenario rows (auto_seed) carry none, and must not be
+    # presented as NASA observations, however recent their timestamp.
+    def _row_is_demo(r: Any) -> bool:
+        return r["latest_time"] is not None and not r["source_scenes"]
+
+    is_demo = any(_row_is_demo(r) for r in rows)
     return {
         "type": "FeatureCollection",
-        "source": "NASA IMERG Late Run V07B (GPM)",
+        # Name the product only when the rows came from it.
+        "source": ("Escenario de demostración (acumulaciones en formato IMERG)" if is_demo
+                   else "NASA IMERG Early Run V07B (GPM)"),
         "source_url": "https://gpm.nasa.gov/data/imerg",
         "retrieved_at": _now_iso(),
         "data_updated_at": data_updated_at,
+        "is_demo_data": is_demo,
         "features": [
             {
                 "type": "Feature",
@@ -147,6 +147,7 @@ async def imerg_latest(
                     "acc_24h_mm": r["acc_24h_mm"],
                     "acc_72h_mm": r["acc_72h_mm"],
                     "acc_168h_mm": r["acc_168h_mm"],
+                    "is_demo_data": _row_is_demo(r),
                 },
                 "geometry": r["geometry"],
             }
@@ -352,6 +353,208 @@ async def hazard_zones(
                     "level": r["level"],
                     "source_layer": r["source_layer"],
                     "loaded_at": _iso(r["loaded_at"]),
+                },
+                "geometry": r["geometry"],
+            }
+            for r in rows
+        ],
+    }
+
+
+_MM_MODEL = ("mass_movement", "xgb-fitted-sinpad-era5-v1")
+
+
+@router.get("/huayco/model")
+async def huayco_model_layer(
+    date_: Optional[str] = Query(None, alias="date", description="YYYY-MM-DD; omit for today's live run"),
+    scope: str = Query("metro", description="metro = Lima Metropolitana + Callao; all = Lima dept + Callao"),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Trained mass-movement model: P(event in the next 72 h) per district.
+
+    Unlike /huayco/susceptibility (scenario values, labelled as such), these are
+    genuine model outputs: live from today's rain and forecast, or a replay of
+    a past day from ERA5. See /huayco/model/card for how it was validated.
+    """
+    if scope not in ("metro", "all"):
+        raise HTTPException(status_code=400, detail="scope must be 'metro' or 'all'")
+    params: dict[str, Any] = {"name": _MM_MODEL[1]}
+    if date_:
+        try:
+            params["d"] = datetime.fromisoformat(date_).date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+        date_sql = "r.valid_date = :d"
+        mode = "replay"
+    else:
+        # Today's live row (Lima date); falls back to the newest live run.
+        date_sql = ("r.valid_date = (SELECT MAX(valid_date) FROM ml.mass_movement_risk "
+                    "WHERE mode = 'live' AND valid_date <= (NOW() AT TIME ZONE 'America/Lima')::date)")
+        mode = "live"
+    scope_sql = "AND (r.ubigeo LIKE '1501%' OR r.ubigeo LIKE '0701%')" if scope == "metro" else ""
+    result = await db.execute(
+        text(f"""
+            SELECT r.ubigeo, d.name, r.valid_date, r.probability, r.relative_risk, r.risk_level,
+                   r.features, r.computed_at,
+                   ST_AsGeoJSON(ST_SimplifyPreserveTopology(d.geom, 0.0002), 5)::json AS geometry
+            FROM ml.mass_movement_risk r
+            JOIN geo.districts d ON d.ubigeo = r.ubigeo
+            WHERE r.mode = '{mode}' AND r.model_version = :name AND {date_sql} {scope_sql}
+            ORDER BY r.probability DESC
+        """),
+        params,
+    )
+    rows = result.mappings().all()
+    return {
+        "type": "FeatureCollection",
+        "model_version": _MM_MODEL[1],
+        "mode": mode,
+        "valid_date": rows[0]["valid_date"].isoformat() if rows else None,
+        "is_demo_data": False,
+        "data_updated_at": _iso(max((r["computed_at"] for r in rows), default=None)),
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {
+                    "ubigeo": r["ubigeo"], "name": r["name"],
+                    "probability": round(float(r["probability"]), 4),
+                    "relative_risk": round(float(r["relative_risk"]), 1),
+                    "risk_level": r["risk_level"],
+                    "rain_3d_mm": (r["features"] or {}).get("r3"),
+                    "rain_7d_mm": (r["features"] or {}).get("r7"),
+                },
+                "geometry": r["geometry"],
+            }
+            for r in rows
+        ],
+    }
+
+
+@router.get("/huayco/model/card")
+async def huayco_model_card(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
+    """How the mass-movement model was trained and how well it does on held-out seasons."""
+    row = (await db.execute(
+        text("SELECT version, trained_at, feature_names, metrics, thresholds FROM ml.models "
+             "WHERE name = :n AND version = :v"),
+        {"n": _MM_MODEL[0], "v": _MM_MODEL[1]},
+    )).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Modelo no entrenado todavía")
+    return {
+        "name": _MM_MODEL[0],
+        "version": row["version"],
+        "trained_at": _iso(row["trained_at"]),
+        "features": row["feature_names"],
+        "metrics": row["metrics"],
+        "thresholds": row["thresholds"],
+    }
+
+
+@router.get("/imerg/observed")
+async def imerg_observed(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
+    """Real NASA IMERG Early Run accumulations per basin (not the demo scenario).
+
+    Kept in hydro.imerg_observed, apart from the scenario rows in
+    hydro.imerg_accumulations, so an observation can never be mistaken for the
+    scenario or overwrite it. Early Run trails real time by about 4-5 hours.
+    """
+    result = await db.execute(text("""
+        SELECT DISTINCT ON (o.watershed_id)
+               w.name, o.time, o.acc_1h_mm, o.acc_3h_mm, o.acc_6h_mm, o.acc_12h_mm,
+               o.acc_24h_mm, o.acc_72h_mm, o.granules_72h, o.last_granule
+        FROM hydro.imerg_observed o JOIN geo.watersheds w ON w.id = o.watershed_id
+        ORDER BY o.watershed_id, o.time DESC
+    """))
+    rows = result.mappings().all()
+    return {
+        "source": "NASA IMERG Early Run V07 (GPM), GES DISC",
+        "source_url": "https://gpm.nasa.gov/data/imerg",
+        "is_demo_data": False,
+        "retrieved_at": _now_iso(),
+        "data_updated_at": _iso(max((r["time"] for r in rows), default=None)),
+        "basins": [
+            {
+                "name": r["name"], "time": _iso(r["time"]),
+                **{k: (round(float(r[k]), 2) if r[k] is not None else None)
+                   for k in ("acc_1h_mm", "acc_3h_mm", "acc_6h_mm", "acc_12h_mm", "acc_24h_mm", "acc_72h_mm")},
+                # 144 half-hour granules make a full 72 h window.
+                "granules_72h": r["granules_72h"], "complete_72h": r["granules_72h"] >= 144,
+                "last_granule": r["last_granule"],
+            }
+            for r in rows
+        ],
+    }
+
+
+@router.get("/rain-forecast")
+async def rain_forecast_endpoint() -> dict[str, Any]:
+    """72 h rainfall forecast per watershed (Open-Meteo), cumulative at 6/12/24/48/72 h."""
+    try:
+        return await rain_forecast()
+    except Exception as exc:  # upstream down: say so, never invent a forecast
+        raise HTTPException(status_code=503, detail=f"Pronóstico no disponible: {type(exc).__name__}")
+
+
+_CENEPRED_HAZARDS = {"flood", "mass_movement"}
+
+
+@router.get("/cenepred-risk")
+async def cenepred_risk(
+    hazard: str = Query("mass_movement", description="flood | mass_movement"),
+    scope: str = Query("metro", description="metro = Lima Metropolitana + Callao; all = Lima department + Callao"),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """CENEPRED official El Niño risk scenario, one polygon per district.
+
+    Unlike the SINPAD layer (a density proxy we derive from past events), this
+    is the government's own classification: susceptibility, vulnerability and
+    risk per district, from CENEPRED's scenario built on the 1983, 1998, 2017
+    and 2023 rainy seasons. Loaded by scripts/load_cenepred_districts.py.
+    """
+    if hazard not in _CENEPRED_HAZARDS:
+        raise HTTPException(status_code=400, detail=f"hazard must be one of {sorted(_CENEPRED_HAZARDS)}")
+    if scope not in ("metro", "all"):
+        raise HTTPException(status_code=400, detail="scope must be 'metro' or 'all'")
+    await db.execute(text("SET LOCAL statement_timeout = '15000'"))
+    scope_sql = "AND (r.ubigeo LIKE '1501%' OR r.ubigeo LIKE '0701%')" if scope == "metro" else ""
+    result = await db.execute(
+        text(f"""
+            SELECT r.ubigeo, d.name, d.province, r.risk_level, r.vulnerability,
+                   r.susceptibility, r.risk_value, r.exposed_homes, r.exposed_schools,
+                   r.exposed_health, r.population_2017, r.source, r.source_url, r.loaded_at,
+                   ST_AsGeoJSON(ST_SimplifyPreserveTopology(d.geom, 0.0002), 5)::json AS geometry
+            FROM geo.cenepred_risk r
+            JOIN geo.districts d ON d.ubigeo = r.ubigeo
+            WHERE r.hazard = :hazard {scope_sql}
+            ORDER BY r.ubigeo
+        """),
+        {"hazard": hazard},
+    )
+    rows = result.mappings().all()
+    return {
+        "type": "FeatureCollection",
+        "hazard": hazard,
+        "source": "CENEPRED: Escenario de riesgo por lluvias intensas asociadas a El Niño",
+        "source_url": rows[0]["source_url"] if rows else
+            "https://sig.cenepred.gob.pe/arcgis_server/rest/services/FEN/ER_NINO2027_BD/MapServer",
+        "retrieved_at": _now_iso(),
+        "data_updated_at": _iso(max((r["loaded_at"] for r in rows), default=None)),
+        "is_demo_data": False,
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {
+                    "ubigeo": r["ubigeo"],
+                    "name": r["name"],
+                    "province": r["province"],
+                    "risk_level": r["risk_level"],
+                    "vulnerability": r["vulnerability"],
+                    "susceptibility": r["susceptibility"],
+                    "risk_value": r["risk_value"],
+                    "exposed_homes": r["exposed_homes"],
+                    "exposed_schools": r["exposed_schools"],
+                    "exposed_health": r["exposed_health"],
+                    "population_2017": r["population_2017"],
                 },
                 "geometry": r["geometry"],
             }
@@ -677,7 +880,15 @@ async def quebradas(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
 async def flood_exposure(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """Population at risk: spatial join of recent flood polygons × districts.
     Only includes flood polygons acquired within the last 7 days to avoid
-    accumulating stale/historical flood extents into the population estimate."""
+    accumulating stale/historical flood extents into the population estimate.
+
+    The estimate is areal weighting: a district's 2017 census population times
+    the share of its area under water. It assumes people are spread evenly
+    across the district, so it under-counts dense riverbanks and over-counts
+    empty hillside; it is an order of magnitude, not a headcount. It used to add
+    up the WHOLE population of every district a polygon touched, and 3.6 km² of
+    water read as "2,120,279 personas en zona inundada".
+    """
     await db.execute(text("SET LOCAL statement_timeout = '30000'"))
     result = await db.execute(
         text("""
@@ -685,6 +896,8 @@ async def flood_exposure(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
                 d.id AS district_id,
                 d.name AS district_name,
                 d.population,
+                ST_Area(d.geom::geography) / 1000000 AS district_km2,
+                ARRAY_AGG(DISTINCT f.model_version) AS model_versions,
                 COUNT(DISTINCT f.id) AS flood_polygon_count,
                 COALESCE(
                     ROUND(
@@ -702,27 +915,37 @@ async def flood_exposure(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
             JOIN ml.flood_polygons f
               ON ST_Intersects(ST_MakeValid(f.geom), ST_MakeValid(d.geom))
              AND f.acquired_at >= NOW() - INTERVAL '7 days'
-            GROUP BY d.id, d.name, d.population
+            GROUP BY d.id, d.name, d.population, d.geom
             ORDER BY overlap_km2 DESC
         """)
     )
     rows = result.mappings().all()
-    total_pop = sum((r["population"] or 0) for r in rows)
+
+    def _estimate(r: Any) -> int:
+        if not r["population"] or not r["district_km2"]:
+            return 0
+        share = min(float(r["overlap_km2"]) / float(r["district_km2"]), 1.0)
+        return round(r["population"] * share)
+
+    districts = [
+        {
+            "district_id": r["district_id"],
+            "district_name": r["district_name"],
+            "population": r["population"],
+            "estimated_affected_population": _estimate(r),
+            "flood_polygon_count": r["flood_polygon_count"],
+            "overlap_km2": float(r["overlap_km2"]),
+            "latest_scene_at": _iso(r["latest_scene_at"]),
+        }
+        for r in rows
+    ]
     return {
         "retrieved_at": _now_iso(),
         "source": "ml.flood_polygons × geo.districts (INEI 2017)",
-        "total_affected_population": total_pop,
-        "districts": [
-            {
-                "district_id": r["district_id"],
-                "district_name": r["district_name"],
-                "population": r["population"],
-                "flood_polygon_count": r["flood_polygon_count"],
-                "overlap_km2": float(r["overlap_km2"]),
-                "latest_scene_at": _iso(r["latest_scene_at"]),
-            }
-            for r in rows
-        ],
+        "method": "areal_weighting",
+        "is_demo_data": any(_is_demo_version(v) for r in rows for v in (r["model_versions"] or [None])),
+        "total_affected_population": sum(d["estimated_affected_population"] for d in districts),
+        "districts": districts,
     }
 
 

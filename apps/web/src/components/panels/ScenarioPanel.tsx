@@ -20,10 +20,13 @@ const LAYERS: { id: string; label: { es: string; en: string }; hint: { es: strin
   { id: "imerg",          label: { es: "Lluvia IMERG",       en: "IMERG Rainfall"    }, hint: { es: "Acumulación NASA (color por intensidad)",   en: "NASA accumulation (colour by intensity)"  } },
   { id: "flood",          label: { es: "Inundación SAR",     en: "SAR Flood"         }, hint: { es: "Polígonos Sentinel-1 de áreas inundadas",   en: "Sentinel-1 polygons of flooded areas"     } },
   { id: "huayco",         label: { es: "Huayco",             en: "Huayco"            }, hint: { es: "Puntos por quebrada (tamaño = probabilidad)", en: "Dots per quebrada (size = probability)"  } },
+  { id: "mm_model",       label: { es: "Huaycos: modelo entrenado", en: "Debris flows: trained model" }, hint: { es: "Probabilidad de evento en 72 h por distrito (en réplica, la del día)", en: "Probability of an event within 72 h per district (in replay, that day's)" } },
+  { id: "official_mm",    label: { es: "Riesgo oficial: huaycos",    en: "Official risk: debris flows" }, hint: { es: "CENEPRED, movimientos en masa por distrito (escenario El Niño)", en: "CENEPRED mass-movement risk per district (El Niño scenario)" } },
+  { id: "official_flood", label: { es: "Riesgo oficial: inundación", en: "Official risk: flooding"     }, hint: { es: "CENEPRED, inundación por distrito (escenario El Niño)",          en: "CENEPRED flood risk per district (El Niño scenario)"          } },
   { id: "hazard",         label: { es: "Peligro histórico",  en: "Historical hazard" }, hint: { es: "Zonas SINPAD 2003-2020 por densidad",       en: "SINPAD 2003-2020 zones by density"        } },
-  { id: "infrastructure", label: { es: "Infraestructura",    en: "Infrastructure"    }, hint: { es: "Hospitales, colegios, puentes (OSM)",       en: "Hospitals, schools, bridges (OSM)"        } },
+  { id: "infrastructure", label: { es: "Infraestructura",    en: "Infrastructure"    }, hint: { es: "Hospitales, colegios, puentes, comisarías (OSM, CENEPRED)", en: "Hospitals, schools, bridges, police (OSM, CENEPRED)" } },
   { id: "social",         label: { es: "Señales sociales",   en: "Social signals"    }, hint: { es: "Pines Bluesky/Reddit triados por IA",      en: "AI-triaged Bluesky/Reddit pins"           } },
-  { id: "stations",       label: { es: "Estaciones ANA",     en: "ANA Stations"      }, hint: { es: "Nivel e caudal de ríos en tiempo real",    en: "Real-time river level and flow"           } },
+  { id: "stations",       label: { es: "Estaciones ANA",     en: "ANA Stations"      }, hint: { es: "Nivel y caudal de ríos (ANA/SENAMHI)",     en: "River level and flow (ANA/SENAMHI)"       } },
   { id: "shelters",       label: { es: "Albergues INDECI",   en: "INDECI Shelters"   }, hint: { es: "Albergues de evacuación designados por INDECI. Lima Metropolitana", en: "INDECI-designated evacuation shelters: Lima Metropolitana" } },
 ];
 
@@ -76,17 +79,28 @@ export function ScenarioPanel() {
           <Target size={14} className="text-ink-muted" aria-hidden="true" />
           <PanelTitle>{L(locale, "Escenario", "Scenario")}</PanelTitle>
           {scenario.isReplayMode && (
-            <button
+            // A span, not a <button>: it sits inside the header's toggle button,
+            // and a nested <button> is invalid HTML and a hydration error.
+            <span
+              role="button"
+              tabIndex={0}
               onClick={(e) => {
                 e.stopPropagation();
                 setScenario({ isReplayMode: false, replayDate: null });
               }}
-              className="flex items-center gap-1 text-2xs font-semibold text-warn bg-warn-soft px-1.5 py-0.5 rounded-full hover:bg-warn/20 transition-colors"
-              aria-label={L(locale, "Salir del replay El Niño 2017", "Exit El Niño 2017 replay")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setScenario({ isReplayMode: false, replayDate: null });
+                }
+              }}
+              className="flex items-center gap-1 text-2xs font-semibold text-warn bg-warn-soft px-1.5 py-0.5 rounded-full hover:bg-warn/20 transition-colors cursor-pointer"
+              aria-label={L(locale, "Salir de la réplica El Niño 2017", "Exit El Niño 2017 replay")}
             >
               El Niño 2017
               <X size={9} strokeWidth={2.5} />
-            </button>
+            </span>
           )}
         </div>
         {isScenarioPanelOpen
@@ -209,6 +223,19 @@ export function ScenarioPanel() {
               <ReplayDateScrubber locale={locale} />
             )}
 
+            {/* Replay entry. Until now only the first-run tutorial could start
+                it, so an operator who skipped the tour never found the replay,
+                and with it the trained model's historical run. */}
+            {!scenario.isReplayMode && (
+              <button
+                type="button"
+                onClick={() => setScenario({ isReplayMode: true, replayDate: "2017-03-15", timeWindowHours: 72 })}
+                className="w-full text-left text-xs font-medium text-warn-muted bg-warn-soft hover:bg-warn/20 rounded-xl px-3 py-2 transition-colors"
+              >
+                {L(locale, "Ver réplica: El Niño costero 2017", "View replay: 2017 coastal El Niño")}
+              </button>
+            )}
+
             <Divider />
 
             {/* Layer toggles */}
@@ -221,11 +248,11 @@ export function ScenarioPanel() {
 }
 
 const REPLAY_STEPS: { date: string; label: { es: string; en: string } }[] = [
-  { date: "2017-03-15", label: { es: "15 mar (Rímac", en: "Mar 15)Rímac" } },
-  { date: "2017-03-18", label: { es: "18 mar (Chillón", en: "Mar 18)Chillón" } },
-  { date: "2017-03-22", label: { es: "22 mar (Ate", en: "Mar 22)Ate" } },
-  { date: "2017-03-27", label: { es: "27 mar (V.J.M.", en: "Mar 27)V.J.M." } },
-  { date: "2017-04-02", label: { es: "2 abr (Chaclacayo", en: "Apr 2)Chaclacayo" } },
+  { date: "2017-03-15", label: { es: "15 mar · Rímac", en: "Mar 15 · Rímac" } },
+  { date: "2017-03-18", label: { es: "18 mar · Chillón", en: "Mar 18 · Chillón" } },
+  { date: "2017-03-22", label: { es: "22 mar · Ate", en: "Mar 22 · Ate" } },
+  { date: "2017-03-27", label: { es: "27 mar · Lurín", en: "Mar 27 · Lurín" } },
+  { date: "2017-04-02", label: { es: "2 abr · Chaclacayo", en: "Apr 2 · Chaclacayo" } },
 ];
 
 function ReplayDateScrubber({ locale }: { locale: Locale }) {
@@ -236,7 +263,7 @@ function ReplayDateScrubber({ locale }: { locale: Locale }) {
   return (
     <div>
       <SectionLabel className="mb-2">
-        {L(locale, "Fecha de replay (El Niño 2017", "Replay date)El Niño 2017")}
+        {L(locale, "Fecha de réplica · El Niño 2017", "Replay date · El Niño 2017")}
       </SectionLabel>
       <input
         type="range"

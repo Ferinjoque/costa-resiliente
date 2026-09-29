@@ -19,6 +19,7 @@ import pytest
 
 
 TEST_OPERATOR = "test-op"
+_LOG_COLUMNS = "id, logged_at, operator_id, action_type, alert_id, payload, session_id"
 
 
 def _db_dsn() -> str:
@@ -38,8 +39,10 @@ async def _take_snapshot() -> dict:
     try:
         alerts = await pool.fetch("SELECT id, status FROM ops.alerts")
         tokens = await pool.fetch("SELECT id FROM ops.share_tokens")
+        log_rows = await pool.fetch(f"SELECT {_LOG_COLUMNS} FROM ops.decision_log ORDER BY id")
         return {
             "alert_statuses": {r["id"]: r["status"] for r in alerts},
+            "decision_log": [tuple(r.values()) for r in log_rows],
             "token_ids_before": {r["id"] for r in tokens},
             "test_start": datetime.now(timezone.utc),
         }
@@ -51,8 +54,19 @@ async def _do_restore(snap: dict) -> None:
     """Remove or revert all data written during the test session."""
     pool = await asyncpg.create_pool(_db_dsn(), min_size=1, max_size=2)
     try:
-        # 1. decision_log. TRUNCATE bypasses append-only row trigger
+        # 1. decision_log. The append-only trigger forbids DELETE, so the only
+        #    way to drop the rows the tests wrote is TRUNCATE. That used to wipe
+        #    the whole audit trail, real operator actions included, on every
+        #    run. Put back every row that existed before the session.
         await pool.execute("TRUNCATE TABLE ops.decision_log")
+        if snap["decision_log"]:
+            await pool.copy_records_to_table(
+                "decision_log", schema_name="ops",
+                records=snap["decision_log"], columns=_LOG_COLUMNS.split(", "),
+            )
+            await pool.execute(
+                "SELECT setval('ops.decision_log_id_seq', (SELECT MAX(id) FROM ops.decision_log))"
+            )
 
         # 2. alert_proposals created by tests (by test operator or during test window)
         await pool.execute(

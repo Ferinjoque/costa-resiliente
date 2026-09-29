@@ -17,6 +17,8 @@ services:
       target: development
     volumes:
       - ./apps/workers/src:/app/src:ro
+      # Without this the container runs the test copy baked into the image.
+      - ./apps/workers/tests:/app/tests:ro
 
   web:
     build:

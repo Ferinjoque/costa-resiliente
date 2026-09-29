@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy import text
 
 from costa_api.auto_seed import maybe_seed
@@ -109,6 +110,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# The map layers are GeoJSON, and district boundaries alone run to ~850 kB.
+# Starlette leaves text/event-stream uncompressed, so the alert SSE stream
+# still flushes event by event.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(districts.router, prefix="/api/v1")

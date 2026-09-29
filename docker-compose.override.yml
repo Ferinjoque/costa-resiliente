@@ -18,6 +18,7 @@ services:
       target: development
     volumes:
       - ./apps/workers/src:/app/src:ro
+      - ./apps/workers/tests:/app/tests:ro
     environment:
       PYTHONPATH: /app/src
 

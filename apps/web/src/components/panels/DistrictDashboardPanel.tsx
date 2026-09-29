@@ -9,16 +9,15 @@ import { useState } from "react";
 import { useUIStore } from "@/store/ui";
 import {
   useDistrictDashboard, useDistrictRiskSummary, useAlerts,
-  useFloodExposure, useFlood, useFusion, useDecisionLog, useSocialSignals, useImerg,
+  useFloodExposure, useFlood, useFusion, useDecisionLog, useSocialSignals, useImerg, useRainForecast,
 } from "@/lib/queries";
 import { clsx } from "clsx";
-import type { Alert, AlertTrendDay, SocialBreakdown } from "@/lib/api";
+import type { Alert, AlertTrendDay, SocialBreakdown, RainLevel } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
 import { URGENT_SOCIAL_LABELS } from "@/lib/constants";
 import {
-  DEMO_FORECAST, HUAYCO_THRESHOLD_MM, DEMO_RESOURCES,
-  type ForecastStep, type ResourceCategory,
+  DEMO_RESOURCES, type ResourceCategory,
 } from "@/lib/demoData";
 import {
   SEVERITY_CRITICAL, SEVERITY_HIGH, SEVERITY_MEDIUM, SEVERITY_LOW,
@@ -1190,128 +1189,112 @@ function DistrictDetail({ ubigeo }: { ubigeo: string }) {
 
 // ─── 72h Rainfall Forecast ────────────────────────────────────────────────────
 
-const RISK_STEP_COLOR: Record<ForecastStep["risk"], { fill: string; stroke: string; valueCls: string }> = {
-  bajo:     { fill: SEVERITY_LOW,    stroke: SEVERITY_LOW,      valueCls: "text-accent" },
-  moderado: { fill: SEVERITY_MEDIUM, stroke: SEVERITY_MEDIUM,   valueCls: "text-warn-muted" },
-  alto:     { fill: SEVERITY_HIGH,   stroke: SEVERITY_CRITICAL, valueCls: "text-danger" },
+const LEVEL_STYLE: Record<RainLevel, { stroke: string; valueCls: string; label: { es: string; en: string } }> = {
+  normal:     { stroke: SEVERITY_LOW,      valueCls: "text-ink",        label: { es: "NORMAL",     en: "NORMAL" } },
+  alerta:     { stroke: SEVERITY_MEDIUM,   valueCls: "text-warn-muted", label: { es: "ALERTA",     en: "ALERT" } },
+  emergencia: { stroke: SEVERITY_CRITICAL, valueCls: "text-danger",     label: { es: "EMERGENCIA", en: "EMERGENCY" } },
 };
 
-function ForecastChart({ steps }: { steps: ForecastStep[] }) {
+/** Cumulative forecast curve for one basin, against the ANA 72 h thresholds. */
+function ForecastChart({ values, alerta, emergencia }: { values: number[]; alerta: number; emergencia: number }) {
   const W = 220; const H = 48;
-  const values = steps.map((s) => s.rimac_mm);
-  const maxVal = Math.max(...values, HUAYCO_THRESHOLD_MM + 10);
+  const maxVal = Math.max(...values, alerta + 5);
   const toY = (v: number) => H - (v / maxVal) * (H - 4) - 2;
-  const toX = (i: number) => (i / (steps.length - 1)) * W;
-
-  const pts = steps.map((s, i) => `${toX(i)},${toY(s.rimac_mm)}`).join(" ");
-  const threshY = toY(HUAYCO_THRESHOLD_MM);
-
-  const segments: { x1: number; y1: number; x2: number; y2: number; risk: ForecastStep["risk"] }[] = [];
-  for (let i = 0; i < steps.length - 1; i++) {
-    segments.push({
-      x1: toX(i), y1: toY(steps[i].rimac_mm),
-      x2: toX(i + 1), y2: toY(steps[i + 1].rimac_mm),
-      risk: steps[i + 1].risk,
-    });
-  }
-
+  const toX = (i: number) => (i / (values.length - 1)) * W;
+  const pts = values.map((v, i) => `${toX(i)},${toY(v)}`).join(" ");
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true" className="w-full">
-      <line x1={0} y1={threshY} x2={W} y2={threshY} stroke={SEVERITY_HIGH} strokeWidth={0.75} strokeDasharray="3,3" opacity={0.6} />
-      <polyline
-        points={`0,${H} ${pts} ${W},${H}`}
-        fill={COSTA_300}
-        fillOpacity={0.08}
-        stroke="none"
-      />
-      {segments.map((seg, i) => (
-        <line
-          key={i}
-          x1={seg.x1} y1={seg.y1} x2={seg.x2} y2={seg.y2}
-          stroke={RISK_STEP_COLOR[seg.risk].stroke}
-          strokeWidth={2}
-          strokeLinecap="round"
-        />
-      ))}
-      {steps.map((s, i) => (
-        <circle
-          key={i}
-          cx={toX(i)} cy={toY(s.rimac_mm)}
-          r={2.5}
-          fill={RISK_STEP_COLOR[s.risk].fill}
-          stroke="transparent"
-          strokeWidth={1}
-        />
-      ))}
+      <line x1={0} y1={toY(alerta)} x2={W} y2={toY(alerta)} stroke={SEVERITY_HIGH} strokeWidth={0.75} strokeDasharray="3,3" opacity={0.6} />
+      {emergencia <= maxVal && (
+        <line x1={0} y1={toY(emergencia)} x2={W} y2={toY(emergencia)} stroke={SEVERITY_CRITICAL} strokeWidth={0.75} strokeDasharray="3,3" opacity={0.6} />
+      )}
+      <polyline points={`0,${H} ${pts} ${W},${H}`} fill={COSTA_300} fillOpacity={0.12} stroke="none" />
+      <polyline points={pts} fill="none" stroke={COSTA_400} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      {values.map((v, i) => <circle key={i} cx={toX(i)} cy={toY(v)} r={2.5} fill={COSTA_400} />)}
     </svg>
   );
 }
 
+/**
+ * Real 72 h rainfall forecast per watershed. This section used to render a
+ * hard-coded table under a "SENAMHI · WRF" label, invented numbers attributed
+ * to a real agency. It now shows Open-Meteo's forecast for the upper basins,
+ * which is today's actual forecast and independent of the demo scenario.
+ */
 function ForecastSection({ locale }: { locale: Locale }) {
-  const steps = DEMO_FORECAST;
-  const firstAlert = steps.find((s) => s.rimac_mm >= HUAYCO_THRESHOLD_MM);
-
-  const label = {
-    title:    { es: "Pronóstico 72h (Cuenca Rímac",  en: "72h Forecast)Rímac Watershed" },
-    source:   { es: "SENAMHI · WRF",                  en: "SENAMHI · WRF" },
-    preAlert: { es: "PRE-ALERTA",                     en: "PRE-ALERT" },
-    thresh:   { es: "Umbral huayco",                  en: "Huayco threshold" },
-    at:       { es: "en",                             en: "at" },
-    prob:     { es: "prob.",                          en: "prob." },
-    rim:      { es: "Rímac · mm acumulado",           en: "Rímac · accumulated mm" },
-    risk: {
-      bajo:     { es: "BAJO",  en: "LOW" },
-      moderado: { es: "MOD",   en: "MOD" },
-      alto:     { es: "ALTO",  en: "HIGH" },
-    },
-  } as const;
+  const { data, isLoading, isError } = useRainForecast();
   const L = (obj: { es: string; en: string }) => obj[locale];
+  const label = {
+    title:  { es: "Pronóstico de lluvia 72 h", en: "72 h rainfall forecast" },
+    note:   { es: "Pronóstico real de hoy para las cuencas altas, independiente del escenario de demostración.",
+              en: "Today's real forecast for the upper basins, independent of the demo scenario." },
+    basin:  { es: "Cuenca", en: "Basin" },
+    prob:   { es: "prob. máx.", en: "max prob." },
+    thresh: { es: "Umbrales ANA 72 h", en: "ANA 72 h thresholds" },
+    loading:{ es: "Consultando pronóstico…", en: "Fetching forecast…" },
+    error:  { es: "Pronóstico no disponible en este momento.", en: "Forecast unavailable right now." },
+  } as const;
+
+  const basins = data ? Object.entries(data.basins) : [];
+  const rimac = data?.basins["Rímac"];
+  const horizons = data?.horizons_h ?? [6, 12, 24, 48, 72];
 
   return (
     <section>
       <Divider className="mb-4" />
-      <div className="flex items-baseline justify-between mb-3">
+      <div className="flex items-baseline justify-between mb-1">
         <SectionLabel>{L(label.title)}</SectionLabel>
-        <p className="font-mono text-2xs text-ink-subtle">{L(label.source)}</p>
+        <a href={data?.source_url ?? "https://open-meteo.com/"} target="_blank" rel="noreferrer"
+           className="font-mono text-2xs text-ink-subtle hover:text-ink">Open-Meteo</a>
       </div>
+      <p className="text-2xs text-ink-subtle mb-3 leading-snug">{L(label.note)}</p>
 
-      <div className="mb-3">
-        <ForecastChart steps={steps} />
-        <div className="flex justify-between px-0.5 mt-1">
-          {steps.map((s) => (
-            <span key={s.hours} className="font-mono text-2xs text-ink-subtle tabular-nums">+{s.hours}h</span>
-          ))}
-        </div>
-      </div>
+      {isLoading && <p className="text-xs text-ink-muted">{L(label.loading)}</p>}
+      {isError && <p className="text-xs text-warn-muted">{L(label.error)}</p>}
 
-      <div className="grid grid-cols-5 gap-2 mb-3">
-        {steps.map((step) => {
-          const cfg = RISK_STEP_COLOR[step.risk];
-          return (
-            <div key={step.hours} className="text-center">
-              <p className={clsx("font-bold font-mono tabular-nums text-base leading-none", cfg.valueCls)}>
-                {step.rimac_mm.toFixed(0)}
-              </p>
-              <p className="text-2xs text-ink-subtle mt-1">{L(label.risk[step.risk])}</p>
+      {data && rimac && (
+        <>
+          <div className="mb-3">
+            <ForecastChart
+              values={horizons.map((h) => rimac.cumulative_mm[String(h)] ?? 0)}
+              alerta={data.thresholds_72h_mm.alerta}
+              emergencia={data.thresholds_72h_mm.emergencia}
+            />
+            <div className="flex justify-between px-0.5 mt-1">
+              {horizons.map((h) => (
+                <span key={h} className="font-mono text-2xs text-ink-subtle tabular-nums">+{h}h</span>
+              ))}
             </div>
-          );
-        })}
-      </div>
-
-      <div className="flex items-baseline justify-between">
-        <span className="text-2xs text-ink-subtle">{L(label.rim)}</span>
-        <span className="text-2xs text-danger">{L(label.thresh)} {HUAYCO_THRESHOLD_MM} mm</span>
-      </div>
-
-      {firstAlert && (
-        <div className="mt-3 pl-3 border-l-2 border-danger">
-          <p className="text-2xs font-semibold tracking-caps uppercase text-danger mb-1">{L(label.preAlert)}</p>
-          <p className="text-xs text-ink leading-snug">
-            {L(label.thresh)} {L(label.at)} +{firstAlert.hours}h: {" "}
-            <span className="font-mono tabular-nums">{firstAlert.rimac_mm.toFixed(0)} mm</span>{" "}
-            ({(firstAlert.huayco_prob * 100).toFixed(0)}% {L(label.prob)})
+          </div>
+          <table className="w-full text-xs mb-2">
+            <thead>
+              <tr className="text-2xs text-ink-subtle">
+                <th className="text-left font-normal">{L(label.basin)}</th>
+                <th className="text-right font-normal">24 h</th>
+                <th className="text-right font-normal">72 h</th>
+                <th className="text-right font-normal">{L(label.prob)}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {basins.map(([name, b]) => {
+                const st = LEVEL_STYLE[b.level_72h];
+                return (
+                  <tr key={name}>
+                    <td className="py-0.5 text-ink">{name}</td>
+                    <td className="py-0.5 text-right font-mono tabular-nums">{b.cumulative_mm["24"].toFixed(1)}</td>
+                    <td className={clsx("py-0.5 text-right font-mono tabular-nums font-semibold", st.valueCls)}>
+                      {b.cumulative_mm["72"].toFixed(1)}
+                    </td>
+                    <td className="py-0.5 text-right font-mono tabular-nums text-ink-subtle">{b.max_precip_probability_pct}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="text-2xs text-ink-subtle">
+            {L(label.thresh)}: {data.thresholds_72h_mm.alerta} mm {L(LEVEL_STYLE.alerta.label)} · {data.thresholds_72h_mm.emergencia} mm {L(LEVEL_STYLE.emergencia.label)}
           </p>
-        </div>
+        </>
       )}
       <Divider className="mt-4" />
     </section>
@@ -1328,8 +1311,10 @@ const STATUS_BAR_CLS: Record<ResourceCategory["status"], string> = {
 
 function ResourceStatus({ locale }: { locale: Locale }) {
   const label = {
-    title:  { es: "Recursos desplegados", en: "Deployed Resources" },
-    source: { es: "INDECI COEN",          en: "INDECI COEN" },
+    // No live feed of deployed resources exists to integrate. These figures
+    // are an illustration of the panel, and it says so.
+    title:  { es: "Recursos desplegados (ejemplo)", en: "Deployed resources (example)" },
+    source: { es: "Dato ilustrativo",               en: "Illustrative data" },
   } as const;
   const L = (obj: { es: string; en: string }) => obj[locale];
 

@@ -9,7 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from costa_api.cenepred import official_risk
 from costa_api.db import get_db
+from costa_api.provenance import is_demo_version as _is_demo_version
 
 router = APIRouter(prefix="/fusion", tags=["fusion"])
 
@@ -30,21 +32,31 @@ def _risk_prose_es(
     rainfall_72h: float | None = None,
     rainfall_ws: str | None = None,
     rainfall_level: str | None = None,
+    flood_is_demo: bool = False,
+    huayco_is_demo: bool = False,
 ) -> str:
     parts: list[str] = []
 
     if flood_polygon_count > 0 and flood_area_km2 > 0:
         pop_str = f"; ~{population:,} personas en zona afectada" if population else ""
-        parts.append(
-            f"{flood_polygon_count} polígono(s) de inundación SAR activos "
-            f"({flood_area_km2:.1f} km² detectados{pop_str})"
-        )
+        if flood_is_demo:
+            parts.append(
+                f"{flood_polygon_count} polígono(s) de inundación de escenario "
+                f"({flood_area_km2:.1f} km², datos de demostración, no detección SAR real)"
+            )
+        else:
+            parts.append(
+                f"{flood_polygon_count} polígono(s) de inundación SAR activos "
+                f"({flood_area_km2:.1f} km² detectados{pop_str})"
+            )
     else:
         parts.append("Sin inundaciones SAR activas detectadas")
 
     if huayco_risk:
         RISK_ES = {"low": "bajo", "medium": "moderado", "high": "alto", "very_high": "muy alto"}
         prob_str = f" (probabilidad {huayco_prob * 100:.0f}%)" if huayco_prob is not None else ""
+        if huayco_is_demo:
+            prob_str += ", valor de escenario"
         parts.append(
             f"Riesgo de huayco {RISK_ES.get(huayco_risk, huayco_risk)}{prob_str}"
         )
@@ -76,21 +88,31 @@ def _risk_prose_en(
     rainfall_72h: float | None = None,
     rainfall_ws: str | None = None,
     rainfall_level: str | None = None,
+    flood_is_demo: bool = False,
+    huayco_is_demo: bool = False,
 ) -> str:
     parts: list[str] = []
 
     if flood_polygon_count > 0 and flood_area_km2 > 0:
         pop_str = f"; ~{population:,} people in affected zone" if population else ""
-        parts.append(
-            f"{flood_polygon_count} active SAR flood polygon(s) "
-            f"({flood_area_km2:.1f} km² detected{pop_str})"
-        )
+        if flood_is_demo:
+            parts.append(
+                f"{flood_polygon_count} scenario flood polygon(s) "
+                f"({flood_area_km2:.1f} km², demonstration data, not a real SAR detection)"
+            )
+        else:
+            parts.append(
+                f"{flood_polygon_count} active SAR flood polygon(s) "
+                f"({flood_area_km2:.1f} km² detected{pop_str})"
+            )
     else:
         parts.append("No active SAR flood extents detected")
 
     if huayco_risk:
         RISK_EN = {"low": "low", "medium": "moderate", "high": "high", "very_high": "very high"}
         prob_str = f" (probability {huayco_prob * 100:.0f}%)" if huayco_prob is not None else ""
+        if huayco_is_demo:
+            prob_str += ", scenario value"
         parts.append(
             f"{RISK_EN.get(huayco_risk, huayco_risk)} mudslide risk{prob_str}"
         )
@@ -177,7 +199,8 @@ async def district_fusion(
                         ) / 1e6
                     ), 0
                 )::float AS overlap_km2,
-                MAX(fp.acquired_at) AS latest_flood_at
+                MAX(fp.acquired_at) AS latest_flood_at,
+                ARRAY_AGG(DISTINCT fp.model_version) AS model_versions
             FROM geo.districts d
             JOIN ml.flood_polygons fp
               ON ST_Intersects(ST_MakeValid(d.geom), ST_MakeValid(fp.geom))
@@ -190,23 +213,35 @@ async def district_fusion(
     flood_count = int(flood["polygon_count"]) if flood and flood["polygon_count"] else 0
     flood_area = float(flood["overlap_km2"]) if flood and flood["overlap_km2"] else 0.0
     latest_flood_at = flood["latest_flood_at"].isoformat() if flood and flood.get("latest_flood_at") else None
+    flood_is_demo = flood_count > 0 and any(
+        _is_demo_version(v) for v in ((flood.get("model_versions") if flood else None) or [None])
+    )
 
-    # ── Huayco risk (highest-probability quebrada in district's watersheds) ───
+    # ── Huayco risk (highest-probability quebrada in or next to the district) ─
+    # A quebrada counts when its channel runs within 2 km of the district. This
+    # used to take any quebrada in the district's *watershed*, and the Rímac
+    # watershed polygon spans half of Lima: Miraflores, on the coast with no
+    # quebrada at all, reported "Riesgo de huayco muy alto (91%)" from Pedregal,
+    # 35 km away in Chosica. Only each quebrada's latest run is considered.
     huayco_row = await db.execute(
         text("""
-            SELECT
-                hs.risk_level,
-                hs.probability,
-                q.name AS quebrada_name,
-                hs.computed_at,
-                hs.trigger_rain_24h_mm
-            FROM ml.huayco_susceptibility hs
-            JOIN geo.quebradas q ON q.id = hs.quebrada_id
-            JOIN geo.watersheds w ON w.id = q.watershed_id
-            WHERE ST_Intersects(ST_MakeValid(w.geom), (
-                SELECT ST_MakeValid(geom) FROM geo.districts WHERE id = :district_id
-            ))
-            ORDER BY hs.probability DESC NULLS LAST
+            WITH latest AS (
+                SELECT DISTINCT ON (hs.quebrada_id)
+                       hs.quebrada_id, hs.risk_level, hs.probability,
+                       hs.computed_at, hs.trigger_rain_24h_mm, hs.model_version
+                FROM ml.huayco_susceptibility hs
+                ORDER BY hs.quebrada_id, hs.computed_at DESC
+            )
+            SELECT l.risk_level, l.probability, q.name AS quebrada_name,
+                   l.computed_at, l.trigger_rain_24h_mm, l.model_version
+            FROM latest l
+            JOIN geo.quebradas q ON q.id = l.quebrada_id
+            WHERE q.geom IS NOT NULL
+              AND ST_DWithin(
+                    q.geom::geography,
+                    (SELECT geom FROM geo.districts WHERE id = :district_id)::geography,
+                    2000)
+            ORDER BY l.probability DESC NULLS LAST
             LIMIT 1
         """),
         {"district_id": district_id},
@@ -217,6 +252,7 @@ async def district_fusion(
     quebrada_name: str | None = huayco["quebrada_name"] if huayco else None
     huayco_at = huayco["computed_at"].isoformat() if huayco and huayco["computed_at"] else None
     huayco_trigger_mm = float(huayco["trigger_rain_24h_mm"]) if huayco and huayco.get("trigger_rain_24h_mm") is not None else None
+    huayco_is_demo = _is_demo_version(huayco.get("model_version")) if huayco else False
 
     # ── Rainfall (latest IMERG for district's intersecting watersheds) ──────────
     rainfall_row = await db.execute(
@@ -234,9 +270,11 @@ async def district_fusion(
                 ORDER BY time DESC
                 LIMIT 1
             ) ia ON true
-            WHERE ST_Intersects(ST_MakeValid(w.geom), (
-                SELECT ST_MakeValid(geom) FROM geo.districts WHERE id = :district_id
-              ))
+            CROSS JOIN (SELECT geom FROM geo.districts WHERE id = :district_id) d
+            WHERE ST_Intersects(w.geom, d.geom)
+              -- Same rule as the risk map: at least a tenth of the district
+              -- has to drain into the basin for its rainfall to count.
+              AND ST_Area(ST_Intersection(w.geom, ST_MakeValid(d.geom))) >= 0.1 * ST_Area(d.geom)
             ORDER BY ia.acc_72h_mm DESC NULLS LAST
             LIMIT 1
         """),
@@ -283,6 +321,7 @@ async def district_fusion(
         social_urgent, social_total,
         district_name,
         rainfall_72h=rainfall_72h, rainfall_ws=rainfall_ws, rainfall_level=rainfall_level,
+        flood_is_demo=flood_is_demo, huayco_is_demo=huayco_is_demo,
     )
     prose_en = _risk_prose_en(
         population, flood_area, flood_count,
@@ -290,7 +329,9 @@ async def district_fusion(
         social_urgent, social_total,
         district_name,
         rainfall_72h=rainfall_72h, rainfall_ws=rainfall_ws, rainfall_level=rainfall_level,
+        flood_is_demo=flood_is_demo, huayco_is_demo=huayco_is_demo,
     )
+    official = await official_risk(db, ubigeo)
 
     return {
         "retrieved_at": _now_iso(),
@@ -306,6 +347,7 @@ async def district_fusion(
             "active_polygon_count": flood_count,
             "overlap_km2": round(flood_area, 3),
             "latest_scene_at": latest_flood_at,
+            "is_demo_data": flood_is_demo,
         },
         "huayco": {
             "highest_risk_level": huayco_risk,
@@ -314,6 +356,7 @@ async def district_fusion(
             "trigger_rain_24h_mm": huayco_trigger_mm,
             "computed_at": huayco_at,
             "data_status": "available" if huayco_risk is not None else "not_computed",
+            "is_demo_data": huayco_is_demo,
         },
         "social": {
             "total_signals_3h": social_total,
@@ -325,4 +368,6 @@ async def district_fusion(
             "acc_24h_mm": round(rainfall_24h, 1) if rainfall_24h is not None else None,
             "level": rainfall_level,  # emergencia / alerta / aviso / normal / null
         },
+        # Government classification, independent of the live signals above.
+        "official_risk": official,
     }

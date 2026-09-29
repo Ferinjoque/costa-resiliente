@@ -96,9 +96,15 @@ function DemoBanner() {
       style={{ background: "oklch(80% 0.17 85 / 0.92)", color: "oklch(25% 0.05 85)" }}
     >
       <span aria-hidden="true">⚠</span>
+      {/* Demo data only fills in under NEXT_PUBLIC_OFFLINE_DEMO; otherwise the
+          console keeps whatever it last received and says so. */}
       {locale === "en"
-        ? "API unavailable: displaying cached demo data. Live alerts and sensor readings are not updating."
-        : "API no disponible: mostrando datos de demostración. Alertas y sensores no se actualizan en tiempo real."}
+        ? (process.env.NEXT_PUBLIC_OFFLINE_DEMO === "1"
+            ? "API unavailable: displaying offline demo data. Live alerts and sensor readings are not updating."
+            : "API unavailable: showing the last data received. Live alerts and sensor readings are not updating.")
+        : (process.env.NEXT_PUBLIC_OFFLINE_DEMO === "1"
+            ? "API no disponible: mostrando datos de demostración sin conexión. Alertas y sensores no se actualizan."
+            : "API no disponible: se muestran los últimos datos recibidos. Alertas y sensores no se actualizan.")}
     </div>
   );
 }

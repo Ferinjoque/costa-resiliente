@@ -268,6 +268,7 @@ export function AskPanel() {
   const [loading, setLoading] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollPaneRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const animatingMsgRef = useRef<{ id: string; content: string } | null>(null);
@@ -292,7 +293,11 @@ export function AskPanel() {
   }, [activePanel]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Scroll the chat pane itself. scrollIntoView also scrolls every scrollable
+    // ancestor, overflow:hidden included, and it was shifting the whole app
+    // shell up and leaving a black band under the map mid-answer.
+    const pane = scrollPaneRef.current;
+    if (pane) pane.scrollTo({ top: pane.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
   useEffect(() => {
@@ -536,7 +541,7 @@ export function AskPanel() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4" aria-live="polite">
+      <div ref={scrollPaneRef} className="flex-1 overflow-y-auto px-4 py-4" aria-live="polite">
         {messages.length === 0 ? (
           /* Empty state */
           <div className="h-full flex flex-col">

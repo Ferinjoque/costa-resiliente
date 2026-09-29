@@ -11,6 +11,8 @@ import {
   SOCIAL_LABEL_COLOR,
   STATION_COLOR,
   INFRA_COLOR,
+  OFFICIAL_RISK_COLOR,
+  MODEL_RISK_COLOR,
   RAIN_STOPS,
   COSTA_500,
 } from "@/lib/colors";
@@ -39,6 +41,20 @@ const HUAYCO_ITEMS: { color: string; label: { es: string; en: string } }[] = [
   { color: HUAYCO_COLOR.high,      label: { es: "Alto",     en: "High" } },
   { color: HUAYCO_COLOR.moderate,  label: { es: "Moderado", en: "Moderate" } },
   { color: HUAYCO_COLOR.low,       label: { es: "Bajo",     en: "Low" } },
+];
+
+const OFFICIAL_ITEMS: { color: string; label: { es: string; en: string } }[] = [
+  { color: OFFICIAL_RISK_COLOR.muy_alto, label: { es: "Muy alto", en: "Very high" } },
+  { color: OFFICIAL_RISK_COLOR.alto,     label: { es: "Alto",     en: "High" } },
+  { color: OFFICIAL_RISK_COLOR.medio,    label: { es: "Medio",    en: "Medium" } },
+  { color: OFFICIAL_RISK_COLOR.bajo,     label: { es: "Bajo",     en: "Low" } },
+];
+
+const MODEL_ITEMS: { color: string; label: { es: string; en: string } }[] = [
+  { color: MODEL_RISK_COLOR.very_high, label: { es: "Muy alto (≥10× la base)", en: "Very high (≥10× base)" } },
+  { color: MODEL_RISK_COLOR.high,      label: { es: "Alto (≥5×)",             en: "High (≥5×)" } },
+  { color: MODEL_RISK_COLOR.medium,    label: { es: "Medio (≥2×)",            en: "Medium (≥2×)" } },
+  { color: MODEL_RISK_COLOR.low,       label: { es: "Bajo",                   en: "Low" } },
 ];
 
 const ALERT_ITEMS: { color: string; label: { es: string; en: string } }[] = [
@@ -75,6 +91,9 @@ const LABELS = {
   stations:     { es: "Estaciones ANA",             en: "ANA stations" },
   opAlerts:     { es: "Alertas operacionales",      en: "Operational alerts" },
   infra:        { es: "Infraestructura",            en: "Infrastructure" },
+  mmModel:      { es: "Huaycos: modelo, 72 h", en: "Debris flows: model, 72 h" },
+  officialMm:   { es: "Riesgo oficial huaycos (CENEPRED)",    en: "Official debris-flow risk (CENEPRED)" },
+  officialFlood:{ es: "Riesgo oficial inundación (CENEPRED)", en: "Official flood risk (CENEPRED)" },
 };
 
 function L(key: keyof typeof LABELS, locale: Locale): string {
@@ -93,8 +112,12 @@ export function MapLegend() {
   const showStations = activeLayers.has("stations");
   const showInfra    = activeLayers.has("infrastructure");
   const showShelters = activeLayers.has("shelters");
+  const showOfficialMm    = activeLayers.has("official_mm");
+  const showModel         = activeLayers.has("mm_model");
+  const showOfficialFlood = activeLayers.has("official_flood");
 
-  if (!showRisk && !showRain && !showSocial && !showHuayco && !showFlood && !showStations && !showInfra && !showShelters) return null;
+  if (!showRisk && !showRain && !showSocial && !showHuayco && !showFlood && !showStations && !showInfra
+      && !showShelters && !showOfficialMm && !showOfficialFlood && !showModel) return null;
 
   return (
     // Sits just above the MapLibre navigation control (+/-) at bottom-right.
@@ -125,6 +148,30 @@ export function MapLegend() {
           {showRisk && (
             <Section label={L("riskLevel", locale)}>
               {RISK_ITEMS.map(({ color, label }) => (
+                <DotRow key={label.es} color={color} label={label[locale]} shape="square" />
+              ))}
+            </Section>
+          )}
+
+          {showModel && (
+            <Section label={L("mmModel", locale)}>
+              {MODEL_ITEMS.map(({ color, label }) => (
+                <DotRow key={label.es} color={color} label={label[locale]} shape="square" />
+              ))}
+            </Section>
+          )}
+
+          {showOfficialMm && (
+            <Section label={L("officialMm", locale)}>
+              {OFFICIAL_ITEMS.map(({ color, label }) => (
+                <DotRow key={label.es} color={color} label={label[locale]} shape="square" />
+              ))}
+            </Section>
+          )}
+
+          {showOfficialFlood && (
+            <Section label={L("officialFlood", locale)}>
+              {OFFICIAL_ITEMS.map(({ color, label }) => (
                 <DotRow key={label.es} color={color} label={label[locale]} shape="square" />
               ))}
             </Section>

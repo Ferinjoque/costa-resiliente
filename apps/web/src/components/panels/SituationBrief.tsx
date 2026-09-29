@@ -116,8 +116,8 @@ export function SituationBrief() {
       icon: <CloudRain size={10} className="text-accent shrink-0 mt-px" />,
       text:
         locale === "es"
-          ? `${maxRain72h.toFixed(0)} mm/72h ${maxRainWs ? `(${maxRainWs})` : ""} · ${rainLabel}`
-          : `${maxRain72h.toFixed(0)} mm/72h ${maxRainWs ? `(${maxRainWs})` : ""} · ${rainLabel}`,
+          ? `${maxRain72h.toFixed(0)} mm/72h ${maxRainWs ? `(${maxRainWs}${imerg?.is_demo_data ? ", escenario" : ""})` : ""} · ${rainLabel}`
+          : `${maxRain72h.toFixed(0)} mm/72h ${maxRainWs ? `(${maxRainWs}${imerg?.is_demo_data ? ", scenario" : ""})` : ""} · ${rainLabel}`,
     });
   }
 

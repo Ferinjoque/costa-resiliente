@@ -90,13 +90,15 @@ const SLA_MINUTES: Record<string, number> = {
 };
 
 function SlaChip({ alert, locale }: { alert: Alert; locale: "es" | "en" }) {
-  if (alert.status !== "active") return null;
+  // Hooks before any early return (Rules of Hooks): an alert that becomes
+  // active after mount would otherwise change the hook count between renders.
   // Local tick to update SLA chip every 15 seconds, reduces stale display between 30s query refetches
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 15_000);
     return () => clearInterval(t);
   }, []);
+  if (alert.status !== "active") return null;
   // Prefer server-provided age_seconds (server clock, avoids client skew) + local elapsed time
   // since last refetch. On each tick, add 15s to server age to approximate current age.
   const baseAgeSec = alert.age_seconds != null ? alert.age_seconds : null;
@@ -304,8 +306,8 @@ function EscalationModal({
 // ─── AlertRow ─────────────────────────────────────────────────────────────────
 
 const ACTION_TOAST: Record<string, { es: string; en: string }> = {
-  acknowledge:    { es: "Alerta reconocida (guardada en log", en: "Alert acknowledged)logged" },
-  escalate:       { es: "Escalada a INDECI COEN (registrado", en: "Escalated to INDECI COEN)logged" },
+  acknowledge:    { es: "Alerta reconocida (guardada en el registro)", en: "Alert acknowledged (logged)" },
+  escalate:       { es: "Escalada a INDECI COEN (registrado)", en: "Escalated to INDECI COEN (logged)" },
   false_positive: { es: "Marcada como falso positivo",        en: "Marked as false positive" },
   close:          { es: "Alerta cerrada",                     en: "Alert closed" },
 };
@@ -582,6 +584,16 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   const critical = active.filter((a) => a.severity === "critical");
   const high     = active.filter((a) => a.severity === "high");
 
+  // SLA urgency: 15s tick keeps recommendation in sync with SlaChip tick (prevents inconsistent UI).
+  // Declared before the early return: the panel mounts with an empty list and
+  // the alerts arrive a moment later, so a hook below the return ran on the
+  // second render only ("Expected static flag was missing").
+  const [recTick, setRecTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setRecTick((n) => n + 1), 15_000);
+    return () => clearInterval(t);
+  }, []);
+
   if (critical.length === 0 && high.length < 2) return null;
 
   const firstCritical = critical[0];
@@ -591,12 +603,6 @@ function AiRecommendation({ alerts, locale }: { alerts: Alert[]; locale: "es" | 
   const topDistrict = firstCritical?.district_name ?? (high[0]?.district_name ?? null);
   const isRainfall = firstCritical?.type === "rainfall" || active.some((a) => a.type === "rainfall" && (a.severity === "critical" || a.severity === "high"));
 
-  // SLA urgency: 15s tick keeps recommendation in sync with SlaChip tick (prevents inconsistent UI)
-  const [recTick, setRecTick] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setRecTick((n) => n + 1), 15_000);
-    return () => clearInterval(t);
-  }, []);
   const SLA_MIN_MAP: Record<string, number> = { critical: 5, high: 10, medium: 30, low: 60 };
   const criticalAgeSec = firstCritical?.age_seconds ?? null;
   const criticalAgeMin = criticalAgeSec != null
@@ -1211,6 +1217,16 @@ export function AlertsPanel() {
             <p className="text-xs text-ink-muted leading-snug">
               {exposure.districts.slice(0, 3).map((d) => d.district_name).join(" · ")}
               {exposure.districts.length > 3 && ` +${exposure.districts.length - 3} ${locale === "es" ? "distritos" : "districts"}`}
+            </p>
+            <p className="text-2xs text-ink-subtle mt-1 leading-snug">
+              {locale === "es"
+                ? "Estimación por área inundada × población INEI 2017."
+                : "Estimate: flooded area × INEI 2017 population."}
+              {exposure.is_demo_data && (
+                <span className="text-warn-muted font-medium">
+                  {locale === "es" ? " Extensión de escenario, no detección real." : " Scenario extent, not a real detection."}
+                </span>
+              )}
             </p>
           </div>
         )}

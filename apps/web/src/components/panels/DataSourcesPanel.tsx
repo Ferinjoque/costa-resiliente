@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   AlertTriangle,
+  BrainCircuit,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui";
-import { useScraperHealth } from "@/lib/queries";
+import { useScraperHealth, useHuaycoModelCard } from "@/lib/queries";
 import type { ScraperSourceHealth } from "@/lib/api";
 import {
   PanelHeader,
@@ -46,7 +47,9 @@ const SOURCES: Source[] = [
     coverage: "Lima AOI: 10 m resolución",
     latency: "~3 h tras adquisición",
     url: "https://planetarycomputer.microsoft.com/dataset/sentinel-1-grd",
-    status: "ok",
+    notes: "Ingesta implementada; sin checkpoint SAR publicable, los polígonos del mapa son de escenario.",
+    status: "warn",
+    healthKey: "flood",
   },
   {
     id: "open-meteo",
@@ -61,11 +64,12 @@ const SOURCES: Source[] = [
   },
   {
     id: "imerg",
-    name: "NASA IMERG Late Run V07B",
+    name: "NASA IMERG Early Run V07",
     provider: "NASA GES DISC",
     coverage: "Global: 0.1° (~11 km), cada 30 min",
-    latency: "~12 h tras observación",
+    latency: "~4-5 h tras observación",
     url: "https://gpm.nasa.gov/data/imerg",
+    notes: "Observación real por cuenca, cada hora (token Earthdata). La capa de lluvia del mapa muestra el escenario de demostración; la observación real va en la barra de frescura y el SITREP.",
     status: "ok",
     healthKey: "imerg",
   },
@@ -99,6 +103,25 @@ const SOURCES: Source[] = [
     url: "https://sinpad2.indeci.gob.pe",
     notes: "Base de peligro derivada de densidad histórica. SIGRID nativo requiere autenticación SSO.",
     status: "warn",
+  },
+  {
+    id: "cenepred-er",
+    name: "CENEPRED: Escenario de riesgo El Niño",
+    provider: "Centro Nacional de Estimación, Prevención y Reducción del Riesgo de Desastres",
+    coverage: "Riesgo por inundación y por movimientos en masa, límites oficiales INEI: 178 distritos de Lima y Callao",
+    latency: "Estudio oficial (estático)",
+    url: "https://sig.cenepred.gob.pe/arcgis_server/rest/services/FEN/ER_NINO2027_BD/MapServer",
+    notes: "Servicio ArcGIS público, sin credenciales. Es la clasificación del Estado, no una estimación nuestra.",
+    status: "ok",
+  },
+  {
+    id: "cenepred-coen",
+    name: "CENEPRED / COEN FEN 2023",
+    provider: "Centro de Operaciones de Emergencia Nacional",
+    coverage: "Comisarías PNP y almacenes nacionales de INDECI (144 activos)",
+    latency: "Estático",
+    url: "https://sig.cenepred.gob.pe/arcgis_server/rest/services/sectores/COEN_FEN_2023_10_5_1X/MapServer",
+    status: "ok",
   },
   {
     id: "osm",
@@ -154,7 +177,7 @@ const SOURCES: Source[] = [
 const GROUPS: { labelEs: string; labelEn: string; ids: string[] }[] = [
   { labelEs: "Teledetección",              labelEn: "Remote sensing",       ids: ["sentinel1", "imerg"] },
   { labelEs: "Meteorología",               labelEn: "Weather",              ids: ["open-meteo"] },
-  { labelEs: "Estaciones e institucional", labelEn: "Stations & institutional", ids: ["ana", "senamhi", "sinpad"] },
+  { labelEs: "Estaciones e institucional", labelEn: "Stations & institutional", ids: ["ana", "senamhi", "cenepred-er", "cenepred-coen", "sinpad"] },
   { labelEs: "Infraestructura",            labelEn: "Infrastructure",       ids: ["osm"] },
   { labelEs: "Señales sociales",           labelEn: "Social signals",       ids: ["bluesky", "rss", "reddit", "telegram"] },
 ];
@@ -379,6 +402,8 @@ export function DataSourcesPanel() {
         })}
 
         <Divider />
+        <ModelCard locale={locale} />
+        <Divider />
         <KnownLimitations locale={locale} />
       </div>
 
@@ -448,26 +473,99 @@ export function DataSourcesPanel() {
  */
 const LIMITATIONS: { es: string; en: string }[] = [
   {
-    es: "Susceptibilidad de huayco: valores de escenario de demostración, no salida del modelo. El XGBoost no está ajustado sobre un inventario de deslizamientos de Lima etiquetado.",
-    en: "Huayco susceptibility: demonstration scenario values, not model output. The XGBoost is not fitted on a labelled Lima landslide inventory.",
+    es: "Puntos de huayco por quebrada: valores del escenario de demostración. La probabilidad real por distrito la da la capa \"Huaycos: modelo entrenado\", validada en 2017-2020.",
+    en: "Per-quebrada huayco points: demo scenario values. The real per-district probability is the \"Debris flows: trained model\" layer, validated on 2017-2020.",
   },
   {
     es: "Inundación SAR: los polígonos en el mapa son sintéticos y están rotulados como tales. No existe un checkpoint Sen1Floods11 publicable para SAR; la ruta de inferencia está implementada y probada, a la espera de pesos.",
     en: "SAR flood: the polygons on the map are synthetic and labelled as such. No publishable Sen1Floods11 SAR checkpoint exists; the inference path is implemented and tested, awaiting weights.",
   },
   {
-    es: "Lluvia IMERG: producto Late Run, con ~12 h de latencia. No es tiempo real; los 30 min son la resolución temporal, no la disponibilidad.",
-    en: "IMERG rainfall: Late Run product, ~12 h latency. Not real time; the 30 min figure is temporal resolution, not availability.",
+    es: "Lluvia IMERG: la capa del mapa muestra el escenario de demostración. La observación real de la NASA (Early Run, ~4-5 h de latencia) se ingiere cada hora y aparece en la barra de frescura y el SITREP.",
+    en: "IMERG rainfall: the map layer shows the demo scenario. The real NASA observation (Early Run, ~4-5 h latency) is ingested hourly and shown in the freshness bar and the SITREP.",
   },
   {
-    es: "Peligro histórico: derivado de densidad de eventos SINPAD 2003-2020, no de los polígonos SIGRID de CENEPRED, cuyo portal exige SSO.",
-    en: "Historical hazard: derived from SINPAD 2003-2020 event density, not CENEPRED's SIGRID polygons, whose portal requires SSO.",
+    es: "Peligro histórico: derivado de densidad de eventos SINPAD 2003-2020, no de los polígonos SIGRID de CENEPRED, cuyo portal exige SSO. La clasificación oficial de CENEPRED sí está disponible, pero a nivel de distrito, no de zona.",
+    en: "Historical hazard: derived from SINPAD 2003-2020 event density, not CENEPRED's SIGRID polygons, whose portal requires SSO. CENEPRED's official classification is available, but per district, not per zone.",
   },
   {
     es: "Reddit y Telegram operan en modo best-effort y pueden quedar sin datos recientes sin que ello indique una falla del sistema.",
     en: "Reddit and Telegram run best-effort and may go without recent data without that indicating a system failure.",
   },
 ];
+
+/**
+ * The trained mass-movement model, with its held-out numbers next to the
+ * rain-free baseline, so a reader can see what the rainfall actually adds.
+ */
+function ModelCard({ locale }: { locale: "es" | "en" }) {
+  const [open, setOpen] = useState(false);
+  const { data } = useHuaycoModelCard();
+  if (!data) return null;
+  const t = data.metrics.test_2017_2020;
+  const b = data.metrics.baseline_no_rain_2017_2020;
+  const es = locale === "es";
+  const x = (m: { pr_auc: number; pr_auc_random: number }) => (m.pr_auc / m.pr_auc_random).toFixed(1);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2 px-4 py-3 hover:bg-surface-hover transition-colors text-left"
+      >
+        <BrainCircuit size={13} strokeWidth={1.75} className="text-accent shrink-0" aria-hidden="true" />
+        <span className="text-xs font-semibold text-ink flex-1">
+          {es ? "Modelo de huaycos entrenado" : "Trained debris-flow model"}
+        </span>
+        <span className="text-2xs text-ink-subtle tabular-nums">AUC {t.roc_auc.toFixed(2)}</span>
+      </button>
+      {open && (
+        <div className="px-4 pb-3 flex flex-col gap-2 text-[11px] leading-snug text-ink-muted">
+          <p>
+            {es
+              ? `XGBoost que estima la probabilidad de un huayco, deslizamiento o derrumbe en cada distrito en las próximas 72 h, a partir de la lluvia (ERA5) y la susceptibilidad de CENEPRED. Etiquetas: ${data.metrics.labels.replace("SINPAD/INDECI 2003-2020: ", "inventario SINPAD/INDECI: ")}.`
+              : `XGBoost estimating the probability of a debris flow, landslide or rockfall in each district within 72 h, from rainfall (ERA5) and CENEPRED susceptibility. Labels: SINPAD/INDECI inventory.`}
+          </p>
+          <p>
+            {es
+              ? `Entrenado con las temporadas ${data.metrics.train_seasons}; evaluado en ${data.metrics.test_seasons}, que el modelo nunca vio (incluye El Niño costero 2017).`
+              : `Trained on the ${data.metrics.train_seasons} seasons; tested on ${data.metrics.test_seasons}, never seen in training (includes the 2017 coastal El Niño).`}
+          </p>
+          <table className="w-full tabular-nums">
+            <thead>
+              <tr className="text-2xs text-ink-subtle">
+                <th className="text-left font-normal">{es ? "Prueba 2017-2020" : "Test 2017-2020"}</th>
+                <th className="text-right font-normal">ROC-AUC</th>
+                <th className="text-right font-normal">{es ? "PR-AUC vs azar" : "PR-AUC vs chance"}</th>
+                <th className="text-right font-normal">{es ? "Eventos en 10% superior" : "Events in top 10%"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="text-ink">
+                <td>{es ? "Modelo" : "Model"}</td>
+                <td className="text-right font-semibold">{t.roc_auc.toFixed(2)}</td>
+                <td className="text-right font-semibold">{x(t)}×</td>
+                <td className="text-right font-semibold">{Math.round(t.events_in_top_decile * 100)}%</td>
+              </tr>
+              <tr>
+                <td>{es ? "Sin lluvia (base)" : "No rain (baseline)"}</td>
+                <td className="text-right">{b.roc_auc.toFixed(2)}</td>
+                <td className="text-right">{x(b)}×</td>
+                <td className="text-right">{Math.round(b.events_in_top_decile * 100)}%</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="text-2xs text-ink-subtle">
+            {es
+              ? `${t.events} eventos en prueba. Lluvia en celdas de 0.5°: resolución gruesa, el detalle espacial viene de CENEPRED y del historial del distrito. Versión ${data.version}.`
+              : `${t.events} test events. Rain on 0.5° cells: coarse; spatial detail comes from CENEPRED and district history. Version ${data.version}.`}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function KnownLimitations({ locale }: { locale: "es" | "en" }) {
   const [open, setOpen] = useState(false);

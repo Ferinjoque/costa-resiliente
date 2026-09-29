@@ -162,12 +162,17 @@ export function OperationalHUD() {
           />
         )}
         {floodKm2 > 0 && (
-          <HudMetric value={`${floodKm2.toFixed(1)}`} label="km² SAR" border />
+          // Scenario extents must not borrow the SAR label a real detection earns.
+          <HudMetric
+            value={`${floodKm2.toFixed(1)}`}
+            label={exposure?.is_demo_data ? (locale === "es" ? "km² escen." : "km² scen.") : "km² SAR"}
+            border
+          />
         )}
         {affectedPop > 0 && (
           <HudMetric
-            value={affectedPop >= 1000 ? `${(affectedPop / 1000).toFixed(0)}k` : String(affectedPop)}
-            label={locale === "es" ? "pob." : "pop."}
+            value={affectedPop >= 1000 ? `~${(affectedPop / 1000).toFixed(0)}k` : `~${affectedPop}`}
+            label={locale === "es" ? "pob. est." : "est. pop."}
             border
           />
         )}
