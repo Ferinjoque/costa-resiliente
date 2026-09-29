@@ -110,6 +110,25 @@ function popupHtml(
   return `<div class="cr-popup"><div class="cr-title${titleClass ? ` ${titleClass}` : ""}">${escHtml(title)}</div>${body}</div>`;
 }
 
+// Point layers, bottom to top. They must sit above every fill: layers are added
+// as their data arrives, so a choropleth switched on later (CENEPRED, the
+// trained model, the district risk fill) used to land on top of the dots.
+const POINT_LAYERS = [
+  "infra-circle", "shelters-circle", "shelters-label",
+  "social-clusters", "social-cluster-count", "social-circle",
+  "stations-circle", "stations-label", "huayco-circle",
+  "alerts-halo", "alerts-circle",
+] as const;
+
+/** Move the point layers to the top of the stack, once, if anything covers them. */
+function raisePointLayers(m: maplibregl.Map) {
+  const order = m.getStyle()?.layers?.map((l) => l.id) ?? [];
+  const present = POINT_LAYERS.filter((id) => order.includes(id));
+  const tail = order.slice(order.length - present.length);
+  if (present.every((id, i) => tail[i] === id)) return;   // already on top, in order
+  for (const id of present) m.moveLayer(id);
+}
+
 /** Replace active popup with a new one. */
 function openPopup(
   m: maplibregl.Map,
@@ -454,6 +473,10 @@ export default function MapView() {
         activePopup.current?.remove();
         activePopup.current = null;
       });
+
+      // Re-check after every render settles: cheap, and a no-op when the
+      // stack is already right, so it cannot loop.
+      m.on("idle", () => raisePointLayers(m));
 
       // ── Unified hover cursor ────────────────────────────────────────────
       m.on("mousemove", (e) => {
