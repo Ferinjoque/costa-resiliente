@@ -34,12 +34,15 @@ from typing import Optional
 
 import httpx
 from pydantic import BaseModel, ValidationError
+from costa_workers.ingest.social import _db_dsn
 
 logger = logging.getLogger(__name__)
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 TRIAGE_MODEL = os.getenv("TRIAGE_MODEL", os.getenv("OLLAMA_PRIMARY_MODEL", "gemma4:e4b"))
-DB_DSN = os.getenv("DATABASE_URL", "postgresql://costa:costa@localhost:5432/costa_resiliente")
+# DATABASE_URL if set, else the POSTGRES_* settings from compose. The old
+# localhost fallback never reached the database from inside the container.
+DB_DSN = _db_dsn()
 
 BATCH_SIZE = 10  # signals per triage run; smaller = less copilot starvation per cycle
 

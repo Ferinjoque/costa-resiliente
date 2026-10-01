@@ -28,6 +28,7 @@ from costa_workers.ml.flood_segmentation import (
     sar_to_flood_polygons,
     WEIGHTS_PATH,
 )
+from costa_workers.ingest.social import _db_dsn
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,9 @@ MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "change_me_in_production")
 MINIO_USE_SSL = os.getenv("MINIO_USE_SSL", "false").lower() == "true"
 MINIO_BUCKET = os.getenv("MINIO_BUCKET_RASTERS", "rasters")
 
-DB_DSN = os.getenv("DATABASE_URL", "postgresql://costa:costa@localhost:5432/costa_resiliente")
+# DATABASE_URL if set, else the POSTGRES_* settings from compose. The old
+# localhost fallback never reached the database from inside the container.
+DB_DSN = _db_dsn()
 
 FLOOD_CONFIDENCE_THRESHOLD = float(os.getenv("FLOOD_CONFIDENCE_THRESHOLD", "0.5"))
 FLOOD_MIN_PIXELS = int(os.getenv("FLOOD_MIN_PIXELS", "9"))

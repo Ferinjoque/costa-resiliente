@@ -29,10 +29,13 @@ from urllib.parse import urlparse
 
 import httpx
 from prefect import flow, task
+from costa_workers.ingest.social import _db_dsn
 
 logger = logging.getLogger(__name__)
 
-DB_DSN = os.getenv("DATABASE_URL", "postgresql://costa:costa@localhost:5432/costa_resiliente")
+# DATABASE_URL if set, else the POSTGRES_* settings from compose. The old
+# localhost fallback never reached the database from inside the container.
+DB_DSN = _db_dsn()
 
 SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 _NOTIFY_SEVERITIES = {"critical", "high"}  # auto-notify on these; operators see medium/low in UI
