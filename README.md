@@ -251,12 +251,25 @@ powershell -ExecutionPolicy Bypass -File scripts/reset-demo.ps1
 
 1. Create a free NASA Earthdata account, generate a user token, and put it in `.env` as
    `EARTHDATA_TOKEN=...`. Without it the rest of the platform works; only IMERG stays empty.
-2. Load the official districts and the real basins:
+2. Load the official districts and risk levels. The loader is not baked into the worker
+   image, so copy it in first:
    ```bash
-   docker exec costa-prefect-worker python scripts/load_cenepred_districts.py
-   docker exec costa-prefect-worker python scripts/load_watersheds_hydrobasins.py --shp <hybas_sa_lev10_v1c.shp>
+   docker exec costa-prefect-worker mkdir -p /tmp/cr
+   docker cp scripts/load_cenepred_districts.py costa-prefect-worker:/tmp/cr/
+   docker exec costa-prefect-worker python /tmp/cr/load_cenepred_districts.py
    ```
-3. Train the model and precompute the 2017 replay:
+   Optional, the real basins: download HydroBASINS South America level 10 from
+   hydrosheds.org, copy the `.shp`, `.shx`, `.dbf` and `.prj` files to `/tmp/cr/` the same
+   way, copy `scripts/load_watersheds_hydrobasins.py` too, and run it with
+   `--shp /tmp/cr/hybas_sa_lev10_v1c.shp`.
+3. Load the SINPAD events the model learns from. Download the inventory from
+   datosabiertos.gob.pe ("Emergencias históricas registradas con SINPAD") into `docs/`, then
+   run the loader from your machine (Postgres is published on port 5432):
+   ```bash
+   pip install pandas openpyxl psycopg2-binary
+   DATABASE_URL=postgresql://costa:<POSTGRES_PASSWORD>@localhost:5432/costa_resiliente python scripts/load_sinpad.py
+   ```
+4. Train the model and precompute the 2017 replay:
    ```bash
    docker exec costa-prefect-worker python -m costa_workers.ml.mass_movement fetch    # ERA5, ~2 min
    docker exec costa-prefect-worker python -m costa_workers.ml.mass_movement train    # ~30 s
