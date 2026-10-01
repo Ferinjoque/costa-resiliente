@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { DEMO_DISTRICTS } from "./demoData";
 
 /**
- * Offline demo data is what a judge sees if the API is unreachable mid-demo, so
+ * Offline demo data is what a viewer sees if the API is unreachable mid-demo, so
  * it has to carry the same official codes as the live database. The Lima UBIGEO
  * map was wrong until 2026-08-23: "Pueblo Libre" and "Magdalena Vieja" were
  * listed as two districts (they are one, INEI 150121), shifting every code from

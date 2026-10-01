@@ -1332,7 +1332,7 @@ async def maybe_seed(engine: AsyncEngine, force: bool = False) -> None:
                     -- alert on top of the ones still open, so the feed showed
                     -- "Riesgo de huayco: Quirio" twice, days apart, until
                     -- auto-resolution caught up. During a demo that window is
-                    -- exactly what a judge sees.
+                    -- exactly what an operator sees.
                     WHERE NOT EXISTS (
                         SELECT 1 FROM ops.alerts existing
                         WHERE existing.title = :title

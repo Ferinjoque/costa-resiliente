@@ -1771,7 +1771,7 @@ def test_build_sitrep_answer_includes_utc_timestamp():
     """SITREP header must contain a UTC timestamp (YYYY-MM-DD HH:MM UTC).
 
     Regression guard: Session 23 added the timestamp (ISO format for international
-    judges) so operators know when data was retrieved without checking DataFreshnessBar.
+    readers) so operators know when data was retrieved without checking DataFreshnessBar.
     """
     from costa_api.ai.agent import _build_sitrep_answer
     per_tool_rows = [

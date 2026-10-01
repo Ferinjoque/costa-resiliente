@@ -135,7 +135,7 @@
 - **Load script**: `scripts/load_sinpad.py`
 - **Storage**: `historical.sinpad_events` (BIGSERIAL, indexed by ubigeo/year/event_type)
 - **Use**: Hazard zone classification (SINPAD event density → flood/landslide levels per district)
-- **Note**: SINPAD v2.0 live feed requires authorized INDECI account, documented as Phase 3 partnership ask; not used here
+- **Note**: SINPAD v2.0 live feed requires an authorized INDECI account; not used here
 - **Status**: ✅ Historical data loaded (2,063 Lima records); hazard zones derived and in `geo.hazard_zones`
 
 ### CENEPRED: escenario de riesgo por lluvias intensas asociadas a El Niño
@@ -170,7 +170,7 @@
 ### IGP Seismic Feed
 - **URL**: `ultimosismo.igp.gob.pe` (verified reachable, HTTP 200, 2026-08-23)
 - **Use**: Multi-hazard context (secondary to flood/huayco scenario)
-- **Status**: ❌ Dropped, seismic is explicitly out of scope per [`COMPETITION.md`](COMPETITION.md); revisit only post-competition
+- **Status**: ❌ Dropped: seismic hazards are out of scope for a flood and huayco tool
 
 ---
 
@@ -290,7 +290,7 @@ Nine whitelisted parameterised tools available to the copilot. The LLM never exe
 
 ---
 
-## Novelty Justification (IEEE Rubric)
+## What is new here
 
 1. **Bluesky AT Protocol firehose**, underutilized in disaster platforms (most use Twitter/X or WhatsApp groups); provides real-time Spanish citizen reports
 2. **Spanish-language LLM triage** with Pydantic-validated structured output and prompt-injection hardening (Aegis-style cognitive firewall)

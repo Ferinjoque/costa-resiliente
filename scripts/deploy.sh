@@ -23,7 +23,7 @@ set -euo pipefail
 REPO_URL="${REPO_URL:-https://github.com/Ferinjoque/costa-resiliente.git}"
 BRANCH="${BRANCH:-develop}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/costa-resiliente}"
-# Locked model stack: must match .env / .env.production.example. See docs/COMPETITION.md.
+# Locked model stack: must match .env / .env.production.example.
 LLM_PRIMARY_MODEL="${LLM_PRIMARY_MODEL:-qwen2.5:7b-instruct-q4_K_M}"   # copilot + triage
 LLM_FAST_MODEL="${LLM_FAST_MODEL:-gemma2:2b}"                          # guardrails
 LLM_EMBED_MODEL="${LLM_EMBED_MODEL:-nomic-embed-text}"                 # pgvector RAG

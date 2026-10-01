@@ -3,7 +3,7 @@ import { test, expect, type Page } from "@playwright/test";
 /**
  * Walks the COER Lima duty officer's decision sequence against the real stack:
  * set context → check the map → act on alerts → query the copilot → review the
- * log. These are the surfaces a judge touches, so a failure here matters more
+ * log. These are the surfaces an operator touches, so a failure here matters more
  * than any unit assertion.
  *
  * Requires `docker compose up -d` and a seeded scenario:

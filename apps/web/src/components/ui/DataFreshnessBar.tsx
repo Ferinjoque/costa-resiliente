@@ -31,7 +31,7 @@ export function DataFreshnessBar() {
   // "sin datos" is a claim about the feed, not about this component. Before the
   // queries resolve there is nothing to claim yet, and the first paint used to
   // assert that all three primary layers had received nothing — the worst
-  // possible opening frame for a console judged on timeliness.
+  // possible opening frame for a console whose job is timeliness.
   //
   // A scenario layer reports "escenario", not an age. Its timestamps are
   // refreshed by the seeder, so "hace 1 min" on them claimed a freshness the

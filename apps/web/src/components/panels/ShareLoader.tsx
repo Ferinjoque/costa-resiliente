@@ -15,7 +15,7 @@ const UBIGEO_RE   = /^\d{6}$/;
 
 /**
  * Reads ?share=<token> on mount and hydrates Zustand store from the resolved
- * scenario. Enables read-only mode so judges can load a shared link without auth.
+ * scenario. Enables read-only mode so anyone with a shared link can view it without an account.
  * Renders nothing visible: side-effects only.
  */
 export function ShareLoader() {

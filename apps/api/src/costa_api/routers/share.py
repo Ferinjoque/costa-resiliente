@@ -1,4 +1,4 @@
-"""Share tokens: mint + resolve read-only scenario snapshots for judges/public."""
+"""Share tokens: mint + resolve read-only scenario snapshots for public viewing."""
 
 from __future__ import annotations
 

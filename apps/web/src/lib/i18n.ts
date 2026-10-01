@@ -1,6 +1,6 @@
 /**
  * Minimal bilingual string table for Costa Resiliente.
- * Only strings judges see in the main UI flow.
+ * Only strings shown in the main UI flow.
  * FusionCallout has its own T object and is not duplicated here.
  */
 

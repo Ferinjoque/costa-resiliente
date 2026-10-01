@@ -10,8 +10,7 @@
 
 Costa Resiliente is a near-real-time operational awareness platform for emergency
 managers responding to El Niño-driven floods and huaycos (debris flows) in
-Lima Metropolitana, Peru. It is submitted to the IEEE Response Quest Challenge 2026
-(judged November: December 2026, product due 9 October 2026).
+Lima Metropolitana, Peru. It was built for the IEEE Response Quest Challenge 2026.
 
 The platform fuses satellite radar (Sentinel-1), hydrometeorological feeds (IMERG,
 ANA, SENAMHI), infrastructure layers (OSM, CENEPRED SIGRID), and Spanish-language
@@ -62,12 +61,9 @@ over a microservice database-per-service architecture because:
 2. **PostGIS + TimescaleDB co-location**: Spatial vector queries and time-series
    hypertables in the same engine eliminates cross-service joins and keeps latency
    predictable.
-3. **Judge evaluation context**: The submission is demonstrated via video call, not
-   load-tested under production traffic. Over-engineering the data layer adds risk
-   without observable benefit to judges.
-4. **STAC via pgstac**: pgstac requires PostgreSQL anyway; running a second Postgres
+3. **STAC via pgstac**: pgstac requires PostgreSQL anyway; running a second Postgres
    instance for STAC would be pure overhead.
-5. **Escape hatch**: If partitioning or replication becomes necessary post-MVP, the
+4. **Escape hatch**: If partitioning or replication becomes necessary post-MVP, the
    TimescaleDB multi-node or Citus extension can be layered on without changing
    application code.
 
@@ -135,6 +131,6 @@ These are **code-level** commitments, not documentation aspirations:
 ## Consequences
 
 This ADR locks the technology choices and scope boundaries for the duration of
-the IEEE Response Quest 2026 submission. Changes to locked items require a new
+the first release. Changes to locked items require a new
 ADR documenting the concrete reason for deviation (e.g., a confirmed API shutdown,
 licensing conflict, or performance blocker).

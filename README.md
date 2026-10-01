@@ -343,14 +343,13 @@ costa-resiliente/
 │   └── workers/      Prefect flows: ingest, triage, huayco model, alerts
 ├── infra/postgres/   Schema and migrations
 ├── scripts/          Data loaders, deploy, demo reset
-└── docs/             Status, data sources, model card, architecture, runbook
+└── docs/             Data sources, model card, architecture, runbook
 ```
 
 ## Documentation
 
 | Document | What's in it |
 |---|---|
-| [`docs/STATUS.md`](docs/STATUS.md) | What is built, what is pending, test results |
 | [`docs/models/mass-movement.md`](docs/models/mass-movement.md) | The trained model: data, validation, limitations, how to reproduce |
 | [`docs/data-sources.md`](docs/data-sources.md) | Every source, its endpoint, its status and its history |
 | [`docs/architecture.md`](docs/architecture.md) | System design and data flow |

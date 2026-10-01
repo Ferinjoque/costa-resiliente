@@ -190,7 +190,7 @@ This platform runs Ollama on CPU (no dedicated GPU assumed). Measured on an AMD 
 **Operational implications:**
 - At 2am during a flash flood, duty officers should use **quick-mode queries** for status checks. Full agentic reasoning is appropriate for nuanced strategic questions ("¿qué distritos debo evacuar primero?").
 - `num_ctx=8192` is set (down from Ollama default 32k). This loads the KV cache 3× faster and avoids "Server disconnected" errors under concurrent load at the cost of slightly shorter context.
-- On a VPS with a modern CPU (Hetzner CX32: 4 vCPU), expect similar latency. A GPU-equipped VPS (e.g., Hetzner GX2-Ampere) would reduce full-loop latency to ~5s but is not required for the rubric demo.
+- On a VPS with a modern CPU (Hetzner CX32: 4 vCPU), expect similar latency. A GPU-equipped VPS (e.g., Hetzner GX2-Ampere) would reduce full-loop latency to ~5s but is not required.
 - The keyword fallback fires automatically when LLM times out (30s ceiling), so the copilot never returns a blank answer.
 
 ---
