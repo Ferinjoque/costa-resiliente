@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="apps/web/public/icon-192.png" alt="Costa Resiliente" width="88" />
-
 # Costa Resiliente
 
 **An operations console for floods and huaycos in Lima, Peru.**
