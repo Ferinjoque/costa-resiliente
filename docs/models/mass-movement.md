@@ -81,6 +81,9 @@ docker exec costa-prefect-worker python -m costa_workers.ml.mass_movement replay
 docker exec costa-prefect-worker python -m costa_workers.ml.mass_movement live
 ```
 
-SINPAD dates must be loaded first: `scripts/load_sinpad.py` (the header-parsing fix of
-2026-09-28 is required; earlier loads left `event_date` NULL). Live scoring runs every
-hour in the `huayco-hourly` Prefect deployment.
+SINPAD dates must be loaded first: `scripts/load_sinpad.py --replace` (steps in the README).
+The loader needs both the header-parsing fix of 2026-09-28 (earlier loads left `event_date`
+NULL) and the date fix of 2026-10-01 (earlier loads swapped day and month on a third of the
+events). Reproduced from a clean install on 2026-10-01: ROC-AUC 0.762, rain-free baseline
+0.708, PR-AUC 0.0605, 37.3% of events in the top decile. Live scoring runs every hour in the
+`huayco-hourly` Prefect deployment.

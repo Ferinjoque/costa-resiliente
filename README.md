@@ -221,16 +221,15 @@ No cloud account and no API key. The demo scenario seeds itself on first start.
 git clone https://github.com/Ferinjoque/costa-resiliente.git
 cd costa-resiliente
 cp .env.example .env
-docker compose up -d                      # first build takes 5-10 minutes
+docker compose up -d
 ```
 
-Download the three local models once (about 6.6 GB):
+The first build takes 15 to 25 minutes, mostly the worker image downloading PyTorch. On first
+start the three local models (about 6.6 GB) download by themselves; `docker logs -f costa-ollama-init`
+shows the progress and ends with "All models ready."
 
-```bash
-docker exec costa-ollama ollama pull qwen2.5:7b-instruct-q4_K_M
-docker exec costa-ollama ollama pull gemma2:2b
-docker exec costa-ollama ollama pull nomic-embed-text
-```
+The weather and the forecast arrive within 15 minutes of the first start, and the hourly
+flows (NASA rain, the model's live run) within the hour.
 
 Then open **http://localhost:3000**. API docs are at http://localhost:8000/docs.
 
@@ -267,14 +266,22 @@ powershell -ExecutionPolicy Bypass -File scripts/reset-demo.ps1
    run the loader from your machine (Postgres is published on port 5432):
    ```bash
    pip install pandas openpyxl psycopg2-binary
-   DATABASE_URL=postgresql://costa:<POSTGRES_PASSWORD>@localhost:5432/costa_resiliente python scripts/load_sinpad.py
+   DATABASE_URL=postgresql://costa:<POSTGRES_PASSWORD>@localhost:5432/costa_resiliente python scripts/load_sinpad.py --replace
    ```
-4. Train the model and precompute the 2017 replay:
+   In PowerShell, set the variable first with `$env:DATABASE_URL="postgresql://..."`, then run
+   the same `python` line.
+4. Train the model, precompute the 2017 replay and score today:
    ```bash
    docker exec costa-prefect-worker python -m costa_workers.ml.mass_movement fetch    # ERA5, ~2 min
    docker exec costa-prefect-worker python -m costa_workers.ml.mass_movement train    # ~30 s
    docker exec costa-prefect-worker python -m costa_workers.ml.mass_movement replay 2017-01-01 2017-04-30
+   docker exec costa-prefect-worker python -m costa_workers.ml.mass_movement live
    ```
+   The result should match the model card: ROC-AUC about 0.76 on 2017-2020.
+
+On Windows, run these in PowerShell. Git Bash rewrites `/tmp/...` paths unless you set
+`MSYS_NO_PATHCONV=1` first.
+
 After that, the scheduled flows keep IMERG and the model's live run up to date every hour.
 
 </details>
