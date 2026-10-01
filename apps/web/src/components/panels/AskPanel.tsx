@@ -84,6 +84,8 @@ const SITREP_STEPS: Record<"es" | "en", string[]> = {
 };
 
 const SITREP_KEYWORDS = [
+  // English, matching the backend list (the English suggestion chip).
+  "situation report", "status report", "full briefing", "full situation",
   "inicio de guardia", "sitrep", "sit rep", "resumen completo",
   "resumen general", "situacion general", "situación general",
   "ponme al dia", "que paso", "que ocurrio", "eventos de la noche",

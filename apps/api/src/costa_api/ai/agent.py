@@ -145,6 +145,10 @@ _QUICK_PATTERNS: list[tuple[list[str], str]] = [
 
 
 _SITREP_PHRASES = [
+    # English: the UI's English suggestion chip ("Situation report please")
+    # used to fall through to a slow, partial LLM answer.
+    "situation report", "status report", "full briefing", "full situation",
+    "situation overview", "start of shift", "shift handover",
     "resumen completo", "informe de situación", "informe de situacion",
     "sitrep", "sit rep", "inicio de guardia", "relevo de guardia",
     "traspaso de guardia", "dame todo", "dame un resumen general",

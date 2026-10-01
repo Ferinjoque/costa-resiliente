@@ -1876,3 +1876,14 @@ def test_build_answer_discards_bare_json_object():
     messages = [{"role": "assistant", "content": '{"severity": "high"}'}]
     answer = _build_answer(messages, [], "estado")
     assert not answer.strip().startswith("{")
+
+
+@pytest.mark.parametrize("q", [
+    "Situation report please",          # the English UI suggestion chip
+    "Give me a full situation report",
+    "status report",
+    "full briefing for the start of shift",
+])
+def test_is_sitrep_query_matches_english(q):
+    from costa_api.ai.agent import _is_sitrep_query
+    assert _is_sitrep_query(q)
