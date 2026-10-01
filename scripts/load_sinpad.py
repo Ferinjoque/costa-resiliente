@@ -136,6 +136,11 @@ def _safe_date(val) -> date | None:
     if isinstance(val, (date,)):
         return val
     try:
+        # Excel dates come through dtype=str as "2008-09-08 00:00:00". dayfirst
+        # would swap day and month on those whenever the day is 12 or less
+        # (a third of the file); the MES column confirms the ISO reading.
+        if isinstance(val, str) and len(val) >= 10 and val[4] == "-":
+            return pd.to_datetime(val, format="ISO8601").date()
         return pd.to_datetime(val, dayfirst=True).date()
     except Exception:
         return None
