@@ -47,11 +47,9 @@ the comparison isolates what the rainfall adds.
 
 2017 season alone: ROC-AUC 0.76, PR-AUC 0.116 against 0.042 by chance.
 
-Replay check, 14 March 2017 (the day before the Carapongo, Huaycoloro and Chosica
-huaycos): Lurigancho and Chaclacayo are rated very high (31x and 17x the base rate).
-SINPAD recorded five mass movements in those two districts over the next 72 hours.
-Across the department, the 63 districts rated very high that day held 73 of the 109
-events of the following 72 hours.
+Replay check, 15 March 2017: Lurigancho and Chaclacayo are rated very high (31x and 17x
+the base rate). SINPAD recorded seven mass movements in those two districts from 15 to
+17 March (four in Chaclacayo, three in Lurigancho).
 
 ## How to read the output
 
