@@ -112,8 +112,8 @@ export function ScenarioPanel() {
         // Height cap is the belt to the collapse-on-mobile braces: even if an
         // operator opens it on a phone, the map stays on screen underneath.
         // On desktop the layer list ran past the bottom of short screens; it now
-        // scrolls inside the panel, stopping above the ticker.
-        <div className="border-t border-border-subtle max-h-[45svh] overflow-y-auto overscroll-contain [scrollbar-width:thin] sm:max-h-[calc(100svh-7.5rem)]">
+        // scrolls inside the panel, stopping above the map attribution and ticker.
+        <div className="border-t border-border-subtle max-h-[45svh] overflow-y-auto overscroll-contain [scrollbar-width:thin] sm:max-h-[calc(100svh-9.5rem)]">
           {isShareMode && (
             <div className="mx-4 mt-3 px-3 py-2 bg-warn-soft border border-warn/30 rounded-xl text-xs text-warn-muted flex items-center gap-2">
               <Lock size={13} strokeWidth={1.75} className="shrink-0" aria-hidden="true" />
